@@ -1,0 +1,30 @@
+{
+  "name": "turftown",
+  "version": "1.0.0",
+  "description": "Turf Town",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha",
+    "start": "node index.js",
+    "build": "webpack -d && webpack-dev-server --content-base src/ --inline --hot --port 8000 --host 159.65.146.12 --history-api-fallback"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "body-parser": "^1.18.3",
+    "cors": "^2.8.4",
+    "crypto": "^1.0.1",
+    "express": "^4.16.3",
+    "express-fileupload": "^0.4.0",
+    "express-validator": "^5.3.1",
+    "mocha": "^5.1.0",
+    "moment": "^2.22.1",
+    "moment-timezone": "^0.5.14",
+    "mongoose": "^5.2.10",
+    "nodemailer": "^4.6.7",
+    "nodemon": "^1.18.4",
+    "pdfkit": "^0.8.3",
+    "woocommerce-api": "^1.4.2"
+  }
+}

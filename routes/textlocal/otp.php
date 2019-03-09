@@ -7,8 +7,8 @@
 	$otp     = $_GET['otp'];
 	$phone   = $_GET['phone'];
 	$numbers = array($phone);
-	$sender = urlencode('TXTLCL');
-	$message = rawurlencode('Welcome to Turf Town.%nYour OTP is : '.$otp);
+	$sender = urlencode('TRFTWN');
+	$message = rawurlencode('Welcome to Turftown! Your OTP is '.$otp);
 
 	$numbers = implode(',', $numbers);
 

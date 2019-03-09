@@ -7,7 +7,7 @@ const path = require('path');
 
 const app = express();
 
-mongoose.Promise  = global.Promise; 
+mongoose.Promise  = global.Promise;
 
 //Mongodb connection
 mongoose.connect('mongodb://127.0.0.1:27017/turftown',{ useNewUrlParser: true });
@@ -27,6 +27,8 @@ app.use(bodyParser.json());
 
 //Route
 app.use('/api/user',require('./routes/user'));
+app.use('/api/venue',require('./routes/venue'));
+app.use('/api/admin',require('./routes/superAdmin'));
 
 
 //Error Handling
@@ -35,14 +37,14 @@ app.use(function(err,req,res,next){
   res.status(422).send({error:err.message});
 });
 
-app.use(express.static(path.join(__dirname, 'build')));
+// app.use(express.static(path.join(__dirname, 'build')));
 
-app.get('*', function (req, res) {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
-});
+// app.get('*', function (req, res) {
+//   res.sendFile(path.join(__dirname, 'build', 'index.html'));
+// });
 
 //Port listen
-let port = 3040;
+let port = 3050;
 app.listen(process.env.port || port, function(){
   console.log("Port Listening "+port);
 });

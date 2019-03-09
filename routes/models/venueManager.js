@@ -6,23 +6,20 @@ const moment = require('moment');
 const schema = new Schema({
   created_at: { type : Date , default:moment()},
   modified_at: { type : Date , default:moment()},
-  last_login: Date,
-  modified_at: Date,
-  phone:String,
-  token:String,
-  otp:Number,
+  created_by:String,
+  modified_by:String,
   name:String,
+  company_name:String,
+  address:String,
+  phone:String,
+  alt_phone:String,
+  gst:String,
   email:String,
-  profile_picture:String,
-  access_token:String,
-  dob:Date,
-  gender:String,
-  login_type:String,
-  sports_interest:Array
+  venue:Array
 });
 
 //Model
-const model = mongoose.model('user',schema);
+const model = mongoose.model('venueManager',schema);
 
 
 module.exports    = model;

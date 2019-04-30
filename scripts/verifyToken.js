@@ -8,8 +8,15 @@ function verifyToken(req, res, next) {
     if (err)
     return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
     // if everything good, save to request for use in other routes
-    req.userId = decoded.id;
-    req.phone = decoded.phone;
+    console.log(decoded)
+    if(decoded.role){
+      req.userId = decoded.id;
+      req.username = decoded.username;
+      req.role = decoded.role;
+    }else{
+      req.userId = decoded.id;
+      req.phone = decoded.phone;
+    }
     next();
   });
 }

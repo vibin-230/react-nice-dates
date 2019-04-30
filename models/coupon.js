@@ -19,7 +19,8 @@ const schema = new Schema({
   start_date:Date,
   end_date:Date,
   offer_type:String,
-  days:Array
+  days:Array,
+  venue:Array
 });
 
 //Model

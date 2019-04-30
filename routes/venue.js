@@ -21,6 +21,19 @@ const Venue = require('../models/venue');
 const VenueManager = require('../models/venueManager');
 const SuperAdmin = require('../models/superAdmin');
 
+function ActivityLogForUser(id, phone, activity, description) {
+  let activity_log = {
+      datetime: new Date(),
+      id:id,
+      phone:phone,
+      activity: activity,
+      description: description
+  }
+  User.findOneAndUpdate({_id:id},{$push:{activity_log:activity_log}}).then(admin=>{
+      console.log("activity log updated")
+  })
+}
+
 function getDistanceFromLatLonInKm(lat1,lon1,lat2,lon2) {
     var R = 6371; // Radius of the earth in km
     var dLat = deg2rad(lat2-lat1);  // deg2rad below
@@ -39,18 +52,75 @@ function getDistanceFromLatLonInKm(lat1,lon1,lat2,lon2) {
     return deg * (Math.PI/180)
   }
 
+// router.post('/venue_list', verifyToken, (req, res, next) => {
+//     let zipcode;
+//     axios.get('https://maps.googleapis.com/maps/api/geocode/json?latlng=13.0389622,80.236313&key=AIzaSyBg-CZ9Fk94r5uFwvmVp-U1XSXDvJRAnmo').then(response=>{
+//         zipcode = Object.values(response.data.results[0].address_components).filter(value=>value.types[0]==='postal_code')
+//         zipcode = zipcode[0].long_name
+//         console.log(zipcode)
+//         var list = Object.values(data.venues).map((value,index)=>{
+//             let distance = getDistanceFromLatLonInKm(req.body.latLong[0],req.body.latLong[1],value.latLong[0],value.latLong[1])
+//             value.distance = distance
+//             let featured = value.featured.filter(featured=>featured.zipcode==zipcode)
+//             let zCode = (featured.length>0?featured[0].type*20:null)+(value.exclusive?1*3:0)+(value.new?1*0.5:0)+(value.venuePrice*0.5)-(distance*3)+(value.venueRating*2)
+//             value.zCode = zCode
+//             return value
+//         })
+//         list.sort(function(a, b) {
+//             return b.zCode - a.zCode;
+//         });
+//         res.status(201).send(list);
+//     }).catch(next);
+// });
+
+
+function findTime() {
+  var d = new Date();
+  return d.getDay()
+}
+
 router.post('/venue_list', verifyToken, (req, res, next) => {
-    let zipcode;
-    axios.get('https://maps.googleapis.com/maps/api/geocode/json?latlng=13.0389622,80.236313&key=AIzaSyBg-CZ9Fk94r5uFwvmVp-U1XSXDvJRAnmo').then(response=>{
-        zipcode = Object.values(response.data.results[0].address_components).filter(value=>value.types[0]==='postal_code')
-        zipcode = zipcode[0].long_name
-        console.log(zipcode)
-        var list = Object.values(data.venues).map((value,index)=>{
-            let distance = getDistanceFromLatLonInKm(req.body.latLong[0],req.body.latLong[1],value.latLong[0],value.latLong[1])
-            value.distance = distance
+  function findDay() {
+    var d = new Date();
+    var weekday = new Array(7);
+    weekday[0] = "sunday";
+    weekday[1] = "monday";
+    weekday[2] = "tuesday";
+    weekday[3] = "wednesday";
+    weekday[4] = "thursday";
+    weekday[5] = "friday";
+    weekday[6] = "saturday";
+    var n = weekday[d.getDay()];
+    return n
+  }
+  let zipcode;
+  axios.get('https://maps.googleapis.com/maps/api/geocode/json?latlng=13.0389622,80.236313&key=AIzaSyBg-CZ9Fk94r5uFwvmVp-U1XSXDvJRAnmo').then(response=>{
+      // zipcode = Object.values(response.data.results[0].address_components).filter(value=>value.types[0]==='postal_code')
+      // zipcode = zipcode[0].long_name
+      zipcode = "600017"
+      Venue.find({type:req.body.sport_type, "configuration.types":{$in:[req.body.venue_type]}},{bank:0, features:0, offers:0, access:0}).lean().then(venue=>{
+        // venue = JSON.stringify(venue)
+        // venue = JSON.parse(venue)
+        var list = Object.values(venue).map((value,index)=>{
+            let distance = getDistanceFromLatLonInKm(req.body.latLong[0],req.body.latLong[1],value.venue.lat_long[0],value.venue.lat_long[1])
+
             let featured = value.featured.filter(featured=>featured.zipcode==zipcode)
-            let zCode = (featured.length>0?featured[0].type*20:null)+(value.exclusive?1*3:0)+(value.new?1*0.5:0)+(value.venuePrice*0.5)-(distance*3)+(value.venueRating*2)
-            value.zCode = zCode
+
+            let pricing = Object.values(value.configuration.pricing).filter(price=>price.day===findDay())
+            // console.log(pricing)
+            let price = Math.min(...pricing[0].rate[0].pricing)
+            let rating = Object.values(value.rating).reduce((a,b)=>{
+              let c = a+b.rating
+              return c
+            },0)
+            rating = rating/value.rating.length
+            let zCode = (featured.length>0?featured[0].type*20:0)+(value.exclusive?1*3:0)+(value.new?1*0.5:0)+(price?price*0.5:0)-(distance?distance*3:0)+(rating?rating*2:0)
+            value.z_code = zCode
+            value.rating = rating.toFixed(1)
+            value.distance = distance.toFixed(2)
+            value.pricing = price
+            //filter
+            delete value.configuration
             return value
         })
         list.sort(function(a, b) {
@@ -58,7 +128,9 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
         });
         res.status(201).send(list);
     }).catch(next);
+  }).catch(next);
 });
+
 
 //Post Ratings
 router.post('/rating/:id', verifyToken, (req, res, next) => {
@@ -66,6 +138,8 @@ router.post('/rating/:id', verifyToken, (req, res, next) => {
     user_id:req.userId,
     phone:req.phone,
     rating:req.body.rating,
+    review:req.body.review,
+    sport:req.body.sport,
     date:new Date()
   }
   Venue.findByIdAndUpdate({_id:req.params.id}, {$push:{rating:rating}}).then(venue=>{
@@ -75,6 +149,7 @@ router.post('/rating/:id', verifyToken, (req, res, next) => {
         status:'success',
         message:"rating posted"
       })
+      ActivityLogForUser(req.userId,  req.phone, 'venue rated', req.phone + " rated " +req.body.rating+ " star for " + venue.venue.name)
     }).catch(next);
   }).catch(next);
 })
@@ -94,6 +169,7 @@ router.post('/review/:id', verifyToken, (req, res, next) => {
         status:'success',
         message:"review posted"
       })
+      ActivityLogForUser(req.userId,  req.phone, 'venue reviewed', req.phone + " reviewed " + venue.venue.name)
     }).catch(next);
   }).catch(next);
 })

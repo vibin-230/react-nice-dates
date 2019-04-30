@@ -15,12 +15,16 @@ const schema = new Schema({
   bank:Object,
   features:Object,
   venue:Object,
-  venue_display_picture:String,
-  venue_cover_picture:Array,
+  // venue_display_picture:String,
+  // venue_cover_picture:Array,
   rating:Array,
   review:Array,
   grounds_count:String,
-  configuration:Object
+  configuration:Object,
+  featured:Array,
+  access:Object,
+  offers:Array,
+  status:{type:Boolean, default:true}
 });
 
 //Model

@@ -12,6 +12,7 @@ const schema = new Schema({
   booking_type:String,
   booking_status:String,
   venue:String,
+  venue_id:String,
   sport_name:String,
   venue_type:String,
   amount:Number,
@@ -20,6 +21,7 @@ const schema = new Schema({
   payment_type:String,
   transaction_id:String,
   slot_time:String,
+  phone:String
 });
 
 //Model

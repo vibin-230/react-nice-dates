@@ -28,7 +28,7 @@ app.use(bodyParser.json());
 //Route
 app.use('/api/user',require('./routes/user'));
 app.use('/api/venue',require('./routes/venue'));
-app.use('/api/admin',require('./routes/superAdmin'));
+app.use('/api/admin',require('./routes/admin'));
 
 
 //Error Handling
@@ -44,7 +44,7 @@ app.use(function(err,req,res,next){
 // });
 
 //Port listen
-let port = 3040;
+let port = 3050;
 app.listen(process.env.port || port, function(){
   console.log("Port Listening "+port);
 });

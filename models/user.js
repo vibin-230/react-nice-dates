@@ -18,7 +18,8 @@ const schema = new Schema({
   dob:Date,
   gender:String,
   login_type:String,
-  sports_interest:Array
+  sports_interest:Array,
+  activity_log:Array
 });
 
 //Model

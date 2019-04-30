@@ -16,6 +16,35 @@ const config = require('../config');
 const User = require('../models/user');
 const Booking = require('../models/booking');
 const Venue = require('../models/venue');
+const Admin = require('../models/admin');
+
+function ActivityLogForUser(id, phone, activity, description) {
+  let activity_log = {
+      datetime: new Date(),
+      id:id,
+      phone:phone,
+      activity: activity,
+      description: description
+  }
+  User.findOneAndUpdate({_id:id},{$push:{activity_log:activity_log}}).then(admin=>{
+      console.log("activity log updated")
+  })
+}
+
+function ActivityLogForAdmin(id, username, role, activity, description) {
+  let activity_log = {
+      datetime: new Date(),
+      id:id,
+      username: username,
+      role:role,
+      activity: activity,
+      description: description
+  }
+  Admin.findOneAndUpdate({username:username},{$push:{activity_log:activity_log}}).then(admin=>{
+      console.log("activity log updated")
+  })
+}
+
 
 //Create User
 router.post('/create_user', [
@@ -123,7 +152,7 @@ router.post('/send_otp',[
 router.post('/verify_otp', (req, res, next) => {
   User.findOne({phone: req.body.phone}).then(user=> {
     // create a token
-    var token = jwt.sign({ id: user._id, phone:user.phone }, config.secret);
+    var token = jwt.sign({ id: user._id, phone:user.phone, role:"user" }, config.secret);
       if(user.otp===req.body.otp){
           User.findOneAndUpdate({phone: req.body.phone},{token,last_login:moment()}).then(user=>{
             User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
@@ -174,28 +203,31 @@ if (!req.files)
 
 
 
-router.post('/block_slot_for_football', verifyToken, (req, res, next) => {
-  Venue.findOne({"venue.name":req.body.venue}).then(venue=>{
+router.post('/block_slot_for_football/:id', verifyToken, (req, res, next) => {
+  Venue.findById({_id:req.params.id}).then(venue=>{
     Booking.find({$and:[{venue:req.body.venue, booking_date:req.body.booking_date, slot_time:req.body.slot_time}],$or:[{booking_status:"booked",booking_status:"blocked"}]}).then(booking_history=>{
       let conf = venue.configuration;
       let types = conf.types;
       let base_type = conf.base_type;
       let inventory = {}
-      for(let i=0;i<types.length; i++){
-        inventory[types[i]] = conf[types[i]];
-      }
-      console.log(inventory)
-      if(booking_history.length>0){
-        let available_inventory = Object.values(booking_history).map(booking =>{
-          inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.venue_type])
-          for(let i=0;i<types.length-1; i++){
-          inventory[types[i]] = parseInt(inventory[base_type] / conf.ratio[types[i]])
-          }
-          console.log(inventory)
-        })
+      if(venue.configuration.convertable){
+        for(let i=0;i<types.length; i++){
+          inventory[types[i]] = conf[types[i]];
+        }
+        console.log(inventory)
+        if(booking_history.length>0){
+          let available_inventory = Object.values(booking_history).map(booking =>{
+            inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.venue_type])
+            for(let i=0;i<types.length-1; i++){
+            inventory[types[i]] = parseInt(inventory[base_type] / conf.ratio[types[i]])
+            }
+            console.log(inventory)
+          })
+        }
       }
 
-      if(inventory[req.body.venue_type]<=0){
+
+      if(inventory[req.body.venue_type]<=venue.configuration.convertable?0:booking_history.length){
         res.status(409).send({status:"failed", message:"slot already booked"})
       }else{
         let booking = {
@@ -204,6 +236,7 @@ router.post('/block_slot_for_football', verifyToken, (req, res, next) => {
           booking_status:"blocked",
           created_by:req.userId,
           venue:req.body.venue,
+          venue_id:req.body.venue_id,
           sport_name:req.body.sport_name,
           venue_type:req.body.venue_type,
           amount:req.body.amount,
@@ -217,6 +250,12 @@ router.post('/block_slot_for_football', verifyToken, (req, res, next) => {
             status:'success',
             message:"slot blocked"
           })
+          //Activity Log
+          if(req.role){
+            ActivityLogForAdmin(req.userId, req.username, req.role, 'slot blocked', req.username + " blocked " + req.body.venue)
+          }else{
+            ActivityLogForUser(req.userId,  req.phone, 'slot blocked', req.phone + " blocked " + req.body.venue)
+          }
           setTimeout(() => {
             Booking.findById({_id:booking._id}).then(booking=>{
               if(booking.booking_status==="blocked"){
@@ -233,8 +272,8 @@ router.post('/block_slot_for_football', verifyToken, (req, res, next) => {
 })
 
 
-router.post('/block_slot', verifyToken, (req, res, next) => {
-  Venue.findOne({"venue.name":req.body.venue}).then(venue=>{
+router.post('/block_slot/:id', verifyToken, (req, res, next) => {
+  Venue.findById({_id:req.params.id}).then(venue=>{
     Booking.find({$and:[{venue:req.body.venue, booking_date:req.body.booking_date, slot_time:req.body.slot_time, venue_type:req.body.venue_type}],$or:[{booking_status:"booked",booking_status:"blocked"}]}).then(booking_history=>{
       let conf = venue.configuration;
       let types = conf.types;
@@ -248,6 +287,7 @@ router.post('/block_slot', verifyToken, (req, res, next) => {
           booking_status:"blocked",
           created_by:req.userId,
           venue:req.body.venue,
+          venue_id:req.body.venue_id,
           sport_name:req.body.sport_name,
           venue_type:req.body.venue_type,
           amount:req.body.amount,
@@ -261,6 +301,12 @@ router.post('/block_slot', verifyToken, (req, res, next) => {
             status:'success',
             message:"slot blocked"
           })
+          //Activity Log
+          if(req.role){
+            ActivityLogForAdmin(req.userId, req.username, req.role, 'slot blocked', req.username + " blocked " + req.body.venue)
+          }else{
+            ActivityLogForUser(req.userId,  req.phone, 'slot blocked', req.phone + " blocked " + req.body.venue)
+          }
           setTimeout(() => {
             Booking.findById({_id:booking._id}).then(booking=>{
               if(booking.booking_status==="blocked"){
@@ -277,19 +323,99 @@ router.post('/block_slot', verifyToken, (req, res, next) => {
 })
 
 //Slot Booked
-router.post('/slot_booked/:id', verifyToken, (req, res, next) => {
+router.post('/book_slot/:id', verifyToken, (req, res, next) => {
   Booking.findByIdAndUpdate({_id:req.parmas.id},{booking_status:"booked", transaction_id:req.body.transaction_id}).then(booking=>{
     res.send({
       data: booking,
       status:'success',
       message:"slot booked"
     })
+    //Activity Log
+    if(req.role){
+      ActivityLogForAdmin(req.userId, req.username, req.role, 'slot booked', req.username + " booked " + req.body.venue)
+    }else{
+      ActivityLogForUser(req.userId,  req.phone, 'slot booked', req.phone + " booked " + req.body.venue)
+    }
   })
 })
+function isEmpty (object){
+  if(Object.keys(object).length>0){
+    return true
+  }else{
+    return false
+  }
+}
+
+//Slot Booked
+router.post('/slots_available/:id', verifyToken, (req, res, next) => {
+  Venue.findById({_id:req.params.id},{bank:0,access:0}).lean().then(venue=>{
+    Booking.find({$and:[{venue:req.body.venue, booking_date:{$gte:req.body.booking_date,$lt:moment(req.body.booking_date).add('days',1)}}],$or:[{booking_status:"booked",booking_status:"blocked"}]}).then(booking_history=>{
+      if(venue.configuration.convertable){
+        let conf = venue.configuration;
+        let types = conf.types;
+        let base_type = conf.base_type;
+        let stock = {}
+        let slots_available = {}
+        let inventory = {}
+        for(let i=0;i<types.length; i++){
+          stock[types[i]] = conf[types[i]];
+        }
+        if(booking_history.length>0){
+          let available_inventory = Object.values(booking_history).map(booking =>{
+            if(!slots_available[booking.slot_time]){
+            inventory = Object.assign({}, stock);
+            }else{
+            inventory = slots_available[booking.slot_time]
+            }
+            inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.venue_type])
+            for(let i=0;i<types.length-1; i++){
+            inventory[types[i]] = parseInt(inventory[base_type] / conf.ratio[types[i]])
+            }
+            slots_available[booking.slot_time]=inventory
+            return slots_available
+          })
+          venue.slots_available = available_inventory[available_inventory.length-1]
+          res.send({status:"success", message:"available slots fetched", data:venue})
+        }else{
+          res.send({status:"success", message:"available slots fetched", data:[]})
+        }
+      }else{
+        let conf = venue.configuration;
+        let types = conf.types;
+        let stock = {}
+        let slots_available = {}
+        for(let i=0;i<types.length; i++){
+          stock[types[i]] = conf[types[i]];
+        }
+        if(booking_history.length>0){
+          let available_inventory = Object.values(booking_history).map(booking =>{
+            inventory =  Object.assign({}, stock);
+            if(!slots_available[booking.slot_time]){
+              slots_available[booking.slot_time] = inventory
+              slots_available[booking.slot_time][booking.venue_type] = parseInt(inventory[booking.venue_type] - 1)
+            }else if(slots_available[booking.slot_time]){
+              slots_available[booking.slot_time][booking.venue_type] = parseInt(slots_available[booking.slot_time][booking.venue_type] - 1)
+            }
+            return slots_available
+          })
+          venue.slots_available = available_inventory[available_inventory.length-1]
+          res.send({status:"success", message:"available slots fetched", data:venue})
+        }else{
+          res.send({status:"success", message:"available slots fetched", data:[]})
+        }
+      }
+      }).catch(next)
+    }).catch(next)
+  })
 
 
-
-
+//Booking History
+router.post('/booking_history', verifyToken, (req, res, next) => {
+  Booking.find({phone:req.body.phone,booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(booking=>{
+      console.log(booking)
+      res.send({status:"success", message:"booking history fetched", data:booking})
+    }).catch(next)
+  })
 
 // router.post('/create_token', (req, res, next) => {
 //   User.create(req.body).then(user=>{

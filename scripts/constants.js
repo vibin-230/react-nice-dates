@@ -1,7 +1,20 @@
 var server = "http://159.65.146.12:3020"
 
+function merge(a, b) {
+    for(var idx in b) {
+        a[idx] = b[idx];
+    } //done!
+}
 
-module.exports = {server}
+function isEmpty (object){
+    if(Object.keys(object).length>0){
+      return true
+    }else{
+      return false
+    }
+  }
+
+module.exports = {server,merge,isEmpty}
 
 
 

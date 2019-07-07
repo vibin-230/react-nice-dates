@@ -10,6 +10,7 @@ const schema = new Schema({
   modified_by:String,
   start_date:Date,
   end_date:Date,
+  status:{type:Boolean, default:true},
   // event_name:String,
   // venue:String,
   // email:String,

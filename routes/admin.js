@@ -11,21 +11,26 @@ const constants = require('../scripts/constants');
 const link = require('../scripts/uri');
 const { check, validationResult } = require('express-validator/check');
 const verifyToken = require('../scripts/verifyToken');
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
 // const verifySuperAdmin = require('../scripts/verifySuperAdmin');
 const jwt = require('jsonwebtoken');
 const config = require('../config');
 const data = require('../sample/venue.js')
+const mail = require('../scripts/mail');
 
 const User = require('../models/user');
 const Venue = require('../models/venue');
 const VenueManager = require('../models/venueManager');
 const VenueStaff = require('../models/venueStaff');
 const SuperAdmin = require('../models/superAdmin');
+const Booking = require('../models/booking');
 const Admin = require('../models/admin');
 const Event = require('../models/event');
 const Coupon = require('../models/coupon');
 const Support = require('../models/support');
 const Ads = require('../models/ads');
+const Offers = require('../models/offers');
 
 const Access = {
     super_admin:{
@@ -35,13 +40,18 @@ const Access = {
         event:['read','create','update','delete'],
         coupon:['read','create','update','delete'],
         users:['read','create','update','delete'],
-        support:['read', 'create','delete'],
-        ads:['read', 'create','delete']
+        support:['read', 'create'],
+        ads:['read', 'create','update','delete'],
+        booking:['read', 'create','update','delete'],
+        offers:['read', 'create','update','delete'],
     },
     venue_manager:{
+        
         venue:['read','create','update','delete'],
         event:['read','create','update','delete'],
         coupon:['read','create','update','delete'],
+        offers:['read', 'create','update','delete'],
+        booking:['read', 'create','update','delete'],
         support:['read', 'create']
     },
     venue_staff:{
@@ -54,20 +64,21 @@ const Access = {
         venue:['read'],
         event:['read'],
         coupon:['read'],
+        support:['read', 'create'],
         users:['read','create','update','delete']
     }
 }
 
-function ActivityLog(id, username, role, activity, description) {
+function ActivityLog(id, user_type, activity, message) {
     let activity_log = {
         datetime: new Date(),
         id:id,
-        username: username,
-        role: role,
+        user_type: user_type,
         activity: activity,
-        description: description
+        message: message
     }
-    Admin.findOneAndUpdate({username:username},{$push:{activity_log:activity_log}}).then(admin=>{
+    let user = user_type==="user"?User:Admin
+    user.findOneAndUpdate({_id:id},{$push:{activity_log:activity_log}}).then(admin=>{
         console.log("activity log updated")
     })
 }
@@ -104,28 +115,64 @@ router.post('/create_super_admin',
         if(superAdmin){
             res.send({status:"failure", message:"username already exist"})
         }else{
+            bcrypt.hash(req.body.password, saltRounds).then(function(hash) {
             req.body.role = "super_admin";
+            req.body.password = hash;
             Admin.create(req.body).then(superAdmin=>{
                 res.send({status:"success", message:"super admin added"})
             }).catch(next)
+        })
         }
     }).catch(next)
 })
 
 router.post('/admin_login',
     (req, res, next) => {
-        console.log(req.body)
-    Admin.findOne({username:req.body.username, password:req.body.password}).then(admin=>{
+    Admin.findOne({username:req.body.username},{reset_password_hash:0,reset_password_expiry:0},null).then(admin=>{
         if(admin){
-            var token = jwt.sign({ id: admin._id, username:admin.username, role:admin.role}, config.secret);
-            res.send({status:"success", message:"login success", token:token, role:admin.role})
-            ActivityLog(admin._id, admin.username, admin.role, 'login', admin.username +" loggedin successfully")
+            bcrypt.compare(req.body.password, admin.password).then(function(response) {
+                if(response){
+                    var token = jwt.sign({ id: admin._id, username:admin.username, role:admin.role}, config.secret);
+                    admin.password = undefined
+                    res.send({status:"success", message:"login success", token:token, role:admin.role,id:admin._id,data:admin})
+                    ActivityLog(admin._id, admin.role, 'login', admin.username +" logged-in successfully")
+                }else{
+                    res.send({status:"failed", message:"password incorrect"})
+                }
+            })
         }else{
-            res.send({status:"failed", message:"username or password incorrect"})
+            res.send({status:"failed", message:"user doesn't exist"})
         }
     }).catch(next)
 })
 
+
+
+////Forget Password
+router.post('/forget_password', (req, res, next) => {
+    Admin.findOne({username: req.body.email}).then(function(data) {
+        if (data) {
+            //Send mail
+            var id = mongoose.Types.ObjectId();
+            let html = "<h4>Please click here to reset your password</h4><a href='http://localhost:3001/reset-password/"+id+"'>Reset Password</a>"
+            mail("support@turftown.in", req.body.email,"Reset Your Password","test",html,response=>{
+            if(response){
+                let body = {
+                reset_password_expiry:moment().add(1,"days"),
+                reset_password_hash:id
+                }
+                Admin.findOneAndUpdate({email: req.body.email},body).then(function(data) {
+                res.send({status:"success",message:"reset password link sent to mail"})
+                }).catch(next);
+            }else{
+                res.status(409).send({status:"failed", message: "failed to send mail"});
+            }
+            })
+        } else {
+            res.status(409).send({status:"failed", message: "user doesn't exist"});
+        }
+        }).catch(next);
+})
 
 ////Users
 router.post('/users',
@@ -145,15 +192,20 @@ router.post('/venue',
     AccessControl('venue', 'read'),
     (req, res, next) => {
         Venue.find({},{bank:0}).lean().then(venue=>{
-            let venues = Object.values(venue).map((value,index)=>{
-                let rating = Object.values(value.rating).reduce((a,b)=>{
-                    let c = a+b.rating
-                    return c
-                  },0)
-                  value.rating = rating===0?0:rating/value.rating.length
-                  return value
-            })
-            res.status(201).send({status:"success", message:"venues fetched", data:venues})
+            Offers.find({}).then(offers=>{
+
+                let venues = Object.values(venue).map((value,index)=>{
+                    let rating = Object.values(value.rating).reduce((a,b)=>{
+                        let c = a+b.rating
+                        return c
+                    },0)
+                    value.rating = rating===0?0:rating/value.rating.length
+                    let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
+                    value.offer = filteredOffer
+                    return value
+                })
+                res.status(201).send({status:"success", message:"venues fetched", data:venues})
+        }).catch(next)
     }).catch(next)
 })
 
@@ -163,7 +215,7 @@ router.post('/get_venue/:id',
     verifyToken,
     AccessControl('venue', 'read'),
     (req, res, next) => {
-        Venue.findOne({_id:req.params.id},{bank:0, configuration:0}).lean().then(venue=>{
+        Venue.findOne({_id:req.params.id},{bank:0}).lean().then(venue=>{
             res.status(201).send({status:"success", message:"venue fetched", data:venue})
     }).catch(next)
 })
@@ -176,7 +228,7 @@ AccessControl('venue', 'create'),
     req.body.created_by = req.username
     Venue.create(req.body).then(venue=>{
         res.send({status:"success", message:"venue added", data:venue})
-        ActivityLog(req.userId, req.username, req.role, 'venue created', req.username+" created venue")
+        ActivityLog(req.userId, req.role, 'venue created', req.username+" created venue "+venue.venue.name)
         }).catch(next)
 })
 
@@ -188,11 +240,11 @@ AccessControl('venue', 'update'),
     req.body.modified_by = req.username
     req.body.modified_at = new Date()
     Venue.findById({_id:req.params.id}).lean().then(venue=>{
-        let merged_data = _.merge({},venue,req.body)
-        Venue.findByIdAndUpdate({_id:req.params.id},merged_data).then(venue=>{
+        // let merged_data = _.merge({},venue,req.body)
+        Venue.findByIdAndUpdate({_id:req.params.id},req.body).then(venue=>{
             Venue.findById({_id:req.params.id}).then(venue=>{
                 res.send({status:"success", message:"venue edited", data:venue})
-                ActivityLog(req.userId, req.username, req.role, 'venue modified', req.username+" modified venue")
+                ActivityLog(req.userId, req.role, 'venue modified', req.username+" modified venue "+ venue.venue.name)
             }).catch(next)
         }).catch(next)
     }).catch(next)
@@ -206,7 +258,7 @@ router.delete('/delete_venue/:id',
     Venue.findByIdAndRemove({_id:req.params.id},req.body).then(venue=>{
         Venue.find({}).then(venue=>{
             res.send({status:"success", message:"venue deleted", data:venue})
-            ActivityLog(req.userId, req.username, req.role, 'venue deleted', req.username+" deleted venue")
+            ActivityLog(req.userId, req.role, 'venue deleted', req.username+" deleted venue "+ venue.venue.name)
         }).catch(next)
     }).catch(next)
 })
@@ -234,9 +286,24 @@ router.post('/add_venue_manager',
             res.send({status:"failure", message:"username already exist"})
         }else{
             req.body.role = "venue_manager";
+            req.body.reset_password_hash = mongoose.Types.ObjectId();
+            req.body.reset_password_expiry = moment().add(1,"days")
             Admin.create(req.body).then(venueManager=>{
-                res.send({status:"success", message:"venue manager added", data:venueManager})
-                ActivityLog(req.userId, req.username, req.role, 'venue manager created', req.username+" created venue manager")
+                var id = mongoose.Types.ObjectId();
+                let reset_url = "http://localhost:3001/reset-password/"+req.body.reset_password_hash
+                let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
+                mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
+                    if(response){
+                      res.send({status:"success"})
+                    }else{
+                      res.send({status:"failed"})
+                    }
+                })
+                Venue.find({_id:{$in:venueManager.venue}},{_id:1, name:1, venue:1, type:1}).lean().then(venue=>{
+                    venueManager.venue = venue
+                    res.send({status:"success", message:"venue manager added", data:venueManager})
+                    ActivityLog(req.userId, req.username, req.role, 'venue manager created', req.username+" created venue manager")
+                }).catch(next)
             }).catch(next)
         }
     }).catch(next)
@@ -250,8 +317,12 @@ router.put('/edit_venue_manager/:id',
     req.body.modified_by = req.username
     Admin.findByIdAndUpdate({_id:req.params.id},req.body).then(venueManager=>{
         Admin.findById({_id:req.params.id}).then(venueManager=>{
-            res.send({status:"success", message:"venue manager edited", data:venueManager})
-            ActivityLog(req.userId, req.username, req.role, 'venue manager modified', req.username+" modified venue manager")
+            console.log(venueManager);
+            Venue.find({_id:{$in:venueManager.venue}},{_id:1, name:1, venue:1, type:1}).lean().then(venue=>{
+                venueManager.venue = venue
+                res.send({status:"success", message:"venue manager edited", data:venueManager})
+                ActivityLog(req.userId, req.username, req.role, 'venue manager modified', req.username+" modified venue manager")
+            }).catch(next)
         }).catch(next)
     }).catch(next)
 })
@@ -291,7 +362,19 @@ router.post('/add_venue_staff',
             res.send({status:"failure", message:"username already exist"})
         }else{
             req.body.role = "venue_staff";
+            req.body.reset_password_hash = mongoose.Types.ObjectId();
+            req.body.reset_password_expiry = moment().add(1,"days")
             Admin.create(req.body).then(venueStaff=>{
+                var id = mongoose.Types.ObjectId();
+                let reset_url = "http://localhost:3001/reset-password/"+req.body.reset_password_hash
+                let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
+                mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
+                    if(response){
+                      res.send({status:"success"})
+                    }else{
+                      res.send({status:"failed"})
+                    }
+                })
                 res.send({status:"success", message:"venue staff added", data:venueStaff})
                 ActivityLog(req.userId, req.username, req.role, 'venue staff created', req.username+" created venue staff")
             }).catch(next)
@@ -332,7 +415,12 @@ router.post('/event',
     // AccessControl('event', 'read'),
     (req, res, next) => {
     Event.find({}).then(event=>{
-        res.send({status:"success", message:"events fetched", data:event})
+        Offers.find({}).then(offers=>{
+                let filteredOffer = Object.values(offers).filter(offer=>offer.event.indexOf(value._id)!== -1)
+                value.offer = filteredOffer
+                return value
+            res.send({status:"success", message:"events fetched", data:event})
+        }).catch(next)
     }).catch(next)
 })
 
@@ -343,8 +431,11 @@ router.post('/add_event',
     (req, res, next) => {
     req.body.created_by = req.username
     Event.create(req.body).then(event=>{
-        res.send({status:"success", message:"event added", data:event})
-        ActivityLog(req.userId, req.username, req.role, 'event created', req.username+" created event")
+        Venue.find({_id:{$in:event.venue}},{_id:1, name:1, venue:1, type:1}, null).lean().then(venue=>{
+            event.venue = venue
+            res.send({status:"success", message:"event added", data:event})
+            ActivityLog(req.userId, req.role, 'event created', req.username+" created event "+event.event.name)
+        }).catch(next)
     }).catch(next)
 })
 
@@ -357,8 +448,11 @@ router.put('/edit_event/:id',
     req.body.modified_at = new Date()
     Event.findByIdAndUpdate({_id:req.params.id},req.body).then(event=>{
         Event.findById({_id:req.params.id}).then(event=>{
-            res.send({status:"success", message:"event edited", data:event})
-            ActivityLog(req.userId, req.username, req.role, 'event modified', req.username+" modified event")
+            Venue.find({_id:{$in:event.venue}},{_id:1, name:1, venue:1, type:1}, null).lean().then(venue=>{
+                event.venue = venue
+                res.send({status:"success", message:"event edited", data:event})
+                ActivityLog(req.userId, req.role, 'event modified', req.username+" modified event "+ event.event.name)
+            }).catch(next)
         }).catch(next)
     }).catch(next)
 })
@@ -371,7 +465,7 @@ router.delete('/delete_event/:id',
     Event.findByIdAndRemove({_id:req.params.id},req.body).then(event=>{
         Event.find({}).then(event=>{
             res.send({status:"success", message:"event deleted", data:event})
-            ActivityLog(req.userId, req.username, req.role, 'event deleted', req.username+" deleted event")
+            ActivityLog(req.userId, req.role, 'event deleted', req.username+" deleted event "+event.event.name)
         }).catch(next)
     }).catch(next)
 })
@@ -403,7 +497,28 @@ router.post('/venue_list_by_coupon',
             //     return value
             // })
             res.status(201).send({status:"success", message:"venues fetched", data:venue})
+
         }).catch(next)
+    }).catch(next)
+})
+
+////Venue List based on coupon
+router.post('/venue_list_by_id',
+    verifyToken,
+    AccessControl('venue', 'read'),
+    (req, res, next) => {
+
+    Venue.find({_id:{$in:req.body.venue}},{bank:0}).lean().then(venue=>{
+        // let venues = Object.values(venue).map((value,index)=>{
+        //     let rating = Object.values(value.rating).reduce((a,b)=>{
+        //         let c = a+b.rating
+        //         return c
+        //     },0)
+        //     value.rating = rating===0?0:rating/value.rating.length
+        //     return value
+        // })
+        res.status(201).send({status:"success", message:"venues fetched", data:venue})
+
     }).catch(next)
 })
 
@@ -414,8 +529,14 @@ router.post('/add_coupon',
     (req, res, next) => {
     req.body.created_by = req.username
     Coupon.create(req.body).then(coupon=>{
-        res.send({status:"success", message:"coupon added", data:coupon})
-        ActivityLog(req.userId, req.username, req.role, 'coupon created', req.username+" created coupon")
+        Venue.find({_id:{$in:coupon.venue}},{_id:1, name:1, venue:1, type:1}, null).lean().then(venue=>{
+            Event.find({_id:{$in:coupon.event}},{_id:1, event:1, type:1},null).lean().then(event=>{
+                coupon.event = event
+                coupon.venue = venue
+                res.send({status:"success", message:"coupon added", data:coupon})
+                ActivityLog(req.userId, req.role, 'coupon created', req.username+" created coupon "+coupon.title)
+            }).catch(next)
+        }).catch(next)
     }).catch(next)
 })
 
@@ -428,8 +549,14 @@ router.put('/edit_coupon/:id',
     req.body.modified_at = new Date()
     Coupon.findByIdAndUpdate({_id:req.params.id},req.body).then(coupon=>{
         Coupon.findById({_id:req.params.id}).then(coupon=>{
-            res.send({status:"success", message:"coupon edited", data:coupon})
-            ActivityLog(req.userId, req.username, req.role, 'coupon modified', req.username+" modified coupon")
+            Venue.find({_id:{$in:coupon.venue}},{_id:1, name:1, venue:1, type:1}, null).lean().then(venue=>{
+                Event.find({_id:{$in:coupon.event}},{_id:1, event:1, type:1},null).lean().then(event=>{
+                    coupon.event = event
+                    coupon.venue = venue
+                    res.send({status:"success", message:"coupon edited", data:coupon})
+                    ActivityLog(req.userId, req.role, 'coupon modified', req.username+" modified coupon "+coupon.title)
+                }).catch(next)
+            }).catch(next)
         }).catch(next)
     }).catch(next)
 })
@@ -442,7 +569,7 @@ router.delete('/delete_coupon/:id',
     Coupon.findByIdAndRemove({_id:req.params.id},req.body).then(coupon=>{
         Coupon.find({}).then(coupon=>{
             res.send({status:"success", message:"coupon deleted", data:coupon})
-            ActivityLog(req.userId, req.username, req.role, 'coupon deleted', req.username+" deleted coupon")
+            ActivityLog(req.userId, req.role, 'coupon deleted', req.username+" deleted coupon "+coupon.title)
         }).catch(next)
     }).catch(next)
 })
@@ -556,6 +683,39 @@ AccessControl('event', 'create'),
     })
 });
 
+//Upload Event Picture
+router.post('/upload_cheque',
+verifyToken,
+AccessControl('venue', 'create'),
+(req, res, next) => {
+    if (!req.files)
+        return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
+        // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
+        let File = req.files.image;
+        let filename = req.files.image.name;
+        //filename = path.pathname(filename)
+        let name = path.parse(filename).name
+        let ext = path.parse(filename).ext
+        ext = ext.toLowerCase()
+        filename = name + Date.now() + ext
+        // Use the mv() method to place the file somewhere on your server
+        File.mv('assets/images/cheque/' + filename, function(err) {
+            if (err) {
+            return res.status(500).send(err);
+            } else {
+            let image = link.domain+'/assets/images/cheque/' + filename;
+            // Event.findOneAndUpdate({_id:req.params.id},{$push:{"event.picture":image}}).then(event=>{
+            res.status(201).send({
+                image,
+                status: 'success',
+                message: "cheque uploaded"
+            })
+        // })
+        }
+    })
+});
+
+
 
 //// Global Search
 router.post('/search',
@@ -577,9 +737,16 @@ router.post('/support',
     verifyToken,
     AccessControl('support', 'create'),
     (req, res, next) => {
-    Support.create(req.body).then(support=>{
-        res.send({status:"success", message:"message sent", data:support})
-    }).catch(next)
+        Support.create(req.body).then(support=>{
+            let html = "<h4>email: "+req.body.email+"</h4><h4>message: "+req.body.message+"</h4>"
+            mail(req.body.email,"support@turftown.in","Support",req.body.message,html,response=>{
+                if(response){
+                    res.send({status:"success", message:"support request raised"})
+                }else{
+                    res.send({status:"failed"})
+                }
+                })
+        }).catch(next)
 })
 
 
@@ -594,7 +761,7 @@ router.post('/ads',
 })
 
 
-//Upload Event Picture
+//Upload Ad Picture
 router.post('/ad_picture',
 verifyToken,
 AccessControl('ads', 'create'),
@@ -638,15 +805,174 @@ router.post('/ads_list',
 })
 
 
-//// Access to user
+
+
+//// Create ad
 router.post('/create_ad',
     verifyToken,
     AccessControl('ads', 'create'),
     (req, res, next) => {
     Ads.create(req.body).then(ads=>{
-        res.send({status:"success", message:"ad created", data:ads})
+        Venue.find({_id:{$in:ads.venue}},{_id:1, name:1, venue:1, type:1},null).lean().then(venue=>{
+            Event.find({_id:{$in:ads.event}},{_id:1, event:1, type:1},null).lean().then(event=>{
+                ads.event = event
+                ads.venue = venue
+                res.send({status:"success", message:"ad created", data:ads})
+                ActivityLog(req.userId, req.role, 'ad created', req.username+" created ad ")
+            }).catch(next)
+        }).catch(next)
     }).catch(next)
 })
 
+//// Edit ad
+router.post('/edit_ad/:id',
+    verifyToken,
+    AccessControl('ads', 'update'),
+    (req, res, next) => {
+    req.body.modified_at = new Date()
+    req.body.modified_by = req.username
+    Ads.findByIdAndUpdate({_id:req.params.id}, req.body).then(ads=>{
+        Ads.findById({_id:req.params.id}).then(ads=>{
+            Venue.find({_id:{$in:ads.venue}},{_id:1, name:1, venue:1, type:1},null).lean().then(venue=>{
+                Event.find({_id:{$in:ads.event}},{_id:1, event:1, type:1},null).lean().then(event=>{
+                    ads.event = event
+                    ads.venue = venue
+                    res.send({status:"success", message:"ad modified", data:ads})
+                    ActivityLog(req.userId, req.role, 'ad modified', req.username+" modified ad ")
+                }).catch(next)
+            }).catch(next)
+        }).catch(next)
+    }).catch(next)
+})
+
+//// Delete ad
+router.post('/delete_ad/:id',
+    verifyToken,
+    AccessControl('ads', 'delete'),
+    (req, res, next) => {
+    Ads.findByIdAndRemove({_id:req.params.id}).then(ads=>{
+        res.send({status:"success", message:"ad deleted"})
+        ActivityLog(req.userId, req.role, 'ad deleted', req.username+" deleted ad ")
+    }).catch(next)
+})
+
+//// Offers List
+router.post('/offers_list',
+    verifyToken,
+    AccessControl('offers', 'read'),
+    (req, res, next) => {
+    Offers.find({}).then(offers=>{
+        res.send({status:"success", message:"offers fetched", data:offers})
+    }).catch(next)
+})
+
+
+//// Create ad
+router.post('/create_offer',
+    verifyToken,
+    AccessControl('offers', 'create'),
+    (req, res, next) => {
+    Offers.create(req.body).then(offers=>{
+        Venue.find({_id:{$in:offers.venue}},{_id:1, name:1, venue:1, type:1},null).lean().then(venue=>{
+            Event.find({_id:{$in:offers.event}},{_id:1, event:1, type:1},null).lean().then(event=>{
+                offers.event = event
+                offers.venue = venue
+                res.send({status:"success", message:"offer created", data:offers})
+                ActivityLog(req.userId, req.role, 'offer created', req.username+" created offer ")
+            }).catch(next)
+        }).catch(next)
+    }).catch(next)
+})
+
+//// Edit ad
+router.post('/edit_offer/:id',
+    verifyToken,
+    AccessControl('offers', 'update'),
+    (req, res, next) => {
+    req.body.modified_at = new Date()
+    req.body.modified_by = req.username
+    Offers.findByIdAndUpdate({_id:req.params.id}, req.body).then(offers=>{
+        Offers.findById({_id:req.params.id}).then(offers=>{
+            Venue.find({_id:{$in:offers.venue}},{_id:1, name:1, venue:1, type:1},null).lean().then(venue=>{
+                Event.find({_id:{$in:offers.event}},{_id:1, event:1, type:1},null).lean().then(event=>{
+                    offers.event = event
+                    offers.venue = venue
+                    res.send({status:"success", message:"offer modified", data:offers})
+                    ActivityLog(req.userId, req.role, 'offer modified', req.username+" modified offer ")
+                }).catch(next)
+            }).catch(next)
+        }).catch(next)
+    }).catch(next)
+})
+
+//// Delete ad
+router.post('/delete_offer/:id',
+    verifyToken,
+    AccessControl('offers', 'delete'),
+    (req, res, next) => {
+    Offers.findByIdAndRemove({_id:req.params.id}).then(offers=>{
+        res.send({status:"success", message:"offer deleted"})
+        ActivityLog(req.userId, req.role, 'offer deleted', req.username+" deleted offer ")
+    }).catch(next)
+})
+
+router.post('/activity_logs/:id',
+    verifyToken,
+    (req, res, next) => {
+    const user_type = req.role==="user"?User:Admin
+    user_type.findById({_id:req.params.id}).then(data=>{
+        res.send({status:"success", message:"activity logs fetched", data:data.activity_log})
+    }).catch(next)
+})
+
+router.post('/reset_password',
+    (req, res, next) => {
+        Admin.findOne({reset_password_hash:req.body.reset_password_hash}).then(venueStaff=>{
+            if(venueStaff){
+                if(venueStaff.reset_password_expiry>moment()){
+                    bcrypt.hash(req.body.password, saltRounds).then(function(hash) {
+                        Admin.findOneAndUpdate({reset_password_hash:req.body.reset_password_hash},{password:hash}).then(admin=>{
+                            mail("support@turftown.in", venueStaff.username,"Password has been Reset Succesfully","Your Password has been Reset Successfully","",response=>{
+                                if(response){
+                                  console.log({status:"success"})
+                                }else{
+                                  console.log({status:"failed"})
+                                }
+                                res.send({status:"success", message:"password changed"})
+                            })
+                            ActivityLog(venueStaff._id, venueStaff.username, venueStaff.role, 'password changed', venueStaff.username+" changed password")
+                        })
+                    })
+                }else{
+                    res.status(409).send({status:"failed", message:"reset expired"})
+                }
+            }else{
+                res.status(409).send({status:"failed", message:"incorrect credentials"})
+            }
+    }).catch(next)
+})
+
+//Booking History
+router.post('/venue_event_list', (req, res, next) => {
+  Venue.find({status:true},{configuration:0,bank:0,access:0},null).then(venues=>{
+    Event.find({status:true},{configuration:0,bank:0,access:0},null).then(events=>{
+      let data = {
+          venues,
+          events
+      }
+      res.send({status:"success", message:"venues and event fetched", data})
+    })
+  })
+})
+
+//// Ads
+router.post('/booking_completed_list',
+    verifyToken,
+    AccessControl('booking', 'read'),
+    (req, res, next) => {
+    Booking.find({booking_status:"completed", booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(bookings=>{
+        res.send({status:"success", message:"bookings fetched", data:bookings})
+    }).catch(next)
+})
 
 module.exports = router;

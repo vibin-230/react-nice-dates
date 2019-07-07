@@ -7,6 +7,8 @@ const schema = new Schema({
   modified_at: { type : Date , default:Date.now()},
   username:String,
   password:String,
+  reset_password_hash:String,
+  reset_password_expiry:Date,
   role:String,
   name:String,
   company_name:String,
@@ -17,7 +19,8 @@ const schema = new Schema({
   email:String,
   access:String,
   venue:Array,
-  activity_log:Array
+  activity_log:Array,
+  status:{type:Boolean, default: true}
 });
 
 //Model

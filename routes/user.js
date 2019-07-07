@@ -6,45 +6,117 @@ const path = require('path');
 const axios = require('axios');
 const fs = require('fs');
 const nodemailer = require('nodemailer');
+const ejs = require('ejs');
 const server = require('../scripts/constants');
 const link = require('../scripts/uri');
+const Slots = require('../sample/slots');
 const { check, validationResult } = require('express-validator/check');
 const verifyToken = require('../scripts/verifyToken');
 const jwt = require('jsonwebtoken');
 const config = require('../config');
+const mail = require('../scripts/mail');
+const sh = require("shorthash");
+const _ = require('lodash');
 
 const User = require('../models/user');
 const Booking = require('../models/booking');
+const EventBooking = require('../models/event_booking');
 const Venue = require('../models/venue');
 const Admin = require('../models/admin');
 
-function ActivityLogForUser(id, phone, activity, description) {
+// function ActivityLogForUser(id, phone, activity, description) {
+//   let activity_log = {
+//       datetime: new Date(),
+//       id:id,
+//       phone:phone,
+//       activity: activity,
+//       description: description
+//   }
+//   User.findOneAndUpdate({_id:id},{$push:{activity_log:activity_log}}).then(admin=>{
+//       console.log("activity log updated")
+//   })
+// }
+
+// function ActivityLogForAdmin(id, username, role, activity, description) {
+//   let activity_log = {
+//       datetime: new Date(),
+//       id:id,
+//       username: username,
+//       role:role,
+//       activity: activity,
+//       description: description
+//   }
+//   Admin.findOneAndUpdate({username:username},{$push:{activity_log:activity_log}}).then(admin=>{
+//       console.log("activity log updated")
+//   })
+// }
+
+const Access = {
+  super_admin:{
+      venue:['read','create','update','delete'],
+      venue_manager:['read','create','update','delete'],
+      venue_staff:['read','create','update','delete'],
+      event:['read','create','update','delete'],
+      coupon:['read','create','update','delete'],
+      users:['read','create','update','delete'],
+      support:['read', 'create'],
+      ads:['read', 'create','update','delete'],
+      booking:['read', 'create','update','delete'],
+      users:['read', 'create','update','delete'],
+
+  },
+  venue_manager:{
+      venue:['read','create','update','delete'],
+      event:['read','create','update','delete'],
+      coupon:['read','create','update','delete'],
+      support:['read', 'create'],
+      booking:['read', 'create','update','delete'],
+  },
+  venue_staff:{
+      venue:['read', 'update'],
+      event:['read'],
+      coupon:['read'],
+      booking:['read', 'create','update','delete'],
+      support:['read', 'create']
+  },
+  user:{
+      venue:['read'],
+      event:['read'],
+      coupon:['read'],
+      support:['read', 'create'],
+      booking:['read', 'create','update','delete'],
+      users:['read','create','update','delete']
+  }
+}
+
+function ActivityLog(id, user_type, activity, message) {
   let activity_log = {
       datetime: new Date(),
       id:id,
-      phone:phone,
+      user_type: user_type,
       activity: activity,
-      description: description
+      message: message
   }
-  User.findOneAndUpdate({_id:id},{$push:{activity_log:activity_log}}).then(admin=>{
+  let user = user_type==="user"?User:Admin
+  user.findOneAndUpdate({_id:id},{$push:{activity_log:activity_log}}).then(admin=>{
       console.log("activity log updated")
   })
 }
 
-function ActivityLogForAdmin(id, username, role, activity, description) {
-  let activity_log = {
-      datetime: new Date(),
-      id:id,
-      username: username,
-      role:role,
-      activity: activity,
-      description: description
+function AccessControl(api_type, action_type) {
+  return function(req,res,next){
+      console.log(req.role)
+      if(!Access[req.role][api_type]){
+          res.status(403).send({status:"failed", message:"permission denied"})
+      }else{
+          if(Access[req.role][api_type].indexOf(action_type)!== -1){
+              next();
+          }else {
+              res.status(403).send({status:"failed", message:"permission denied"})
+          }
+      }
   }
-  Admin.findOneAndUpdate({username:username},{$push:{activity_log:activity_log}}).then(admin=>{
-      console.log("activity log updated")
-  })
 }
-
 
 //Create User
 router.post('/create_user', [
@@ -82,8 +154,10 @@ router.post('/create_user', [
             }else{
               req.body.created_at = moment();
               User.findByIdAndUpdate({_id: req.userId},req.body).then(user=>{
-                User.findOne({phone:req.phone},{__v:0,token:0,_id:0},null).then(user=>{
+                User.findOne({phone:req.phone},{__v:0,token:0},null).then(user=>{
                 res.status(201).send({status: "success", message: "user created", data:user})
+                ActivityLog(req.userId, "user", 'user created', user.name + " created successfully")
+
               })
             })
             }
@@ -100,6 +174,7 @@ router.post('/create_user', [
 router.post('/send_otp',[
   check('phone').isLength({ min: 10, max: 10 }).withMessage('phone number must be 10 digits long'),
 ], (req, res, next) => {
+  console.log("send otp")
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     var result = {};
@@ -155,9 +230,11 @@ router.post('/verify_otp', (req, res, next) => {
     var token = jwt.sign({ id: user._id, phone:user.phone, role:"user" }, config.secret);
       if(user.otp===req.body.otp){
           User.findOneAndUpdate({phone: req.body.phone},{token,last_login:moment()}).then(user=>{
-            User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
+            User.findOne({phone: req.body.phone},{__v:0,token:0},null).then(user=> {
             if(user.email){
               res.status(201).send({status:"success", message:"existing user", token:token, data:user})
+              //Activity Log
+              ActivityLog(req.userId, "user", 'login', user.name + " logged-in successfully")
             }else{
               res.status(201).send({status:"success", message:"new user", token:token})
             }
@@ -170,6 +247,14 @@ router.post('/verify_otp', (req, res, next) => {
 });
 
 
+//Edit User
+router.post('/edit_user/:id',verifyToken, AccessControl('users', 'update'), (req, res, next) => {
+  User.findByIdAndUpdate({_id: req.params.id},req.body).then(user=> {
+    User.findById({_id: req.params.id},{token:0,},null).then(user=> {
+      res.send({status:"success", message:"user edited"})
+    }).catch(next);
+  }).catch(next);
+});
 
 
 //Upload profile picture
@@ -203,141 +288,335 @@ if (!req.files)
 
 
 
-router.post('/block_slot_for_football/:id', verifyToken, (req, res, next) => {
-  Venue.findById({_id:req.params.id}).then(venue=>{
-    Booking.find({$and:[{venue:req.body.venue, booking_date:req.body.booking_date, slot_time:req.body.slot_time}],$or:[{booking_status:"booked",booking_status:"blocked"}]}).then(booking_history=>{
-      let conf = venue.configuration;
-      let types = conf.types;
-      let base_type = conf.base_type;
-      let inventory = {}
-      if(venue.configuration.convertable){
-        for(let i=0;i<types.length; i++){
-          inventory[types[i]] = conf[types[i]];
-        }
-        console.log(inventory)
-        if(booking_history.length>0){
-          let available_inventory = Object.values(booking_history).map(booking =>{
-            inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.venue_type])
-            for(let i=0;i<types.length-1; i++){
-            inventory[types[i]] = parseInt(inventory[base_type] / conf.ratio[types[i]])
-            }
-            console.log(inventory)
-          })
-        }
-      }
-
-
-      if(inventory[req.body.venue_type]<=venue.configuration.convertable?0:booking_history.length){
-        res.status(409).send({status:"failed", message:"slot already booked"})
-      }else{
-        let booking = {
-          booking_date:req.body.booking_date,
-          booking_type:req.body.booking_type,
-          booking_status:"blocked",
-          created_by:req.userId,
-          venue:req.body.venue,
-          venue_id:req.body.venue_id,
-          sport_name:req.body.sport_name,
-          venue_type:req.body.venue_type,
-          amount:req.body.amount,
-          coupons_used:req.body.coupons_used,
-          commission:req.body.commission,
-          slot_time:req.body.slot_time
-        }
-        Booking.create(booking).then(booking=>{
-          res.status(201).send({
-            data: booking,
-            status:'success',
-            message:"slot blocked"
-          })
-          //Activity Log
-          if(req.role){
-            ActivityLogForAdmin(req.userId, req.username, req.role, 'slot blocked', req.username + " blocked " + req.body.venue)
-          }else{
-            ActivityLogForUser(req.userId,  req.phone, 'slot blocked', req.phone + " blocked " + req.body.venue)
-          }
-          setTimeout(() => {
-            Booking.findById({_id:booking._id}).then(booking=>{
-              if(booking.booking_status==="blocked"){
-                Booking.findByIdAndUpdate({_id:booking._id},{booking_status:"timeout"}).then(booking=>{
-                  console.log('cancelled')
-                })
-              }
-            }).catch(next)
-          }, 305000);
-        }).catch(next)
-      }
-    }).catch(next)
-  }).catch(next)
-})
-
-
 router.post('/block_slot/:id', verifyToken, (req, res, next) => {
-  Venue.findById({_id:req.params.id}).then(venue=>{
-    Booking.find({$and:[{venue:req.body.venue, booking_date:req.body.booking_date, slot_time:req.body.slot_time, venue_type:req.body.venue_type}],$or:[{booking_status:"booked",booking_status:"blocked"}]}).then(booking_history=>{
-      let conf = venue.configuration;
-      let types = conf.types;
-
-      if(conf[req.body.venue_type]<=booking_history.length){
-        res.status(409).send({status:"failed", message:"slot already booked"})
-      }else{
-        let booking = {
-          booking_date:req.body.booking_date,
-          booking_type:req.body.booking_type,
-          booking_status:"blocked",
-          created_by:req.userId,
-          venue:req.body.venue,
-          venue_id:req.body.venue_id,
-          sport_name:req.body.sport_name,
-          venue_type:req.body.venue_type,
-          amount:req.body.amount,
-          coupons_used:req.body.coupons_used,
-          commission:req.body.commission,
-          slot_time:req.body.slot_time
-        }
-        Booking.create(booking).then(booking=>{
-          res.status(201).send({
-            data: booking,
-            status:'success',
-            message:"slot blocked"
-          })
-          //Activity Log
-          if(req.role){
-            ActivityLogForAdmin(req.userId, req.username, req.role, 'slot blocked', req.username + " blocked " + req.body.venue)
-          }else{
-            ActivityLogForUser(req.userId,  req.phone, 'slot blocked', req.phone + " blocked " + req.body.venue)
+  function BlockSlot(body,i){
+    return new Promise(function(resolve, reject){
+      Venue.findById({_id:req.params.id}).then(venue=>{
+        console.log(venue.venue.name)
+        Booking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
+        Booking.find({venue:venue.venue.name, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked"]}}).then(booking_history=>{
+          // console.log(booking_history)
+          let conf = venue.configuration;
+          let types = conf.types;
+          let base_type = conf.base_type;
+          let inventory = {};
+          let convertable;
+          for(let i=0;i<types.length; i++){
+            inventory[types[i]] = conf[types[i]];
           }
-          setTimeout(() => {
-            Booking.findById({_id:booking._id}).then(booking=>{
-              if(booking.booking_status==="blocked"){
-                Booking.findByIdAndUpdate({_id:booking._id},{booking_status:"timeout"}).then(booking=>{
-                  console.log('cancelled')
-                })
+          // console.log(inventory)
+          if(venue.configuration.convertable){
+            if(booking_history.length>0){
+              let available_inventory = Object.values(booking_history).map(booking =>{
+                inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.venue_type])
+                for(let i=0;i<types.length-1; i++){
+                inventory[types[i]] = parseInt(inventory[base_type] / conf.ratio[types[i]])
+                }
+                // console.log(inventory)
+              })
+            }
+            convertable = inventory[body.venue_type]<=0
+            console.log(inventory[body.venue_type],booking_history.length)
+          }else{
+            convertable = inventory[body.venue_type]<=booking_history.length
+          }
+          if(convertable){
+            res.status(409).send({status:"failed", message:"slot already booked"})
+          }else{
+            let booking_id;
+              if(bookingOrder.booking_id){
+                var numb = bookingOrder.booking_id.match(/\d/g);
+                numb = numb.join("");
+                var str = "" + (parseInt(numb, 10) + 1)
+                var pad = "TT000000"
+                booking_id = pad.substring(0, pad.length - str.length) + str
+              }else{
+                booking_id = "TT000001";
               }
-            }).catch(next)
-          }, 305000);
-        }).catch(next)
-      }
-    }).catch(next)
-  }).catch(next)
-})
 
-//Slot Booked
-router.post('/book_slot/:id', verifyToken, (req, res, next) => {
-  Booking.findByIdAndUpdate({_id:req.parmas.id},{booking_status:"booked", transaction_id:req.body.transaction_id}).then(booking=>{
-    res.send({
-      data: booking,
-      status:'success',
-      message:"slot booked"
-    })
+            let booking = {
+              booking_id:booking_id,
+              booking_date:body.booking_date,
+              booking_type:body.booking_type,
+              booking_status:"blocked",
+              created_by:req.userId,
+              venue:venue.venue.name,
+              venue_id:body.venue_id,
+              venue_location:venue.venue.lat_long,
+              user_id:body.user_id,
+              sport_name:body.sport_name,
+              venue_type:body.venue_type,
+              amount:body.amount,
+              coupons_used:body.coupons_used,
+              commission:body.commission,
+              start_time:body.start_time,
+              end_time:body.end_time,
+              slot_time:body.slot_time
+            }
+            Booking.create(booking).then(booking=>{
+              resolve(booking)
+              setTimeout(() => {
+                Booking.findById({_id:booking._id}).then(booking=>{
+                  if(booking.booking_status==="blocked"){
+                    Booking.findByIdAndUpdate({_id:booking._id},{booking_status:"timeout"}).then(booking=>{
+                      console.log('cancelled')
+                    })
+                  }
+                }).catch(next)
+              }, 305000);
+            }).catch(error=>{
+              reject()
+            })
+          }
+        }).catch(next)
+      }).catch(next)
+    }).catch(next)
+    }).catch(next)
+  }
+  let promisesToRun = [];
+  for(let i=0;i<req.body.length;i++)
+  {
+    promisesToRun.push(BlockSlot(req.body[i],i))
+  }
+  Promise.all(promisesToRun).then(values => {
+    values = {...values}
+
+    console.log(values)
+    res.send({status:"success", message:"slot blocked", data:values})
+
+    User.findById({_id:req.body[0].user_id}).then(user=>{
     //Activity Log
-    if(req.role){
-      ActivityLogForAdmin(req.userId, req.username, req.role, 'slot booked', req.username + " booked " + req.body.venue)
-    }else{
-      ActivityLogForUser(req.userId,  req.phone, 'slot booked', req.phone + " booked " + req.body.venue)
-    }
+    ActivityLog(req.userId, req.role?req.role:"user", 'slot blocked', user.name + " blocked " + req.body[0].venue)
   })
 })
+})
+
+
+//Slot Booked
+router.post('/book_slot', verifyToken, (req, res, next) => {
+  function BookSlot(body,id){
+    return new Promise(function(resolve, reject){
+      Booking.findByIdAndUpdate({_id:body._id},{booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount, multiple_id:id}).lean().then(booking=>{
+        Booking.findById({_id:body._id}).lean().then(booking=>{
+        resolve(booking)
+
+      }).catch(next)
+    }).catch(next)
+    }).catch(error=>{
+      reject()
+    })
+  }
+  let promisesToRun = [];
+  var id = mongoose.Types.ObjectId();
+  // req.body._id = id
+  console.log(req.body)
+  for(let i=0;i<req.body.length;i++)
+  {
+    promisesToRun.push(BookSlot(req.body[i],id))
+  }
+  Promise.all(promisesToRun).then(values => {
+    // let amount = Object.values(req.body).map(value=>value.booking_amount).reduce((a,b)=>a+b)
+    // Capture the payment
+    var data = {
+      amount:req.body[0].booking_amount*100
+    }
+    //Capture Payment
+    axios.post('https://rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
+      .then(response => {
+        if(response.data.status === "captured")
+        {
+          res.send({status:"success", message:"slot booked"})
+        }
+      })
+      .catch(error => {
+        console.log(error.response)
+        res.send({error:error.response});
+      }).catch(next);
+
+    //Send Sms
+    User.findOne({_id:req.body[0].user_id}).then(user=>{
+      console.log(user)
+      let booking_id = values[0].booking_id
+      let phone = user.phone
+      let venue_name = req.body[0].venue
+      let date = moment(req.body[0].booking_date).format("MMMM Do YYYY")
+      let start_time = Object.values(req.body).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
+      let end_time = Object.values(req.body).reduce((total,value)=>{return total>value.end_time?total:value.end_time},req.body[0].end_time)
+      let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
+      console.log(datetime)
+      axios.get(link.domain+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime)
+      .then(response => {
+        console.log(response.data)
+      }).catch(error=>{
+        console.log(error.response.data)
+      })
+
+      //Send Mail
+      ejs.renderFile('views/mail.ejs',{name:user.name}).then(html=>{
+        mail("support@turftown.in", user.email,"Venue Booked","test",html,response=>{
+          if(response){
+            console.log('success')
+          }else{
+            console.log('failed')
+          }
+        })
+      })
+      //Activity Log
+        ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', user.name + " booked " + req.body[0].venue)
+      }).catch(next)
+  })
+})
+
+router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'create'), (req, res, next) => {
+  let params = req.params.id
+  function BookSlot(body,id,booking_id){
+    return new Promise(function(resolve, reject){
+      Venue.findById({_id:params}).then(venue=>{
+        Booking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
+          Booking.find({$and:[{venue:body.venue, booking_date:body.booking_date, slot_time:body.slot_time}],$or:[{booking_status:"booked",booking_status:"blocked"}]}).then(booking_history=>{
+            // console.log(booking_history)
+            let conf = venue.configuration;
+            let types = conf.types;
+            let base_type = conf.base_type;
+            let inventory = {}
+            let convertable;
+            if(venue.configuration.convertable){
+              for(let i=0;i<types.length; i++){
+                inventory[types[i]] = conf[types[i]];
+              }
+              if(booking_history.length>0){
+                let available_inventory = Object.values(booking_history).map(booking =>{
+                  inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.venue_type])
+                  for(let i=0;i<types.length-1; i++){
+                  inventory[types[i]] = parseInt(inventory[base_type] / conf.ratio[types[i]])
+                  }
+                })
+              }
+              convertable = inventory[body.venue_type]<=0
+            }else{
+              convertable = inventory[body.venue_type]<=booking_history.length
+            }
+            if(convertable){
+              reject()
+              res.status(409).send({status:"failed", message:"slot already booked"})
+            }else{
+              // let booking_id;
+              if(bookingOrder){
+                var numb = booking_id.match(/\d/g);
+                numb = numb.join("");
+                var str = "" + (parseInt(numb, 10) + 1)
+                var pad = "TT000000"
+                booking_id = pad.substring(0, pad.length - str.length) + str
+              }else{
+                booking_id = "TT000001";
+              }
+
+              let booking_data = {
+                booking_id:booking_id,
+                booking_date:body.booking_date,
+                booking_type:body.booking_type,
+                booking_status:"booked",
+                created_by:req.userId,
+                venue:body.venue,
+                venue_id:body.venue_id,
+                venue_location:venue.venue.lat_long,
+                user_id:body.user_id,
+                sport_name:body.sport_name,
+                venue_type:body.venue_type,
+                amount:body.amount,
+                coupons_used:body.coupons_used,
+                commission:body.commission,
+                start_time:body.start_time,
+                end_time:body.end_time,
+                slot_time:body.slot_time,
+                booking_amount:body.booking_amount,
+                multiple_id:id,
+                name:body.name,
+                email:body.email,
+                phone:body.phone,
+              }
+              Booking.create(booking_data).then(booking=>{
+                resolve(booking)
+              }).catch(error=>{
+                reject()
+              })
+            }
+          }).catch(next)
+        }).catch(next)
+      }).catch(next)
+    }).catch(next)
+  }
+  Booking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
+    var id = mongoose.Types.ObjectId();
+    let promisesToRun = [];
+      for(let i=0;i<req.body.length;i++)
+      {
+        promisesToRun.push(BookSlot(req.body[i],id,bookingOrder.booking_id))
+      }
+
+    Promise.all(promisesToRun).then(values => {
+      values = {...values}
+      res.send({status:"success", message:"slot booked", data:values})
+
+        // Send SMS
+        let booking_id = values[0].booking_id
+        let phone = values[0].phone
+        let venue_name = values[0].venue
+        let date = moment(values[0].booking_date).format("MMMM Do YYYY")
+        let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
+        let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},values[0].end_time)
+        let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
+        axios.get(link.domain+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime)
+        .then(response => {
+          console.log(response.data)
+        }).catch(error=>{
+          console.log(error.response.data)
+        })
+        console.log(values[0].amount)
+        
+        let total_amount = Object.values(values).reduce((total,value)=>{
+          console.log(value)
+          console.log(total)
+          console.log(value.amount)
+          return total+value.amount
+          
+        },0)
+        console.log(total_amount)
+        //Send Mail
+        let mailBody = {
+          name:values[0].name,
+          date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
+          venue:values[0].venue,
+          booking_id:values[0].booking_id,
+          slot_time:datetime,
+          quantity:1,
+          total_amount:total_amount,
+          booking_amount:values[0].booking_amount
+        }
+        console.log(req.body[0].email)
+        // console.log(mailBody)
+        ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
+          mail("support@turftown.in", req.body[0].email,"Venue Booked","test",html,response=>{
+            if(response){
+              console.log('success')
+            }else{
+              console.log('failed')
+            }
+          })
+        }).catch(next)
+        //Activity Log
+          ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', req.body[0].name + " booked " + req.body[0].venue)
+      // })
+    }).catch(next)
+  }).catch(next)
+})
+
+//Event Booking
+// router.post('/event_booking', verifyToken, (req, res, next) => {
+//   EventBooking.find({})
+// })
+
+
 function isEmpty (object){
   if(Object.keys(object).length>0){
     return true
@@ -346,10 +625,39 @@ function isEmpty (object){
   }
 }
 
+
+//Cancel Booking
+router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
+  Booking.findOne({booking_id:req.params.id}).then(booking=>{
+    if(booking.booking_type === "app"){
+      axios.post('https://rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
+      .then(response => {
+        if(response.data.entity === "refund")
+        {
+          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"}},{multi:true}).then(bookings=>{
+              res.send({status:"success", message:"booking cancelled"})
+              ActivityLog(req.userId, req.role?req.role:"user", 'slot booking cancelled', booking.name + " cancelled booking in " + booking.venue)
+          }).catch(next);
+        }
+      }).catch(error => {
+        console.log(error)
+      }).catch(next);
+    }else{
+      Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"}},{multi:true}).then(bookings=>{
+          res.send({status:"success", message:"booking cancelled"})
+          ActivityLog(req.userId, req.role?req.role:"user", 'slot booking cancelled', booking.name + " cancelled booking in " + booking.venue)
+      }).catch(next);
+    }
+  }).catch(next)
+})
+
+
 //Slot Booked
 router.post('/slots_available/:id', verifyToken, (req, res, next) => {
   Venue.findById({_id:req.params.id},{bank:0,access:0}).lean().then(venue=>{
-    Booking.find({$and:[{venue:req.body.venue, booking_date:{$gte:req.body.booking_date,$lt:moment(req.body.booking_date).add('days',1)}}],$or:[{booking_status:"booked",booking_status:"blocked"}]}).then(booking_history=>{
+    Booking.find({$and:[{venue:req.body.venue, booking_date:{$gte:req.body.booking_date,$lt:moment(req.body.booking_date).add('days',1)}}],booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
+      // console.log(booking_history)
+      // console.log(venue)
       if(venue.configuration.convertable){
         let conf = venue.configuration;
         let types = conf.types;
@@ -410,42 +718,343 @@ router.post('/slots_available/:id', verifyToken, (req, res, next) => {
 
 
 //Booking History
+router.post('/slots_list/:venue_id', verifyToken, (req, res, next) => {
+  let combinedSlots = [...Slots[0].item, ...Slots[1].item, ...Slots[2].item, ...Slots[3].item];
+  Venue.findById({_id:req.params.venue_id}).then(venue=>{
+    let venue_type_index = venue.configuration.types.indexOf(req.body.venue_type)
+    let find_day = venue.configuration.pricing.filter(value=>value.day===req.body.day)[0]
+    let slots = combinedSlots.map(slot=>{
+      let find_price = find_day.rate.filter((price,index)=>{
+        let price_time = price.time.replace(/[#:]/g,'');
+        let price_start_time = price_time.split("-")[0]
+        let price_end_time = price_time.split("-")[1]
+
+        let slot_start_time = slot.timeRepresentation.split("-")[0]
+        let slot_end_time = slot.timeRepresentation.split("-")[1]
+        // console.log(price_start_time)
+        // console.log(price_end_time)
+        // console.log(slot_start_time)
+        // console.log(slot_end_time)
+        if(price_start_time < slot_start_time && price_end_time > slot_end_time){
+          // 0500 < 0600 && 1200 > 0630
+          return price
+        }else if(index===find_day.rate.length - 1){
+          return price
+        }
+      })
+      let price = find_price[0].pricing[venue_type_index]
+      slot.price = parseInt(price,10)
+
+
+
+      return slot
+    })
+
+    let slots_list = [
+      {
+        text: "ALL NIGHTERS",
+        name: "One",
+        category: "n",
+        id: 0,
+        item: Object.values(slots).filter((value,index)=>index>=0&&index<13)
+      },
+      {
+        text: "MORNING",
+        name: "One",
+        category: "m",
+        id: 1,
+        item: Object.values(slots).filter((value,index)=>index>=13&&index<26)
+      },
+      {
+        text: "AFTERNOON",
+        name: "One",
+        category: "a",
+        id: 2,
+        item: Object.values(slots).filter((value,index)=>index>=26&&index<39)
+      },
+      {
+        text: "PRIME TIME",
+        name: "One",
+        category: "p",
+        id: 3,
+        item: Object.values(slots).filter((value,index)=>index>=39&&index<52)
+      }
+    ]
+
+    res.send({slots:slots_list})
+  // })
+  })
+})
+
+
+//Booking History
 router.post('/booking_history', verifyToken, (req, res, next) => {
-  Booking.find({phone:req.body.phone,booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(booking=>{
-      console.log(booking)
-      res.send({status:"success", message:"booking history fetched", data:booking})
+  let filter = {
+    booking_status:{$in:["booked","completed"]},
+    created_by:req.userId,
+    booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}
+  }
+  req.role==="super_admin"?delete filter.created_by:null
+  Booking.find(filter).then(booking=>{
+      let result = {}
+      let data = Object.values(booking).map((value,index)=>{
+        if(!result[value.multiple_id]){
+          result[value.multiple_id] = value
+        }else{
+          result[value.multiple_id].amount = result[value.multiple_id].amount + value.amount
+          ////Slot time combining
+          let slot_time = result[value.multiple_id].slot_time.split("-")
+          let value_slot_time = value.slot_time.split("-")
+          let array = [...slot_time,...value_slot_time]
+          array = array.map(function (x) {
+            return parseInt(x);
+          });
+          let start_time = Math.min(...array)
+          let end_time = Math.max(...array)
+          start_time = start_time.toString().length === 1?"000"+start_time.toString():start_time.toString().length === 2?"00"+start_time.toString():start_time.toString().length === 3?"0"+start_time.toString():start_time
+
+          end_time = end_time.toString().length === 1?"000"+end_time.toString():end_time.toString().length === 2?"00"+end_time.toString():end_time.toString().length === 3?"0"+end_time.toString():end_time
+          result[value.multiple_id].slot_time = start_time +"-"+ end_time
+
+          result[value.multiple_id].start_time = result[value.multiple_id].start_time?result[value.multiple_id].start_time<value.start_time?result[value.multiple_id].start_time:value.start_time:value.start_time
+
+          result[value.multiple_id].end_time = result[value.multiple_id].end_time?result[value.multiple_id].end_time>value.end_time?result[value.multiple_id].end_time:value.end_time:value.end_time
+        }
+      })
+      result = Object.values(result)
+      res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
   })
 
-// router.post('/create_token', (req, res, next) => {
-//   User.create(req.body).then(user=>{
-//     // create a token
-//     var token = jwt.sign({ id: user._id, phone:user.phone }, config.secret);
-//     User.findOneAndUpdate({_id:user._id}, {token}).then(user=>{
-//       res.status(201).send({ auth: true, token: token });
-//     })
-//   })
-// });
+  //Booking History Based on venue
+router.post('/booking_history_by_venue', verifyToken, (req, res, next) => {
+  Booking.find({booking_status:{$in:["booked"]}, venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(booking=>{
+      // console.log(booking)
+      let result = {}
+      let data = Object.values(booking).map((value,index)=>{
+        if(!result[value.multiple_id]){
+          result[value.multiple_id] = value
+        }else{
+          result[value.multiple_id].amount = result[value.multiple_id].amount + value.amount
+          ////Slot time combining
+          let slot_time = result[value.multiple_id].slot_time.split("-")
+          let value_slot_time = value.slot_time.split("-")
+          let array = [...slot_time,...value_slot_time]
+          array = array.map(function (x) {
+            return parseInt(x);
+          });
+          let start_time = Math.min(...array)
+          let end_time = Math.max(...array)
+          start_time = start_time.toString().length === 1?"000"+start_time.toString():start_time.toString().length === 2?"00"+start_time.toString():start_time.toString().length === 3?"0"+start_time.toString():start_time
 
-// router.post('/verify_token', [verifyToken,
-//   check('email').isEmail().withMessage('email is incorrect'),
-//   check('email').exists().isLength({ min: 1}).withMessage('email cannot be empty'),
-//   check('name').exists().isLength({ min: 1}).withMessage('name cannot be empty'),
-//   check('dob').isISO8601().withMessage('date of birth needs to be a valid date'),
-//   check('gender').exists().isLength({ min: 1}).withMessage('gender cannot be empty'),
-// ], (req, res, next) => {
-//   const errors = validationResult(req);
-//   if (!errors.isEmpty()) {
-//     var result = {};
-//     var errorsList = errors.array();
-//     for(var i = 0; i < errorsList.length; i++)
-//     {
-//         result[errorsList[i].param] = errorsList[i].msg;
-//     }
-//     return res.status(422).json({ errors: result});
-//   }
-//   // res.send({id:req.userId,phone:req.phone})
-// });
+          end_time = end_time.toString().length === 1?"000"+end_time.toString():end_time.toString().length === 2?"00"+end_time.toString():end_time.toString().length === 3?"0"+end_time.toString():end_time
+          result[value.multiple_id].slot_time = start_time +"-"+ end_time
+
+          result[value.multiple_id].start_time = result[value.multiple_id].start_time?result[value.multiple_id].start_time<value.start_time?result[value.multiple_id].start_time:value.start_time:value.start_time
+
+          result[value.multiple_id].end_time = result[value.multiple_id].end_time?result[value.multiple_id].end_time>value.end_time?result[value.multiple_id].end_time:value.end_time:value.end_time
+        }
+      })
+      result = Object.values(result)
+      res.send({status:"success", message:"booking history fetched", data:result})
+    }).catch(next)
+  })
+
+  //Booking History
+router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
+  Booking.find({booking_status:{$in:["booked"]},venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}}).then(booking=>{
+      let result = {}
+      // console.log(booking);
+      let data = Object.values(booking).map((value,index)=>{
+        if(!result[value.multiple_id]){
+          result[value.multiple_id] = value
+        }else{
+          result[value.multiple_id].amount = result[value.multiple_id].amount + value.amount
+          ////Slot time combining
+          let slot_time = result[value.multiple_id].slot_time.split("-")
+          let value_slot_time = value.slot_time.split("-")
+          let array = [...slot_time,...value_slot_time]
+          array = array.map(function (x) {
+            return parseInt(x);
+          });
+          let start_time = Math.min(...array)
+          let end_time = Math.max(...array)
+          start_time = start_time.toString().length === 1?"000"+start_time.toString():start_time.toString().length === 2?"00"+start_time.toString():start_time.toString().length === 3?"0"+start_time.toString():start_time
+
+          end_time = end_time.toString().length === 1?"000"+end_time.toString():end_time.toString().length === 2?"00"+end_time.toString():end_time.toString().length === 3?"0"+end_time.toString():end_time
+          result[value.multiple_id].slot_time = start_time +"-"+ end_time
+
+          result[value.multiple_id].start_time = result[value.multiple_id].start_time?result[value.multiple_id].start_time<value.start_time?result[value.multiple_id].start_time:value.start_time:value.start_time
+
+          result[value.multiple_id].end_time = result[value.multiple_id].end_time?result[value.multiple_id].end_time>value.end_time?result[value.multiple_id].end_time:value.end_time:value.end_time
+        }
+      })
+      result = Object.values(result)
+      res.send({status:"success", message:"booking history fetched", data:result})
+    }).catch(next)
+  })
+
+ //Booking History_from_app
+ router.post('/booking_history_from_app', verifyToken, (req, res, next) => {
+  Booking.find({booking_status:{$in:["booked"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}, booking_type:"app"}).then(booking=>{
+      let result = {}
+      let data = Object.values(booking).map((value,index)=>{
+        if(!result[value.multiple_id]){
+          result[value.multiple_id] = value
+        }else{
+          result[value.multiple_id].amount = result[value.multiple_id].amount + value.amount
+          ////Slot time combining
+          let slot_time = result[value.multiple_id].slot_time.split("-")
+          let value_slot_time = value.slot_time.split("-")
+          let array = [...slot_time,...value_slot_time]
+          array = array.map(function (x) {
+            return parseInt(x);
+          });
+          let start_time = Math.min(...array)
+          let end_time = Math.max(...array)
+          start_time = start_time.toString().length === 1?"000"+start_time.toString():start_time.toString().length === 2?"00"+start_time.toString():start_time.toString().length === 3?"0"+start_time.toString():start_time
+
+          end_time = end_time.toString().length === 1?"000"+end_time.toString():end_time.toString().length === 2?"00"+end_time.toString():end_time.toString().length === 3?"0"+end_time.toString():end_time
+          result[value.multiple_id].slot_time = start_time +"-"+ end_time
+
+          result[value.multiple_id].start_time = result[value.multiple_id].start_time?result[value.multiple_id].start_time<value.start_time?result[value.multiple_id].start_time:value.start_time:value.start_time
+
+          result[value.multiple_id].end_time = result[value.multiple_id].end_time?result[value.multiple_id].end_time>value.end_time?result[value.multiple_id].end_time:value.end_time:value.end_time
+        }
+      })
+      result = Object.values(result)
+      res.send({status:"success", message:"booking history fetched", data:result})
+    }).catch(next)
+  })
+
+//Booking completed
+router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
+  Booking.updateMany({booking_id:req.params.id},{booking_status:"completed"},{multi:true}).then(booking=>{
+    Booking.find({booking_id:req.params.id}).then(booking=>{
+      let result = {}
+      let data = Object.values(booking).map((value,index)=>{
+        if(!result[value.multiple_id]){
+          result[value.multiple_id] = value
+        }else{
+          result[value.multiple_id].amount = result[value.multiple_id].amount + value.amount
+          ////Slot time combining
+          let slot_time = result[value.multiple_id].slot_time.split("-")
+          let value_slot_time = value.slot_time.split("-")
+          let array = [...slot_time,...value_slot_time]
+          array = array.map(function (x) {
+            return parseInt(x);
+          });
+          let start_time = Math.min(...array)
+          let end_time = Math.max(...array)
+          start_time = start_time.toString().length === 1?"000"+start_time.toString():start_time.toString().length === 2?"00"+start_time.toString():start_time.toString().length === 3?"0"+start_time.toString():start_time
+
+          end_time = end_time.toString().length === 1?"000"+end_time.toString():end_time.toString().length === 2?"00"+end_time.toString():end_time.toString().length === 3?"0"+end_time.toString():end_time
+          result[value.multiple_id].slot_time = start_time +"-"+ end_time
+
+          result[value.multiple_id].start_time = result[value.multiple_id].start_time?result[value.multiple_id].start_time<value.start_time?result[value.multiple_id].start_time:value.start_time:value.start_time
+
+          result[value.multiple_id].end_time = result[value.multiple_id].end_time?result[value.multiple_id].end_time>value.end_time?result[value.multiple_id].end_time:value.end_time:value.end_time
+        }
+      })
+      result = Object.values(result)
+      res.send({status:"success", message:"booking completed", data:result})
+    })
+  })
+})
+
+//Booking History_from_app
+router.post('/booking_completed_list_by_venue', verifyToken, (req, res, next) => {
+  Booking.find({booking_status:"completed", venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(booking=>{
+      let result = {}
+      let data = Object.values(booking).map((value,index)=>{
+        if(!result[value.multiple_id]){
+          result[value.multiple_id] = value
+        }else{
+          result[value.multiple_id].amount = result[value.multiple_id].amount + value.amount
+          ////Slot time combining
+          let slot_time = result[value.multiple_id].slot_time.split("-")
+          let value_slot_time = value.slot_time.split("-")
+          let array = [...slot_time,...value_slot_time]
+          array = array.map(function (x) {
+            return parseInt(x);
+          });
+          let start_time = Math.min(...array)
+          let end_time = Math.max(...array)
+          start_time = start_time.toString().length === 1?"000"+start_time.toString():start_time.toString().length === 2?"00"+start_time.toString():start_time.toString().length === 3?"0"+start_time.toString():start_time
+
+          end_time = end_time.toString().length === 1?"000"+end_time.toString():end_time.toString().length === 2?"00"+end_time.toString():end_time.toString().length === 3?"0"+end_time.toString():end_time
+          result[value.multiple_id].slot_time = start_time +"-"+ end_time
+
+          result[value.multiple_id].start_time = result[value.multiple_id].start_time?result[value.multiple_id].start_time<value.start_time?result[value.multiple_id].start_time:value.start_time:value.start_time
+
+          result[value.multiple_id].end_time = result[value.multiple_id].end_time?result[value.multiple_id].end_time>value.end_time?result[value.multiple_id].end_time:value.end_time:value.end_time
+        }
+      })
+      result = Object.values(result)
+      res.send({status:"success", message:"booking history fetched", data:result})
+    }).catch(next)
+  })
+
+  //Booking History_from_app
+router.post('/booking_completed_list', verifyToken, (req, res, next) => {
+  Booking.find({booking_status:"completed", booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(booking=>{
+      let result = {}
+      let data = Object.values(booking).map((value,index)=>{
+        if(!result[value.multiple_id]){
+          result[value.multiple_id] = value
+        }else{
+          result[value.multiple_id].amount = result[value.multiple_id].amount + value.amount
+          ////Slot time combining
+          let slot_time = result[value.multiple_id].slot_time.split("-")
+          let value_slot_time = value.slot_time.split("-")
+          let array = [...slot_time,...value_slot_time]
+          array = array.map(function (x) {
+            return parseInt(x);
+          });
+          let start_time = Math.min(...array)
+          let end_time = Math.max(...array)
+          start_time = start_time.toString().length === 1?"000"+start_time.toString():start_time.toString().length === 2?"00"+start_time.toString():start_time.toString().length === 3?"0"+start_time.toString():start_time
+
+          end_time = end_time.toString().length === 1?"000"+end_time.toString():end_time.toString().length === 2?"00"+end_time.toString():end_time.toString().length === 3?"0"+end_time.toString():end_time
+          result[value.multiple_id].slot_time = start_time +"-"+ end_time
+
+          result[value.multiple_id].start_time = result[value.multiple_id].start_time?result[value.multiple_id].start_time<value.start_time?result[value.multiple_id].start_time:value.start_time:value.start_time
+
+          result[value.multiple_id].end_time = result[value.multiple_id].end_time?result[value.multiple_id].end_time>value.end_time?result[value.multiple_id].end_time:value.end_time:value.end_time
+        }
+      })
+      result = Object.values(result)
+      res.send({status:"success", message:"booking history fetched", data:result})
+    }).catch(next)
+  })
+
+//Booking History
+router.post('/test_sms', verifyToken, (req, res, next) => {
+  let booking_id = "sh.unique"
+  let venue_name = "kilpauk"
+  let phone = "7401415754"
+  let date = "May 15"
+  axios.get(link.domain+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+date)
+    .then(response => {
+      res.send({data:response.data})
+    }).catch(error=>{
+      res.send(error.response)
+    })
+})
+
+//Booking History
+router.post('/test_mail', verifyToken, (req, res, next) => {
+  // let html = fs.readFileSync('views/mail.ejs',{encoding:'utf-8'});
+  ejs.renderFile('views/mail.ejs',{name:req.body.name}).then(html=>{
+    mail("support@turftown.in", "kishorepadmanaban@gmail.com","test","test",html,response=>{
+      if(response){
+        res.send({status:"success"})
+      }else{
+        res.send({status:"failed"})
+      }
+    })
+  }).catch(next)
+})
 
 
 

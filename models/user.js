@@ -19,7 +19,8 @@ const schema = new Schema({
   gender:String,
   login_type:String,
   sports_interest:Array,
-  activity_log:Array
+  activity_log:Array,
+  status:{type:Boolean, default:true}
 });
 
 //Model

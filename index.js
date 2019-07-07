@@ -7,6 +7,9 @@ const path = require('path');
 
 const app = express();
 
+// set the view engine to ejs
+app.set('view engine', 'ejs');
+
 mongoose.Promise  = global.Promise;
 
 //Mongodb connection
@@ -37,14 +40,14 @@ app.use(function(err,req,res,next){
   res.status(422).send({error:err.message});
 });
 
-// app.use(express.static(path.join(__dirname, 'build')));
+app.use(express.static(path.join(__dirname, 'build')));
 
-// app.get('*', function (req, res) {
-//   res.sendFile(path.join(__dirname, 'build', 'index.html'));
-// });
+app.get('*', function (req, res) {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
 
 //Port listen
-let port = 3050;
+let port = 3040;
 app.listen(process.env.port || port, function(){
   console.log("Port Listening "+port);
 });

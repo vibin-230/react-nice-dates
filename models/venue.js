@@ -15,6 +15,7 @@ const schema = new Schema({
   bank:Object,
   features:Object,
   venue:Object,
+  game_type:Object,
   // venue_display_picture:String,
   // venue_cover_picture:Array,
   rating:Array,

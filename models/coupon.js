@@ -11,6 +11,7 @@ const schema = new Schema({
   title:String,
   description:String,
   code:String,
+  type:String,
   first_time_user:Boolean,
   discount:Number,
   discount_limit:Number,
@@ -18,9 +19,13 @@ const schema = new Schema({
   usage_limit_per_user:Number,
   start_date:Date,
   end_date:Date,
-  offer_type:String,
+  start_time:Date,
+  end_time:Date,
   days:Array,
-  venue:Array
+  offer_type:String,
+  venue:Array,
+  event:Array,
+  status:{type:Boolean, default: true}
 });
 
 //Model

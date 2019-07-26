@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
 const moment = require('moment');
+const momentTZ = require('moment-timezone');
 const path = require('path');
 const axios = require('axios');
 const fs = require('fs');
@@ -17,6 +18,7 @@ const config = require('../config');
 const mail = require('../scripts/mail');
 const sh = require("shorthash");
 const _ = require('lodash');
+const combineSlots = require('../scripts/combineSlots')
 
 const User = require('../models/user');
 const Booking = require('../models/booking');
@@ -289,12 +291,12 @@ if (!req.files)
 
 
 router.post('/block_slot/:id', verifyToken, (req, res, next) => {
-  function BlockSlot(body,i){
+  function BlockSlot(body,id,booking_id){
     return new Promise(function(resolve, reject){
       Venue.findById({_id:req.params.id}).then(venue=>{
         console.log(venue.venue.name)
         Booking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
-        Booking.find({venue:venue.venue.name, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked"]}}).then(booking_history=>{
+        Booking.find({venue:venue.venue.name, venue_id:req.params.id, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked"]}}).then(booking_history=>{
           // console.log(booking_history)
           let conf = venue.configuration;
           let types = conf.types;
@@ -308,7 +310,7 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
           if(venue.configuration.convertable){
             if(booking_history.length>0){
               let available_inventory = Object.values(booking_history).map(booking =>{
-                inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.venue_type])
+                inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.event_type])
                 for(let i=0;i<types.length-1; i++){
                 inventory[types[i]] = parseInt(inventory[base_type] / conf.ratio[types[i]])
                 }
@@ -323,8 +325,7 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
           if(convertable){
             res.status(409).send({status:"failed", message:"slot already booked"})
           }else{
-            let booking_id;
-              if(bookingOrder.booking_id){
+              if(booking_id){
                 var numb = bookingOrder.booking_id.match(/\d/g);
                 numb = numb.join("");
                 var str = "" + (parseInt(numb, 10) + 1)
@@ -351,7 +352,15 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
               commission:body.commission,
               start_time:body.start_time,
               end_time:body.end_time,
-              slot_time:body.slot_time
+              slot_time:body.slot_time,
+              booking_amount:body.booking_amount,
+              multiple_id:id,
+              name:body.name,
+              email:body.email,
+              phone:body.phone,
+              card:body.card,
+              upi:body.upi,
+              cash:body.cash
             }
             Booking.create(booking).then(booking=>{
               resolve(booking)
@@ -373,22 +382,25 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
     }).catch(next)
     }).catch(next)
   }
-  let promisesToRun = [];
-  for(let i=0;i<req.body.length;i++)
-  {
-    promisesToRun.push(BlockSlot(req.body[i],i))
-  }
-  Promise.all(promisesToRun).then(values => {
-    values = {...values}
+  Booking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
+    var id = mongoose.Types.ObjectId();
+    let promisesToRun = [];
+    for(let i=0;i<req.body.length;i++)
+    {
+      promisesToRun.push(BlockSlot(req.body[i],id,bookingOrder.booking_id))
+    }
+    Promise.all(promisesToRun).then(values => {
+      values = {...values}
 
-    console.log(values)
-    res.send({status:"success", message:"slot blocked", data:values})
+      console.log(values)
+      res.send({status:"success", message:"slot blocked", data:values})
 
-    User.findById({_id:req.body[0].user_id}).then(user=>{
-    //Activity Log
-    ActivityLog(req.userId, req.role?req.role:"user", 'slot blocked', user.name + " blocked " + req.body[0].venue)
+      User.findById({_id:req.body[0].user_id}).then(user=>{
+      //Activity Log
+      ActivityLog(req.userId, req.role?req.role:"user", 'slot blocked', user.name + " blocked " + req.body[0].venue)
+    })
   })
-})
+  })
 })
 
 
@@ -444,7 +456,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
       let end_time = Object.values(req.body).reduce((total,value)=>{return total>value.end_time?total:value.end_time},req.body[0].end_time)
       let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
       console.log(datetime)
-      axios.get(link.domain+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime)
+      axios.get(link.domain+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name)
       .then(response => {
         console.log(response.data)
       }).catch(error=>{
@@ -461,8 +473,20 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
           }
         })
       })
+      //Send Mail to Venue Manager
+      // Admin.findOne({venue:{$in:[values[0].venue_id]}}).then(admin=>{
+      //   ejs.renderFile('views/mail.ejs',{name:user.name}).then(html=>{
+      //     mail("support@turftown.in", admin.email,"Venue Booked","test",html,response=>{
+      //       if(response){
+      //         console.log('success')
+      //       }else{
+      //         console.log('failed')
+      //       }
+      //     })
+      //   })
+      // })
       //Activity Log
-        ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', user.name + " booked " + req.body[0].venue)
+        ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', user.name + " booked " + req.body[0].venue + "at" + momentTZ().tz("Asia/Kolkata"))
       }).catch(next)
   })
 })
@@ -473,7 +497,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
     return new Promise(function(resolve, reject){
       Venue.findById({_id:params}).then(venue=>{
         Booking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
-          Booking.find({$and:[{venue:body.venue, booking_date:body.booking_date, slot_time:body.slot_time}],$or:[{booking_status:"booked",booking_status:"blocked"}]}).then(booking_history=>{
+          Booking.find({$and:[{venue:body.venue,venue_id:req.params.id, booking_date:body.booking_date, slot_time:body.slot_time}],$or:[{booking_status:"booked",booking_status:"blocked"}]}).then(booking_history=>{
             // console.log(booking_history)
             let conf = venue.configuration;
             let types = conf.types;
@@ -518,6 +542,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
                 booking_status:"booked",
                 created_by:req.userId,
                 venue:body.venue,
+                area:venue.area,
                 venue_id:body.venue_id,
                 venue_location:venue.venue.lat_long,
                 user_id:body.user_id,
@@ -534,6 +559,10 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
                 name:body.name,
                 email:body.email,
                 phone:body.phone,
+                card:body.card,
+                upi:body.upi,
+                cash:body.cash,
+                venue_discount:body.venue_discount
               }
               Booking.create(booking_data).then(booking=>{
                 resolve(booking)
@@ -566,7 +595,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
         let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
         let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},values[0].end_time)
         let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
-        axios.get(link.domain+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime)
+        axios.get(link.domain+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name)
         .then(response => {
           console.log(response.data)
         }).catch(error=>{
@@ -586,7 +615,10 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
         let mailBody = {
           name:values[0].name,
           date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
+          day:moment(values[0].booking_date).format("Do"),
           venue:values[0].venue,
+          area:values[0].area,
+          venue_type:values[0].venue_type,
           booking_id:values[0].booking_id,
           slot_time:datetime,
           quantity:1,
@@ -605,10 +637,20 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
           })
         }).catch(next)
         //Activity Log
-          ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', req.body[0].name + " booked " + req.body[0].venue)
+          ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', req.body[0].name + " booked " + req.body[0].venue+ "at" + momentTZ().tz("Asia/Kolkata"))
       // })
     }).catch(next)
   }).catch(next)
+})
+
+//Booking completed
+router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
+  Booking.updateMany({booking_id:req.params.id},req.body,{multi:true}).then(booking=>{
+    Booking.find({booking_id:req.params.id}).then(booking=>{
+      result = Object.values(combineSlots(booking))
+      res.send({status:"success", message:"booking completed", data:result})
+    })
+  })
 })
 
 //Event Booking
@@ -645,7 +687,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
     }else{
       Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"}},{multi:true}).then(bookings=>{
           res.send({status:"success", message:"booking cancelled"})
-          ActivityLog(req.userId, req.role?req.role:"user", 'slot booking cancelled', booking.name + " cancelled booking in " + booking.venue)
+          ActivityLog(req.userId, req.role?req.role:"user", 'slot booking cancelled', booking.name + " cancelled booking in " + booking.venue+ "at" + momentTZ().tz("Asia/Kolkata"))
       }).catch(next);
     }
   }).catch(next)
@@ -655,7 +697,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
 //Slot Booked
 router.post('/slots_available/:id', verifyToken, (req, res, next) => {
   Venue.findById({_id:req.params.id},{bank:0,access:0}).lean().then(venue=>{
-    Booking.find({$and:[{venue:req.body.venue, booking_date:{$gte:req.body.booking_date,$lt:moment(req.body.booking_date).add('days',1)}}],booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
+    Booking.find({$and:[{venue:req.body.venue, venue_id:req.params.id, booking_date:{$gte:req.body.booking_date,$lt:moment(req.body.booking_date).add('days',1)}}],booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
       // console.log(booking_history)
       // console.log(venue)
       if(venue.configuration.convertable){
@@ -796,32 +838,7 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
   }
   req.role==="super_admin"?delete filter.created_by:null
   Booking.find(filter).then(booking=>{
-      let result = {}
-      let data = Object.values(booking).map((value,index)=>{
-        if(!result[value.multiple_id]){
-          result[value.multiple_id] = value
-        }else{
-          result[value.multiple_id].amount = result[value.multiple_id].amount + value.amount
-          ////Slot time combining
-          let slot_time = result[value.multiple_id].slot_time.split("-")
-          let value_slot_time = value.slot_time.split("-")
-          let array = [...slot_time,...value_slot_time]
-          array = array.map(function (x) {
-            return parseInt(x);
-          });
-          let start_time = Math.min(...array)
-          let end_time = Math.max(...array)
-          start_time = start_time.toString().length === 1?"000"+start_time.toString():start_time.toString().length === 2?"00"+start_time.toString():start_time.toString().length === 3?"0"+start_time.toString():start_time
-
-          end_time = end_time.toString().length === 1?"000"+end_time.toString():end_time.toString().length === 2?"00"+end_time.toString():end_time.toString().length === 3?"0"+end_time.toString():end_time
-          result[value.multiple_id].slot_time = start_time +"-"+ end_time
-
-          result[value.multiple_id].start_time = result[value.multiple_id].start_time?result[value.multiple_id].start_time<value.start_time?result[value.multiple_id].start_time:value.start_time:value.start_time
-
-          result[value.multiple_id].end_time = result[value.multiple_id].end_time?result[value.multiple_id].end_time>value.end_time?result[value.multiple_id].end_time:value.end_time:value.end_time
-        }
-      })
-      result = Object.values(result)
+      result = Object.values(combineSlots(booking))
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
   })
@@ -829,67 +846,17 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
   //Booking History Based on venue
 router.post('/booking_history_by_venue', verifyToken, (req, res, next) => {
   Booking.find({booking_status:{$in:["booked"]}, venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(booking=>{
-      // console.log(booking)
-      let result = {}
-      let data = Object.values(booking).map((value,index)=>{
-        if(!result[value.multiple_id]){
-          result[value.multiple_id] = value
-        }else{
-          result[value.multiple_id].amount = result[value.multiple_id].amount + value.amount
-          ////Slot time combining
-          let slot_time = result[value.multiple_id].slot_time.split("-")
-          let value_slot_time = value.slot_time.split("-")
-          let array = [...slot_time,...value_slot_time]
-          array = array.map(function (x) {
-            return parseInt(x);
-          });
-          let start_time = Math.min(...array)
-          let end_time = Math.max(...array)
-          start_time = start_time.toString().length === 1?"000"+start_time.toString():start_time.toString().length === 2?"00"+start_time.toString():start_time.toString().length === 3?"0"+start_time.toString():start_time
-
-          end_time = end_time.toString().length === 1?"000"+end_time.toString():end_time.toString().length === 2?"00"+end_time.toString():end_time.toString().length === 3?"0"+end_time.toString():end_time
-          result[value.multiple_id].slot_time = start_time +"-"+ end_time
-
-          result[value.multiple_id].start_time = result[value.multiple_id].start_time?result[value.multiple_id].start_time<value.start_time?result[value.multiple_id].start_time:value.start_time:value.start_time
-
-          result[value.multiple_id].end_time = result[value.multiple_id].end_time?result[value.multiple_id].end_time>value.end_time?result[value.multiple_id].end_time:value.end_time:value.end_time
-        }
-      })
-      result = Object.values(result)
+      result = Object.values(combineSlots(booking))
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
   })
 
   //Booking History
 router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
-  Booking.find({booking_status:{$in:["booked"]},venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}}).then(booking=>{
-      let result = {}
-      // console.log(booking);
-      let data = Object.values(booking).map((value,index)=>{
-        if(!result[value.multiple_id]){
-          result[value.multiple_id] = value
-        }else{
-          result[value.multiple_id].amount = result[value.multiple_id].amount + value.amount
-          ////Slot time combining
-          let slot_time = result[value.multiple_id].slot_time.split("-")
-          let value_slot_time = value.slot_time.split("-")
-          let array = [...slot_time,...value_slot_time]
-          array = array.map(function (x) {
-            return parseInt(x);
-          });
-          let start_time = Math.min(...array)
-          let end_time = Math.max(...array)
-          start_time = start_time.toString().length === 1?"000"+start_time.toString():start_time.toString().length === 2?"00"+start_time.toString():start_time.toString().length === 3?"0"+start_time.toString():start_time
-
-          end_time = end_time.toString().length === 1?"000"+end_time.toString():end_time.toString().length === 2?"00"+end_time.toString():end_time.toString().length === 3?"0"+end_time.toString():end_time
-          result[value.multiple_id].slot_time = start_time +"-"+ end_time
-
-          result[value.multiple_id].start_time = result[value.multiple_id].start_time?result[value.multiple_id].start_time<value.start_time?result[value.multiple_id].start_time:value.start_time:value.start_time
-
-          result[value.multiple_id].end_time = result[value.multiple_id].end_time?result[value.multiple_id].end_time>value.end_time?result[value.multiple_id].end_time:value.end_time:value.end_time
-        }
-      })
-      result = Object.values(result)
+  console.log(req.body.start_time);
+  console.log(req.body.end_time);
+  Booking.find({booking_status:{$in:["booked","completed"]},venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}}).then(booking=>{
+      result = Object.values(combineSlots(booking))
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
   })
@@ -897,100 +864,17 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
  //Booking History_from_app
  router.post('/booking_history_from_app', verifyToken, (req, res, next) => {
   Booking.find({booking_status:{$in:["booked"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}, booking_type:"app"}).then(booking=>{
-      let result = {}
-      let data = Object.values(booking).map((value,index)=>{
-        if(!result[value.multiple_id]){
-          result[value.multiple_id] = value
-        }else{
-          result[value.multiple_id].amount = result[value.multiple_id].amount + value.amount
-          ////Slot time combining
-          let slot_time = result[value.multiple_id].slot_time.split("-")
-          let value_slot_time = value.slot_time.split("-")
-          let array = [...slot_time,...value_slot_time]
-          array = array.map(function (x) {
-            return parseInt(x);
-          });
-          let start_time = Math.min(...array)
-          let end_time = Math.max(...array)
-          start_time = start_time.toString().length === 1?"000"+start_time.toString():start_time.toString().length === 2?"00"+start_time.toString():start_time.toString().length === 3?"0"+start_time.toString():start_time
-
-          end_time = end_time.toString().length === 1?"000"+end_time.toString():end_time.toString().length === 2?"00"+end_time.toString():end_time.toString().length === 3?"0"+end_time.toString():end_time
-          result[value.multiple_id].slot_time = start_time +"-"+ end_time
-
-          result[value.multiple_id].start_time = result[value.multiple_id].start_time?result[value.multiple_id].start_time<value.start_time?result[value.multiple_id].start_time:value.start_time:value.start_time
-
-          result[value.multiple_id].end_time = result[value.multiple_id].end_time?result[value.multiple_id].end_time>value.end_time?result[value.multiple_id].end_time:value.end_time:value.end_time
-        }
-      })
-      result = Object.values(result)
+      result = Object.values(combineSlots(booking))
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
   })
 
-//Booking completed
-router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
-  Booking.updateMany({booking_id:req.params.id},{booking_status:"completed"},{multi:true}).then(booking=>{
-    Booking.find({booking_id:req.params.id}).then(booking=>{
-      let result = {}
-      let data = Object.values(booking).map((value,index)=>{
-        if(!result[value.multiple_id]){
-          result[value.multiple_id] = value
-        }else{
-          result[value.multiple_id].amount = result[value.multiple_id].amount + value.amount
-          ////Slot time combining
-          let slot_time = result[value.multiple_id].slot_time.split("-")
-          let value_slot_time = value.slot_time.split("-")
-          let array = [...slot_time,...value_slot_time]
-          array = array.map(function (x) {
-            return parseInt(x);
-          });
-          let start_time = Math.min(...array)
-          let end_time = Math.max(...array)
-          start_time = start_time.toString().length === 1?"000"+start_time.toString():start_time.toString().length === 2?"00"+start_time.toString():start_time.toString().length === 3?"0"+start_time.toString():start_time
 
-          end_time = end_time.toString().length === 1?"000"+end_time.toString():end_time.toString().length === 2?"00"+end_time.toString():end_time.toString().length === 3?"0"+end_time.toString():end_time
-          result[value.multiple_id].slot_time = start_time +"-"+ end_time
-
-          result[value.multiple_id].start_time = result[value.multiple_id].start_time?result[value.multiple_id].start_time<value.start_time?result[value.multiple_id].start_time:value.start_time:value.start_time
-
-          result[value.multiple_id].end_time = result[value.multiple_id].end_time?result[value.multiple_id].end_time>value.end_time?result[value.multiple_id].end_time:value.end_time:value.end_time
-        }
-      })
-      result = Object.values(result)
-      res.send({status:"success", message:"booking completed", data:result})
-    })
-  })
-})
 
 //Booking History_from_app
 router.post('/booking_completed_list_by_venue', verifyToken, (req, res, next) => {
   Booking.find({booking_status:"completed", venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(booking=>{
-      let result = {}
-      let data = Object.values(booking).map((value,index)=>{
-        if(!result[value.multiple_id]){
-          result[value.multiple_id] = value
-        }else{
-          result[value.multiple_id].amount = result[value.multiple_id].amount + value.amount
-          ////Slot time combining
-          let slot_time = result[value.multiple_id].slot_time.split("-")
-          let value_slot_time = value.slot_time.split("-")
-          let array = [...slot_time,...value_slot_time]
-          array = array.map(function (x) {
-            return parseInt(x);
-          });
-          let start_time = Math.min(...array)
-          let end_time = Math.max(...array)
-          start_time = start_time.toString().length === 1?"000"+start_time.toString():start_time.toString().length === 2?"00"+start_time.toString():start_time.toString().length === 3?"0"+start_time.toString():start_time
-
-          end_time = end_time.toString().length === 1?"000"+end_time.toString():end_time.toString().length === 2?"00"+end_time.toString():end_time.toString().length === 3?"0"+end_time.toString():end_time
-          result[value.multiple_id].slot_time = start_time +"-"+ end_time
-
-          result[value.multiple_id].start_time = result[value.multiple_id].start_time?result[value.multiple_id].start_time<value.start_time?result[value.multiple_id].start_time:value.start_time:value.start_time
-
-          result[value.multiple_id].end_time = result[value.multiple_id].end_time?result[value.multiple_id].end_time>value.end_time?result[value.multiple_id].end_time:value.end_time:value.end_time
-        }
-      })
-      result = Object.values(result)
+      result = Object.values(combineSlots(booking))
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
   })
@@ -998,43 +882,193 @@ router.post('/booking_completed_list_by_venue', verifyToken, (req, res, next) =>
   //Booking History_from_app
 router.post('/booking_completed_list', verifyToken, (req, res, next) => {
   Booking.find({booking_status:"completed", booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(booking=>{
+    User.find({},{_id:1,name:1,email:1,phone:1},null).lean().then(users=> {
+      Admin.find({},{_id:1,name:1,email:1,phone:1},null).lean().then(admins=> {
+        result = Object.values(combineSlots(booking,users,admins))
+        res.send({status:"success", message:"booking history fetched", data:result})
+      }).catch(next)
+    }).catch(next)
+  }).catch(next)
+})
+
+//Event Booking
+router.post('/event_booking', verifyToken, (req, res, next) => {
+  EventBooking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
+
+    // let booking_id;
+    if(bookingOrder){
+      var numb = booking_id.match(/\d/g);
+      numb = numb.join("");
+      var str = "" + (parseInt(numb, 10) + 1)
+      var pad = "TTE00000"
+      booking_id = pad.substring(0, pad.length - str.length) + str
+    }else{
+      booking_id = "TTE00001";
+    }
+
+    let booking_data = {
+      booking_id:booking_id,
+      booking_date:req.body.booking_date,
+      booking_type:req.body.booking_type,
+      booking_status:"booked",
+      created_by:req.userId,
+      event_id:req.body.event_id,
+      event_name:req.body.event_name,
+      sport_name:req.body.sport_name,
+      amount:req.body.amount,
+      coupons_used:req.body.coupons_used,
+      commission:req.body.commission,
+      booking_amount:req.body.booking_amount,
+      name:req.body.name,
+      email:req.body.email,
+      phone:req.body.phone,
+      card:req.body.card,
+      upi:req.body.upi,
+      cash:req.body.cash
+    }
+    EventBooking.create(booking_data).then(eventBooking=>{
+      res.send({status:"success", message:"event booked", data:eventBooking})
+
+      // Send SMS
+      let booking_id = eventBooking.booking_id
+      let phone = eventBooking.phone
+      let event_name = eventBooking.venue
+      let date = moment(eventBooking.booking_date).format("MMMM Do YYYY")
+      let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
+      axios.get(link.domain+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime)
+      .then(response => {
+        console.log(response.data)
+      }).catch(error=>{
+        console.log(error.response.data)
+      })
+      console.log(values[0].amount)
+      //Send Mail
+      let mailBody = {
+        name:values[0].name,
+        date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
+        venue:values[0].venue,
+        booking_id:values[0].booking_id,
+        slot_time:datetime,
+        quantity:1,
+        total_amount:total_amount,
+        booking_amount:values[0].booking_amount
+      }
+      console.log(req.body[0].email)
+      // console.log(mailBody)
+      ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
+        mail("support@turftown.in", req.body[0].email,"Venue Booked","test",html,response=>{
+          if(response){
+            console.log('success')
+          }else{
+            console.log('failed')
+          }
+        })
+      }).catch(next)
+      //Activity Log
+        ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', req.body[0].name + " booked " + req.body[0].venue+ "at" + momentTZ().tz("Asia/Kolkata"))
+    // })
+    })
+  })
+})
+
+//Booking History Based on venue
+router.post('/revenue_report', verifyToken, (req, res, next) => {
+  Booking.find({booking_status:{$in:["completed"]}, venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().then(booking_list=>{
+    
+    Booking.find({booking_status:{$in:["completed"]}, venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}},{booking_date:1,booking_id:1,amount:1,multiple_id:1, commission:1,venue_offer:1,turftown_offer:1}).lean().then(booking=>{
+
       let result = {}
+      let bookings = []
       let data = Object.values(booking).map((value,index)=>{
-        if(!result[value.multiple_id]){
-          result[value.multiple_id] = value
+        let date = moment(value.booking_date).format("DD-MM-YYYY")
+        let bookings_combined
+        if(!result[date]){
+          result[date] = value
+          result[date].bookings = 1
+          result[date].slots_booked = 1
+          result[date].commission = value.commission
+          result[date].venue_offer = value.venue_offer
+          result[date].turftown_offer = value.turftown_offer
+          bookings_combined = JSON.stringify([...bookings,booking_list[index]])
+          bookings_combined = JSON.parse(bookings_combined)
+          result[date].booking = bookings_combined
         }else{
-          result[value.multiple_id].amount = result[value.multiple_id].amount + value.amount
-          ////Slot time combining
-          let slot_time = result[value.multiple_id].slot_time.split("-")
-          let value_slot_time = value.slot_time.split("-")
-          let array = [...slot_time,...value_slot_time]
-          array = array.map(function (x) {
-            return parseInt(x);
-          });
-          let start_time = Math.min(...array)
-          let end_time = Math.max(...array)
-          start_time = start_time.toString().length === 1?"000"+start_time.toString():start_time.toString().length === 2?"00"+start_time.toString():start_time.toString().length === 3?"0"+start_time.toString():start_time
+          result[date].amount = result[date].amount + value.amount
+          result[date].slots_booked = result[date].slots_booked + 1
+          result[date].hours_played = (result[date].slots_booked*30)/60
+          result[date].commission = result[date].commission + value.commission
+          result[date].venue_offer = value.venue_offer
+          result[date].turftown_offer = value.turftown_offer
 
-          end_time = end_time.toString().length === 1?"000"+end_time.toString():end_time.toString().length === 2?"00"+end_time.toString():end_time.toString().length === 3?"0"+end_time.toString():end_time
-          result[value.multiple_id].slot_time = start_time +"-"+ end_time
+          bookings_combined = JSON.stringify([...result[date].booking,booking_list[index]])
+          bookings_combined = JSON.parse(bookings_combined)
+          result[date].booking = bookings_combined
 
-          result[value.multiple_id].start_time = result[value.multiple_id].start_time?result[value.multiple_id].start_time<value.start_time?result[value.multiple_id].start_time:value.start_time:value.start_time
-
-          result[value.multiple_id].end_time = result[value.multiple_id].end_time?result[value.multiple_id].end_time>value.end_time?result[value.multiple_id].end_time:value.end_time:value.end_time
         }
       })
+      
       result = Object.values(result)
-      res.send({status:"success", message:"booking history fetched", data:result})
+      
+      result.forEach(results=>{
+        results.booking = combineSlots(results.booking)
+        return results
+      })
+
+      res.send({status:"success", message:"revenue reports fetched", data:result})
     }).catch(next)
-  })
+  }).catch(next)
+})
+
+//Booking History Based on venue
+router.post('/revenue_report_booked', verifyToken, (req, res, next) => {
+  Booking.find({booking_status:{$in:["booked"]}, venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().then(booking_list=>{
+    
+    Booking.find({booking_status:{$in:["booked"]}, venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}},{booking_date:1,booking_id:1,amount:1,multiple_id:1}).lean().then(booking=>{
+
+      let result = {}
+      let bookings = []
+      let data = Object.values(booking).map((value,index)=>{
+        let date = moment(value.booking_date).format("DD-MM-YYYY")
+        let bookings_combined
+        if(!result[date]){
+          result[date] = value
+          result[date].bookings = 1
+          result[date].slots_booked = 1
+          bookings_combined = JSON.stringify([...bookings,booking_list[index]])
+          bookings_combined = JSON.parse(bookings_combined)
+          result[date].booking = bookings_combined
+        }else{
+          result[date].amount = result[date].amount + value.amount
+          result[date].slots_booked = result[date].slots_booked + 1
+          result[date].hours_played = (result[date].slots_booked*30)/60
+          bookings_combined = JSON.stringify([...result[date].booking,booking_list[index]])
+          bookings_combined = JSON.parse(bookings_combined)
+          result[date].booking = bookings_combined
+        }
+      })
+      
+      result = Object.values(result)
+      
+      result.forEach(results=>{
+        results.booking = combineSlots(results.booking)
+        return results
+      })
+
+      res.send({status:"success", message:"revenue reports fetched", data:result})
+    }).catch(next)
+  }).catch(next)
+})
+
 
 //Booking History
-router.post('/test_sms', verifyToken, (req, res, next) => {
+router.post('/test_sms', (req, res, next) => {
   let booking_id = "sh.unique"
   let venue_name = "kilpauk"
   let phone = "7401415754"
   let date = "May 15"
-  axios.get(link.domain+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+date)
+  let venue_type = "kdjflsjf"
+  let sport_name = "lkdjfsljf"
+  axios.get(link.domain+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+date+'&venue_type='+venue_type+'&sport_name='+sport_name)
     .then(response => {
       res.send({data:response.data})
     }).catch(error=>{

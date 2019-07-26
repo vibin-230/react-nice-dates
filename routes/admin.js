@@ -52,7 +52,8 @@ const Access = {
         coupon:['read','create','update','delete'],
         offers:['read', 'create','update','delete'],
         booking:['read', 'create','update','delete'],
-        support:['read', 'create']
+        support:['read', 'create'],
+        ads:['read', 'create','update','delete'],
     },
     venue_staff:{
         venue:['read', 'update'],
@@ -130,18 +131,22 @@ router.post('/admin_login',
     (req, res, next) => {
     Admin.findOne({username:req.body.username},{reset_password_hash:0,reset_password_expiry:0},null).then(admin=>{
         if(admin){
-            bcrypt.compare(req.body.password, admin.password).then(function(response) {
-                if(response){
-                    var token = jwt.sign({ id: admin._id, username:admin.username, role:admin.role}, config.secret);
-                    admin.password = undefined
-                    res.send({status:"success", message:"login success", token:token, role:admin.role,id:admin._id,data:admin})
-                    ActivityLog(admin._id, admin.role, 'login', admin.username +" logged-in successfully")
-                }else{
-                    res.send({status:"failed", message:"password incorrect"})
-                }
-            })
+            if(admin.status){
+                bcrypt.compare(req.body.password, admin.password).then(function(response) {
+                    if(response){
+                        var token = jwt.sign({ id: admin._id, username:admin.username, role:admin.role}, config.secret);
+                        admin.password = undefined
+                        res.send({status:"success", message:"login success", token:token, role:admin.role,id:admin._id,data:admin})
+                        // ActivityLog(admin._id, admin.role, 'login', admin.username +" logged-in successfully")
+                    }else{
+                        res.send({status:"failed", message:"password incorrect"})
+                    }
+                })
+            }else{
+                res.send({status:"failed", message:"admin status disabled"})
+            }
         }else{
-            res.send({status:"failed", message:"user doesn't exist"})
+            res.send({status:"failed", message:"admin doesn't exist"})
         }
     }).catch(next)
 })
@@ -154,7 +159,7 @@ router.post('/forget_password', (req, res, next) => {
         if (data) {
             //Send mail
             var id = mongoose.Types.ObjectId();
-            let html = "<h4>Please click here to reset your password</h4><a href='http://localhost:3001/reset-password/"+id+"'>Reset Password</a>"
+            let html = "<h4>Please click here to reset your password</h4><a href='http://test.turftown.in/reset-password/"+id+"'>Reset Password</a>"
             mail("support@turftown.in", req.body.email,"Reset Your Password","test",html,response=>{
             if(response){
                 let body = {
@@ -171,7 +176,7 @@ router.post('/forget_password', (req, res, next) => {
         } else {
             res.status(409).send({status:"failed", message: "user doesn't exist"});
         }
-        }).catch(next);
+    }).catch(next);
 })
 
 ////Users
@@ -290,7 +295,7 @@ router.post('/add_venue_manager',
             req.body.reset_password_expiry = moment().add(1,"days")
             Admin.create(req.body).then(venueManager=>{
                 var id = mongoose.Types.ObjectId();
-                let reset_url = "http://localhost:3001/reset-password/"+req.body.reset_password_hash
+                let reset_url = "http://test.turftown.in/reset-password/"+req.body.reset_password_hash
                 let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
                 mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
                     if(response){
@@ -416,9 +421,8 @@ router.post('/event',
     (req, res, next) => {
     Event.find({}).then(event=>{
         Offers.find({}).then(offers=>{
-                let filteredOffer = Object.values(offers).filter(offer=>offer.event.indexOf(value._id)!== -1)
-                value.offer = filteredOffer
-                return value
+                let filteredOffer = Object.values(offers).filter(offer=>offer.event.indexOf(event._id)!== -1)
+                event.offer = filteredOffer
             res.send({status:"success", message:"events fetched", data:event})
         }).catch(next)
     }).catch(next)

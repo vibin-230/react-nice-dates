@@ -6,11 +6,14 @@
 
 	$booking_id     = $_GET['booking_id'];
 	$venue_name     = $_GET['venue_name'];
+	$sport_name     = $_GET['sport_name'];
+	$venue_type     = $_GET['venue_type'];
 	$date     = $_GET['date'];
 	$phone   = $_GET['phone'];
 	$numbers = array($phone);
 	$sender = urlencode('TRFTWN');
-	$message = rawurlencode("Your TURF TOWN booking has been confirmed.\nBooking Id: ".$booking_id."\nVenue: ".$venue_name."\nDate and Time: ".$date);
+	// $message = rawurlencode("Your TURF TOWN booking has been confirmed.\nBooking Id: ".$booking_id."\nVenue: ".$venue_name."\nDate and Time: ".$date);
+	$message = rawurlencode("Your TURF TOWN booking has been confirmed.\nBooking Id: ".$booking_id."\nVenue: ".$venue_name."\nSport: ".$sport_name."\nType: ".$venue_type."\nDate and Time: ".$date);
 
 	$numbers = implode(',', $numbers);
 

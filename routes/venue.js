@@ -99,7 +99,7 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
       // zipcode = Object.values(response.data.results[0].address_components).filter(value=>value.types[0]==='postal_code')
       // zipcode = zipcode[0].long_name
       zipcode = "600017"
-      Venue.find({type:req.body.sport_type, "configuration.types":{$in:[req.body.venue_type]}},{bank:0, offers:0, access:0}).lean().then(venue=>{
+      Venue.find({type:req.body.sport_type, "configuration.types":{$in:[req.body.venue_type]},status:true},{bank:0, offers:0, access:0}).lean().then(venue=>{
         // venue = JSON.stringify(venue)
         // venue = JSON.parse(venue)
         // console.log(venue)

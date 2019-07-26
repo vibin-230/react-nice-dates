@@ -3,8 +3,6 @@ const Schema    = mongoose.Schema;
 
 
 const schema = new Schema({
-  created_at: { type : Date , default:new Date()},
-  modified_at: { type : Date , default:new Date()},
   booking_id:String,
   created_by:String,
   modified_by:String,
@@ -28,8 +26,15 @@ const schema = new Schema({
   email:String,
   multiple_id:String,
   start_time:Date,
-  end_time:Date
-});
+  end_time:Date,
+  due:Number,
+  venue_advance:Number,
+  turftown_offer:Number,
+  venue_offer:Number,
+  card:Number,
+  cash:Number,
+  upi:Number
+},{ timestamps: { createdAt: 'created_at', updatedAt: 'modified_at' } });
 
 //Model
 const model = mongoose.model('booking',schema);

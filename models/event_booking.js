@@ -12,6 +12,7 @@ const schema = new Schema({
   booking_type:String,
   booking_status:String,
   booking_amount:Number,
+  venue:Array,
   event_id:String,
   amount:Number,
   coupons_used:String,

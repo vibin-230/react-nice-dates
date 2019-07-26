@@ -31,7 +31,6 @@
     "nodemailer": "^4.6.7",
     "nodemon": "^1.18.4",
     "pdfkit": "^0.9.0",
-    "shorthash": "0.0.2",
-    "woocommerce-api": "^1.4.2"
+    "shorthash": "0.0.2"
   }
 }

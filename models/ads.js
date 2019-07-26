@@ -21,7 +21,10 @@ const schema = new Schema({
   sport_type:String,
   disable:Boolean,
   position:Number,
-  status:{type:Boolean, default: true}
+  region:String,
+  status:{type:Boolean, default: true},
+  page:String,
+  campaign_name:String
 });
 
 //Model

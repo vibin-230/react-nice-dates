@@ -1124,19 +1124,19 @@ router.post('/test_sms', (req, res, next) => {
     })
 })
 
-//Booking History
-router.post('/test_mail', verifyToken, (req, res, next) => {
-  // let html = fs.readFileSync('views/mail.ejs',{encoding:'utf-8'});
-  ejs.renderFile('views/mail.ejs',{name:req.body.name}).then(html=>{
-    mail("support@turftown.in", "kishorepadmanaban@gmail.com","test","test",html,response=>{
-      if(response){
-        res.send({status:"success"})
-      }else{
-        res.send({status:"failed"})
-      }
-    })
-  }).catch(next)
-})
+// //Booking History
+// router.post('/test_mail', verifyToken, (req, res, next) => {
+//   // let html = fs.readFileSync('views/mail.ejs',{encoding:'utf-8'});
+//   ejs.renderFile('views/mail.ejs',{name:req.body.name}).then(html=>{
+//     mail("support@turftown.in", "kishorepadmanaban@gmail.com","test","test",html,response=>{
+//       if(response){
+//         res.send({status:"success"})
+//       }else{
+//         res.send({status:"failed"})
+//       }
+//     })
+//   }).catch(next)
+// })
 
 
 

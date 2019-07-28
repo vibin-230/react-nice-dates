@@ -821,15 +821,25 @@ router.post('/create_ad',
     verifyToken,
     AccessControl('ads', 'create'),
     (req, res, next) => {
-    Ads.create(req.body).then(ads=>{
-        Venue.find({_id:{$in:ads.venue}},{_id:1, name:1, venue:1, type:1},null).lean().then(venue=>{
-            Event.find({_id:{$in:ads.event}},{_id:1, event:1, type:1},null).lean().then(event=>{
-                ads.event = event
-                ads.venue = venue
-                res.send({status:"success", message:"ad created", data:ads})
-                ActivityLog(req.userId, req.role, 'ad created', req.username+" created ad ")
+    Ads.find({}).then(ads=>{
+        if(ads.includes(req.body.position)){
+            existing_positions = []
+            ads.map(ad=>{
+                existing_positions.push(ad.position)
+            })
+            res.send({status:"failed", message:"position already exists", existing_positions})
+        }else{
+            Ads.create(req.body).then(ads=>{
+                Venue.find({_id:{$in:ads.venue}},{_id:1, name:1, venue:1, type:1},null).lean().then(venue=>{
+                    Event.find({_id:{$in:ads.event}},{_id:1, event:1, type:1},null).lean().then(event=>{
+                        ads.event = event
+                        ads.venue = venue
+                        res.send({status:"success", message:"ad created", data:ads})
+                        ActivityLog(req.userId, req.role, 'ad created', req.username+" created ad ")
+                    }).catch(next)
+                }).catch(next)
             }).catch(next)
-        }).catch(next)
+        }
     }).catch(next)
 })
 

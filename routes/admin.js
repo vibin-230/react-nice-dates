@@ -129,7 +129,7 @@ router.post('/create_super_admin',
 
 router.post('/admin_login',
     (req, res, next) => {
-    Admin.findOne({username:req.body.username},{reset_password_hash:0,reset_password_expiry:0},null).then(admin=>{
+    Admin.findOne({username:req.body.username},{reset_password_hash:0,reset_password_expiry:0,activity_log:0},null).then(admin=>{
         if(admin){
             if(admin.status){
                 bcrypt.compare(req.body.password, admin.password).then(function(response) {
@@ -729,7 +729,12 @@ router.post('/search',
     Venue.find({"venue.name":{ "$regex": req.body.search, "$options": "i" }}).then(venue=>{
         Event.find({"event.name":{ "$regex": req.body.search, "$options": "i" }}).then(event=>{
             console.log(venue)
-            let combinedResult = venue.concat(event);
+            let combinedResult
+            if(venue){
+                combinedResult = venue.concat(event);
+            }else{
+                combinedResult = event
+            }
             res.send({status:"success", message:"venues and events fetched based on search", data:combinedResult})
         }).catch(next)
     }).catch(next)

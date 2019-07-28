@@ -159,7 +159,6 @@ router.post('/create_user', [
                 User.findOne({phone:req.phone},{__v:0,token:0},null).then(user=>{
                 res.status(201).send({status: "success", message: "user created", data:user})
                 ActivityLog(req.userId, "user", 'user created', user.name + " created successfully")
-
               })
             })
             }
@@ -645,10 +644,13 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
 
 //Booking completed
 router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
-  Booking.updateMany({booking_id:req.params.id},req.body,{multi:true}).then(booking=>{
-    Booking.find({booking_id:req.params.id}).then(booking=>{
-      result = Object.values(combineSlots(booking))
-      res.send({status:"success", message:"booking completed", data:result})
+  Booking.find({booking_id:req.params.id}).then(booking=>{
+    req.body.commission = req.body.commission/booking.length
+    Booking.updateMany({booking_id:req.params.id},req.body,{multi:true}).then(booking=>{
+      Booking.find({booking_id:req.params.id}).then(booking=>{
+        result = Object.values(combineSlots(booking))
+        res.send({status:"success", message:"booking completed", data:result})
+      })
     })
   })
 })
@@ -773,12 +775,12 @@ router.post('/slots_list/:venue_id', verifyToken, (req, res, next) => {
 
         let slot_start_time = slot.timeRepresentation.split("-")[0]
         let slot_end_time = slot.timeRepresentation.split("-")[1]
-        // console.log(price_start_time)
-        // console.log(price_end_time)
-        // console.log(slot_start_time)
-        // console.log(slot_end_time)
-        if(price_start_time < slot_start_time && price_end_time > slot_end_time){
-          // 0500 < 0600 && 1200 > 0630
+        // console.log("price_start_time",price_start_time)
+        // console.log("price_end_time",price_end_time)
+        // console.log("slot_start_time",slot_start_time)
+        // console.log("slot_end_time",slot_end_time)
+        if(price_start_time <= slot_start_time && price_end_time >= slot_end_time){
+          // 0900 < 1530 && 1600 > 1600
           return price
         }else if(index===find_day.rate.length - 1){
           return price
@@ -853,11 +855,22 @@ router.post('/booking_history_by_venue', verifyToken, (req, res, next) => {
 
   //Booking History
 router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
-  console.log(req.body.start_time);
-  console.log(req.body.end_time);
-  Booking.find({booking_status:{$in:["booked","completed"]},venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}}).then(booking=>{
-      result = Object.values(combineSlots(booking))
-      res.send({status:"success", message:"booking history fetched", data:result})
+  Booking.find({booking_status:{$in:["booked","completed"]},venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(booking=>{
+
+    result = Object.values(combineSlots(booking))
+    console.log(result)
+    let booking_list = []
+    result = result.map(booking=>{
+      // console.log("booking.start_time",booking.start_time)
+      // console.log("booking.end_time",booking.end_time)
+      // console.log("req.body.start_time",req.body.start_time)
+      // console.log("req.body.end_time",req.body.end_time)
+      if(booking.start_time.getTime()<=new Date(req.body.start_time).getTime()&&booking.end_time.getTime()>=new Date(req.body.end_time).getTime()){
+
+        booking_list.push(booking)
+      }
+    })
+    res.send({status:"success", message:"booking history fetched", data:booking_list})
     }).catch(next)
   })
 
@@ -868,6 +881,14 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
   })
+
+//Booking History_from_app
+router.post('/booking_history_from_app_by_venue/:id', verifyToken, (req, res, next) => {
+  Booking.find({booking_status:{$in:["booked"]}, venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, booking_type:"app"}).then(booking=>{
+      result = Object.values(combineSlots(booking))
+      res.send({status:"success", message:"booking history fetched", data:result})
+    }).catch(next)
+})
 
 
 
@@ -886,6 +907,33 @@ router.post('/booking_completed_list', verifyToken, (req, res, next) => {
       Admin.find({},{_id:1,name:1,email:1,phone:1},null).lean().then(admins=> {
         result = Object.values(combineSlots(booking,users,admins))
         res.send({status:"success", message:"booking history fetched", data:result})
+      }).catch(next)
+    }).catch(next)
+  }).catch(next)
+})
+
+//Incomplete Booking
+router.post('/incomplete_booking/:id', verifyToken, (req, res, next) => {
+  Booking.find({venue_id:req.params.id, booking_status:"booked", booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(bookings=>{
+    User.find({},{_id:1,name:1,email:1,phone:1},null).lean().then(users=> {
+      Admin.find({},{_id:1,name:1,email:1,phone:1},null).lean().then(admins=> {
+        result = Object.values(combineSlots(bookings,users,admins))
+        let booking_list = []
+        result = result.map(booking=>{
+          Date.prototype.addHours= function(h){
+            this.setHours(this.getHours()+h);
+            return this;
+          }
+            // console.log(booking.end_time)
+            // console.log(moment().add(330,"minutes"))
+            // console.log(booking.end_time.getTime())
+            // console.log(moment().add(330,"minutes").getTime())
+            // console.log(booking.end_time.getTime()>moment().add(330,"minutes").getTime())
+          if(booking.end_time.getTime()<new Date().addHours(6.5).getTime()){
+            booking_list.push(booking)
+          }
+        })
+        res.send({status:"success", message:"incomplete booking fetched", data:booking_list})
       }).catch(next)
     }).catch(next)
   }).catch(next)

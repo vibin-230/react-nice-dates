@@ -21,16 +21,12 @@ const combineSlots=(booking, users, admins)=>{
       // }
 
       
-      // console.log(user_array)
       if(!result[value.multiple_id]){
-        console.log('object');
         result[value.multiple_id] = value
         // result[value.multiple_id].created = user_array
         // console.log(result[value.multiple_id].created_by);
 
       }else{
-        console.log('object2');
-        
         // result[value.multiple_id].created = user_array
         // console.log(result[value.multiple_id].created_by);
 

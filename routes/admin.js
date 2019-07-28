@@ -11,7 +11,7 @@ const constants = require('../scripts/constants');
 const link = require('../scripts/uri');
 const { check, validationResult } = require('express-validator/check');
 const verifyToken = require('../scripts/verifyToken');
-const bcrypt = require('bcrypt-nodejs');
+const bcrypt = require('bcrypt');
 const saltRounds = 10;
 // const verifySuperAdmin = require('../scripts/verifySuperAdmin');
 const jwt = require('jsonwebtoken');
@@ -822,7 +822,9 @@ router.post('/create_ad',
     AccessControl('ads', 'create'),
     (req, res, next) => {
     Ads.find({}).then(ads=>{
-        if(ads.includes(req.body.position)){
+        let check_position = ads.map(ad=>ad.position===req.body.position)
+
+        if(check_position.length){
             existing_positions = []
             ads.map(ad=>{
                 existing_positions.push(ad.position)

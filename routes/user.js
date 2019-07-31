@@ -788,9 +788,6 @@ router.post('/slots_list/:venue_id', verifyToken, (req, res, next) => {
       })
       let price = find_price[0].pricing[venue_type_index]
       slot.price = parseInt(price,10)
-
-
-
       return slot
     })
 
@@ -849,7 +846,22 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
 router.post('/booking_history_by_venue', verifyToken, (req, res, next) => {
   Booking.find({booking_status:{$in:["booked"]}, venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(booking=>{
       result = Object.values(combineSlots(booking))
-      res.send({status:"success", message:"booking history fetched", data:result})
+      let booking_list = []
+        result = result.map(booking=>{
+          Date.prototype.addHours= function(h){
+            this.setHours(this.getHours()+h);
+            return this;
+          }
+            // console.log(booking.end_time)
+            // console.log(moment().add(330,"minutes"))
+            // console.log(booking.end_time.getTime())
+            // console.log(moment().add(330,"minutes").getTime())
+            // console.log(booking.end_time.getTime()>moment().add(330,"minutes").getTime())
+          if(booking.end_time.getTime()>new Date().addHours(5.5).getTime()){
+            booking_list.push(booking)
+          }
+        })
+      res.send({status:"success", message:"booking history fetched", data:booking_list})
     }).catch(next)
   })
 
@@ -865,8 +877,7 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
       // console.log("booking.end_time",booking.end_time)
       // console.log("req.body.start_time",req.body.start_time)
       // console.log("req.body.end_time",req.body.end_time)
-      if(booking.start_time.getTime()<=new Date(req.body.start_time).getTime()&&booking.end_time.getTime()>=new Date(req.body.end_time).getTime()){
-
+      if(booking.start_time.getTime()<=new Date(req.body.start_time).getTime()||booking.end_time.getTime()>=new Date(req.body.end_time).getTime()){
         booking_list.push(booking)
       }
     })

@@ -536,6 +536,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
                 booking_type:body.booking_type,
                 booking_status:"booked",
                 created_by:req.userId,
+                booked_by:body.booked_by,
                 venue:body.venue,
                 area:venue.area,
                 venue_id:body.venue_id,

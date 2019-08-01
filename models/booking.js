@@ -5,6 +5,7 @@ const Schema    = mongoose.Schema;
 const schema = new Schema({
   booking_id:String,
   created_by:String,
+  booked_by:String,
   modified_by:String,
   booking_date:Date,
   booking_type:String,

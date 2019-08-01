@@ -19,6 +19,7 @@ const mail = require('../scripts/mail');
 const sh = require("shorthash");
 const _ = require('lodash');
 const combineSlots = require('../scripts/combineSlots')
+const upload = require("../scripts/aws-s3")
 
 const User = require('../models/user');
 const Booking = require('../models/booking');
@@ -269,20 +270,15 @@ if (!req.files)
     let name = path.parse(filename).name
     let ext = path.parse(filename).ext
     ext = ext.toLowerCase()
-    filename = name + Date.now() + ext
+    filename = "image" + ext
     // Use the mv() method to place the file somewhere on your server
-    File.mv('assets/images/profile/' + filename, function(err) {
+    File.mv("assets/"+filename, function(err) {
         if (err) {
         return res.status(500).send(err);
         } else {
-        let image = link.domain+'/assets/images/profile/' + filename;
-        User.findOneAndUpdate({_id:req.userId},{profile_picture:image}).then(user=>{
-        res.status(201).send({
-            image,
-            status: 'success',
-            message: "profile picture uploaded successfully"
-        })
-        })
+          folder = "folder"
+          message = "profile picture uploaded successfully"
+          upload(filename, folder, message, res)
         }
     })
 });
@@ -1135,6 +1131,30 @@ router.post('/test_sms', (req, res, next) => {
     })
 })
 
+
+
+router.post('/test_s3', (req, res, next) => {
+  if (!req.files)
+    return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
+    // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
+    let File = req.files.image;
+    let filename = req.files.image.name;
+    //filename = path.pathname(filename)
+    let name = path.parse(filename).name
+    let ext = path.parse(filename).ext
+    ext = ext.toLowerCase()
+    filename = "image" + ext
+    // Use the mv() method to place the file somewhere on your server
+    File.mv("assets/"+filename, function(err) {
+        if (err) {
+        return res.status(500).send(err);
+        } else {
+          folder = "folder"
+          message = "profile picture uploaded successfully"
+          upload(filename, folder, message, res)
+        }
+    })
+})
 // //Booking History
 // router.post('/test_mail', verifyToken, (req, res, next) => {
 //   // let html = fs.readFileSync('views/mail.ejs',{encoding:'utf-8'});

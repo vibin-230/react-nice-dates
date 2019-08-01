@@ -605,29 +605,21 @@ verifyToken,
         let name = path.parse(filename).name
         let ext = path.parse(filename).ext
         ext = ext.toLowerCase()
-        filename = name + Date.now() + ext
-        // Use the mv() method to place the file somewhere on your server
-        File.mv('assets/images/venues/' + filename, function(err) {
-            if (err) {
-            return res.status(500).send(err);
-            } else {
-            let image = link.domain+'/assets/images/venues/' + filename;
-            // Venue.findOneAndUpdate({_id:req.params.id},{"venue.venue_display_picture":image}).then(user=>{
-            res.status(201).send({
-                image,
-                status: 'success',
-                message: "venue display picture uploaded"
-            })
-        // })
+        filename = "image" + ext
+    // Use the mv() method to place the file somewhere on your server
+    File.mv("assets/"+filename, function(err) {
+        if (err) {
+        return res.status(500).send(err);
+        } else {
+          folder = "venue"
+          message = "venue display picture uploaded"
+          upload(filename, folder, message, res)
         }
     })
 });
 
 //Upload Venue Display Picture
-router.post('/venue_cover_picture',
-verifyToken,
-    AccessControl('venue', 'create'),
-    (req, res, next) => {
+router.post('/venue_cover_picture',verifyToken,AccessControl('venue', 'create'), (req, res, next) => {
     if (!req.files)
         return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
         // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
@@ -637,20 +629,15 @@ verifyToken,
         let name = path.parse(filename).name
         let ext = path.parse(filename).ext
         ext = ext.toLowerCase()
-        filename = name + Date.now() + ext
-        // Use the mv() method to place the file somewhere on your server
-        File.mv('assets/images/venues/' + filename, function(err) {
-            if (err) {
-            return res.status(500).send(err);
-            } else {
-            let image = link.domain+'/assets/images/venues/' + filename;
-            // Venue.findOneAndUpdate({_id:req.params.id},{$push:{"venue.venue_cover_picture":image}}).then(user=>{
-            res.status(201).send({
-                image,
-                status: 'success',
-                message: "venue cover picture uploaded"
-            })
-        // })
+        filename = "image" + ext
+    // Use the mv() method to place the file somewhere on your server
+    File.mv("assets/"+filename, function(err) {
+        if (err) {
+        return res.status(500).send(err);
+        } else {
+          folder = "venue"
+          message = "venue cover picture uploaded"
+          upload(filename, folder, message, res)
         }
     })
 });
@@ -669,20 +656,15 @@ AccessControl('event', 'create'),
         let name = path.parse(filename).name
         let ext = path.parse(filename).ext
         ext = ext.toLowerCase()
-        filename = name + Date.now() + ext
-        // Use the mv() method to place the file somewhere on your server
-        File.mv('assets/images/event/' + filename, function(err) {
-            if (err) {
-            return res.status(500).send(err);
-            } else {
-            let image = link.domain+'/assets/images/event/' + filename;
-            // Event.findOneAndUpdate({_id:req.params.id},{$push:{"event.picture":image}}).then(event=>{
-            res.status(201).send({
-                image,
-                status: 'success',
-                message: "event picture uploaded"
-            })
-        // })
+        filename = "image" + ext
+    // Use the mv() method to place the file somewhere on your server
+    File.mv("assets/"+filename, function(err) {
+        if (err) {
+        return res.status(500).send(err);
+        } else {
+          folder = "event"
+          message = "venue cover picture uploaded"
+          upload(filename, folder, message, res)
         }
     })
 });
@@ -701,20 +683,15 @@ AccessControl('venue', 'create'),
         let name = path.parse(filename).name
         let ext = path.parse(filename).ext
         ext = ext.toLowerCase()
-        filename = name + Date.now() + ext
-        // Use the mv() method to place the file somewhere on your server
-        File.mv('assets/images/cheque/' + filename, function(err) {
-            if (err) {
-            return res.status(500).send(err);
-            } else {
-            let image = link.domain+'/assets/images/cheque/' + filename;
-            // Event.findOneAndUpdate({_id:req.params.id},{$push:{"event.picture":image}}).then(event=>{
-            res.status(201).send({
-                image,
-                status: 'success',
-                message: "cheque uploaded"
-            })
-        // })
+        filename = "image" + ext
+    // Use the mv() method to place the file somewhere on your server
+    File.mv("assets/"+filename, function(err) {
+        if (err) {
+        return res.status(500).send(err);
+        } else {
+          folder = "cheque"
+          message = "cheque uploaded"
+          upload(filename, folder, message, res)
         }
     })
 });
@@ -784,20 +761,15 @@ AccessControl('ads', 'create'),
         let name = path.parse(filename).name
         let ext = path.parse(filename).ext
         ext = ext.toLowerCase()
-        filename = name + Date.now() + ext
-        // Use the mv() method to place the file somewhere on your server
-        File.mv('assets/images/ads/' + filename, function(err) {
-            if (err) {
-            return res.status(500).send(err);
-            } else {
-            let image = link.domain+'/assets/images/ads/' + filename;
-            // Event.findOneAndUpdate({_id:req.params.id},{$push:{"event.picture":image}}).then(event=>{
-            res.status(201).send({
-                image,
-                status: 'success',
-                message: "ad picture uploaded"
-            })
-        // })
+        filename = "image" + ext
+    // Use the mv() method to place the file somewhere on your server
+    File.mv("assets/"+filename, function(err) {
+        if (err) {
+        return res.status(500).send(err);
+        } else {
+          folder = "ads"
+          message = "ad picture uploaded"
+          upload(filename, folder, message, res)
         }
     })
 });

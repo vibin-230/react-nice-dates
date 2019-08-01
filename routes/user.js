@@ -893,7 +893,7 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
       // console.log("booking.end_time",booking.end_time)
       // console.log("req.body.start_time",req.body.start_time)
       // console.log("req.body.end_time",req.body.end_time)
-      if(booking.start_time.getTime()<new Date(req.body.start_time).getTime()&&booking.end_time.getTime()>new Date(req.body.end_time).getTime()){
+      if(booking.start_time.getTime()<=new Date(req.body.start_time).getTime()&&booking.end_time.getTime()>=new Date(req.body.end_time).getTime()){
         booking_list.push(booking)
       }
     })

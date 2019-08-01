@@ -883,21 +883,21 @@ router.post('/booking_history_by_venue', verifyToken, (req, res, next) => {
 
   //Booking History
 router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
-  Booking.find({booking_status:{$in:["booked","completed"]},venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(booking=>{
+  Booking.find({booking_status:{$in:["booked","completed"]},venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}}).then(booking=>{
 
     result = Object.values(combineSlots(booking))
-    console.log(result)
-    let booking_list = []
-    result = result.map(booking=>{
-      // console.log("booking.start_time",booking.start_time)
-      // console.log("booking.end_time",booking.end_time)
-      // console.log("req.body.start_time",req.body.start_time)
-      // console.log("req.body.end_time",req.body.end_time)
-      if(booking.start_time.getTime()<=new Date(req.body.start_time).getTime()&&booking.end_time.getTime()>=new Date(req.body.end_time).getTime()){
-        booking_list.push(booking)
-      }
-    })
-    res.send({status:"success", message:"booking history fetched", data:booking_list})
+    // console.log(result)
+    // let booking_list = []
+    // result = result.map(booking=>{
+    //   // console.log("booking.start_time",booking.start_time)
+    //   // console.log("booking.end_time",booking.end_time)
+    //   // console.log("req.body.start_time",req.body.start_time)
+    //   // console.log("req.body.end_time",req.body.end_time)
+    //   if(booking.start_time.getTime()<=new Date(req.body.start_time).getTime()&&booking.end_time.getTime()>=new Date(req.body.end_time).getTime()){
+    //     booking_list.push(booking)
+    //   }
+    // })
+    res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
   })
 

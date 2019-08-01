@@ -31,6 +31,7 @@ const Coupon = require('../models/coupon');
 const Support = require('../models/support');
 const Ads = require('../models/ads');
 const Offers = require('../models/offers');
+const upload = require("../scripts/aws-s3")
 
 const Access = {
     super_admin:{

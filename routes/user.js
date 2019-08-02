@@ -953,11 +953,14 @@ router.post('/incomplete_booking/:id', verifyToken, (req, res, next) => {
             return this;
           }
             // console.log(booking.end_time)
+            // console.log(new Date().addHours(6))
             // console.log(moment().add(330,"minutes"))
             // console.log(booking.end_time.getTime())
             // console.log(moment().add(330,"minutes").getTime())
             // console.log(booking.end_time.getTime()>moment().add(330,"minutes").getTime())
-          if(booking.end_time.getTime()<=new Date().addHours(6.5).getTime()){
+            if(booking.end_time.getTime()<=new Date().addHours(6).getTime()){
+              console.log(booking.end_time.getTime());
+              console.log(new Date().addHours(7).getTime());
             booking_list.push(booking)
           }
         })

@@ -14,7 +14,7 @@ app.set('view engine', 'ejs');
 mongoose.Promise  = global.Promise;
 
 //Mongodb connection
-mongoose.connect('mongodb://127.0.0.1:27017/turftown',{ useNewUrlParser: true });
+mongoose.connect('mongodb://akshay:qwerty@13.233.94.159/turftown',{ useNewUrlParser: true });
 mongoose.set('useFindAndModify', false);
 mongoose.connection.once('open', function() {
 	console.log("Database connected successfully");

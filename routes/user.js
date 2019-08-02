@@ -191,7 +191,7 @@ router.post('/send_otp',[
   let phone = 91+req.body.phone;
   let otp   = Math.floor(999 + Math.random() * 9000);
   User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
-    axios.get(link.domain+'/textlocal/otp.php?otp='+otp+'&phone='+phone)
+    axios.get('textlocal/otp.php?otp='+otp+'&phone='+phone)
     .then(response => {
         if(response.data.status === 'success')
         {
@@ -451,7 +451,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
       let end_time = Object.values(req.body).reduce((total,value)=>{return total>value.end_time?total:value.end_time},req.body[0].end_time)
       let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
       console.log(datetime)
-      axios.get(link.domain+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name)
+      axios.get('textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name)
       .then(response => {
         console.log(response.data)
       }).catch(error=>{
@@ -591,7 +591,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
         let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
         let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},values[0].end_time)
         let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
-        axios.get(link.domain+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name)
+        axios.get('textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name)
         .then(response => {
           console.log(response.data)
         }).catch(error=>{
@@ -957,7 +957,7 @@ router.post('/incomplete_booking/:id', verifyToken, (req, res, next) => {
             // console.log(booking.end_time.getTime())
             // console.log(moment().add(330,"minutes").getTime())
             // console.log(booking.end_time.getTime()>moment().add(330,"minutes").getTime())
-          if(booking.end_time.getTime()<new Date().addHours(6.5).getTime()){
+          if(booking.end_time.getTime()<=new Date().addHours(6.5).getTime()){
             booking_list.push(booking)
           }
         })
@@ -1011,7 +1011,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
       let event_name = eventBooking.venue
       let date = moment(eventBooking.booking_date).format("MMMM Do YYYY")
       let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
-      axios.get(link.domain+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime)
+      axios.get('textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime)
       .then(response => {
         console.log(response.data)
       }).catch(error=>{
@@ -1144,7 +1144,7 @@ router.post('/test_sms', (req, res, next) => {
   let date = "May 15"
   let venue_type = "kdjflsjf"
   let sport_name = "lkdjfsljf"
-  axios.get(link.domain+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+date+'&venue_type='+venue_type+'&sport_name='+sport_name)
+  axios.get('textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+date+'&venue_type='+venue_type+'&sport_name='+sport_name)
     .then(response => {
       res.send({data:response.data})
     }).catch(error=>{

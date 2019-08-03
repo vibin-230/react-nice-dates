@@ -66,8 +66,8 @@ const Access = {
 }
 
 function ActivityLog(activity_log) {
-  let user = user_type==="user"?User:Admin
-  user.findOneAndUpdate({_id:id},{$push:{activity_log:activity_log}}).then(admin=>{
+  let user = activity_log.user_type==="user"?User:Admin
+  user.findOneAndUpdate({_id:activity_log.id},{$push:{activity_log:activity_log}}).then(admin=>{
       console.log("activity log updated")
   })
 }
@@ -217,8 +217,8 @@ router.post('/verify_otp', (req, res, next) => {
                 id:req.userId,
                 user_type: "user",
                 activity: "login",
-                name:req.name,
-                message: req.name + " Logged in successfully",
+                name:user.name,
+                message: user.name + " Logged in successfully",
               }
               ActivityLog(activity_log)
             }else{
@@ -592,7 +592,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
 
     Promise.all(promisesToRun).then(values => {
       values = {...values}
-      res.send({status:"success", message:"slot bookedd", data:values})
+      res.send({status:"success", message:"slot booked", data:values})
       
         // Send SMS
         let booking_id = values[0].booking_id
@@ -607,7 +607,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
         .then(response => {
           console.log(response.data)
         }).catch(error=>{
-          console.log(error.response.data)
+          console.log(error.response)
         })
         
         let total_amount = Object.values(values).reduce((total,value)=>{

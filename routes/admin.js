@@ -725,8 +725,8 @@ router.post('/support',
     AccessControl('support', 'create'),
     (req, res, next) => {
         Support.create(req.body).then(support=>{
-            let html = "<h4>email: "+req.body.email+"</h4><h4>message: "+req.body.message+"</h4>"
-            mail(req.body.email,"support@turftown.in","Support",req.body.message,html,response=>{
+            let html = "<h4>email: "+req.body.email+"</h4><h4>phone: "+req.body.phone+"</h4>"+"<h4>name: "+req.body.name+"</h4>"+"<h4>venue name: "+req.body.venue_name+"</h4>"+"<h4>message: "+req.body.message+"</h4>"
+            mail(req.body.email,"support@turftown.in","Support "+req.body.venue_name,req.body.message,html,response=>{
                 if(response){
                     res.send({status:"success", message:"support request raised"})
                 }else{

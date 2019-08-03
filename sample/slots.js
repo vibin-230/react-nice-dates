@@ -527,7 +527,7 @@ let primeSlots = [
   {
     id: 11,
     sId: 47,
-    timeRepresentation: "2330-2359",
+    timeRepresentation: "2330-0000",
     timeStart: "11.30",
     timeEnd: "12",
     representation: "AM",

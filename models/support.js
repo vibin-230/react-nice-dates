@@ -8,7 +8,10 @@ const schema = new Schema({
   modified_at: { type : Date , default:moment()},
   name:String,
   email:String,
-  message:String
+  message:String,
+  name:String,
+  venue_name:String,
+  phone:String,
 });
 
 //Model

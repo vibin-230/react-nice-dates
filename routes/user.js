@@ -772,6 +772,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
               }).catch(error=>{
                 console.log(error.response)
               })
+
               //Activity Log
               let activity_log = {
                 datetime: new Date(),
@@ -894,7 +895,7 @@ router.post('/slots_available/:id', verifyToken, (req, res, next) => {
 //Booking History
 router.post('/slots_list/:venue_id', verifyToken, (req, res, next) => {
   let combinedSlots = [...Slots[0].item, ...Slots[1].item, ...Slots[2].item, ...Slots[3].item];
-  Venue.findById({_id:req.params.venue_id}).then(venue=>{
+  Venue.findById({_id:req.params.venue_id}).lean().then(venue=>{
     let venue_type_index = venue.configuration.types.indexOf(req.body.venue_type)
     let find_day = venue.configuration.pricing.filter(value=>value.day===req.body.day)[0]
     let slots = combinedSlots.map(slot=>{
@@ -905,12 +906,12 @@ router.post('/slots_list/:venue_id', verifyToken, (req, res, next) => {
 
         let slot_start_time = slot.timeRepresentation.split("-")[0]
         let slot_end_time = slot.timeRepresentation.split("-")[1]
-        // console.log("price_start_time",price_start_time)
-        // console.log("price_end_time",price_end_time)
-        // console.log("slot_start_time",slot_start_time)
-        // console.log("slot_end_time",slot_end_time)
         if(slot_end_time === "0000"){
-          slot_end_time === "2400"
+          // console.log("price_start_time",price_start_time)
+          // console.log("price_end_time",price_end_time)
+          // console.log("slot_start_time",slot_start_time)
+          // console.log("slot_end_time",slot_end_time)
+          slot_end_time = "2400"
         }
         if(price_start_time <= slot_start_time && price_end_time >= slot_end_time){
           // 0900 < 1530 && 1600 > 1600

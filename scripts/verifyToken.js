@@ -14,9 +14,11 @@ function verifyToken(req, res, next) {
       req.userId = decoded.id;
       req.username = decoded.username;
       req.role = decoded.role;
+      req.name = decoded.name;
     }else{
       req.userId = decoded.id;
       req.phone = decoded.phone;
+      req.name = decoded.name;
     }
     next();
   });

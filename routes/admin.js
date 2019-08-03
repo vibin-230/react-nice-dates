@@ -135,7 +135,7 @@ router.post('/admin_login',
             if(admin.status){
                 bcrypt.compare(req.body.password, admin.password).then(function(response) {
                     if(response){
-                        var token = jwt.sign({ id: admin._id, username:admin.username, role:admin.role}, config.secret);
+                        var token = jwt.sign({ id: admin._id, username:admin.username, role:admin.role, name:admin.name}, config.secret);
                         admin.password = undefined
                         res.send({status:"success", message:"login success", token:token, role:admin.role,id:admin._id,data:admin})
                         // ActivityLog(admin._id, admin.role, 'login', admin.username +" logged-in successfully")
@@ -234,7 +234,7 @@ AccessControl('venue', 'create'),
     req.body.created_by = req.username
     Venue.create(req.body).then(venue=>{
         res.send({status:"success", message:"venue added", data:venue})
-        ActivityLog(req.userId, req.role, 'venue created', req.username+" created venue "+venue.venue.name)
+        ActivityLog(req.userId, req.role, 'venue created', req.name+" created venue "+venue.venue.name)
         }).catch(next)
 })
 
@@ -250,7 +250,7 @@ AccessControl('venue', 'update'),
         Venue.findByIdAndUpdate({_id:req.params.id},req.body).then(venue=>{
             Venue.findById({_id:req.params.id}).then(venue=>{
                 res.send({status:"success", message:"venue edited", data:venue})
-                ActivityLog(req.userId, req.role, 'venue modified', req.username+" modified venue "+ venue.venue.name)
+                ActivityLog(req.userId, req.role, 'venue modified', req.name+" modified venue "+ venue.venue.name)
             }).catch(next)
         }).catch(next)
     }).catch(next)
@@ -264,7 +264,7 @@ router.delete('/delete_venue/:id',
     Venue.findByIdAndRemove({_id:req.params.id},req.body).then(venue=>{
         Venue.find({}).then(venue=>{
             res.send({status:"success", message:"venue deleted", data:venue})
-            ActivityLog(req.userId, req.role, 'venue deleted', req.username+" deleted venue "+ venue.venue.name)
+            ActivityLog(req.userId, req.role, 'venue deleted', req.name+" deleted venue "+ venue.venue.name)
         }).catch(next)
     }).catch(next)
 })
@@ -308,7 +308,7 @@ router.post('/add_venue_manager',
                 Venue.find({_id:{$in:venueManager.venue}},{_id:1, name:1, venue:1, type:1}).lean().then(venue=>{
                     venueManager.venue = venue
                     res.send({status:"success", message:"venue manager added", data:venueManager})
-                    ActivityLog(req.userId, req.username, req.role, 'venue manager created', req.username+" created venue manager")
+                    ActivityLog(req.userId, req.username, req.role, 'venue manager created', req.name+" created venue manager")
                 }).catch(next)
             }).catch(next)
         }
@@ -327,7 +327,7 @@ router.put('/edit_venue_manager/:id',
             Venue.find({_id:{$in:venueManager.venue}},{_id:1, name:1, venue:1, type:1}).lean().then(venue=>{
                 venueManager.venue = venue
                 res.send({status:"success", message:"venue manager edited", data:venueManager})
-                ActivityLog(req.userId, req.username, req.role, 'venue manager modified', req.username+" modified venue manager")
+                ActivityLog(req.userId, req.username, req.role, 'venue manager modified', req.name+" modified venue manager")
             }).catch(next)
         }).catch(next)
     }).catch(next)
@@ -341,7 +341,7 @@ router.delete('/delete_venue_manager/:id',
         Admin.findByIdAndRemove({_id:req.params.id},req.body).then(venueManager=>{
             Admin.find({}).then(venueManager=>{
             res.send({status:"success", message:"venue manager deleted", data:venueManager})
-            ActivityLog(req.userId, req.username, req.role, 'venue manager deleted', req.username+" deleted venue manager")
+            ActivityLog(req.userId, req.username, req.role, 'venue manager deleted', req.name+" deleted venue manager")
         }).catch(next)
     }).catch(next)
 })
@@ -353,7 +353,7 @@ router.post('/venue_staff',
     (req, res, next) => {
         Admin.find({role:"venue_staff"}).then(venueStaff=>{
             res.send({status:"success", message:"venue staffs fetched", data:venueStaff})
-            ActivityLog(req.userId, req.username, req.role, 'venue staff created', req.username+" created venue staff")
+            ActivityLog(req.userId, req.username, req.role, 'venue staff created', req.name+" created venue staff")
     }).catch(next)
 })
 
@@ -382,7 +382,7 @@ router.post('/add_venue_staff',
                     }
                 })
                 res.send({status:"success", message:"venue staff added", data:venueStaff})
-                ActivityLog(req.userId, req.username, req.role, 'venue staff created', req.username+" created venue staff")
+                ActivityLog(req.userId, req.username, req.role, 'venue staff created', req.name+" created venue staff")
             }).catch(next)
         }
     }).catch(next)
@@ -397,7 +397,7 @@ router.put('/edit_venue_staff/:id',
     Admin.findByIdAndUpdate({_id:req.params.id},req.body).then(venueStaff=>{
         Admin.findById({_id:req.params.id}).then(venueStaff=>{
             res.send({status:"success", message:"venue staff edited", data:venueStaff})
-            ActivityLog(req.userId, req.username, req.role, 'venue staff modified', req.username+" modified venue staff")
+            ActivityLog(req.userId, req.username, req.role, 'venue staff modified', req.name+" modified venue staff")
         }).catch(next)
     }).catch(next)
 })
@@ -410,7 +410,7 @@ router.delete('/delete_venue_staff/:id',
         Admin.findByIdAndRemove({_id:req.params.id},req.body).then(venueStaff=>{
             Admin.find({}).then(venueStaff=>{
                 res.send({status:"success", message:"venue staff deleted", data:venueStaff})
-                ActivityLog(req.userId, req.username, req.role, 'venue staff deleted', req.username+" deleted venue staff")
+                ActivityLog(req.userId, req.username, req.role, 'venue staff deleted', req.name+" deleted venue staff")
         }).catch(next)
     }).catch(next)
 })
@@ -439,7 +439,7 @@ router.post('/add_event',
         Venue.find({_id:{$in:event.venue}},{_id:1, name:1, venue:1, type:1}, null).lean().then(venue=>{
             event.venue = venue
             res.send({status:"success", message:"event added", data:event})
-            ActivityLog(req.userId, req.role, 'event created', req.username+" created event "+event.event.name)
+            ActivityLog(req.userId, req.role, 'event created', req.name+" created event "+event.event.name)
         }).catch(next)
     }).catch(next)
 })
@@ -456,7 +456,7 @@ router.put('/edit_event/:id',
             Venue.find({_id:{$in:event.venue}},{_id:1, name:1, venue:1, type:1}, null).lean().then(venue=>{
                 event.venue = venue
                 res.send({status:"success", message:"event edited", data:event})
-                ActivityLog(req.userId, req.role, 'event modified', req.username+" modified event "+ event.event.name)
+                ActivityLog(req.userId, req.role, 'event modified', req.name+" modified event "+ event.event.name)
             }).catch(next)
         }).catch(next)
     }).catch(next)
@@ -470,7 +470,7 @@ router.delete('/delete_event/:id',
     Event.findByIdAndRemove({_id:req.params.id},req.body).then(event=>{
         Event.find({}).then(event=>{
             res.send({status:"success", message:"event deleted", data:event})
-            ActivityLog(req.userId, req.role, 'event deleted', req.username+" deleted event "+event.event.name)
+            ActivityLog(req.userId, req.role, 'event deleted', req.name+" deleted event "+event.event.name)
         }).catch(next)
     }).catch(next)
 })
@@ -539,7 +539,7 @@ router.post('/add_coupon',
                 coupon.event = event
                 coupon.venue = venue
                 res.send({status:"success", message:"coupon added", data:coupon})
-                ActivityLog(req.userId, req.role, 'coupon created', req.username+" created coupon "+coupon.title)
+                ActivityLog(req.userId, req.role, 'coupon created', req.name+" created coupon "+coupon.title)
             }).catch(next)
         }).catch(next)
     }).catch(next)
@@ -559,7 +559,7 @@ router.put('/edit_coupon/:id',
                     coupon.event = event
                     coupon.venue = venue
                     res.send({status:"success", message:"coupon edited", data:coupon})
-                    ActivityLog(req.userId, req.role, 'coupon modified', req.username+" modified coupon "+coupon.title)
+                    ActivityLog(req.userId, req.role, 'coupon modified', req.name+" modified coupon "+coupon.title)
                 }).catch(next)
             }).catch(next)
         }).catch(next)
@@ -574,7 +574,7 @@ router.delete('/delete_coupon/:id',
     Coupon.findByIdAndRemove({_id:req.params.id},req.body).then(coupon=>{
         Coupon.find({}).then(coupon=>{
             res.send({status:"success", message:"coupon deleted", data:coupon})
-            ActivityLog(req.userId, req.role, 'coupon deleted', req.username+" deleted coupon "+coupon.title)
+            ActivityLog(req.userId, req.role, 'coupon deleted', req.name+" deleted coupon "+coupon.title)
         }).catch(next)
     }).catch(next)
 })
@@ -810,7 +810,7 @@ router.post('/create_ad',
                         ads.event = event
                         ads.venue = venue
                         res.send({status:"success", message:"ad created", data:ads})
-                        ActivityLog(req.userId, req.role, 'ad created', req.username+" created ad ")
+                        ActivityLog(req.userId, req.role, 'ad created', req.name+" created ad ")
                     }).catch(next)
                 }).catch(next)
             }).catch(next)
@@ -832,7 +832,7 @@ router.post('/edit_ad/:id',
                     ads.event = event
                     ads.venue = venue
                     res.send({status:"success", message:"ad modified", data:ads})
-                    ActivityLog(req.userId, req.role, 'ad modified', req.username+" modified ad ")
+                    ActivityLog(req.userId, req.role, 'ad modified', req.name+" modified ad ")
                 }).catch(next)
             }).catch(next)
         }).catch(next)
@@ -846,7 +846,7 @@ router.post('/delete_ad/:id',
     (req, res, next) => {
     Ads.findByIdAndRemove({_id:req.params.id}).then(ads=>{
         res.send({status:"success", message:"ad deleted"})
-        ActivityLog(req.userId, req.role, 'ad deleted', req.username+" deleted ad ")
+        ActivityLog(req.userId, req.role, 'ad deleted', req.name+" deleted ad ")
     }).catch(next)
 })
 
@@ -872,7 +872,7 @@ router.post('/create_offer',
                 offers.event = event
                 offers.venue = venue
                 res.send({status:"success", message:"offer created", data:offers})
-                ActivityLog(req.userId, req.role, 'offer created', req.username+" created offer ")
+                ActivityLog(req.userId, req.role, 'offer created', req.name+" created offer ")
             }).catch(next)
         }).catch(next)
     }).catch(next)
@@ -892,7 +892,7 @@ router.post('/edit_offer/:id',
                     offers.event = event
                     offers.venue = venue
                     res.send({status:"success", message:"offer modified", data:offers})
-                    ActivityLog(req.userId, req.role, 'offer modified', req.username+" modified offer ")
+                    ActivityLog(req.userId, req.role, 'offer modified', req.name+" modified offer ")
                 }).catch(next)
             }).catch(next)
         }).catch(next)
@@ -906,7 +906,7 @@ router.post('/delete_offer/:id',
     (req, res, next) => {
     Offers.findByIdAndRemove({_id:req.params.id}).then(offers=>{
         res.send({status:"success", message:"offer deleted"})
-        ActivityLog(req.userId, req.role, 'offer deleted', req.username+" deleted offer ")
+        ActivityLog(req.userId, req.role, 'offer deleted', req.name+" deleted offer ")
     }).catch(next)
 })
 

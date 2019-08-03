@@ -229,15 +229,17 @@ router.post('/send_otp',[
 router.post('/verify_otp', (req, res, next) => {
   User.findOne({phone: req.body.phone}).then(user=> {
     // create a token
-    var token = jwt.sign({ id: user._id, phone:user.phone, role:"user" }, config.secret);
+    var token;
       if(user.otp===req.body.otp){
           User.findOneAndUpdate({phone: req.body.phone},{token,last_login:moment()}).then(user=>{
             User.findOne({phone: req.body.phone},{__v:0,token:0},null).then(user=> {
             if(user.email){
+              token = jwt.sign({ id: user._id, phone:user.phone, role:"user", name:user.name }, config.secret);
               res.status(201).send({status:"success", message:"existing user", token:token, data:user})
               //Activity Log
-              ActivityLog(req.userId, "user", 'login', user.name + " logged-in successfully")
+              // ActivityLog(req.userId, "user", 'login', user.name + " logged-in successfully")
             }else{
+              jwt.sign({ id: user._id, phone:user.phone, role:"user"}, config.secret);
               res.status(201).send({status:"success", message:"new user", token:token})
             }
           }).catch(next);
@@ -481,7 +483,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
       //   })
       // })
       //Activity Log
-        ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', user.name + " booked " + req.body[0].venue + "at" + momentTZ().tz("Asia/Kolkata"))
+        ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', user.name + " booked " + req.body[0].venue + " at " + momentTZ().format('MMMM Do YYYY, h:mm:ss a').tz("Asia/Kolkata"))
       }).catch(next)
   })
 })
@@ -633,7 +635,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
           })
         }).catch(next)
         //Activity Log
-          ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', req.body[0].name + " booked " + req.body[0].venue+ "at" + momentTZ().tz("Asia/Kolkata"))
+          ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', req.body[0].name + " booked " + req.body[0].venue+ " at " +  momentTZ().format('MMMM Do YYYY, h:mm:ss a').tz("Asia/Kolkata"))
       // })
     }).catch(next)
   }).catch(next)
@@ -697,7 +699,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
         {
           Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"}},{multi:true}).then(bookings=>{
               res.send({status:"success", message:"booking cancelled"})
-              ActivityLog(req.userId, req.role?req.role:"user", 'slot booking cancelled', booking.name + " cancelled booking in " + booking.venue)
+              ActivityLog(req.userId, req.role?req.role:"user", 'slot booking cancelled', req.name + " cancelled booking in " + booking.venue+ " at " +  momentTZ().format('MMMM Do YYYY, h:mm:ss a').tz("Asia/Kolkata"))
           }).catch(next);
         }
       }).catch(error => {
@@ -706,7 +708,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
     }else{
       Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"}},{multi:true}).then(bookings=>{
           res.send({status:"success", message:"booking cancelled"})
-          ActivityLog(req.userId, req.role?req.role:"user", 'slot booking cancelled', booking.name + " cancelled booking in " + booking.venue+ "at" + momentTZ().tz("Asia/Kolkata"))
+          ActivityLog(req.userId, req.role?req.role:"user", 'slot booking cancelled', req.name + " cancelled booking in " + booking.venue+ " at " +  momentTZ().format('MMMM Do YYYY, h:mm:ss a').tz("Asia/Kolkata"))
       }).catch(next);
     }
   }).catch(next)
@@ -952,7 +954,7 @@ router.post('/incomplete_booking/:id', verifyToken, (req, res, next) => {
             this.setHours(this.getHours()+h);
             return this;
           }
-            if(booking.end_time.getTime()<=new Date().addHours(5).getTime()){
+            if(booking.end_time.getTime()<=new Date().addHours(4).getTime()){
             booking_list.push(booking)
           }
         })
@@ -1036,7 +1038,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
         })
       }).catch(next)
       //Activity Log
-        ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', req.body[0].name + " booked " + req.body[0].venue+ "at" + momentTZ().tz("Asia/Kolkata"))
+        ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', req.body[0].name + " booked " + req.body[0].venue+ " at " + momentTZ().format('MMMM Do YYYY, h:mm:ss a').tz("Asia/Kolkata"))
     // })
     })
   })

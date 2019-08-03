@@ -2,7 +2,7 @@
 $json = array();
 
     $json[]= array(
-       'name' => "Kishore",
+        'name' => "Kishore",
         'password' => "1234"
     );
 

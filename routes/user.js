@@ -676,8 +676,8 @@ router.post('/modify_booking/:id', verifyToken, (req, res, next) => {
         let venue_name = booking[0].venue
         let venue_type = booking[0].venue_type
         let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
-        let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
-        let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
+        let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
+        let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
         let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
         //Activity Log
         let activity_log = {
@@ -710,8 +710,8 @@ router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
         let venue_name = booking[0].venue
         let venue_type = booking[0].venue_type
         let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
-        let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
-        let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
+        let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
+        let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
         let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
         //Activity Log
         let activity_log = {

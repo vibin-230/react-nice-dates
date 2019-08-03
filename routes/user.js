@@ -885,6 +885,9 @@ router.post('/slots_list/:venue_id', verifyToken, (req, res, next) => {
         // console.log("price_end_time",price_end_time)
         // console.log("slot_start_time",slot_start_time)
         // console.log("slot_end_time",slot_end_time)
+        if(slot_end_time === "0000"){
+          slot_end_time === "2400"
+        }
         if(price_start_time <= slot_start_time && price_end_time >= slot_end_time){
           // 0900 < 1530 && 1600 > 1600
           return price

@@ -1,4 +1,4 @@
-var domain = "http://13.233.94.159/app/turftown"
+var domain = "http://159.65.146.12/app/turftown-backend"
 var server = "http://api.thedistil.com"
 var image  = "http://13.233.94.159/app/turftown/assets/images"
 var icon   = "http://13.233.94.159/app/turftown/src/assets/icons"

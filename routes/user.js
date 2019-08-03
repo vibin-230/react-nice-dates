@@ -453,7 +453,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
       let end_time = Object.values(req.body).reduce((total,value)=>{return total>value.end_time?total:value.end_time},req.body[0].end_time)
       let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
       console.log(datetime)
-      axios.get('textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name)
+      axios.get(link.domain+'textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name)
       .then(response => {
         console.log(response.data)
       }).catch(error=>{
@@ -596,16 +596,18 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
         // Send SMS
         let booking_id = values[0].booking_id
-        let phone = values[0].phone
+        let phone = "91"+values[0].phone
+        console.log(phone)
         let venue_name = values[0].venue
         let venue_type = req.body[0].venue_type
+        let venue_area = venue.venue.area
         let date = moment(values[0].booking_date).format("MMMM Do YYYY")
         let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
         let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},values[0].end_time)
         let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
         let directions = "https://www.google.com/maps/dir/"+venue.venue.latLong[0]+","+venue.venue.latLong[1]
         
-        axios.get('https://turftown.s3.ap-south-1.amazonaws.com/php/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name)
+        axios.get(link.domain+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area)
         .then(response => {
           console.log(response.data)
         }).catch(error=>{
@@ -747,6 +749,7 @@ function isEmpty (object){
 //Cancel Booking
 router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
   Booking.findOne({booking_id:req.params.id}).then(booking=>{
+    Venue.findById({_id:booking.venue_id}).then(venue=>{
     if(booking.booking_type === "app"){
       axios.post('https://rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
       .then(response => {
@@ -758,10 +761,17 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
               let booking_id = booking[0].booking_id
               let venue_name = booking[0].venue
               let venue_type = booking[0].venue_type
+              let venue_area = booking[0].venue_area
               let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
               let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
               let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
               let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
+              //Send SMS
+              axios.get(link.domain+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
+                console.log(response.data)
+              }).catch(error=>{
+                console.log(error.response)
+              })
               //Activity Log
               let activity_log = {
                 datetime: new Date(),
@@ -784,10 +794,19 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
           let booking_id = booking[0].booking_id
               let venue_name = booking[0].venue
               let venue_type = booking[0].venue_type
+              let venue_area = booking[0].venue_area
               let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
               let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
               let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
               let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
+
+              //Send SMS
+              axios.get(link.domain+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area).then(response => {
+                console.log(response.data)
+              }).catch(error=>{
+                console.log(error.response)
+              })
+
               //Activity Log
               let activity_log = {
                 datetime: new Date(),
@@ -801,6 +820,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
               ActivityLog(activity_log)
       }).catch(next);
     }
+  }).catch(next)
   }).catch(next)
 })
 
@@ -1239,15 +1259,16 @@ router.post('/test_sms', (req, res, next) => {
   let booking_id = "sh.unique"
   let venue_name = "kilpauk"
   let phone = "7401415754"
-  let date = "May 15"
+  let datetime = "May 15"
   let venue_type = "kdjflsjf"
+  let venue_area = "kdjflsjf"
   let sport_name = "lkdjfsljf"
-  axios.get('./textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+date+'&venue_type='+venue_type+'&sport_name='+sport_name)
-    .then(response => {
-      res.send({data:response.data})
-    }).catch(error=>{
-      res.send(error.response)
-    })
+  //Send SMS
+  axios.get(link.domain+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+venue_type+'&sport_name='+sport_name+'&venue_area='+venue_area).then(response => {
+    console.log(response.data)
+  }).catch(error=>{
+    console.log(error.response)
+  })
 })
 
 router.post('/test_php', (req, res, next) => {

@@ -1198,9 +1198,7 @@ router.post('/revenue_report', verifyToken, (req, res, next) => {
 //Booking History Based on venue
 router.post('/revenue_report_booked', verifyToken, (req, res, next) => {
   Booking.find({booking_status:{$in:["booked"]}, venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().then(booking_list=>{
-    
     Booking.find({booking_status:{$in:["booked"]}, venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}},{booking_date:1,booking_id:1,amount:1,multiple_id:1}).lean().then(booking=>{
-
       let result = {}
       let bookings = []
       let data = Object.values(booking).map((value,index)=>{
@@ -1244,7 +1242,7 @@ router.post('/test_sms', (req, res, next) => {
   let date = "May 15"
   let venue_type = "kdjflsjf"
   let sport_name = "lkdjfsljf"
-  axios.get('textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+date+'&venue_type='+venue_type+'&sport_name='+sport_name)
+  axios.get('./textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+date+'&venue_type='+venue_type+'&sport_name='+sport_name)
     .then(response => {
       res.send({data:response.data})
     }).catch(error=>{

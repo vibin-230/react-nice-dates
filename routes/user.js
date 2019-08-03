@@ -1110,6 +1110,8 @@ router.post('/revenue_report_booked', verifyToken, (req, res, next) => {
           bookings_combined = JSON.stringify([...bookings,booking_list[index]])
           bookings_combined = JSON.parse(bookings_combined)
           result[date].booking = bookings_combined
+          result[date].hours_played = 0.5
+
         }else{
           result[date].amount = result[date].amount + value.amount
           result[date].slots_booked = result[date].slots_booked + 1

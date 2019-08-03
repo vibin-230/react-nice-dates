@@ -1,3 +1,11 @@
 <?php
-echo $data = array('apikey' => $apiKey, 'numbers' => $numbers, "sender" => $sender, "message" => $message);
+$json = array();
+
+    $json[]= array(
+       'name' => "Kishore",
+        'password' => "1234"
+    );
+
+$jsonstring = json_encode($json);
+echo $jsonstring;
 ?>

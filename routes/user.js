@@ -27,33 +27,6 @@ const EventBooking = require('../models/event_booking');
 const Venue = require('../models/venue');
 const Admin = require('../models/admin');
 
-// function ActivityLogForUser(id, phone, activity, description) {
-//   let activity_log = {
-//       datetime: new Date(),
-//       id:id,
-//       phone:phone,
-//       activity: activity,
-//       description: description
-//   }
-//   User.findOneAndUpdate({_id:id},{$push:{activity_log:activity_log}}).then(admin=>{
-//       console.log("activity log updated")
-//   })
-// }
-
-// function ActivityLogForAdmin(id, username, role, activity, description) {
-//   let activity_log = {
-//       datetime: new Date(),
-//       id:id,
-//       username: username,
-//       role:role,
-//       activity: activity,
-//       description: description
-//   }
-//   Admin.findOneAndUpdate({username:username},{$push:{activity_log:activity_log}}).then(admin=>{
-//       console.log("activity log updated")
-//   })
-// }
-
 const Access = {
   super_admin:{
       venue:['read','create','update','delete'],
@@ -92,14 +65,7 @@ const Access = {
   }
 }
 
-function ActivityLog(id, user_type, activity, message) {
-  let activity_log = {
-      datetime: new Date(),
-      id:id,
-      user_type: user_type,
-      activity: activity,
-      message: message
-  }
+function ActivityLog(activity_log) {
   let user = user_type==="user"?User:Admin
   user.findOneAndUpdate({_id:id},{$push:{activity_log:activity_log}}).then(admin=>{
       console.log("activity log updated")
@@ -159,7 +125,15 @@ router.post('/create_user', [
               User.findByIdAndUpdate({_id: req.userId},req.body).then(user=>{
                 User.findOne({phone:req.phone},{__v:0,token:0},null).then(user=>{
                 res.status(201).send({status: "success", message: "user created", data:user})
-                ActivityLog(req.userId, "user", 'user created', user.name + " created successfully")
+                let activity_log = {
+                  datetime: new Date(),
+                  id:req.userId,
+                  user_type: "user",
+                  activity: "user created",
+                  name:req.name,
+                  message: user.name + " created successfully",
+                }
+                ActivityLog(activity_log)
               })
             })
             }
@@ -236,8 +210,17 @@ router.post('/verify_otp', (req, res, next) => {
             if(user.email){
               token = jwt.sign({ id: user._id, phone:user.phone, role:"user", name:user.name }, config.secret);
               res.status(201).send({status:"success", message:"existing user", token:token, data:user})
+              
               //Activity Log
-              // ActivityLog(req.userId, "user", 'login', user.name + " logged-in successfully")
+              let activity_log = {
+                datetime: new Date(),
+                id:req.userId,
+                user_type: "user",
+                activity: "login",
+                name:req.name,
+                message: req.name + " Logged in successfully",
+              }
+              ActivityLog(activity_log)
             }else{
               jwt.sign({ id: user._id, phone:user.phone, role:"user"}, config.secret);
               res.status(201).send({status:"success", message:"new user", token:token})
@@ -391,10 +374,26 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
 
       console.log(values)
       res.send({status:"success", message:"slot blocked", data:values})
+      let booking_id = values[0].booking_id
+      let venue_name = req.body[0].venue
+      let venue_type = req.body[0].venue_type
+      let date = moment(req.body[0].booking_date).format("MMMM Do YYYY")
+      let start_time = Object.values(req.body).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
+      let end_time = Object.values(req.body).reduce((total,value)=>{return total>value.end_time?total:value.end_time},req.body[0].end_time)
+      let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
 
       User.findById({_id:req.body[0].user_id}).then(user=>{
       //Activity Log
-      ActivityLog(req.userId, req.role?req.role:"user", 'slot blocked', user.name + " blocked " + req.body[0].venue)
+      let activity_log = {
+        datetime: new Date(),
+        id:req.userId,
+        user_type: req.role?req.role:"user",
+        activity: 'slot blocked',
+        name:req.name,
+        booking_id:booking_id,
+        message: "Slot "+booking_id+"blocked at "+venue_name+" "+datetime+" "+venue_type,
+      }
+      ActivityLog(activity_log)
     })
   })
   })
@@ -448,6 +447,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
       let booking_id = values[0].booking_id
       let phone = user.phone
       let venue_name = req.body[0].venue
+      let venue_type = req.body[0].venue_type
       let date = moment(req.body[0].booking_date).format("MMMM Do YYYY")
       let start_time = Object.values(req.body).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
       let end_time = Object.values(req.body).reduce((total,value)=>{return total>value.end_time?total:value.end_time},req.body[0].end_time)
@@ -483,7 +483,16 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
       //   })
       // })
       //Activity Log
-        ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', user.name + " booked " + req.body[0].venue + " at " + momentTZ().tz("Asia/Kolkata").format('MMMM Do YYYY, h:mm:ss a'))
+      let activity_log = {
+        datetime: new Date(),
+        id:req.userId,
+        user_type: req.role?req.role:"user",
+        activity: 'slot booked',
+        name:req.name,
+        booking_id:booking_id,
+        message: "Slot "+booking_id+"booked at "+venue_name+" "+datetime+" "+venue_type,
+      }
+      ActivityLog(activity_log)
       }).catch(next)
   })
 })
@@ -589,6 +598,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
         let booking_id = values[0].booking_id
         let phone = values[0].phone
         let venue_name = values[0].venue
+        let venue_type = req.body[0].venue_type
         let date = moment(values[0].booking_date).format("MMMM Do YYYY")
         let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
         let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},values[0].end_time)
@@ -628,7 +638,16 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
           })
         })
         //Activity Log
-      ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', req.name + " booked " + req.body[0].venue+ " at " +  momentTZ().tz("Asia/Kolkata").format('MMMM Do YYYY, h:mm:ss a'))
+        let activity_log = {
+          datetime: new Date(),
+          id:req.userId,
+          user_type: req.role?req.role:"user",
+          activity: 'slot booked',
+          name:req.name,
+          booking_id:booking_id,
+          message: "Slot "+booking_id+"booked at "+venue_name+" "+datetime+" "+venue_type,
+        }
+        ActivityLog(activity_log)
 
     }).catch(next)
   }).catch(next)
@@ -647,6 +666,26 @@ router.post('/modify_booking/:id', verifyToken, (req, res, next) => {
       Booking.find({booking_id:req.params.id}).then(booking=>{
         result = Object.values(combineSlots(booking))
         res.send({status:"success", message:"booking modified", data:result})
+
+
+        let booking_id = booking[0].booking_id
+        let venue_name = booking[0].venue
+        let venue_type = booking[0].venue_type
+        let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
+        let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
+        let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
+        let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
+        //Activity Log
+        let activity_log = {
+          datetime: new Date(),
+          id:req.userId,
+          user_type: req.role?req.role:"user",
+          activity: 'slot modified',
+          name:req.name,
+          booking_id:booking_id,
+          message: "Slot "+booking_id+"modified at "+venue_name+" "+datetime+" "+venue_type,
+        }
+        ActivityLog(activity_log)
       })
     })
   })
@@ -662,6 +701,25 @@ router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
       Booking.find({booking_id:req.params.id}).then(booking=>{
         result = Object.values(combineSlots(booking))
         res.send({status:"success", message:"booking completed", data:result})
+
+        let booking_id = booking[0].booking_id
+        let venue_name = booking[0].venue
+        let venue_type = booking[0].venue_type
+        let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
+        let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
+        let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
+        let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
+        //Activity Log
+        let activity_log = {
+          datetime: new Date(),
+          id:req.userId,
+          user_type: req.role?req.role:"user",
+          activity: 'slot booking completed',
+          name:req.name,
+          booking_id:booking_id,
+          message: "Slot "+booking_id+"booking completed at "+venue_name+" "+datetime+" "+venue_type,
+        }
+        ActivityLog(activity_log)
       })
     })
   })
@@ -690,18 +748,53 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
       .then(response => {
         if(response.data.entity === "refund")
         {
-          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"}},{multi:true}).then(bookings=>{
+          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"}},{multi:true}).then(booking=>{
               res.send({status:"success", message:"booking cancelled"})
-              ActivityLog(req.userId, req.role?req.role:"user", 'slot booking cancelled', req.name + " cancelled booking in " + booking.venue+ " at " +  momentTZ().tz("Asia/Kolkata").format('MMMM Do YYYY, h:mm:ss a'))
+
+              let booking_id = booking[0].booking_id
+              let venue_name = booking[0].venue
+              let venue_type = booking[0].venue_type
+              let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
+              let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
+              let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
+              let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
+              //Activity Log
+              let activity_log = {
+                datetime: new Date(),
+                id:req.userId,
+                user_type: req.role?req.role:"user",
+                activity: 'slot booking cancelled',
+                name:req.name,
+                booking_id:booking_id,
+                message: "Slot "+booking_id+"booking cancelled at "+venue_name+" "+datetime+" "+venue_type,
+              }
+              ActivityLog(activity_log)
           }).catch(next);
         }
       }).catch(error => {
         console.log(error)
       }).catch(next);
     }else{
-      Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"}},{multi:true}).then(bookings=>{
+      Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"}},{multi:true}).then(booking=>{
           res.send({status:"success", message:"booking cancelled"})
-          ActivityLog(req.userId, req.role?req.role:"user", 'slot booking cancelled', req.name + " cancelled booking in " + booking.venue+ " at " +  momentTZ().tz("Asia/Kolkata").format('MMMM Do YYYY, h:mm:ss a'))
+          let booking_id = booking[0].booking_id
+              let venue_name = booking[0].venue
+              let venue_type = booking[0].venue_type
+              let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
+              let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
+              let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
+              let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
+              //Activity Log
+              let activity_log = {
+                datetime: new Date(),
+                id:req.userId,
+                user_type: req.role?req.role:"user",
+                activity: 'slot booking cancelled',
+                name:req.name,
+                booking_id:booking_id,
+                message: "Slot "+booking_id+"booking cancelled at "+venue_name+" "+datetime+" "+venue_type,
+              }
+              ActivityLog(activity_log)
       }).catch(next);
     }
   }).catch(next)
@@ -760,6 +853,7 @@ router.post('/slots_available/:id', verifyToken, (req, res, next) => {
             }else if(slots_available[booking.slot_time]){
               slots_available[booking.slot_time][booking.venue_type] = parseInt(slots_available[booking.slot_time][booking.venue_type] - 1)
             }
+            console.log(slots_available);
             return slots_available
           })
           venue.slots_available = available_inventory[available_inventory.length-1]
@@ -1001,7 +1095,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
       let event_name = eventBooking.venue
       let date = moment(eventBooking.booking_date).format("MMMM Do YYYY")
       let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
-      axios.get('textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime)
+      axios.get('textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+event_name+'&date='+datetime)
       .then(response => {
         console.log(response.data)
       }).catch(error=>{
@@ -1031,9 +1125,17 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
         })
       }).catch(next)
       //Activity Log
-        ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', req.body[0].name + " booked " + req.body[0].venue+ " at " + momentTZ().tz("Asia/Kolkata").format('MMMM Do YYYY, h:mm:ss a'))
-    // })
-    })
+      let activity_log = {
+        datetime: new Date(),
+        id:req.userId,
+        user_type: req.role?req.role:"user",
+        activity: 'event booked',
+        name:req.name,
+        booking_id:booking_id,
+        message: "event "+booking_id+"booked at "+event_name+" "+datetime+" "+venue_type,
+      }
+      ActivityLog(activity_log)
+    }).catch(next)
   })
 })
 

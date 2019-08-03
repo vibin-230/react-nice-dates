@@ -1255,7 +1255,7 @@ router.post('/test_sms', (req, res, next) => {
 router.post('/test_php', (req, res, next) => {
   axios.get('textlocal/index.php')
     .then(response => {
-      console.log(respose.data)
+      console.log(respose)
       res.send({data:response.data})
     }).catch(error=>{
       res.send(error.response)

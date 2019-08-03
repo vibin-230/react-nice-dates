@@ -483,7 +483,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
       //   })
       // })
       //Activity Log
-        ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', user.name + " booked " + req.body[0].venue + " at " + momentTZ().format('MMMM Do YYYY, h:mm:ss a').tz("Asia/Kolkata"))
+        ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', user.name + " booked " + req.body[0].venue + " at " + momentTZ().tz("Asia/Kolkata").format('MMMM Do YYYY, h:mm:ss a'))
       }).catch(next)
   })
 })
@@ -583,8 +583,8 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
 
     Promise.all(promisesToRun).then(values => {
       values = {...values}
-      res.send({status:"success", message:"slot booked", data:values})
-
+      res.send({status:"success", message:"slot bookedd", data:values})
+      
         // Send SMS
         let booking_id = values[0].booking_id
         let phone = values[0].phone
@@ -599,16 +599,11 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
         }).catch(error=>{
           console.log(error.response.data)
         })
-        console.log(values[0].amount)
         
         let total_amount = Object.values(values).reduce((total,value)=>{
-          console.log(value)
-          console.log(total)
-          console.log(value.amount)
           return total+value.amount
           
         },0)
-        console.log(total_amount)
         //Send Mail
         let mailBody = {
           name:values[0].name,
@@ -623,8 +618,6 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
           total_amount:total_amount,
           booking_amount:values[0].booking_amount
         }
-        console.log(req.body[0].email)
-        // console.log(mailBody)
         ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
           mail("support@turftown.in", req.body[0].email,"Venue Booked","test",html,response=>{
             if(response){
@@ -633,10 +626,10 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
               console.log('failed')
             }
           })
-        }).catch(next)
+        })
         //Activity Log
-          ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', req.body[0].name + " booked " + req.body[0].venue+ " at " +  momentTZ().format('MMMM Do YYYY, h:mm:ss a').tz("Asia/Kolkata"))
-      // })
+      ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', req.name + " booked " + req.body[0].venue+ " at " +  momentTZ().tz("Asia/Kolkata").format('MMMM Do YYYY, h:mm:ss a'))
+
     }).catch(next)
   }).catch(next)
 })
@@ -699,7 +692,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
         {
           Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"}},{multi:true}).then(bookings=>{
               res.send({status:"success", message:"booking cancelled"})
-              ActivityLog(req.userId, req.role?req.role:"user", 'slot booking cancelled', req.name + " cancelled booking in " + booking.venue+ " at " +  momentTZ().format('MMMM Do YYYY, h:mm:ss a').tz("Asia/Kolkata"))
+              ActivityLog(req.userId, req.role?req.role:"user", 'slot booking cancelled', req.name + " cancelled booking in " + booking.venue+ " at " +  momentTZ().tz("Asia/Kolkata").format('MMMM Do YYYY, h:mm:ss a'))
           }).catch(next);
         }
       }).catch(error => {
@@ -708,7 +701,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
     }else{
       Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"}},{multi:true}).then(bookings=>{
           res.send({status:"success", message:"booking cancelled"})
-          ActivityLog(req.userId, req.role?req.role:"user", 'slot booking cancelled', req.name + " cancelled booking in " + booking.venue+ " at " +  momentTZ().format('MMMM Do YYYY, h:mm:ss a').tz("Asia/Kolkata"))
+          ActivityLog(req.userId, req.role?req.role:"user", 'slot booking cancelled', req.name + " cancelled booking in " + booking.venue+ " at " +  momentTZ().tz("Asia/Kolkata").format('MMMM Do YYYY, h:mm:ss a'))
       }).catch(next);
     }
   }).catch(next)
@@ -1038,7 +1031,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
         })
       }).catch(next)
       //Activity Log
-        ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', req.body[0].name + " booked " + req.body[0].venue+ " at " + momentTZ().format('MMMM Do YYYY, h:mm:ss a').tz("Asia/Kolkata"))
+        ActivityLog(req.userId, req.role?req.role:"user", 'slot booked', req.body[0].name + " booked " + req.body[0].venue+ " at " + momentTZ().tz("Asia/Kolkata").format('MMMM Do YYYY, h:mm:ss a'))
     // })
     })
   })

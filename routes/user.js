@@ -593,7 +593,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
     Promise.all(promisesToRun).then(values => {
       values = {...values}
       res.send({status:"success", message:"slot booked", data:values})
-      
+      Venue.findById({_id:values[0].venue_id}).then(venue=>{
         // Send SMS
         let booking_id = values[0].booking_id
         let phone = values[0].phone
@@ -603,7 +603,9 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
         let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
         let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},values[0].end_time)
         let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
-        axios.get('textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name)
+        let directions = "https://www.google.com/maps/dir/"+venue.venue.latLong[0]+","+venue.venue.latLong[1]
+        
+        axios.get('https://turftown.s3.ap-south-1.amazonaws.com/php/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name)
         .then(response => {
           console.log(response.data)
         }).catch(error=>{
@@ -626,7 +628,8 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
           slot_time:datetime,
           quantity:1,
           total_amount:total_amount,
-          booking_amount:values[0].booking_amount
+          booking_amount:values[0].booking_amount,
+          directions:directions
         }
         ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
           mail("support@turftown.in", req.body[0].email,"Venue Booked","test",html,response=>{
@@ -649,6 +652,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
         }
         ActivityLog(activity_log)
 
+      }).catch(next)
     }).catch(next)
   }).catch(next)
 })
@@ -1233,7 +1237,6 @@ router.post('/revenue_report_booked', verifyToken, (req, res, next) => {
 })
 
 
-//Booking History
 router.post('/test_sms', (req, res, next) => {
   let booking_id = "sh.unique"
   let venue_name = "kilpauk"
@@ -1243,6 +1246,16 @@ router.post('/test_sms', (req, res, next) => {
   let sport_name = "lkdjfsljf"
   axios.get('textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+date+'&venue_type='+venue_type+'&sport_name='+sport_name)
     .then(response => {
+      res.send({data:response.data})
+    }).catch(error=>{
+      res.send(error.response)
+    })
+})
+
+router.post('/test_php', (req, res, next) => {
+  axios.get('textlocal/index.php')
+    .then(response => {
+      console.log(respose.data)
       res.send({data:response.data})
     }).catch(error=>{
       res.send(error.response)

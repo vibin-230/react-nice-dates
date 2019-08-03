@@ -606,18 +606,17 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
         let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},values[0].end_time)
         let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
         let directions = "https://www.google.com/maps/dir/"+venue.venue.latLong[0]+","+venue.venue.latLong[1]
-        
-        axios.get(link.domain+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area)
+        let total_amount = Object.values(values).reduce((total,value)=>{
+          return total+value.amount
+        },0)
+        axios.get(link.domain+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount)
         .then(response => {
           console.log(response.data)
         }).catch(error=>{
           console.log(error.response)
         })
         
-        let total_amount = Object.values(values).reduce((total,value)=>{
-          return total+value.amount
-          
-        },0)
+        
         //Send Mail
         let mailBody = {
           name:values[0].name,

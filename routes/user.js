@@ -165,7 +165,7 @@ router.post('/send_otp',[
   let phone = 91+req.body.phone;
   let otp   = Math.floor(999 + Math.random() * 9000);
   User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
-    axios.get('textlocal/otp.php?otp='+otp+'&phone='+phone)
+    axios.get(link.domain+'/textlocal/otp.php?otp='+otp+'&phone='+phone)
     .then(response => {
         if(response.data.status === 'success')
         {
@@ -617,30 +617,30 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
         })
         
         
-        //Send Mail
-        let mailBody = {
-          name:values[0].name,
-          date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
-          day:moment(values[0].booking_date).format("Do"),
-          venue:values[0].venue,
-          area:values[0].area,
-          venue_type:values[0].venue_type,
-          booking_id:values[0].booking_id,
-          slot_time:datetime,
-          quantity:1,
-          total_amount:total_amount,
-          booking_amount:values[0].booking_amount,
-          directions:directions
-        }
-        ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
-          mail("support@turftown.in", req.body[0].email,"Venue Booked","test",html,response=>{
-            if(response){
-              console.log('success')
-            }else{
-              console.log('failed')
-            }
-          })
-        })
+        // //Send Mail
+        // let mailBody = {
+        //   name:values[0].name,
+        //   date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
+        //   day:moment(values[0].booking_date).format("Do"),
+        //   venue:values[0].venue,
+        //   area:values[0].area,
+        //   venue_type:values[0].venue_type,
+        //   booking_id:values[0].booking_id,
+        //   slot_time:datetime,
+        //   quantity:1,
+        //   total_amount:total_amount,
+        //   booking_amount:values[0].booking_amount,
+        //   directions:directions
+        // }
+        // ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
+        //   mail("support@turftown.in", req.body[0].email,"Venue Booked","test",html,response=>{
+        //     if(response){
+        //       console.log('success')
+        //     }else{
+        //       console.log('failed')
+        //     }
+        //   })
+        // })
         //Activity Log
         let activity_log = {
           datetime: new Date(),
@@ -761,9 +761,10 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
               let venue_name = booking[0].venue
               let venue_type = booking[0].venue_type
               let venue_area = booking[0].venue_area
+              let phone = "91"+booking[0].phone
               let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
-              let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
-              let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
+              let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
+              let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
               let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
               //Send SMS
               axios.get(link.domain+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
@@ -791,13 +792,14 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
     }else{
       Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"}},{multi:true}).then(booking=>{
           res.send({status:"success", message:"booking cancelled"})
-          let booking_id = booking[0].booking_id
+            let booking_id = booking[0].booking_id
               let venue_name = booking[0].venue
               let venue_type = booking[0].venue_type
               let venue_area = booking[0].venue_area
+              let phone = "91"+booking[0].phone
               let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
-              let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
-              let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
+              let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
+              let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
               let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
 
               //Send SMS
@@ -990,7 +992,7 @@ router.post('/booking_history_by_venue', verifyToken, (req, res, next) => {
             // console.log(booking.end_time.getTime())
             // console.log(moment().add(330,"minutes").getTime())
             // console.log(booking.end_time.getTime()>moment().add(330,"minutes").getTime())
-          if(booking.end_time.getTime()>new Date().addHours(5.5).getTime()){
+          if(booking.end_time.getTime()>new Date().addHours(4).getTime()){
             booking_list.push(booking)
           }
         })

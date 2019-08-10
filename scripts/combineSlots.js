@@ -5,30 +5,32 @@ const Admin = require('../models/admin');
 const combineSlots=(booking, users, admins)=>{
     let result = {}
     let data = Object.values(booking).map((value,index)=>{
-      // let UserType;
-      // if(value.booking_type = "web"){
-      //   UserType = admins
-      // }else{
-      //   UserType = users
-      // }
-      // let user_array ={}
-      // if(UserType){
-      //   let user = UserType.map(userValue=>{
-      //     if(value.created_by === "5d2f455764273e3a2feac901"){
-      //       user_array = userValue
-      //     }
-      //   })
-      // }
+      let UserType;
+      if(value.booking_type === "web"){
+        UserType = admins
+      }else{
+        UserType = users
+      }
+      let user_array ={}
+      if(UserType){
+        let user = UserType.map(userValue=>{
+        //  console.log(value.created_by == userValue._id); 
+        //  console.log(value.created_by);
+        //  console.log(userValue._id);
+          if(value.created_by == userValue._id){
+            console.log('test');
+            user_array = userValue
+          }
+        })
+      }
 
       
       if(!result[value.multiple_id]){
         result[value.multiple_id] = value
-        // result[value.multiple_id].created = user_array
-        // console.log(result[value.multiple_id].created_by);
+        result[value.multiple_id].created_by = user_array
 
       }else{
-        // result[value.multiple_id].created = user_array
-        // console.log(result[value.multiple_id].created_by);
+        result[value.multiple_id].created_by = user_array
 
         result[value.multiple_id].amount = result[value.multiple_id].amount + value.amount
         result[value.multiple_id].commission = result[value.multiple_id].commission + value.commission

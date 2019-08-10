@@ -397,7 +397,7 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
         activity: 'slot blocked',
         name:req.name,
         booking_id:booking_id,
-        message: "Slot "+booking_id+"blocked at "+venue_name+" "+datetime+" "+venue_type,
+        message: "Slot "+booking_id+" blocked at "+venue_name+" "+datetime+" "+venue_type,
       }
       ActivityLog(activity_log)
     })
@@ -496,7 +496,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         activity: 'slot booked',
         name:req.name,
         booking_id:booking_id,
-        message: "Slot "+booking_id+"booked at "+venue_name+" "+datetime+" "+venue_type,
+        message: "Slot "+booking_id+" booked at "+venue_name+" "+datetime+" "+venue_type,
       }
       ActivityLog(activity_log)
       }).catch(next)
@@ -655,7 +655,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
           activity: 'slot booked',
           name:req.name,
           booking_id:booking_id,
-          message: "Slot "+booking_id+"booked at "+venue_name+" "+datetime+" "+venue_type,
+          message: "Slot "+booking_id+" booked at "+venue_name+" "+datetime+" "+venue_type,
         }
         ActivityLog(activity_log)
 
@@ -694,7 +694,7 @@ router.post('/modify_booking/:id', verifyToken, (req, res, next) => {
           activity: 'slot modified',
           name:req.name,
           booking_id:booking_id,
-          message: "Slot "+booking_id+"modified at "+venue_name+" "+datetime+" "+venue_type,
+          message: "Slot "+booking_id+" modified at "+venue_name+" "+datetime+" "+venue_type,
         }
         ActivityLog(activity_log)
       })
@@ -728,7 +728,7 @@ router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
           activity: 'slot booking completed',
           name:req.name,
           booking_id:booking_id,
-          message: "Slot "+booking_id+"booking completed at "+venue_name+" "+datetime+" "+venue_type,
+          message: "Slot "+booking_id+" booking completed at "+venue_name+" "+datetime+" "+venue_type,
         }
         ActivityLog(activity_log)
       })
@@ -761,8 +761,9 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
         if(response.data.entity === "refund")
         {
           Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"}},{multi:true}).then(booking=>{
+            Booking.find({booking_id:req.params.id}).lean().then(booking=>{
               res.send({status:"success", message:"booking cancelled"})
-
+              console.log(booking);
               let booking_id = booking[0].booking_id
               let venue_name = booking[0].venue
               let venue_type = booking[0].venue_type
@@ -787,9 +788,10 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                 activity: 'slot booking cancelled',
                 name:req.name,
                 booking_id:booking_id,
-                message: "Slot "+booking_id+"booking cancelled at "+venue_name+" "+datetime+" "+venue_type,
+                message: "Slot "+booking_id+" booking cancelled at "+venue_name+" "+datetime+" "+venue_type,
               }
               ActivityLog(activity_log)
+            }).catch(next);
           }).catch(next);
         }
       }).catch(error => {
@@ -797,8 +799,10 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
       }).catch(next);
     }else{
       Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"}},{multi:true}).then(booking=>{
-          res.send({status:"success", message:"booking cancelled"})
-            let booking_id = booking[0].booking_id
+            Booking.find({booking_id:req.params.id}).lean().then(booking=>{
+              res.send({status:"success", message:"booking cancelled"})
+              console.log(booking);
+              let booking_id = booking[0].booking_id
               let venue_name = booking[0].venue
               let venue_type = booking[0].venue_type
               let venue_area = booking[0].venue_area
@@ -809,7 +813,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
               let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
 
               //Send SMS
-              axios.get(link.domain+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area).then(response => {
+              axios.get(link.domain+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
                 console.log(response.data)
               }).catch(error=>{
                 console.log(error.response)
@@ -823,9 +827,10 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                 activity: 'slot booking cancelled',
                 name:req.name,
                 booking_id:booking_id,
-                message: "Slot "+booking_id+"booking cancelled at "+venue_name+" "+datetime+" "+venue_type,
+                message: "Slot "+booking_id+" booking cancelled at "+venue_name+" "+datetime+" "+venue_type,
               }
               ActivityLog(activity_log)
+        }).catch(next);
       }).catch(next);
     }
   }).catch(next)
@@ -1048,7 +1053,7 @@ router.post('/booking_completed_list_by_venue', verifyToken, (req, res, next) =>
 
   //Booking History_from_app
 router.post('/booking_completed_list', verifyToken, (req, res, next) => {
-  Booking.find({booking_status:"completed", booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(booking=>{
+  Booking.find({booking_status:"completed", booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().then(booking=>{
     User.find({},{_id:1,name:1,email:1,phone:1},null).lean().then(users=> {
       Admin.find({},{_id:1,name:1,email:1,phone:1},null).lean().then(admins=> {
         result = Object.values(combineSlots(booking,users,admins))
@@ -1157,7 +1162,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
         activity: 'event booked',
         name:req.name,
         booking_id:booking_id,
-        message: "event "+booking_id+"booked at "+event_name+" "+datetime+" "+venue_type,
+        message: "event "+booking_id+" booked at "+event_name+" "+datetime+" "+venue_type,
       }
       ActivityLog(activity_log)
     }).catch(next)

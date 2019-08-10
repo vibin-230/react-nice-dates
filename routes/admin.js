@@ -132,19 +132,23 @@ router.post('/admin_login',
     (req, res, next) => {
     Admin.findOne({username:req.body.username},{reset_password_hash:0,reset_password_expiry:0,activity_log:0},null).then(admin=>{
         if(admin){
-            if(admin.status){
-                bcrypt.compare(req.body.password, admin.password).then(function(response) {
-                    if(response){
-                        var token = jwt.sign({ id: admin._id, username:admin.username, role:admin.role, name:admin.name}, config.secret);
-                        admin.password = undefined
-                        res.send({status:"success", message:"login success", token:token, role:admin.role,id:admin._id,data:admin})
-                        // ActivityLog(admin._id, admin.role, 'login', admin.username +" logged-in successfully")
-                    }else{
-                        res.send({status:"failed", message:"password incorrect"})
-                    }
-                })
+            if(admin.password){
+                if(admin.status){
+                    bcrypt.compare(req.body.password, admin.password).then(function(response) {
+                        if(response){
+                            var token = jwt.sign({ id: admin._id, username:admin.username, role:admin.role, name:admin.name}, config.secret);
+                            admin.password = undefined
+                            res.send({status:"success", message:"login success", token:token, role:admin.role,id:admin._id,data:admin})
+                            // ActivityLog(admin._id, admin.role, 'login', admin.username +" logged-in successfully")
+                        }else{
+                            res.send({status:"failed", message:"password incorrect"})
+                        }
+                    })
+                }else{
+                    res.send({status:"failed", message:"admin status disabled"})
+                }
             }else{
-                res.send({status:"failed", message:"admin status disabled"})
+                res.send({status:"failed", message:"admin needs to setup password"})
             }
         }else{
             res.send({status:"failed", message:"admin doesn't exist"})
@@ -168,7 +172,7 @@ router.post('/forget_password', (req, res, next) => {
                 reset_password_hash:id
                 }
                 Admin.findOneAndUpdate({email: req.body.email},body).then(function(data) {
-                res.send({status:"success",message:"reset password link sent to mail"})
+                res.send({status:"success",message:"Reset password has been sent to the E-mail"})
                 }).catch(next);
             }else{
                 res.status(409).send({status:"failed", message: "failed to send mail"});
@@ -725,7 +729,7 @@ router.post('/support',
     AccessControl('support', 'create'),
     (req, res, next) => {
         Support.create(req.body).then(support=>{
-            let html = "<h4>email: "+req.body.email+"</h4><h4>phone: "+req.body.phone+"</h4>"+"<h4>name: "+req.body.name+"</h4>"+"<h4>venue name: "+req.body.venue_name+"</h4>"+"<h4>message: "+req.body.message+"</h4>"
+            let html = "<h4><b>E-mail: </b>"+req.body.email+"</h4><h4><b>Phone: </b>"+req.body.phone+"</h4>"+"<h4><b>Name: </b>"+req.body.name+"</h4>"+"<h4><b>Venue Name: </b>"+req.body.venue_name+"</h4>"+"<h4><b>Message: </b>"+req.body.message+"</h4>"
             mail(req.body.email,"support@turftown.in","Support "+req.body.venue_name,req.body.message,html,response=>{
                 if(response){
                     res.send({status:"success", message:"support request raised"})

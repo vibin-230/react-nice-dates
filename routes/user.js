@@ -72,6 +72,12 @@ function ActivityLog(activity_log) {
   })
 }
 
+Date.prototype.addHours= function(h,m){
+  this.setHours(this.getHours()+h);
+  this.setMinutes(this.getMinutes()+m);
+  return this;
+}
+
 function AccessControl(api_type, action_type) {
   return function(req,res,next){
       console.log(req.role)
@@ -983,16 +989,10 @@ router.post('/booking_history_by_venue', verifyToken, (req, res, next) => {
       result = Object.values(combineSlots(booking))
       let booking_list = []
         result = result.map(booking=>{
-          Date.prototype.addHours= function(h){
-            this.setHours(this.getHours()+h);
-            return this;
-          }
-            // console.log(booking.end_time)
-            // console.log(moment().add(330,"minutes"))
-            // console.log(booking.end_time.getTime())
-            // console.log(moment().add(330,"minutes").getTime())
-            // console.log(booking.end_time.getTime()>moment().add(330,"minutes").getTime())
-          if(booking.end_time.getTime()>new Date().addHours(4).getTime()){
+            // console.log(booking)
+            // console.log(new Date().addHours(4,30))
+            // console.log("booking.end_time",new Date(booking.end_time))
+          if(booking.end_time.getTime()>new Date().addHours(4,30).getTime()){
             booking_list.push(booking)
           }
         })
@@ -1066,11 +1066,7 @@ router.post('/incomplete_booking/:id', verifyToken, (req, res, next) => {
         result = Object.values(combineSlots(bookings,users,admins))
         let booking_list = []
         result = result.map(booking=>{
-          Date.prototype.addHours= function(h){
-            this.setHours(this.getHours()+h);
-            return this;
-          }
-            if(booking.end_time.getTime()<=new Date().addHours(4).getTime()){
+            if(booking.end_time.getTime()<=new Date().addHours(4,30).getTime()){
             booking_list.push(booking)
           }
         })

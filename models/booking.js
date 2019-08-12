@@ -34,7 +34,9 @@ const schema = new Schema({
   venue_offer:Number,
   card:Number,
   cash:Number,
-  upi:Number
+  upi:Number,
+  academy:Boolean,
+  membership:Boolean
 },{ timestamps: { createdAt: 'created_at', updatedAt: 'modified_at' } });
 
 //Model

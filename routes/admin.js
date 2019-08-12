@@ -799,8 +799,7 @@ router.post('/create_ad',
     AccessControl('ads', 'create'),
     (req, res, next) => {
     Ads.find({}).then(ads=>{
-        let check_position = ads.map(ad=>ad.position===req.body.position)
-
+        let check_position = ads.filter(ad=>ad.position===req.body.position)
         if(check_position.length){
             existing_positions = []
             ads.map(ad=>{

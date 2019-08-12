@@ -171,7 +171,7 @@ router.post('/send_otp',[
   let phone = 91+req.body.phone;
   let otp   = Math.floor(999 + Math.random() * 9000);
   User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
-    axios.get(link.domain+'/textlocal/otp.php?otp='+otp+'&phone='+phone)
+    axios.get(process.env.PHP_SERVER+'/textlocal/otp.php?otp='+otp+'&phone='+phone)
     .then(response => {
         if(response.data.status === 'success')
         {
@@ -459,7 +459,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
       let end_time = Object.values(req.body).reduce((total,value)=>{return total>value.end_time?total:value.end_time},req.body[0].end_time)
       let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
       console.log(datetime)
-      axios.get(link.domain+'textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name)
+      axios.get(process.env.PHP_SERVER+'textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name)
       .then(response => {
         console.log(response.data)
       }).catch(error=>{
@@ -575,7 +575,9 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
                 card:body.card,
                 upi:body.upi,
                 cash:body.cash,
-                venue_discount:body.venue_discount
+                venue_discount:body.venue_discount,
+                academy:body.academy,
+                membership:body.membership
               }
               Booking.create(booking_data).then(booking=>{
                 resolve(booking)
@@ -615,7 +617,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
         let total_amount = Object.values(values).reduce((total,value)=>{
           return total+value.amount
         },0)
-        axios.get(link.domain+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount)
+        axios.get(process.env.PHP_SERVER+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount)
         .then(response => {
           console.log(response.data)
         }).catch(error=>{
@@ -774,7 +776,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
               let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
               let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
               //Send SMS
-              axios.get(link.domain+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
+              axios.get(process.env.PHP_SERVER+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
                 console.log(response.data)
               }).catch(error=>{
                 console.log(error.response)
@@ -813,7 +815,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
               let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
 
               //Send SMS
-              axios.get(link.domain+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
+              axios.get(process.env.PHP_SERVER+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
                 console.log(response.data)
               }).catch(error=>{
                 console.log(error.response)
@@ -990,11 +992,11 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
 
   //Booking History Based on venue
 router.post('/booking_history_by_venue', verifyToken, (req, res, next) => {
+  console.log(req.body)
   Booking.find({booking_status:{$in:["booked"]}, venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(booking=>{
-      result = Object.values(combineSlots(booking))
+    result = Object.values(combineSlots(booking))
       let booking_list = []
         result = result.map(booking=>{
-            // console.log(booking)
             // console.log(new Date().addHours(4,30))
             // console.log("booking.end_time",new Date(booking.end_time))
           if(booking.end_time.getTime()>new Date().addHours(4,30).getTime()){
@@ -1267,7 +1269,7 @@ router.post('/test_sms', (req, res, next) => {
   let venue_area = "kdjflsjf"
   let sport_name = "lkdjfsljf"
   //Send SMS
-  axios.get(link.domain+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+venue_type+'&sport_name='+sport_name+'&venue_area='+venue_area).then(response => {
+  axios.get(process.env.PHP_SERVER+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+venue_type+'&sport_name='+sport_name+'&venue_area='+venue_area).then(response => {
     console.log(response.data)
   }).catch(error=>{
     console.log(error.response)

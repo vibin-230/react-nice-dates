@@ -5,7 +5,7 @@ mongoose.Promise = require('bluebird');
 const cors = require('cors');
 const fileUpload = require('express-fileupload');
 const path = require('path');
-
+require('dotenv').config();
 const app = express();
 
 // set the view engine to ejs
@@ -14,7 +14,7 @@ app.set('view engine', 'ejs');
 mongoose.Promise  = global.Promise;
 
 //Mongodb connection
-mongoose.connect('mongodb://akshay:qwerty@13.233.94.159/turftown',{ useNewUrlParser: true });
+mongoose.connect(process.env.DB_CONN,{ useNewUrlParser: true });
 mongoose.set('useFindAndModify', false);
 mongoose.connection.once('open', function() {
 	console.log("Database connected successfully");
@@ -48,7 +48,7 @@ app.get('*', function (req, res) {
 });
 
 //Port listen
-let port = 3040;
-app.listen(process.env.port || port, function(){
+let port = process.env.PORT || 3040  ;
+app.listen( port, function(){
   console.log("Port Listening "+port);
 });

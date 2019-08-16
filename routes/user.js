@@ -992,7 +992,6 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
 
   //Booking History Based on venue
 router.post('/booking_history_by_venue', verifyToken, (req, res, next) => {
-  console.log(req.body)
   Booking.find({booking_status:{$in:["booked"]}, venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(booking=>{
     result = Object.values(combineSlots(booking))
       let booking_list = []
@@ -1010,7 +1009,6 @@ router.post('/booking_history_by_venue', verifyToken, (req, res, next) => {
   //Booking History
 router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
   Booking.find({booking_status:{$in:["booked","completed"]},venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}}).then(booking=>{
-
     result = Object.values(combineSlots(booking))
     // console.log(result)
     // let booking_list = []

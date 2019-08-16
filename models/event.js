@@ -25,7 +25,7 @@ const schema = new Schema({
   // runner_up:Number,
   // commission:Number,
   // exclusive:Boolean,
-  venue:Array,
+  venue:[{ type: Schema.Types.ObjectId, ref: 'venue' }],
   bank:Object,
   event:Object,
   format:Object,

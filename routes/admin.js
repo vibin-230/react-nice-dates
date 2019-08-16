@@ -115,7 +115,7 @@ router.post('/create_super_admin',
     }
     Admin.findOne({username:req.body.username}).then(superAdmin=>{
         if(superAdmin){
-            res.send({status:"failure", message:"username already exist"})
+            res.send({status:"failure", message:"Email-id already exist"})
         }else{
             bcrypt.hash(req.body.password, saltRounds).then(function(hash) {
             req.body.role = "super_admin";
@@ -145,10 +145,10 @@ router.post('/admin_login',
                         }
                     })
                 }else{
-                    res.send({status:"failed", message:"admin status disabled"})
+                    res.send({status:"failed", message:"Invalid Email id"})
                 }
             }else{
-                res.send({status:"failed", message:"admin needs to setup password"})
+                res.send({status:"failed", message:"Please Reset your password"})
             }
         }else{
             res.send({status:"failed", message:"admin doesn't exist"})
@@ -280,7 +280,7 @@ router.post('/venue_manager',
     verifyToken,
     AccessControl('venue_manager', 'read'),
     (req, res, next) => {
-    Admin.find({role:"venue_manager"}).then(venue=>{
+    Admin.find({role:"venue_manager"}).lean().populate('venue','_id name venue type').then(venue=>{
         res.send({status:"success", message:"venue managers fetched", data:venue})
     }).catch(next)
 })
@@ -326,13 +326,9 @@ router.put('/edit_venue_manager/:id',
     (req, res, next) => {
     req.body.modified_by = req.username
     Admin.findByIdAndUpdate({_id:req.params.id},req.body).then(venueManager=>{
-        Admin.findById({_id:req.params.id}).then(venueManager=>{
-            console.log(venueManager);
-            Venue.find({_id:{$in:venueManager.venue}},{_id:1, name:1, venue:1, type:1}).lean().then(venue=>{
-                venueManager.venue = venue
-                res.send({status:"success", message:"venue manager edited", data:venueManager})
-                ActivityLog(req.userId, req.username, req.role, 'venue manager modified', req.name+" modified venue manager")
-            }).catch(next)
+        Admin.findById({_id:req.params.id}).lean().populate('venue','_id name venue type').then(venueManager=>{
+            res.send({status:"success", message:"venue manager edited", data:venueManager})
+            ActivityLog(req.userId, req.username, req.role, 'venue manager modified', req.name+" modified venue manager")
         }).catch(next)
     }).catch(next)
 })
@@ -439,12 +435,9 @@ router.post('/add_event',
     AccessControl('event', 'create'),
     (req, res, next) => {
     req.body.created_by = req.username
-    Event.create(req.body).then(event=>{
-        Venue.find({_id:{$in:event.venue}},{_id:1, name:1, venue:1, type:1}, null).lean().then(venue=>{
-            event.venue = venue
-            res.send({status:"success", message:"event added", data:event})
-            ActivityLog(req.userId, req.role, 'event created', req.name+" created event "+event.event.name)
-        }).catch(next)
+    Event.create(req.body).lean().populate('venue','_id name venue type').then(event=>{
+        res.send({status:"success", message:"event added", data:event})
+        ActivityLog(req.userId, req.role, 'event created', req.name+" created event "+event.event.name)
     }).catch(next)
 })
 
@@ -456,12 +449,9 @@ router.put('/edit_event/:id',
     req.body.modified_by = req.username
     req.body.modified_at = new Date()
     Event.findByIdAndUpdate({_id:req.params.id},req.body).then(event=>{
-        Event.findById({_id:req.params.id}).then(event=>{
-            Venue.find({_id:{$in:event.venue}},{_id:1, name:1, venue:1, type:1}, null).lean().then(venue=>{
-                event.venue = venue
-                res.send({status:"success", message:"event edited", data:event})
-                ActivityLog(req.userId, req.role, 'event modified', req.name+" modified event "+ event.event.name)
-            }).catch(next)
+        Event.findById({_id:req.params.id}).lean().populate('venue','_id name venue type').then(event=>{
+            res.send({status:"success", message:"event edited", data:event})
+            ActivityLog(req.userId, req.role, 'event modified', req.name+" modified event "+ event.event.name)
         }).catch(next)
     }).catch(next)
 })
@@ -484,7 +474,7 @@ router.post('/coupon',
     verifyToken,
     AccessControl('coupon', 'read'),
     (req, res, next) => {
-    Coupon.find({}).then(coupon=>{
+    Coupon.find({}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(coupon=>{
         res.send({status:"success", message:"coupons fetched", data:coupon})
     }).catch(next)
 })
@@ -537,15 +527,9 @@ router.post('/add_coupon',
     AccessControl('coupon', 'create'),
     (req, res, next) => {
     req.body.created_by = req.username
-    Coupon.create(req.body).then(coupon=>{
-        Venue.find({_id:{$in:coupon.venue}},{_id:1, name:1, venue:1, type:1}, null).lean().then(venue=>{
-            Event.find({_id:{$in:coupon.event}},{_id:1, event:1, type:1},null).lean().then(event=>{
-                coupon.event = event
-                coupon.venue = venue
-                res.send({status:"success", message:"coupon added", data:coupon})
-                ActivityLog(req.userId, req.role, 'coupon created', req.name+" created coupon "+coupon.title)
-            }).catch(next)
-        }).catch(next)
+    Coupon.create(req.body).lean().populate('event','_id event type').populate('venue','_id name venue type').then(coupon=>{
+        res.send({status:"success", message:"coupon added", data:coupon})
+        ActivityLog(req.userId, req.role, 'coupon created', req.name+" created coupon "+coupon.title)
     }).catch(next)
 })
 
@@ -557,15 +541,9 @@ router.put('/edit_coupon/:id',
     req.body.modified_by = req.username
     req.body.modified_at = new Date()
     Coupon.findByIdAndUpdate({_id:req.params.id},req.body).then(coupon=>{
-        Coupon.findById({_id:req.params.id}).then(coupon=>{
-            Venue.find({_id:{$in:coupon.venue}},{_id:1, name:1, venue:1, type:1}, null).lean().then(venue=>{
-                Event.find({_id:{$in:coupon.event}},{_id:1, event:1, type:1},null).lean().then(event=>{
-                    coupon.event = event
-                    coupon.venue = venue
-                    res.send({status:"success", message:"coupon edited", data:coupon})
-                    ActivityLog(req.userId, req.role, 'coupon modified', req.name+" modified coupon "+coupon.title)
-                }).catch(next)
-            }).catch(next)
+        Coupon.findById({_id:req.params.id}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(coupon=>{
+            res.send({status:"success", message:"coupon edited", data:coupon})
+            ActivityLog(req.userId, req.role, 'coupon modified', req.name+" modified coupon "+coupon.title)
         }).catch(next)
     }).catch(next)
 })
@@ -710,7 +688,6 @@ router.post('/search',
     (req, res, next) => {
     Venue.find({"venue.name":{ "$regex": req.body.search, "$options": "i" }}).then(venue=>{
         Event.find({"event.name":{ "$regex": req.body.search, "$options": "i" }}).then(event=>{
-            console.log(venue)
             let combinedResult
             if(venue){
                 combinedResult = venue.concat(event);
@@ -746,7 +723,7 @@ router.post('/ads',
     verifyToken,
     AccessControl('ads', 'create'),
     (req, res, next) => {
-    Ads.create(req.body).then(ads=>{
+    Ads.create(req.body).lean().populate('event','_id event type').populate('venue','_id name venue type').then(ads=>{
         res.send({status:"success", message:"message sent", data:ads})
     }).catch(next)
 })
@@ -785,7 +762,7 @@ router.post('/ads_list',
     verifyToken,
     AccessControl('ads', 'read'),
     (req, res, next) => {
-    Ads.find({}).then(ads=>{
+    Ads.find({}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(ads=>{
         res.send({status:"success", message:"ads fetched", data:ads})
     }).catch(next)
 })
@@ -808,13 +785,9 @@ router.post('/create_ad',
             res.send({status:"failed", message:"position already exists", existing_positions})
         }else{
             Ads.create(req.body).then(ads=>{
-                Venue.find({_id:{$in:ads.venue}},{_id:1, name:1, venue:1, type:1},null).lean().then(venue=>{
-                    Event.find({_id:{$in:ads.event}},{_id:1, event:1, type:1},null).lean().then(event=>{
-                        ads.event = event
-                        ads.venue = venue
-                        res.send({status:"success", message:"ad created", data:ads})
-                        ActivityLog(req.userId, req.role, 'ad created', req.name+" created ad ")
-                    }).catch(next)
+                Ads.findById({_id:ads.id}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(ads=>{
+                    res.send({status:"success", message:"ad created", data:ads})
+                    ActivityLog(req.userId, req.role, 'ad created', req.name+" created ad ")
                 }).catch(next)
             }).catch(next)
         }
@@ -829,15 +802,9 @@ router.post('/edit_ad/:id',
     req.body.modified_at = new Date()
     req.body.modified_by = req.username
     Ads.findByIdAndUpdate({_id:req.params.id}, req.body).then(ads=>{
-        Ads.findById({_id:req.params.id}).then(ads=>{
-            Venue.find({_id:{$in:ads.venue}},{_id:1, name:1, venue:1, type:1},null).lean().then(venue=>{
-                Event.find({_id:{$in:ads.event}},{_id:1, event:1, type:1},null).lean().then(event=>{
-                    ads.event = event
-                    ads.venue = venue
-                    res.send({status:"success", message:"ad modified", data:ads})
-                    ActivityLog(req.userId, req.role, 'ad modified', req.name+" modified ad ")
-                }).catch(next)
-            }).catch(next)
+        Ads.findById({_id:req.params.id}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(ads=>{
+            res.send({status:"success", message:"ad modified", data:ads})
+            ActivityLog(req.userId, req.role, 'ad modified', req.name+" modified ad ")
         }).catch(next)
     }).catch(next)
 })
@@ -854,11 +821,30 @@ router.post('/delete_ad/:id',
 })
 
 //// Offers List
+// router.post('/offers_list',
+//     verifyToken,
+//     AccessControl('offers', 'read'),
+//     (req, res, next) => {
+//         Venue.find({},{_id:1, name:1, venue:1, type:1},null).lean().then(venues=>{
+//             Event.find({},{_id:1, event:1, type:1},null).lean().then(events=>{ 
+//                 Offers.find({}).lean().then(offers=>{
+//                     offers = offers.map((offer,index)=>{
+//                         event = events.filter(value=>offer.event.index_of(value._id)!== -1)
+//                         venue = venues.filter(value=>offer.venue.index_of(value._id)!== -1)
+//                         offer.event = event
+//                         offer.venue = venue
+//                     })
+//                     res.send({status:"success", message:"offers fetched", data:offers})
+//                 }).catch(next)
+//         }).catch(next)
+//     }).catch(next)
+// })
+
 router.post('/offers_list',
     verifyToken,
     AccessControl('offers', 'read'),
     (req, res, next) => {
-    Offers.find({}).then(offers=>{
+    Offers.find({}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(offers=>{
         res.send({status:"success", message:"offers fetched", data:offers})
     }).catch(next)
 })
@@ -869,14 +855,10 @@ router.post('/create_offer',
     verifyToken,
     AccessControl('offers', 'create'),
     (req, res, next) => {
-    Offers.create(req.body).then(offers=>{
-        Venue.find({_id:{$in:offers.venue}},{_id:1, name:1, venue:1, type:1},null).lean().then(venue=>{
-            Event.find({_id:{$in:offers.event}},{_id:1, event:1, type:1},null).lean().then(event=>{
-                offers.event = event
-                offers.venue = venue
-                res.send({status:"success", message:"offer created", data:offers})
-                ActivityLog(req.userId, req.role, 'offer created', req.name+" created offer ")
-            }).catch(next)
+    Offers.create(req.body).lean().populate('event','_id event type').populate('venue','_id name venue type').then(offers=>{
+        Offers.findById({_id:offers._id}).then(offers=>{
+            res.send({status:"success", message:"offer created", data:offers})
+            ActivityLog(req.userId, req.role, 'offer created', req.name+" created offer ")
         }).catch(next)
     }).catch(next)
 })
@@ -889,15 +871,9 @@ router.post('/edit_offer/:id',
     req.body.modified_at = new Date()
     req.body.modified_by = req.username
     Offers.findByIdAndUpdate({_id:req.params.id}, req.body).then(offers=>{
-        Offers.findById({_id:req.params.id}).then(offers=>{
-            Venue.find({_id:{$in:offers.venue}},{_id:1, name:1, venue:1, type:1},null).lean().then(venue=>{
-                Event.find({_id:{$in:offers.event}},{_id:1, event:1, type:1},null).lean().then(event=>{
-                    offers.event = event
-                    offers.venue = venue
-                    res.send({status:"success", message:"offer modified", data:offers})
-                    ActivityLog(req.userId, req.role, 'offer modified', req.name+" modified offer ")
-                }).catch(next)
-            }).catch(next)
+        Offers.findById({_id:req.params.id}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(offers=>{
+            res.send({status:"success", message:"offer modified", data:offers})
+            ActivityLog(req.userId, req.role, 'offer modified', req.name+" modified offer ")
         }).catch(next)
     }).catch(next)
 })

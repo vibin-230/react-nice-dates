@@ -15,7 +15,7 @@ const schema = new Schema({
   alt_phone:String,
   gst:String,
   email:String,
-  venue:Array
+  venue:[{ type: Schema.Types.ObjectId, ref: 'venue' }],
 });
 
 //Model

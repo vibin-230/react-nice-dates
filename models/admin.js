@@ -18,7 +18,7 @@ const schema = new Schema({
   gst:String,
   email:String,
   access:String,
-  venue:Array,
+  venue:[{ type: Schema.Types.ObjectId, ref: 'venue' }],
   activity_log:Array,
   status:{type:Boolean, default: true}
 });

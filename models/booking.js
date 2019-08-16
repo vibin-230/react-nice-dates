@@ -36,7 +36,8 @@ const schema = new Schema({
   cash:Number,
   upi:Number,
   academy:Boolean,
-  membership:Boolean
+  membership:Boolean,
+  collected_by:{ type: Schema.Types.ObjectId, ref: 'admin' }
 },{ timestamps: { createdAt: 'created_at', updatedAt: 'modified_at' } });
 
 //Model

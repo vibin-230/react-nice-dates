@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer');
 
-const sendMail = (from,to,subject,text,html,callback) => {
+const sendMail = (from,to,subject,text,html,callback,name) => {
     // Send Mail
     nodemailer.createTestAccount((err, account) => {
         let transporter = nodemailer.createTransport({
@@ -13,7 +13,7 @@ const sendMail = (from,to,subject,text,html,callback) => {
 
         // setup email data with unicode symbols
         let mailOptions = {
-        from: '<'+from+'>', // sender address
+        from: name+'<'+from+'>', // sender address
         to: to, // list of receivers
         subject: subject, // Subject line
         text: text , // plain text body

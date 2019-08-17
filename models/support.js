@@ -9,7 +9,6 @@ const schema = new Schema({
   name:String,
   email:String,
   message:String,
-  name:String,
   venue_name:String,
   phone:String,
 });

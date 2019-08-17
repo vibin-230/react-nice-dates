@@ -312,7 +312,7 @@ router.post('/add_venue_manager',
                 Venue.find({_id:{$in:venueManager.venue}},{_id:1, name:1, venue:1, type:1}).lean().then(venue=>{
                     venueManager.venue = venue
                     res.send({status:"success", message:"venue manager added", data:venueManager})
-                    ActivityLog(req.userId, req.username, req.role, 'venue manager created', req.name+" created venue manager")
+                    ActivityLog(req.userId, req.username, req.role, 'venue manager created', req.name+" created venue manager "+venueManager.name)
                 }).catch(next)
             }).catch(next)
         }
@@ -328,7 +328,7 @@ router.put('/edit_venue_manager/:id',
     Admin.findByIdAndUpdate({_id:req.params.id},req.body).then(venueManager=>{
         Admin.findById({_id:req.params.id}).lean().populate('venue','_id name venue type').then(venueManager=>{
             res.send({status:"success", message:"venue manager edited", data:venueManager})
-            ActivityLog(req.userId, req.username, req.role, 'venue manager modified', req.name+" modified venue manager")
+            ActivityLog(req.userId, req.username, req.role, 'venue manager modified', req.name+" modified venue manager "+venueManager.name)
         }).catch(next)
     }).catch(next)
 })
@@ -338,10 +338,10 @@ router.delete('/delete_venue_manager/:id',
     verifyToken,
     AccessControl('venue_manager', 'delete'),
     (req, res, next) => {
-        Admin.findByIdAndRemove({_id:req.params.id},req.body).then(venueManager=>{
+        Admin.findByIdAndRemove({_id:req.params.id},req.body).then(deletedVenueManager=>{
             Admin.find({}).then(venueManager=>{
             res.send({status:"success", message:"venue manager deleted", data:venueManager})
-            ActivityLog(req.userId, req.username, req.role, 'venue manager deleted', req.name+" deleted venue manager")
+            ActivityLog(req.userId, req.username, req.role, 'venue manager deleted', req.name+" deleted venue manager "+deletedVenueManager.name)
         }).catch(next)
     }).catch(next)
 })
@@ -353,7 +353,6 @@ router.post('/venue_staff',
     (req, res, next) => {
         Admin.find({role:"venue_staff"}).then(venueStaff=>{
             res.send({status:"success", message:"venue staffs fetched", data:venueStaff})
-            ActivityLog(req.userId, req.username, req.role, 'venue staff created', req.name+" created venue staff")
     }).catch(next)
 })
 
@@ -382,9 +381,9 @@ router.post('/add_venue_staff',
                     }
                 })
                 res.send({status:"success", message:"venue staff added", data:venueStaff})
-                ActivityLog(req.userId, req.username, req.role, 'venue staff created', req.name+" created venue staff")
+                ActivityLog(req.userId, req.username, req.role, 'venue staff created', req.name+" created venue staff "+venueStaff.name)
             }).catch(next)
-        }
+        } 
     }).catch(next)
 })
 
@@ -397,7 +396,7 @@ router.put('/edit_venue_staff/:id',
     Admin.findByIdAndUpdate({_id:req.params.id},req.body).then(venueStaff=>{
         Admin.findById({_id:req.params.id}).then(venueStaff=>{
             res.send({status:"success", message:"venue staff edited", data:venueStaff})
-            ActivityLog(req.userId, req.username, req.role, 'venue staff modified', req.name+" modified venue staff")
+            ActivityLog(req.userId, req.username, req.role, 'venue staff modified', req.name+" modified venue staff "+venueStaff.name)
         }).catch(next)
     }).catch(next)
 })
@@ -407,10 +406,10 @@ router.delete('/delete_venue_staff/:id',
     verifyToken,
     AccessControl('venue_staff', 'delete'),
     (req, res, next) => {
-        Admin.findByIdAndRemove({_id:req.params.id},req.body).then(venueStaff=>{
+        Admin.findByIdAndRemove({_id:req.params.id},req.body).then(deletedVenueStaff=>{
             Admin.find({}).then(venueStaff=>{
                 res.send({status:"success", message:"venue staff deleted", data:venueStaff})
-                ActivityLog(req.userId, req.username, req.role, 'venue staff deleted', req.name+" deleted venue staff")
+                ActivityLog(req.userId, req.username, req.role, 'venue staff deleted', req.name+" deleted venue staff "+deletedVenueStaff.name)
         }).catch(next)
     }).catch(next)
 })
@@ -713,7 +712,7 @@ router.post('/support',
                 }else{
                     res.send({status:"failed"})
                 }
-                })
+                },req.body.name)
         }).catch(next)
 })
 
@@ -858,7 +857,7 @@ router.post('/create_offer',
     Offers.create(req.body).lean().populate('event','_id event type').populate('venue','_id name venue type').then(offers=>{
         Offers.findById({_id:offers._id}).then(offers=>{
             res.send({status:"success", message:"offer created", data:offers})
-            ActivityLog(req.userId, req.role, 'offer created', req.name+" created offer ")
+            ActivityLog(req.userId, req.role, 'offer created', req.name+" created offer "+offers.title)
         }).catch(next)
     }).catch(next)
 })
@@ -873,7 +872,7 @@ router.post('/edit_offer/:id',
     Offers.findByIdAndUpdate({_id:req.params.id}, req.body).then(offers=>{
         Offers.findById({_id:req.params.id}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(offers=>{
             res.send({status:"success", message:"offer modified", data:offers})
-            ActivityLog(req.userId, req.role, 'offer modified', req.name+" modified offer ")
+            ActivityLog(req.userId, req.role, 'offer modified', req.name+" modified offer "+offers.title)
         }).catch(next)
     }).catch(next)
 })
@@ -885,7 +884,7 @@ router.post('/delete_offer/:id',
     (req, res, next) => {
     Offers.findByIdAndRemove({_id:req.params.id}).then(offers=>{
         res.send({status:"success", message:"offer deleted"})
-        ActivityLog(req.userId, req.role, 'offer deleted', req.name+" deleted offer ")
+        ActivityLog(req.userId, req.role, 'offer deleted', req.name+" deleted offer "+offers.title)
     }).catch(next)
 })
 

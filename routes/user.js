@@ -20,6 +20,7 @@ const sh = require("shorthash");
 const _ = require('lodash');
 const combineSlots = require('../scripts/combineSlots')
 const upload = require("../scripts/aws-s3")
+const AccessControl = require("../scripts/accessControl")
 
 const User = require('../models/user');
 const Booking = require('../models/booking');
@@ -27,43 +28,6 @@ const EventBooking = require('../models/event_booking');
 const Venue = require('../models/venue');
 const Admin = require('../models/admin');
 
-const Access = {
-  super_admin:{
-      venue:['read','create','update','delete'],
-      venue_manager:['read','create','update','delete'],
-      venue_staff:['read','create','update','delete'],
-      event:['read','create','update','delete'],
-      coupon:['read','create','update','delete'],
-      users:['read','create','update','delete'],
-      support:['read', 'create'],
-      ads:['read', 'create','update','delete'],
-      booking:['read', 'create','update','delete'],
-      users:['read', 'create','update','delete'],
-
-  },
-  venue_manager:{
-      venue:['read','create','update','delete'],
-      event:['read','create','update','delete'],
-      coupon:['read','create','update','delete'],
-      support:['read', 'create'],
-      booking:['read', 'create','update','delete'],
-  },
-  venue_staff:{
-      venue:['read', 'update'],
-      event:['read'],
-      coupon:['read'],
-      booking:['read', 'create','update','delete'],
-      support:['read', 'create']
-  },
-  user:{
-      venue:['read'],
-      event:['read'],
-      coupon:['read'],
-      support:['read', 'create'],
-      booking:['read', 'create','update','delete'],
-      users:['read','create','update','delete']
-  }
-}
 
 function ActivityLog(activity_log) {
   let user = activity_log.user_type==="user"?User:Admin
@@ -78,20 +42,6 @@ Date.prototype.addHours= function(h,m){
   return this;
 }
 
-function AccessControl(api_type, action_type) {
-  return function(req,res,next){
-      console.log(req.role)
-      if(!Access[req.role][api_type]){
-          res.status(403).send({status:"failed", message:"permission denied"})
-      }else{
-          if(Access[req.role][api_type].indexOf(action_type)!== -1){
-              next();
-          }else {
-              res.status(403).send({status:"failed", message:"permission denied"})
-          }
-      }
-  }
-}
 
 //Create User
 router.post('/create_user', [
@@ -1008,20 +958,17 @@ router.post('/booking_history_by_venue', verifyToken, (req, res, next) => {
 
   //Booking History
 router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
-  Booking.find({booking_status:{$in:["booked","completed"]},venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}}).then(booking=>{
-    result = Object.values(combineSlots(booking))
-    // console.log(result)
-    // let booking_list = []
-    // result = result.map(booking=>{
-    //   // console.log("booking.start_time",booking.start_time)
-    //   // console.log("booking.end_time",booking.end_time)
-    //   // console.log("req.body.start_time",req.body.start_time)
-    //   // console.log("req.body.end_time",req.body.end_time)
-    //   if(booking.start_time.getTime()<=new Date(req.body.start_time).getTime()&&booking.end_time.getTime()>=new Date(req.body.end_time).getTime()){
-    //     booking_list.push(booking)
-    //   }
-    // })
-    res.send({status:"success", message:"booking history fetched", data:result})
+  Booking.find({booking_status:{$in:["booked","completed"]},venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}}).then(bookings=>{
+    let booking_ids = []
+    bookings.filter(booking=>{
+      if(booking_ids.indexOf(booking.booking_id)=== -1){
+        booking_ids.push(booking.booking_id)
+      }
+    })
+    Booking.find({booking_id:{$in:booking_ids}}).lean().then(bookings=>{
+      result = Object.values(combineSlots(bookings))
+      res.send({status:"success", message:"booking history fetched", data:result})
+    })
     }).catch(next)
   })
 

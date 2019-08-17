@@ -12,25 +12,30 @@ const combineSlots=(booking, users, admins)=>{
         UserType = users
       }
       let user_array ={}
+      var collected_by ={}
       if(UserType){
         let user = UserType.map(userValue=>{
-        //  console.log(value.created_by == userValue._id); 
-        //  console.log(value.created_by);
-        //  console.log(userValue._id);
           if(value.created_by == userValue._id){
-            console.log('test');
             user_array = userValue
           }
         })
+        admins.map(userValue=>{
+          if(value.collected_by?value.collected_by.toString():"" === userValue._id.toString()){
+              collected_by = userValue
+            }
+          })
+
       }
 
       
       if(!result[value.multiple_id]){
         result[value.multiple_id] = value
         result[value.multiple_id].created_by = user_array
+        result[value.multiple_id].collected_by = collected_by
 
       }else{
         result[value.multiple_id].created_by = user_array
+        result[value.multiple_id].collected_by = collected_by
 
         result[value.multiple_id].amount = result[value.multiple_id].amount + value.amount
         result[value.multiple_id].commission = result[value.multiple_id].commission + value.commission

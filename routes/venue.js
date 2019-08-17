@@ -240,6 +240,7 @@ router.post('/review/:id', verifyToken, (req, res, next) => {
 router.post('/rating/:id', verifyToken, (req, res, next) => {
   let rating = {
     user_id:req.userId,
+    name:req.name,
     rating:req.body,
     date:new Date(),
     sport_name:req.body.sport_name

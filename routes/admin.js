@@ -805,7 +805,7 @@ router.post('/create_offer',
     verifyToken,
     AccessControl('offers', 'create'),
     (req, res, next) => {
-    Offers.create(req.body).lean().populate('event','_id event type').populate('venue','_id name venue type').then(offers=>{
+    Offers.create(req.body).then(offers=>{
         Offers.findById({_id:offers._id}).then(offers=>{
             res.send({status:"success", message:"offer created", data:offers})
             ActivityLog(req.userId, req.role, 'offer created', req.name+" created offer "+offers.title)

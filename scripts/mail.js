@@ -13,7 +13,7 @@ const sendMail = (from,to,subject,text,html,callback,name) => {
 
         // setup email data with unicode symbols
         let mailOptions = {
-        from: name+'<'+from+'>', // sender address
+        from: name?name:""+'<'+from+'>', // sender address
         to: to, // list of receivers
         subject: subject, // Subject line
         text: text , // plain text body

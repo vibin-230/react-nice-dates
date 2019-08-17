@@ -219,6 +219,7 @@ router.post('/venue_list_for_website', (req, res, next) => {
 router.post('/review/:id', verifyToken, (req, res, next) => {
   let review = {
     user_id:req.userId,
+    name:req.name,
     phone:req.phone,
     review:req.body.review,
     date:new Date()

@@ -11,6 +11,7 @@ const socketIO = require('socket.io');
 const server = http.createServer(app);
 const io = socketIO(server)
 require('dotenv').config();
+const axios = require('axios');
 
 
 // set the view engine to ejs
@@ -34,6 +35,11 @@ app.use(fileUpload());
 //BodyParser
 app.use(bodyParser.json());
 
+app.use(function(req,res,next){
+  req.io = io;
+  next();
+});
+
 //Route
 app.use('/api/user',require('./routes/user'));
 app.use('/api/venue',require('./routes/venue'));
@@ -42,9 +48,16 @@ app.use('/api/admin',require('./routes/admin'));
 io.on('connection', (client) => {
   client.on('subscribeToTimer', (interval) => {
     console.log('client is subscribing to timer with interval ', interval);
+    let body = {
+      booking_date:new Date(),
+      venue:"Test QA Football",
+      venue_type:"ground"
+    }
+    // axios.post('http://ec2-13-233-94-159.ap-south-1.compute.amazonaws.com/api/user/slots_available/5d41472f6aedb8465eb632bb',body).then(response=>{
     setInterval(() => {
-      client.emit('timer', new Date());
-    }, interval);
+        client.emit('timer', "response.data");
+      }, interval);
+    // })
   });
 });
 

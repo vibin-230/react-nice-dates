@@ -370,7 +370,7 @@ router.post('/event',
     verifyToken,
     // AccessControl('event', 'read'),
     (req, res, next) => {
-    Event.find({}).then(event=>{
+    Event.find({}).lean().populate('venue','_id name venue type').then(event=>{
         Offers.find({}).then(offers=>{
                 let filteredOffer = Object.values(offers).filter(offer=>offer.event.indexOf(event._id)!== -1)
                 event.offer = filteredOffer
@@ -385,7 +385,7 @@ router.post('/add_event',
     AccessControl('event', 'create'),
     (req, res, next) => {
     req.body.created_by = req.username
-    Event.create(req.body).lean().populate('venue','_id name venue type').then(event=>{
+    Event.create(req.body).then(event=>{
         res.send({status:"success", message:"event added", data:event})
         ActivityLog(req.userId, req.role, 'event created', req.name+" created event "+event.event.name)
     }).catch(next)

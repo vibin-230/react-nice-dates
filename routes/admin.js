@@ -451,6 +451,16 @@ router.post('/venue_list_by_coupon',
     }).catch(next)
 })
 
+////Coupon list based on venue
+router.post('/coupon_list_by_venue/:id',
+    verifyToken,
+    AccessControl('venue', 'read'),
+    (req, res, next) => {
+    Coupon.find({venue:{$elemMatch:{$eq:req.params.id}}}).then(coupon=>{
+        res.status(201).send({status:"success", message:"coupons fetched", data:coupon})
+    }).catch(next)
+})
+
 ////Venue List based on coupon
 router.post('/venue_list_by_id',
     verifyToken,

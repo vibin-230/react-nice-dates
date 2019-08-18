@@ -24,6 +24,7 @@ const schema = new Schema({
   days:Array,
   offer_type:String,
   venue:[{ type: Schema.Types.ObjectId, ref: 'venue' }],
+  // venue:Array,
   event:[{ type: Schema.Types.ObjectId, ref: 'event' }],
   status:{type:Boolean, default: true}
 });

@@ -620,16 +620,22 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
 //Modify booking
 router.post('/modify_booking/:id', verifyToken, (req, res, next) => {
   Booking.find({booking_id:req.params.id}).then(booking=>{
-    let body = {
-      name:req.body.name,
-      phone:req.body.phone,
-      commission:req.body.commission/booking.length,
-      booking_amount:req.body.booking_amount,
-      amount:req.body.amount/booking.length,
-      academy:req.body.academy,
-      membership:req.body.membership
+    // let body = {
+    //   name:req.body.name,
+    //   phone:req.body.phone,
+    //   commission:req.body.commission/booking.length,
+    //   booking_amount:req.body.booking_amount,
+    //   amount:req.body.amount/booking.length,
+    //   academy:req.body.academy,
+    //   membership:req.body.membership
+    // }
+    if(req.body.amount){
+      req.body.amount = req.body.amount/booking.length
     }
-    Booking.updateMany({booking_id:req.params.id},body,{multi:true}).then(booking=>{
+    if(req.body.commission){
+      req.body.commission = req.body.commission/booking.length
+    }
+    Booking.updateMany({booking_id:req.params.id},req.body,{multi:true}).then(booking=>{
       Booking.find({booking_id:req.params.id}).then(booking=>{
         result = Object.values(combineSlots(booking))
         res.send({status:"success", message:"booking modified", data:result})

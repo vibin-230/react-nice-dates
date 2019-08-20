@@ -624,14 +624,15 @@ router.post('/modify_booking/:id', verifyToken, (req, res, next) => {
       name:req.body.name,
       phone:req.body.phone,
       commission:req.body.commission/booking.length,
-      booking_amount:req.body.booking_amount
+      booking_amount:req.body.booking_amount,
+      amount:req.body.amount,
+      academy:req.body.academy,
+      membership:req.body.membership
     }
     Booking.updateMany({booking_id:req.params.id},body,{multi:true}).then(booking=>{
       Booking.find({booking_id:req.params.id}).then(booking=>{
         result = Object.values(combineSlots(booking))
         res.send({status:"success", message:"booking modified", data:result})
-
-
         let booking_id = booking[0].booking_id
         let venue_name = booking[0].venue
         let venue_type = booking[0].venue_type

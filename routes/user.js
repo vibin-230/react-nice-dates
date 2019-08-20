@@ -625,7 +625,7 @@ router.post('/modify_booking/:id', verifyToken, (req, res, next) => {
       phone:req.body.phone,
       commission:req.body.commission/booking.length,
       booking_amount:req.body.booking_amount,
-      amount:req.body.amount,
+      amount:req.body.amount/booking.length,
       academy:req.body.academy,
       membership:req.body.membership
     }

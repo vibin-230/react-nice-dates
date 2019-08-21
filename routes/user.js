@@ -21,6 +21,7 @@ const _ = require('lodash');
 const combineSlots = require('../scripts/combineSlots')
 const upload = require("../scripts/aws-s3")
 const AccessControl = require("../scripts/accessControl")
+const SetKeyForSport = require("../scripts/setKeyForSport")
 
 const User = require('../models/user');
 const Booking = require('../models/booking');
@@ -130,18 +131,24 @@ router.post('/send_otp',[
           {
             if(user.email)
             {
-              User.findOneAndUpdate({phone: req.body.phone},{otp}).then(user=> {
+              User.findOneAndUpdate({phone: req.body.phone},{otp:otp}).then(user=> {
                 User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
                   res.status(201).send({status:"success",message:"existing user",otp:otp,data:user})
                 })
               })
             }else{
-              User.create({phone:req.body.phone,otp}).then(user=>{
-                res.status(201).send({status:"success",message:"new user",otp:otp})
+              User.findOneAndUpdate({phone: req.body.phone},{otp:otp}).then(user=> {
+                User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
+                  res.status(201).send({status:"success",message:"existing user",otp:otp,data:user})
+                })
               })
+              // User.create({phone:req.body.phone,otp:otp}).then(user=>{
+              //   res.status(201).send({status:"success",message:"new user",otp:otp})
+              // })
             }
           }else{
-            User.create({phone:req.body.phone,otp}).then(user=>{
+            console.log('test')
+            User.create({phone:req.body.phone,otp:otp}).then(user=>{
               res.status(201).send({status:"success",message:"new user",otp:otp})
             })
           }
@@ -161,6 +168,8 @@ router.post('/verify_otp', (req, res, next) => {
   User.findOne({phone: req.body.phone}).then(user=> {
     // create a token
     var token;
+    console.log(req.body.otp)
+    console.log(user)
       if(user.otp===req.body.otp){
           User.findOneAndUpdate({phone: req.body.phone},{token,last_login:moment()}).then(user=>{
             User.findOne({phone: req.body.phone},{__v:0,token:0},null).then(user=> {
@@ -404,7 +413,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
       let booking_id = values[0].booking_id
       let phone = user.phone
       let venue_name = req.body[0].venue
-      let venue_type = req.body[0].venue_type
+      let venue_type = SetKeyForSport(req.body[0].venue_type)
       let date = moment(req.body[0].booking_date).format("MMMM Do YYYY")
       let start_time = Object.values(req.body).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
       let end_time = Object.values(req.body).reduce((total,value)=>{return total>value.end_time?total:value.end_time},req.body[0].end_time)
@@ -558,7 +567,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
         let phone = "91"+values[0].phone
         console.log(phone)
         let venue_name = values[0].venue
-        let venue_type = req.body[0].venue_type
+        let venue_type = SetKeyForSport(req.body[0].venue_type) 
         let venue_area = venue.venue.area
         let date = moment(values[0].booking_date).format("MMMM Do YYYY")
         let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
@@ -726,7 +735,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
               console.log(booking);
               let booking_id = booking[0].booking_id
               let venue_name = booking[0].venue
-              let venue_type = booking[0].venue_type
+              let venue_type = SetKeyForSport(booking[0].venue_type)
               let venue_area = booking[0].venue_area
               let phone = "91"+booking[0].phone
               let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
@@ -764,7 +773,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
               console.log(booking);
               let booking_id = booking[0].booking_id
               let venue_name = booking[0].venue
-              let venue_type = booking[0].venue_type
+              let venue_type = SetKeyForSport(booking[0].venue_type)
               let venue_area = booking[0].venue_area
               let phone = "91"+booking[0].phone
               let date = moment(booking[0].booking_date).format("MMMM Do YYYY")

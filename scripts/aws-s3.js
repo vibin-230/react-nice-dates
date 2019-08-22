@@ -19,17 +19,19 @@ const upload = (filename,folder,message,res) =>{
     Key : folder+"/"+Date.now()+"_"+path.basename(filePath)
     };
     console.log(fs.createReadStream(filePath))
-    s3.upload(params, function (err, data) {
-        //handle error
-        if (err) {
+    // s3.upload(params, function (err, data) {
+    //     //handle error
+    //     if (err) {
+    //       res.send({status:"failed", message: "failded to upload image to s3"})
+    //     }
+    //     console.log('test')
+    //     //success
+    //     if (data) {
+    //         res.send({status:"success", message, imageurl:data.Location})
+    //     }
+    //   });
           res.send({status:"failed", message: "failded to upload image to s3"})
-        }
-        console.log('test')
-        //success
-        if (data) {
-            res.send({status:"success", message, imageurl:data.Location})
-        }
-      });
+
 }
 
 

@@ -188,7 +188,7 @@ router.post('/verify_otp', (req, res, next) => {
               }
               ActivityLog(activity_log)
             }else{
-              jwt.sign({ id: user._id, phone:user.phone, role:"user"}, config.secret);
+              token = jwt.sign({ id: user._id, phone:user.phone, role:"user", name:user.name}, config.secret);
               res.status(201).send({status:"success", message:"new user", token:token})
             }
           }).catch(next);

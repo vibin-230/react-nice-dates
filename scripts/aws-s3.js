@@ -12,14 +12,13 @@ const s3 = new aws.S3()
 
 const upload = (filename,folder,message,res) =>{
     var filePath = "./assets/"+filename;
-    console.log('test')
     //configuring parameters
     var params = {
     Bucket: 'turftown',
     Body : fs.createReadStream(filePath),
     Key : folder+"/"+Date.now()+"_"+path.basename(filePath)
     };
-    console.log('test')
+    console.log(fs.createReadStream(filePath))
     s3.upload(params, function (err, data) {
         //handle error
         if (err) {

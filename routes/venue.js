@@ -97,8 +97,8 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
   let zipcode;
   axios.get('https://maps.googleapis.com/maps/api/geocode/json?latlng='+req.body.latLong[0]+','+req.body.latLong[1]+'&key=AIzaSyBg-CZ9Fk94r5uFwvmVp-U1XSXDvJRAnmo').then(response=>{
       zipcode = Object.values(response.data.results[0].address_components).filter(value=>value.types[0]==='postal_code')
-      zipcode = zipcode[0].long_name
-      // zipcode = "600017"
+      //zipcode = zipcode[0].long_name
+       zipcode = "600017"
       Venue.find({type:req.body.sport_type, "configuration.types":{$in:[req.body.venue_type]},status:true},{bank:0, offers:0, access:0}).lean().then(venue=>{
         // venue = JSON.stringify(venue)
         // venue = JSON.parse(venue)

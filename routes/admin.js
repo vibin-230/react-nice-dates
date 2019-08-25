@@ -18,6 +18,7 @@ const jwt = require('jsonwebtoken');
 const config = require('../config');
 const data = require('../sample/venue.js')
 const mail = require('../scripts/mail');
+var mkdirp = require('mkdirp');
 
 const User = require('../models/user');
 const Venue = require('../models/venue');
@@ -559,13 +560,10 @@ verifyToken,
 		ext = ext.toLowerCase()
 		filename = Date.now() + ext
 		pathLocation = "assets/images/venues/"
-		if (!fs.existsSync(path)) {
-			fs.mkdirSync(pathLocation,{ recursive: true },function(err) {
+			mkdirp(pathLocation,function(err) {
 				if (err) {
 					 return console.error(err);
 				}
-			 });
-		}
 		// Use the mv() method to place the file somewhere on your server
 		File.mv(pathLocation+filename, function(err) {
 			if (err) 
@@ -578,6 +576,7 @@ verifyToken,
 					message: "venue display picture uploaded"
 			})
 		})
+	});
 });
 
 //Upload Venue Display Picture
@@ -593,13 +592,10 @@ router.post('/venue_cover_picture',verifyToken,AccessControl('venue', 'create'),
 		ext = ext.toLowerCase()
 		filename = Date.now() + ext
 		pathLocation = "assets/images/venues/"
-		if (!fs.existsSync(path)) {
-			fs.mkdirSync(pathLocation,{ recursive: true },function(err) {
+			mkdirp(pathLocation,function(err) {
 				if (err) {
 					 return console.error(err);
 				}
-			 });
-		}
 		// Use the mv() method to place the file somewhere on your server
 		File.mv(pathLocation+filename, function(err) {
 			if (err) 
@@ -612,6 +608,7 @@ router.post('/venue_cover_picture',verifyToken,AccessControl('venue', 'create'),
 					message: "venue cover picture uploaded"
 			})
 		})
+	});
 });
 
 //Upload Event Picture
@@ -630,13 +627,10 @@ AccessControl('event', 'create'),
 		ext = ext.toLowerCase()
 		filename = Date.now() + ext
 		pathLocation = "assets/images/events/"
-		if (!fs.existsSync(path)) {
-			fs.mkdirSync(pathLocation,{ recursive: true },function(err) {
+			mkdirp(pathLocation,function(err) {
 				if (err) {
 					 return console.error(err);
 				}
-			 });
-		}
 		// Use the mv() method to place the file somewhere on your server
 		File.mv(pathLocation+filename, function(err) {
 			if (err) 
@@ -649,6 +643,7 @@ AccessControl('event', 'create'),
 					message: "event picture uploaded"
 			})
 		})
+	});
 });
 
 //Upload Event Picture
@@ -667,13 +662,10 @@ AccessControl('venue', 'create'),
 		ext = ext.toLowerCase()
 		filename = Date.now() + ext
 		pathLocation = "assets/images/cheque/"
-		if (!fs.existsSync(path)) {
-			fs.mkdirSync(pathLocation,{ recursive: true },function(err) {
+			mkdirp(pathLocation,function(err) {
 				if (err) {
 					 return console.error(err);
 				}
-			 });
-		}
 		// Use the mv() method to place the file somewhere on your server
 		File.mv(pathLocation+filename, function(err) {
 			if (err) 
@@ -686,6 +678,8 @@ AccessControl('venue', 'create'),
 					message: "cheque uploaded"
 			})
 		})
+	});
+
 });
 
 
@@ -754,13 +748,10 @@ AccessControl('ads', 'create'),
 		ext = ext.toLowerCase()
 		filename = Date.now() + ext
 		pathLocation = "assets/images/ads/"
-		if (!fs.existsSync(path)) {
-			fs.mkdirSync(pathLocation,{ recursive: true },function(err) {
+			mkdirp(pathLocation,function(err) {
 				if (err) {
 					 return console.error(err);
 				}
-			 });
-		}
 		// Use the mv() method to place the file somewhere on your server
 		File.mv(pathLocation+filename, function(err) {
 			if (err) 
@@ -773,6 +764,7 @@ AccessControl('ads', 'create'),
 					message: "ad uploaded"
 			})
 		})
+	});
 });
 
 
@@ -961,15 +953,15 @@ router.post('/booking_completed_list',
 	}).catch(next)
 })
 
-router.get('/test_dir',
-	(req, res, next) => {
-		console.log("Going to create directory /tmp/test");
-		fs.mkdir('assets/profile',{ recursive: true },function(err) {
-			 if (err) {
-					return console.error(err);
-			 }
-		});
-})
+// router.get('/test_dir',
+// 	(req, res, next) => {
+// 		console.log("Going to create directory /tmp/test");
+// 		fs.mkdir('assets/profile',{ recursive: true },function(err) {
+// 			 if (err) {
+// 					return console.error(err);
+// 			 }
+// 		});
+// })
 
 
 module.exports = router;

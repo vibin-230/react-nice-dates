@@ -230,13 +230,10 @@ if (!req.files)
     ext = ext.toLowerCase()
     filename = Date.now() + ext
 		pathLocation = "assets/images/profile/"
-		if (!fs.existsSync(path)) {
-			fs.mkdirSync(pathLocation,{ recursive: true },function(err) {
+			mkdirp(pathLocation,function(err) {
 				if (err) {
 					 return console.error(err);
 				}
-			 });
-		}
 		// Use the mv() method to place the file somewhere on your server
 		File.mv(pathLocation+filename, function(err) {
 			if (err) 
@@ -249,6 +246,7 @@ if (!req.files)
 					message: "profile picture uploaded"
 			})
 		})
+  });
 });
 
 

@@ -11,7 +11,8 @@ module.exports = {
               "PHP_SERVER": "http://159.65.146.12/app/turftown-backend",
               "AWS_SECRET_KEY": "9SkVgIrzjl+PoiOZ5AVMDSHxkQzuS+qt4gYG8BS+",
               "AWS_ACCESS_KEY": "AKIAJCWCKO7WP7A6PPYQ",
-              "AWS_REGION": "ap-south-1"
+              "AWS_REGION": "ap-south-1",
+              "DOMAIN": "http://localhost:3001/"
           },
           env_stage: {
               "PORT": 3040,
@@ -20,7 +21,10 @@ module.exports = {
               "PHP_SERVER": "http://159.65.146.12/app/turftown-backend",
               "AWS_SECRET_KEY": "9SkVgIrzjl+PoiOZ5AVMDSHxkQzuS+qt4gYG8BS+",
               "AWS_ACCESS_KEY": "AKIAJCWCKO7WP7A6PPYQ",
-              "AWS_REGION": "ap-south-1"
+              "AWS_REGION": "ap-south-1",
+              "DOMAIN":"http://ec2-13-233-5-103.ap-south-1.compute.amazonaws.com/",
+              "RAZORPAY_API": "rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch"
+
           },
           env_production: {
               "PORT": 3040,
@@ -29,7 +33,9 @@ module.exports = {
               "PHP_SERVER": "http://159.65.146.12/app/turftown-backend",
               "AWS_SECRET_KEY": "9SkVgIrzjl+PoiOZ5AVMDSHxkQzuS+qt4gYG8BS+",
               "AWS_ACCESS_KEY": "AKIAJCWCKO7WP7A6PPYQ",
-              "AWS_REGION": "ap-south-1"
+              "AWS_REGION": "ap-south-1",
+              "DOMAIN":"https://turftown.in/",
+              "RAZORPAY_API": "rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch"
           }
         }
     ]

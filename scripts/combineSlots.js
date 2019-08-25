@@ -20,7 +20,8 @@ const combineSlots=(booking, users, admins)=>{
           }
         })
         admins.map(userValue=>{
-          if(value.collected_by?value.collected_by.toString():"" === userValue._id.toString()){
+          console.log(value.collected_by)
+          if((value.collected_by?value.collected_by.toString():"") === userValue._id.toString()){
               collected_by = userValue
             }
           })

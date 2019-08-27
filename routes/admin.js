@@ -18,6 +18,7 @@ const jwt = require('jsonwebtoken');
 const config = require('../config');
 const data = require('../sample/venue.js')
 const mail = require('../scripts/mail');
+var mkdirp = require('mkdirp');
 
 const User = require('../models/user');
 const Venue = require('../models/venue');
@@ -42,12 +43,19 @@ function ActivityLog(id, user_type, activity, message) {
 		id:id,
 		user_type: user_type,
 		activity: activity,
-		message: message
+		message: message,
+		venue_id:venue_id
 	}
 	let user = user_type==="user"?User:Admin
 	user.findOneAndUpdate({_id:id},{$push:{activity_log:activity_log}}).then(admin=>{
 		console.log("activity log updated")
 	})
+}
+
+Date.prototype.addHours= function(h,m){
+  this.setHours(this.getHours()+h);
+  this.setMinutes(this.getMinutes()+m);
+  return this;
 }
 
 
@@ -115,7 +123,7 @@ router.post('/forget_password', (req, res, next) => {
 		if (data) {
 			//Send mail
 			var id = mongoose.Types.ObjectId();
-			let html = "<h4>Please click here to reset your password</h4><a href='http://test.turftown.in/reset-password/"+id+"'>Reset Password</a>"
+			let html = "<h4>Please click here to reset your password</h4><a href="+process.env.DOMAIN+"'/reset-password/"+id+"'>Reset Password</a>"
 			mail("support@turftown.in", req.body.email,"Reset Your Password","test",html,response=>{
 			if(response){
 				let body = {
@@ -189,7 +197,7 @@ AccessControl('venue', 'create'),
 	req.body.created_by = req.username
 	Venue.create(req.body).then(venue=>{
 		res.send({status:"success", message:"venue added", data:venue})
-		ActivityLog(req.userId, req.role, 'venue created', req.name+" created venue "+venue.venue.name)
+		ActivityLog(req.userId, req.role, 'venue created', req.name+" created venue "+venue.venue.name,venue_id)
 		}).catch(next)
 })
 
@@ -205,7 +213,7 @@ AccessControl('venue', 'update'),
 		Venue.findByIdAndUpdate({_id:req.params.id},req.body).then(venue=>{
 			Venue.findById({_id:req.params.id}).then(venue=>{
 				res.send({status:"success", message:"venue edited", data:venue})
-				ActivityLog(req.userId, req.role, 'venue modified', req.name+" modified venue "+ venue.venue.name)
+				ActivityLog(req.userId, req.role, 'venue modified', req.name+" modified venue "+ venue.venue.name,venue_id)
 			}).catch(next)
 		}).catch(next)
 	}).catch(next)
@@ -217,9 +225,9 @@ router.delete('/delete_venue/:id',
 	AccessControl('venue', 'delete'),
 	(req, res, next) => {
 	Venue.findByIdAndRemove({_id:req.params.id},req.body).then(venue=>{
-		Venue.find({}).then(venue=>{
-			res.send({status:"success", message:"venue deleted", data:venue})
-			ActivityLog(req.userId, req.role, 'venue deleted', req.name+" deleted venue "+ venue.venue.name)
+		Venue.find({}).then(venues=>{
+			res.send({status:"success", message:"venue deleted", data:venues})
+			ActivityLog(req.userId, req.role, 'venue deleted', req.name+" deleted venue "+ venue.venue.name,venue_id)
 		}).catch(next)
 	}).catch(next)
 })
@@ -244,14 +252,14 @@ router.post('/add_venue_manager',
 	req.body.created_by = req.username
 	Admin.findOne({username:req.body.username}).then(venueManager=>{
 		if(venueManager){
-			res.send({status:"failure", message:"username already exist"})
+			res.send({status:"failure", message:"Email-id already exist"})
 		}else{
 			req.body.role = "venue_manager";
 			req.body.reset_password_hash = mongoose.Types.ObjectId();
 			req.body.reset_password_expiry = moment().add(1,"days")
 			Admin.create(req.body).then(venueManager=>{
 				var id = mongoose.Types.ObjectId();
-				let reset_url = "http://test.turftown.in/reset-password/"+req.body.reset_password_hash
+				let reset_url = process.env.DOMAIN+"/reset-password/"+req.body.reset_password_hash
 				let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
 				mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
 					if(response){
@@ -322,7 +330,7 @@ router.post('/add_venue_staff',
 			req.body.reset_password_expiry = moment().add(1,"days")
 			Admin.create(req.body).then(venueStaff=>{
 				var id = mongoose.Types.ObjectId();
-				let reset_url = "http://localhost:3001/reset-password/"+req.body.reset_password_hash
+				let reset_url = process.env.DOMAIN+"/reset-password/"+req.body.reset_password_hash
 				let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
 				mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
 					if(response){
@@ -488,7 +496,7 @@ router.post('/add_coupon',
 	(req, res, next) => {
 	req.body.created_by = req.username
 	Coupon.create(req.body).then(coupon=>{
-		Coupon.findById({_id:req.params.id}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(coupon=>{
+		Coupon.findById({_id:coupon._id}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(coupon=>{
 			res.send({status:"success", message:"coupon added", data:coupon})
 			ActivityLog(req.userId, req.role, 'coupon created', req.name+" created coupon "+coupon.title)
 		}).catch(next)
@@ -550,17 +558,25 @@ verifyToken,
 		let name = path.parse(filename).name
 		let ext = path.parse(filename).ext
 		ext = ext.toLowerCase()
-		filename = "image" + ext
-	// Use the mv() method to place the file somewhere on your server
-	File.mv("assets/"+filename, function(err) {
-		if (err) {
-		return res.status(500).send(err);
-		} else {
-		  folder = "venue"
-		  message = "venue display picture uploaded"
-		  upload(filename, folder, message, res)
-		}
-	})
+		filename = Date.now() + ext
+		pathLocation = "assets/images/venues/"
+			mkdirp(pathLocation,function(err) {
+				if (err) {
+					 return console.error(err);
+				}
+		// Use the mv() method to place the file somewhere on your server
+		File.mv(pathLocation+filename, function(err) {
+			if (err) 
+			return res.status(500).send(err);
+			let image = process.env.DOMAIN+ pathLocation + filename;
+			// Venue.findOneAndUpdate({_id:req.params.id},{"venue.venue_display_picture":image}).then(user=>{
+			res.status(201).send({
+					image,
+					status: 'success',
+					message: "venue display picture uploaded"
+			})
+		})
+	});
 });
 
 //Upload Venue Display Picture
@@ -574,17 +590,25 @@ router.post('/venue_cover_picture',verifyToken,AccessControl('venue', 'create'),
 		let name = path.parse(filename).name
 		let ext = path.parse(filename).ext
 		ext = ext.toLowerCase()
-		filename = "image" + ext
-	// Use the mv() method to place the file somewhere on your server
-	File.mv("assets/"+filename, function(err) {
-		if (err) {
-		return res.status(500).send(err);
-		} else {
-		  folder = "venue"
-		  message = "venue cover picture uploaded"
-		  upload(filename, folder, message, res)
-		}
-	})
+		filename = Date.now() + ext
+		pathLocation = "assets/images/venues/"
+			mkdirp(pathLocation,function(err) {
+				if (err) {
+					 return console.error(err);
+				}
+		// Use the mv() method to place the file somewhere on your server
+		File.mv(pathLocation+filename, function(err) {
+			if (err) 
+			return res.status(500).send(err);
+			let image = process.env.DOMAIN+ pathLocation + filename;
+			// Venue.findOneAndUpdate({_id:req.params.id},{"venue.venue_display_picture":image}).then(user=>{
+			res.status(201).send({
+					image,
+					status: 'success',
+					message: "venue cover picture uploaded"
+			})
+		})
+	});
 });
 
 //Upload Event Picture
@@ -601,17 +625,25 @@ AccessControl('event', 'create'),
 		let name = path.parse(filename).name
 		let ext = path.parse(filename).ext
 		ext = ext.toLowerCase()
-		filename = "image" + ext
-	// Use the mv() method to place the file somewhere on your server
-	File.mv("assets/"+filename, function(err) {
-		if (err) {
-		return res.status(500).send(err);
-		} else {
-		  folder = "event"
-		  message = "venue cover picture uploaded"
-		  upload(filename, folder, message, res)
-		}
-	})
+		filename = Date.now() + ext
+		pathLocation = "assets/images/events/"
+			mkdirp(pathLocation,function(err) {
+				if (err) {
+					 return console.error(err);
+				}
+		// Use the mv() method to place the file somewhere on your server
+		File.mv(pathLocation+filename, function(err) {
+			if (err) 
+			return res.status(500).send(err);
+			let image = process.env.DOMAIN+ pathLocation + filename;
+			// Venue.findOneAndUpdate({_id:req.params.id},{"venue.venue_display_picture":image}).then(user=>{
+			res.status(201).send({
+					image,
+					status: 'success',
+					message: "event picture uploaded"
+			})
+		})
+	});
 });
 
 //Upload Event Picture
@@ -628,17 +660,26 @@ AccessControl('venue', 'create'),
 		let name = path.parse(filename).name
 		let ext = path.parse(filename).ext
 		ext = ext.toLowerCase()
-		filename = "image" + ext
-	// Use the mv() method to place the file somewhere on your server
-	File.mv("assets/"+filename, function(err) {
-		if (err) {
-		return res.status(500).send(err);
-		} else {
-		  folder = "cheque"
-		  message = "cheque uploaded"
-		  upload(filename, folder, message, res)
-		}
-	})
+		filename = Date.now() + ext
+		pathLocation = "assets/images/cheque/"
+			mkdirp(pathLocation,function(err) {
+				if (err) {
+					 return console.error(err);
+				}
+		// Use the mv() method to place the file somewhere on your server
+		File.mv(pathLocation+filename, function(err) {
+			if (err) 
+			return res.status(500).send(err);
+			let image = process.env.DOMAIN+ pathLocation + filename;
+			// Venue.findOneAndUpdate({_id:req.params.id},{"venue.venue_display_picture":image}).then(user=>{
+			res.status(201).send({
+					image,
+					status: 'success',
+					message: "cheque uploaded"
+			})
+		})
+	});
+
 });
 
 
@@ -705,17 +746,25 @@ AccessControl('ads', 'create'),
 		let name = path.parse(filename).name
 		let ext = path.parse(filename).ext
 		ext = ext.toLowerCase()
-		filename = "image" + ext
-	// Use the mv() method to place the file somewhere on your server
-	File.mv("assets/"+filename, function(err) {
-		if (err) {
-		return res.status(500).send(err);
-		} else {
-		  folder = "ads"
-		  message = "ad picture uploaded"
-		  upload(filename, folder, message, res)
-		}
-	})
+		filename = Date.now() + ext
+		pathLocation = "assets/images/ads/"
+			mkdirp(pathLocation,function(err) {
+				if (err) {
+					 return console.error(err);
+				}
+		// Use the mv() method to place the file somewhere on your server
+		File.mv(pathLocation+filename, function(err) {
+			if (err) 
+			return res.status(500).send(err);
+			let image = process.env.DOMAIN+ pathLocation + filename;
+			// Venue.findOneAndUpdate({_id:req.params.id},{"venue.venue_display_picture":image}).then(user=>{
+			res.status(201).send({
+					image,
+					status: 'success',
+					message: "ad uploaded"
+			})
+		})
+	});
 });
 
 
@@ -787,7 +836,7 @@ router.post('/offers_list',
 	verifyToken,
 	AccessControl('offers', 'read'),
 	(req, res, next) => {
-	Offers.find({}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(offers=>{
+	Offers.find({start_date:{$lte:req.body.start_date},end_date:{$gte:req.body.end_date},status:true}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(offers=>{
 		res.send({status:"success", message:"offers fetched", data:offers})
 	}).catch(next)
 })
@@ -798,13 +847,22 @@ router.post('/create_offer',
 	verifyToken,
 	AccessControl('offers', 'create'),
 	(req, res, next) => {
-	Offers.create(req.body).then(offers=>{
-		Offers.findById({_id:offers._id}).then(offers=>{
-			res.send({status:"success", message:"offer created", data:offers})
-			ActivityLog(req.userId, req.role, 'offer created', req.name+" created offer "+offers.title)
+		Offers.find({venue:{$in:req.body.venue},start_date:{$lte:req.body.start_date},end_date:{$gte:req.body.end_date},status:true}).then(offers=>{
+			let title_check = offers.filter(value=>value.title===req.body.title)
+			if(offers.length>=2){
+				res.send({status:"failed",message:"Offers limit reached"})
+			}else if(title_check.length){
+				res.send({status:"failed",message:"Offer title already exist"})
+			}else{
+				Offers.create(req.body).then(offers=>{
+					Offers.findById({_id:offers._id}).then(offers=>{
+						res.send({status:"success", message:"offer created", data:offers})
+						ActivityLog(req.userId, req.role, 'offer created', req.name+" created offer "+offers.title,req.body.venue[0])
+					}).catch(next)
+				}).catch(next)
+			}
 		}).catch(next)
-	}).catch(next)
-})
+	})
 
 //// Edit ad
 router.post('/edit_offer/:id',
@@ -816,7 +874,7 @@ router.post('/edit_offer/:id',
 	Offers.findByIdAndUpdate({_id:req.params.id}, req.body).then(offers=>{
 		Offers.findById({_id:req.params.id}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(offers=>{
 			res.send({status:"success", message:"offer modified", data:offers})
-			ActivityLog(req.userId, req.role, 'offer modified', req.name+" modified offer "+offers.title)
+			ActivityLog(req.userId, req.role, 'offer modified', req.name+" modified offer "+offers.title,offers.venue[0])
 		}).catch(next)
 	}).catch(next)
 })
@@ -828,16 +886,24 @@ router.post('/delete_offer/:id',
 	(req, res, next) => {
 	Offers.findByIdAndRemove({_id:req.params.id}).then(offers=>{
 		res.send({status:"success", message:"offer deleted"})
-		ActivityLog(req.userId, req.role, 'offer deleted', req.name+" deleted offer "+offers.title)
+		ActivityLog(req.userId, req.role, 'offer deleted', req.name+" deleted offer "+offers.title,offers.venue[id])
 	}).catch(next)
 })
 
 router.post('/activity_logs/:id',
 	verifyToken,
 	(req, res, next) => {
-	const user_type = req.role==="user"?User:Admin
-	user_type.findById({_id:req.params.id}).then(data=>{
-		res.send({status:"success", message:"activity logs fetched", data:data.activity_log})
+	Admin.find({venue:{$in:[req.params.id]}}).then(admin=>{
+		let activity_logs = []
+		admin.map(value=>{
+			let activity_log = value.activity_logs.filter(value=>{
+				if(venue_id===req.params.id){
+					return value
+				}
+				activity_logs.push(activity_log)
+			})
+		})
+		res.send({status:"success", message:"activity logs fetched", data:activity_logs})
 	}).catch(next)
 })
 
@@ -845,7 +911,6 @@ router.post('/reset_password',
 	(req, res, next) => {
 		Admin.findOne({reset_password_hash:req.body.reset_password_hash}).then(venueStaff=>{
 			if(venueStaff){
-				if(venueStaff.reset_password_expiry>moment()){
 					bcrypt.hash(req.body.password, saltRounds).then(function(hash) {
 						Admin.findOneAndUpdate({reset_password_hash:req.body.reset_password_hash},{password:hash}).then(admin=>{
 							mail("support@turftown.in", venueStaff.username,"Password has been Reset Succesfully","Your Password has been Reset Successfully","",response=>{
@@ -859,9 +924,6 @@ router.post('/reset_password',
 							ActivityLog(venueStaff._id, venueStaff.username, venueStaff.role, 'password changed', venueStaff.username+" changed password")
 						})
 					})
-				}else{
-					res.status(409).send({status:"failed", message:"reset expired"})
-				}
 			}else{
 				res.status(409).send({status:"failed", message:"incorrect credentials"})
 			}
@@ -890,5 +952,16 @@ router.post('/booking_completed_list',
 		res.send({status:"success", message:"bookings fetched", data:bookings})
 	}).catch(next)
 })
+
+// router.get('/test_dir',
+// 	(req, res, next) => {
+// 		console.log("Going to create directory /tmp/test");
+// 		fs.mkdir('assets/profile',{ recursive: true },function(err) {
+// 			 if (err) {
+// 					return console.error(err);
+// 			 }
+// 		});
+// })
+
 
 module.exports = router;

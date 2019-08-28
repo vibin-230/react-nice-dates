@@ -41,7 +41,12 @@ module.exports =  function slotsAvailable(venue,booking_history){
       return venue
       res.send({status:"success", message:"available slots fetched", data:venue})
     }else{
-      return 
+      let available_slots = {}
+      combinedSlots.map(value=>{
+          available_slots[value.timeRepresentation] = Object.assign({}, stock);
+      })
+      venue.slots_available = available_slots
+      return venue
       res.send({status:"success", message:"available slots fetched", data:[]})
     }
   }else{
@@ -77,7 +82,12 @@ module.exports =  function slotsAvailable(venue,booking_history){
       return venue
       res.send({status:"success", message:"available slots fetched", data:venue})
     }else{
-      return
+      let available_slots = {}
+      combinedSlots.map(value=>{
+          available_slots[value.timeRepresentation] = Object.assign({}, stock);
+      })
+      venue.slots_available = available_slots
+      return venue
       res.send({status:"success", message:"available slots fetched", data:[]})
     }
   }

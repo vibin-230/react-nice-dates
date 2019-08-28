@@ -734,8 +734,12 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
 //Slot Booked
 router.post('/slots_available/:id', verifyToken, (req, res, next) => {
   Venue.findById({_id:req.params.id},{bank:0,access:0}).lean().then(venue=>{
-    Booking.find({$and:[{venue:req.body.venue, venue_id:req.params.id, booking_date:{$gte:req.body.booking_date,$lt:moment(new Date(req.body.booking_date)).add(5,"days")}}],booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
+    Booking.find({venue:req.body.venue, venue_id:req.params.id, booking_date:{$gte:new Date(req.body.booking_date).addHours(5,30),$lt:new Date(req.body.booking_date).addHours(29,30)},booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
+      console.log(booking_history)
       let slots_available = SlotsAvailable(venue,booking_history)
+      // console.log(moment(req.body.booking_date).add(1,"day"))
+      console.log(new Date(req.body.booking_date).addHours(5,30))
+      console.log(new Date(req.body.booking_date).addHours(29,30))
       if(!slots_available)
       {
         res.send({status:"success", message:"available slots fetched", data:[]})

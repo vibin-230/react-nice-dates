@@ -73,6 +73,8 @@ app.get('*', function (req, res) {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
+console.log(process.env.DOMAIN)
+console.log(process.env.DB_CONN)
 //Port listen
 let port = process.env.PORT || 3040  ;
 server.listen( port, function(){

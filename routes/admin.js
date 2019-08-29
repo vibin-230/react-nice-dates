@@ -836,7 +836,7 @@ router.post('/offers_list',
 	verifyToken,
 	AccessControl('offers', 'read'),
 	(req, res, next) => {
-	Offers.find({start_date:{$lte:req.body.start_date},end_date:{$gte:req.body.end_date},status:true}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(offers=>{
+	Offers.find({status:true}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(offers=>{
 		res.send({status:"success", message:"offers fetched", data:offers})
 	}).catch(next)
 })

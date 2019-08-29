@@ -571,7 +571,7 @@ verifyToken,
 			let image = process.env.DOMAIN+ pathLocation + filename;
 			// Venue.findOneAndUpdate({_id:req.params.id},{"venue.venue_display_picture":image}).then(user=>{
 			res.status(201).send({
-					image,
+					imageurl:image,
 					status: 'success',
 					message: "venue display picture uploaded"
 			})
@@ -603,7 +603,7 @@ router.post('/venue_cover_picture',verifyToken,AccessControl('venue', 'create'),
 			let image = process.env.DOMAIN+ pathLocation + filename;
 			// Venue.findOneAndUpdate({_id:req.params.id},{"venue.venue_display_picture":image}).then(user=>{
 			res.status(201).send({
-					image,
+					imageurl:image,
 					status: 'success',
 					message: "venue cover picture uploaded"
 			})
@@ -638,7 +638,7 @@ AccessControl('event', 'create'),
 			let image = process.env.DOMAIN+ pathLocation + filename;
 			// Venue.findOneAndUpdate({_id:req.params.id},{"venue.venue_display_picture":image}).then(user=>{
 			res.status(201).send({
-					image,
+					imageurl:image,
 					status: 'success',
 					message: "event picture uploaded"
 			})
@@ -673,7 +673,7 @@ AccessControl('venue', 'create'),
 			let image = process.env.DOMAIN+ pathLocation + filename;
 			// Venue.findOneAndUpdate({_id:req.params.id},{"venue.venue_display_picture":image}).then(user=>{
 			res.status(201).send({
-					image,
+					imageurl:image,
 					status: 'success',
 					message: "cheque uploaded"
 			})
@@ -759,7 +759,7 @@ AccessControl('ads', 'create'),
 			let image = process.env.DOMAIN+ pathLocation + filename;
 			// Venue.findOneAndUpdate({_id:req.params.id},{"venue.venue_display_picture":image}).then(user=>{
 			res.status(201).send({
-					image,
+					imageurl:image,
 					status: 'success',
 					message: "ad uploaded"
 			})
@@ -896,12 +896,12 @@ router.post('/activity_logs/:id',
 	Admin.find({venue:{$in:[req.params.id]}}).then(admin=>{
 		let activity_logs = []
 		admin.map(value=>{
-			let activity_log = value.activity_logs.filter(value=>{
-				if(venue_id===req.params.id){
+			let activity = value.activity_log.filter(value=>{
+				if(value.venue_id===req.params.id){
 					return value
 				}
-				activity_logs.push(activity_log)
 			})
+			activity_logs.push(activity)
 		})
 		res.send({status:"success", message:"activity logs fetched", data:activity_logs})
 	}).catch(next)

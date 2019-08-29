@@ -241,7 +241,7 @@ if (!req.files)
 			let image = process.env.DOMAIN+ pathLocation + filename;
 			// Venue.findOneAndUpdate({_id:req.params.id},{"venue.venue_display_picture":image}).then(user=>{
 			res.status(201).send({
-					image,
+					imageurl:image,
 					status: 'success',
 					message: "profile picture uploaded"
 			})

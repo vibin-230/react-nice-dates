@@ -123,7 +123,7 @@ router.post('/forget_password', (req, res, next) => {
 		if (data) {
 			//Send mail
 			var id = mongoose.Types.ObjectId();
-			let html = "<h4>Please click here to reset your password</h4><a href="+process.env.DOMAIN+"'/reset-password/"+id+"'>Reset Password</a>"
+			let html = "<h4>Please click here to reset your password</h4><a href="+process.env.DOMAIN+"'reset-password/"+id+"'>Reset Password</a>"
 			mail("support@turftown.in", req.body.email,"Reset Your Password","test",html,response=>{
 			if(response){
 				let body = {
@@ -259,7 +259,7 @@ router.post('/add_venue_manager',
 			req.body.reset_password_expiry = moment().add(1,"days")
 			Admin.create(req.body).then(venueManager=>{
 				var id = mongoose.Types.ObjectId();
-				let reset_url = process.env.DOMAIN+"/reset-password/"+req.body.reset_password_hash
+				let reset_url = process.env.DOMAIN+"reset-password/"+req.body.reset_password_hash
 				let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
 				mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
 					if(response){
@@ -330,7 +330,7 @@ router.post('/add_venue_staff',
 			req.body.reset_password_expiry = moment().add(1,"days")
 			Admin.create(req.body).then(venueStaff=>{
 				var id = mongoose.Types.ObjectId();
-				let reset_url = process.env.DOMAIN+"/reset-password/"+req.body.reset_password_hash
+				let reset_url = process.env.DOMAIN+"reset-password/"+req.body.reset_password_hash
 				let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
 				mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
 					if(response){
@@ -733,7 +733,7 @@ router.post('/ads',
 
 
 //Upload Ad Picture
-router.post('/ad_picture',
+router.post('/cover_picture',
 verifyToken,
 AccessControl('ads', 'create'),
 (req, res, next) => {
@@ -836,7 +836,7 @@ router.post('/offers_list',
 	verifyToken,
 	AccessControl('offers', 'read'),
 	(req, res, next) => {
-	Offers.find({status:true}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(offers=>{
+	Offers.find({}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(offers=>{
 		res.send({status:"success", message:"offers fetched", data:offers})
 	}).catch(next)
 })
@@ -893,10 +893,11 @@ router.post('/delete_offer/:id',
 router.post('/activity_logs/:id',
 	verifyToken,
 	(req, res, next) => {
-	Admin.find({venue:{$in:[req.params.id]}}).then(admin=>{
+	Admin.find({venue:{$in:[req.params.id]}}).then(admins=>{
+		console.log(admins)
 		let activity_logs = []
-		admin.map(value=>{
-			let activity = value.activity_log.filter(value=>{
+		admins.map(admin=>{
+			let activity = admin.activity_log.filter(value=>{
 				if(value.venue_id===req.params.id){
 					return value
 				}

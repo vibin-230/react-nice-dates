@@ -16,6 +16,7 @@ const schema = new Schema({
   event_id:String,
   amount:Number,
   coupons_used:String,
+  offers_used:Array,
   commission:Number,
   payment_type:String,
   transaction_id:String,

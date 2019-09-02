@@ -409,6 +409,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
     //Capture Payment
     axios.post('https://'+process.env.RAZORPAY_API+'@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
       .then(response => {
+        console.log(response.data)
         if(response.data.status === "captured")
         {
           res.send({status:"success", message:"slot booked"})
@@ -423,6 +424,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
         let booking_id = values[0].booking_id
         let phone = "91"+values[0].phone
+        console.log(phone)
         let venue_name = values[0].venue
         let venue_type = SetKeyForSport(values[0].venue_type)
         let venue_area = venue.venue.area
@@ -430,6 +432,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
         let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},req.body[0].end_time)
         let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
+        let directions = "https://www.google.com/maps/dir/"+venue.venue.latLong[0]+","+venue.venue.latLong[1]
         let total_amount = Object.values(values).reduce((total,value)=>{
           return total+value.amount
         },0)
@@ -452,7 +455,8 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         slot_time:datetime,
         quantity:1,
         total_amount:total_amount,
-        booking_amount:values[0].booking_amount
+        booking_amount:values[0].booking_amount,
+        directions:directions
       }
       // console.log(mailBody)
       ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
@@ -463,7 +467,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
             console.log('failed')
           }
         })
-      }).catch(next)
+      })
       
       //Activity Log
       let activity_log = {
@@ -1098,6 +1102,16 @@ router.post('/revenue_report_booked', verifyToken, (req, res, next) => {
       res.send({status:"success", message:"revenue reports fetched", data:result})
     }).catch(next)
   }).catch(next)
+})
+
+//// Ads
+router.post('/ads_list',
+	verifyToken,
+	AccessControl('ads', 'read'),
+	(req, res, next) => {
+	Ads.find({region:req.body.region}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(ads=>{
+		res.send({status:"success", message:"ads fetched", data:ads})
+	}).catch(next)
 })
 
 

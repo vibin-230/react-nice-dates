@@ -27,6 +27,8 @@ const schema = new Schema({
   campaign_name:String
 });
 
+schema.index({ "latLong": "2dsphere" });
+
 //Model
 const model = mongoose.model('ads',schema);
 

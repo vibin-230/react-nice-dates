@@ -252,6 +252,7 @@ if (!req.files)
 
 
 router.post('/block_slot/:id', verifyToken, (req, res, next) => {
+  console.log(req.body);
   function BlockSlot(body,id,booking_id){
     return new Promise(function(resolve, reject){
       Venue.findById({_id:req.params.id}).then(venue=>{
@@ -310,6 +311,8 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
               venue_type:body.venue_type,
               amount:body.amount,
               coupons_used:body.coupons_used,
+              coupon_amount:body.coupon_amount,
+              offer_amount:body.offer_amount,
               commission:body.commission,
               start_time:body.start_time,
               end_time:body.end_time,
@@ -636,6 +639,15 @@ router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
   })
 })
 
+//Booking completed
+router.post('/booking_timeout/:id', verifyToken, (req, res, next) => {
+  Booking.find({booking_id:req.params.id}).then(booking=>{
+    Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"timeout"}}).then(booking=>{
+      res.send({status:"success", message:"booking timedout"})
+    })
+  })
+})
+
 
 function isEmpty (object){
   if(Object.keys(object).length>0){
@@ -790,7 +802,7 @@ router.post('/slots_list/:venue_id', verifyToken, (req, res, next) => {
 
     let slots_list = [
       {
-        text: "ALL NIGHTERS",
+        text: "NIGHT",
         name: "One",
         category: "n",
         id: 0,
@@ -811,7 +823,7 @@ router.post('/slots_list/:venue_id', verifyToken, (req, res, next) => {
         item: Object.values(slots).filter((value,index)=>index>=26&&index<39)
       },
       {
-        text: "PRIME TIME",
+        text: "EVENING",
         name: "One",
         category: "p",
         id: 3,
@@ -833,11 +845,14 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
     booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}
   }
   req.role==="super_admin"?delete filter.created_by:null
-  Booking.find(filter).then(booking=>{
+  Booking.find(filter).lean().populate('venue_id','venue').then(booking=>{
+    EventBooking.find(filter).lean().populate('event_id','event').then(eventBooking=>{
       result = Object.values(combineSlots(booking))
+      result = [...result,...eventBooking]
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
-  })
+  }).catch(next)
+})
 
   //Booking History Based on venue
 router.post('/booking_history_by_venue', verifyToken, (req, res, next) => {
@@ -891,7 +906,7 @@ router.post('/booking_history_from_app_by_venue/:id', verifyToken, (req, res, ne
 
 //Booking History_from_app
 router.post('/booking_completed_list_by_venue', verifyToken, (req, res, next) => {
-  Booking.find({booking_status:"completed", venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(booking=>{
+  Booking.find({booking_status:"completed", venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().populate('admin','_id name').then(booking=>{
       result = Object.values(combineSlots(booking))
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
@@ -931,9 +946,9 @@ router.post('/incomplete_booking/:id', verifyToken, (req, res, next) => {
 router.post('/event_booking', verifyToken, (req, res, next) => {
   EventBooking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
 
-    // let booking_id;
+    let booking_id;
     if(bookingOrder){
-      var numb = booking_id.match(/\d/g);
+      var numb = bookingOrder.booking_id.match(/\d/g);
       numb = numb.join("");
       var str = "" + (parseInt(numb, 10) + 1)
       var pad = "TTE00000"
@@ -953,6 +968,8 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
       sport_name:req.body.sport_name,
       amount:req.body.amount,
       coupons_used:req.body.coupons_used,
+      coupon_amount:body.coupon_amount,
+      offer_amount:body.offer_amount,
       commission:req.body.commission,
       booking_amount:req.body.booking_amount,
       name:req.body.name,
@@ -1109,7 +1126,7 @@ router.post('/ads_list',
 	verifyToken,
 	AccessControl('ads', 'read'),
 	(req, res, next) => {
-	Ads.find({region:req.body.region}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(ads=>{
+	Ads.find({}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(ads=>{
 		res.send({status:"success", message:"ads fetched", data:ads})
 	}).catch(next)
 })

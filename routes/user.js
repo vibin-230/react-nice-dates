@@ -845,7 +845,7 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
     booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}
   }
   req.role==="super_admin"?delete filter.created_by:null
-  Booking.find(filter).lean().populate('venue_id','venue').then(booking=>{
+  Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
     EventBooking.find(filter).lean().populate('event_id','event').then(eventBooking=>{
       result = Object.values(combineSlots(booking))
       result = [...result,...eventBooking]
@@ -862,7 +862,7 @@ router.post('/booking_history_by_venue', verifyToken, (req, res, next) => {
         result = result.map(booking=>{
             // console.log(new Date().addHours(4,30))
             // console.log("booking.end_time",new Date(booking.end_time))
-          if(booking.end_time.getTime()>new Date().addHours(4,30).getTime()){
+            if(booking.end_time.getTime()>new Date().addHours(4,30).getTime()){
             booking_list.push(booking)
           }
         })

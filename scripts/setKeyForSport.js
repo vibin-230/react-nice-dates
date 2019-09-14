@@ -1,12 +1,12 @@
 module.exports = setKeyForSport = (key) =>{
   if(key === '5s'){
-    return "5's"
+    return "5-A-SIDE"
   }
   else if(key === '7s'){
-    return "7's"
+    return "7-A-SIDE"
   }
   else if(key === '9s'){
-    return "9's"
+    return "9-A-SIDE"
   }
   else if(key === 'net'){
     return 'Nets'

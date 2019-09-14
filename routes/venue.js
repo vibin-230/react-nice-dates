@@ -81,6 +81,7 @@ function findTime() {
 }
 
 router.post('/venue_list', verifyToken, (req, res, next) => {
+  console.log(req.body);
   function findDay() {
     var d = new Date();
     var weekday = new Array(7);
@@ -95,14 +96,16 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
     return n
   }
   let zipcode;
-  axios.get('https://maps.googleapis.com/maps/api/geocode/json?latlng='+req.body.latLong[0]+','+req.body.latLong[1]+'&key=AIzaSyBg-CZ9Fk94r5uFwvmVp-U1XSXDvJRAnmo').then(response=>{
-      // zipcode = Object.values(response.data.results[0].address_components).filter(value=>value.types[0]==='postal_code')
-      // zipcode = zipcode[0].long_name
+  axios.get('https://maps.googleapis.com/maps/api/geocode/json?latlng='+req.body.latLong[0]+','+req.body.latLong[1]+'&key=AIzaSyAJUmuoOippG_r1aw3e32kW1ceIA3yexHQ').then(response=>{
+
+    if(response.data.error_message){
       zipcode = "600017"
+    }else{
+      zipcode = Object.values(response.data.results[0].address_components).filter(value=>value.types[0]==='postal_code')
+      zipcode = zipcode[0].long_name
+    }
+    console.log(zipcode);
       Venue.find({type:req.body.sport_type, "configuration.types":{$in:[req.body.venue_type]},status:true},{bank:0, offers:0, access:0}).lean().then(venue=>{
-        // venue = JSON.stringify(venue)
-        // venue = JSON.parse(venue)
-        // console.log(venue)
         Offer.find({}).then(offers=>{
 
           var list = Object.values(venue).map((value,index)=>{
@@ -110,17 +113,16 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
 
               let featured = value.featured.filter(featured=>featured.zipcode==zipcode)
               
-              console.log(value.configuration.pricing)
               let pricing = Object.values(value.configuration.pricing).filter(price=>price.day===findDay())
               let price = Math.min(...pricing[0].rate[0].pricing)
               let rating = Object.values(value.rating).reduce((a,b)=>{
-                let c = a+b.rating
+                let c = a+b.rating.rating
                 return c
               },0)
               rating = rating/value.rating.length
               let zCode = (featured.length>0?featured[0].type*20:0)+(value.exclusive?1*3:0)+(value.new?1*0.5:0)+(price?price*0.5:0)-(distance?distance*3:0)+(rating?rating*2:0)
               value.z_code = zCode
-              value.rating = rating.toFixed(1)
+              value.rating = value.rating
               value.distance = distance.toFixed(2)
               value.pricing = price
               let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)

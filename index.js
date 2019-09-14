@@ -32,8 +32,11 @@ app.use(cors());
 // default options
 app.use(fileUpload());
 
-//BodyParser
-app.use(bodyParser.json());
+app.use(bodyParser.json({
+  parameterLimit: 100000,
+  limit: '50mb',
+  extended: true
+}));
 
 app.use(function(req,res,next){
   req.io = io;

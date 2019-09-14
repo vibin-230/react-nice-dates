@@ -13,7 +13,7 @@ const schema = new Schema({
   booking_status:String,
   booking_amount:Number,
   venue:Array,
-  event_id:String,
+  event_id:{ type: Schema.Types.ObjectId, ref: 'event' },
   amount:Number,
   coupons_used:String,
   offers_used:Array,

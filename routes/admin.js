@@ -251,6 +251,7 @@ router.post('/add_venue_manager',
 	(req, res, next) => {
 	req.body.created_by = req.username
 	Admin.findOne({username:req.body.username}).then(venueManager=>{
+		console.log(venueManager);
 		if(venueManager){
 			res.send({status:"failure", message:"Email-id already exist"})
 		}else{
@@ -495,11 +496,17 @@ router.post('/add_coupon',
 	AccessControl('coupon', 'create'),
 	(req, res, next) => {
 	req.body.created_by = req.username
-	Coupon.create(req.body).then(coupon=>{
-		Coupon.findById({_id:coupon._id}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(coupon=>{
-			res.send({status:"success", message:"coupon added", data:coupon})
-			ActivityLog(req.userId, req.role, 'coupon created', req.name+" created coupon "+coupon.title)
-		}).catch(next)
+	Coupon.find({code:req.body.code}).lean().then(coupon=>{
+		if(coupon){
+			res.status(409).send({status:"failed", message:"coupon already exist"});
+		}else{
+			Coupon.create(req.body).then(coupon=>{
+				Coupon.findById({_id:coupon._id}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(coupon=>{
+					res.send({status:"success", message:"coupon added", data:coupon})
+					ActivityLog(req.userId, req.role, 'coupon created', req.name+" created coupon "+coupon.title)
+				}).catch(next)
+			}).catch(next)
+		}
 	}).catch(next)
 })
 

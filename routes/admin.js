@@ -123,7 +123,7 @@ router.post('/forget_password', (req, res, next) => {
 		if (data) {
 			//Send mail
 			var id = mongoose.Types.ObjectId();
-			let html = "<h4>Please click here to reset your password</h4><a href="+process.env.DOMAIN+"'reset-password/"+id+"'>Reset Password</a>"
+			let html = "<h4>Please click here to reset your password</h4><a href="+process.env.DOMAIN+"reset-password/"+id+">Reset Password</a>"
 			mail("support@turftown.in", req.body.email,"Reset Your Password","test",html,response=>{
 			if(response){
 				let body = {

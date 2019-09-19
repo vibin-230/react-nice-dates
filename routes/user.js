@@ -846,7 +846,7 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
   }
   req.role==="super_admin"?delete filter.created_by:null
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
-    EventBooking.find(filter).lean().populate('event_id','event').then(eventBooking=>{
+    EventBooking.find(filter).lean().populate('event_id','event','format').then(eventBooking=>{
       result = Object.values(combineSlots(booking))
       result = [...result,...eventBooking]
       res.send({status:"success", message:"booking history fetched", data:result})

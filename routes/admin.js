@@ -780,7 +780,7 @@ router.post('/ads_list',
 	verifyToken,
 	AccessControl('ads', 'read'),
 	(req, res, next) => {
-	Ads.find({}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(ads=>{
+	Ads.find({}).lean().populate('event').populate('venue').then(ads=>{
 		res.send({status:"success", message:"ads fetched", data:ads})
 	}).catch(next)
 })
@@ -794,7 +794,7 @@ router.post('/create_ad',
 	AccessControl('ads', 'create'),
 	(req, res, next) => {
 	Ads.find({}).then(ads=>{
-		let check_position = ads.filter(ad=>ad.position===req.body.position)
+		let check_position = ads.filter(ad=>ad.position===req.body.position && ad.sport_type === req.body.sport_type && ad.page === req.body.page)
 		if(check_position.length){
 			existing_positions = []
 			ads.map(ad=>{
@@ -821,6 +821,7 @@ router.post('/edit_ad/:id',
 	req.body.modified_by = req.username
 	Ads.findByIdAndUpdate({_id:req.params.id}, req.body).then(ads=>{
 		Ads.findById({_id:req.params.id}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(ads=>{
+			console.log(' edit ads',ads);
 			res.send({status:"success", message:"ad modified", data:ads})
 			ActivityLog(req.userId, req.role, 'ad modified', req.name+" modified ad ")
 		}).catch(next)
@@ -832,6 +833,7 @@ router.post('/delete_ad/:id',
 	verifyToken,
 	AccessControl('ads', 'delete'),
 	(req, res, next) => {
+		console.log('request delete api  ',req)
 	Ads.findByIdAndRemove({_id:req.params.id}).then(ads=>{
 		res.send({status:"success", message:"ad deleted"})
 		ActivityLog(req.userId, req.role, 'ad deleted', req.name+" deleted ad ")

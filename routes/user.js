@@ -30,7 +30,7 @@ const Booking = require('../models/booking');
 const EventBooking = require('../models/event_booking');
 const Venue = require('../models/venue');
 const Admin = require('../models/admin');
-
+const Ads = require('../models/ads')
 
 function ActivityLog(activity_log) {
   let user = activity_log.user_type==="user"?User:Admin
@@ -606,6 +606,7 @@ router.post('/modify_booking/:id', verifyToken, (req, res, next) => {
 
 //Booking completed
 router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
+  console.log('request',req.body)
   Booking.find({booking_id:req.params.id}).then(booking=>{
     if(req.body.commission){
       req.body.commission = req.body.commission/booking.length
@@ -846,7 +847,7 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
   }
   req.role==="super_admin"?delete filter.created_by:null
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
-    EventBooking.find(filter).lean().populate('event_id','event','format').then(eventBooking=>{
+    EventBooking.find(filter).lean().populate('event_id').then(eventBooking=>{
       result = Object.values(combineSlots(booking))
       result = [...result,...eventBooking]
       res.send({status:"success", message:"booking history fetched", data:result})
@@ -906,8 +907,10 @@ router.post('/booking_history_from_app_by_venue/:id', verifyToken, (req, res, ne
 
 //Booking History_from_app
 router.post('/booking_completed_list_by_venue', verifyToken, (req, res, next) => {
-  Booking.find({booking_status:"completed", venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().populate('admin','_id name').then(booking=>{
-      result = Object.values(combineSlots(booking))
+  Booking.find({booking_status:"completed", venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().populate('collected_by').then(booking=>{
+    //console.log(booking) 
+    result = Object.values(combineSlots(booking))
+    console.log('result -> ',result)
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
   })
@@ -1126,8 +1129,24 @@ router.post('/ads_list',
 	verifyToken,
 	AccessControl('ads', 'read'),
 	(req, res, next) => {
-	Ads.find({}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(ads=>{
-		res.send({status:"success", message:"ads fetched", data:ads})
+	Ads.find({$and: [{
+    start_date: {
+      $lte: new Date(),
+    },
+  }, {    
+    end_date: {
+      $gte: new Date(),
+    },
+  },
+  {    
+    sport_type: req.body.sport_type
+  },
+  {    
+    page: req.body.page
+  }],}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(ads=>{
+    
+    //console.log(ads)
+    res.send({status:"success", message:"ads fetched", data:ads})
 	}).catch(next)
 })
 

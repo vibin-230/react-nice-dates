@@ -25,7 +25,13 @@ const schema = new Schema({
   featured:Array,
   access:Object,
   offers:Array,
-  status:{type:Boolean, default:true}
+  status:{type:Boolean, default:true},
+  secondary_venue:Boolean,
+  secondary_venue_id:{ type: Schema.Types.ObjectId, ref: 'venue' },
+  primary_venue: {
+    default: true,
+    type:Boolean
+  }
 });
 
 //Model

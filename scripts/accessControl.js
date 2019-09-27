@@ -37,6 +37,7 @@ const Access = {
         support:['read', 'create'],
         booking:['read', 'create','update','delete'],
         users:['read','create','update','delete'],
+        ads:['read', 'create','update','delete'],
         offers:['read'],
     }
   }

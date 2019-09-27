@@ -32,11 +32,11 @@ const combineSlots=(booking, users, admins)=>{
       if(!result[value.multiple_id]){
         result[value.multiple_id] = value
         result[value.multiple_id].created_by = user_array
-        result[value.multiple_id].collected_by = collected_by
+        //result[value.multiple_id].collected_by = collected_by
 
       }else{
         result[value.multiple_id].created_by = user_array
-        result[value.multiple_id].collected_by = collected_by
+        //result[value.multiple_id].collected_by = collected_by
 
         result[value.multiple_id].amount = result[value.multiple_id].amount + value.amount
         result[value.multiple_id].commission = result[value.multiple_id].commission + value.commission

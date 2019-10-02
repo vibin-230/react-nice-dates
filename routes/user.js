@@ -26,6 +26,7 @@ const SlotsAvailable = require("../helper/slots_available")
 const BookSlot = require("../helper/book_slot")
 
 const User = require('../models/user');
+const Event = require('./../models/event')
 const Booking = require('../models/booking');
 const EventBooking = require('../models/event_booking');
 const Venue = require('../models/venue');
@@ -846,11 +847,12 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
     created_by:req.userId,
     booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}
   }
-  req.role==="super_admin"?delete filter.created_by:null
+  //req.role==="super_admin"?delete filter.created_by:null
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
     EventBooking.find(filter).lean().populate('event_id').then(eventBooking=>{
       result = Object.values(combineSlots(booking))
       result = [...result,...eventBooking]
+      console.log('result -> ',result);
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
   }).catch(next)
@@ -1143,10 +1145,32 @@ router.post('/ads_list',
   },
   {    
     page: req.body.page
-  }],}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(ads=>{
+  }],}).lean().populate('event').populate('venue').then(ads=>{
     
     //console.log(ads)
-    res.send({status:"success", message:"ads fetched", data:ads})
+    let finalads = []
+    if(req.body.page === 'Event Page'){
+
+    
+     ads.forEach((ad)=>{
+      console.log('event id => ',ad.event[0]._id);
+
+      Event.find({'_id':ad.event[0]._id}).lean().populate('venue').then(event=>{
+        //res.send({status:"success", message:"events fetched", data:event})
+        ad.event[0] = event[0]
+        finalads.push(ad)
+        console.log('final ads',finalads.length);
+        if(finalads.length === 7)
+          res.send({status:"success", message:"ads fetched", data:finalads})
+        
+        
+        
+        //console.log('ad event->',ad.event[0])
+    }).catch(next)
+    })
+  }else
+      res.send({status:"success", message:"ads fetched", data:ads})
+    
 	}).catch(next)
 })
 

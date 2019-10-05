@@ -379,7 +379,7 @@ router.post('/event',
 	verifyToken,
 	// AccessControl('event', 'read'),
 	(req, res, next) => {
-	Event.find({}).lean().populate('venue','_id name venue type').then(event=>{
+	Event.find({}).lean().populate('venue').then(event=>{
 		Offers.find({}).then(offers=>{
 				let filteredOffer = Object.values(offers).filter(offer=>offer.event.indexOf(event._id)!== -1)
 				event.offer = filteredOffer

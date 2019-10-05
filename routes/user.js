@@ -91,7 +91,7 @@ router.post('/create_user', [
                   user_type: "user",
                   activity: "user created",
                   name:req.name,
-                  message: user.name + " created successfully",
+                  message: req.name + " created successfully",
                 }
                 ActivityLog(activity_log)
               })
@@ -219,35 +219,67 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
 
 
 //Upload profile picture
-router.post('/profile_picture/',verifyToken, (req, res, next) => {
-if (!req.files)
-    return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
-    // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
-    let File = req.files.image;
-    let filename = req.files.image.name;
-    //filename = path.pathname(filename)
-    let name = path.parse(filename).name
-    let ext = path.parse(filename).ext
-    ext = ext.toLowerCase()
-    filename = Date.now() + ext
-		pathLocation = "assets/images/profile/"
-			mkdirp(pathLocation,function(err) {
-				if (err) {
-					 return console.error(err);
-				}
-		// Use the mv() method to place the file somewhere on your server
-		File.mv(pathLocation+filename, function(err) {
-			if (err) 
-			return res.status(500).send(err);
-			let image = process.env.DOMAIN+ pathLocation + filename;
-			// Venue.findOneAndUpdate({_id:req.params.id},{"venue.venue_display_picture":image}).then(user=>{
-			res.status(201).send({
-					imageurl:image,
-					status: 'success',
-					message: "profile picture uploaded"
-			})
-		})
-  });
+// router.post('/profile_picture',verifyToken, (req, res, next) => {
+//   console.log('hit profile pic')
+// if (!req.files)
+//     return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
+//     // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
+//     let File = req.files.image;
+//     let filename = req.files.image.name;
+//     //filename = path.pathname(filename)
+//     let name = path.parse(filename).name
+//     let ext = path.parse(filename).ext
+//     ext = ext.toLowerCase()
+//     filename = Date.now() + ext
+// 		pathLocation = "assets/images/profile/"
+// 			mkdirp(pathLocation,function(err) {
+// 				if (err) {
+// 					 return console.error(err);
+// 				}
+// 		// Use the mv() method to place the file somewhere on your server
+// 		File.mv(pathLocation+filename, function(err) {
+// 			if (err) 
+// 			return res.status(500).send(err);
+// 			let image = process.env.DOMAIN+ pathLocation + filename;
+// 			// Venue.findOneAndUpdate({_id:req.params.id},{"venue.venue_display_picture":image}).then(user=>{
+// 			res.status(201).send({
+// 					imageurl:image,
+// 					status: 'success',
+// 					message: "profile picture uploaded"
+// 			})
+// 		})
+//   });
+// });
+
+router.post('/profile_picture',verifyToken,
+    (req, res, next) => {
+    if (!req.files)
+        return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
+        // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
+        let File = req.files.image;
+        let filename = req.files.image.name;
+        //filename = path.pathname(filename)
+        // let name = path.parse(filename).name
+        // let ext = path.parse(filename).ext
+        // ext = ext.toLowerCase()
+        //filename =  Date.now() + filename 
+        console.log('FIle ',File)
+        // Use the mv() method to place the file somewhere on your server
+        File.mv('assets/images/venues/' + filename, function(err) {
+            if (err) {
+              console.log('rerr', err)
+            return res.status(500).send(err);
+            } else {
+            let image = link.domain+'/assets/images/venues/' + filename;
+            // Venue.findOneAndUpdate({_id:req.params.id},{$push:{"venue.venue_cover_picture":image}}).then(user=>{
+            res.status(201).send({
+                image,
+                status: 'success',
+                message: "profile picture uploaded"
+            })
+        // })
+        }
+    })
 });
 
 
@@ -408,16 +440,19 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
   }
   Promise.all(promisesToRun).then(values => {
     // Capture the payment
+     
     var data = {
       amount:req.body[0].booking_amount*100
     }
+   var result = Object.values(combineSlots([...values]))
     //Capture Payment
     axios.post('https://'+process.env.RAZORPAY_API+'@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
       .then(response => {
         console.log(response.data)
         if(response.data.status === "captured")
         {
-          res.send({status:"success", message:"slot booked"})
+
+          res.send({status:"success", message:"slot booked",data: result})
         }
       })
       .catch(error => {

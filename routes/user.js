@@ -24,7 +24,7 @@ const AccessControl = require("../scripts/accessControl")
 const SetKeyForSport = require("../scripts/setKeyForSport")
 const SlotsAvailable = require("../helper/slots_available")
 const BookSlot = require("../helper/book_slot")
-
+var mkdirp = require('mkdirp');
 const User = require('../models/user');
 const Event = require('./../models/event')
 const Booking = require('../models/booking');
@@ -102,6 +102,64 @@ router.post('/create_user', [
             res.status(422).send({status: "failure", errors: {user:"user doesn't exist"}});
         }
       })
+    }).catch(next);
+});
+
+
+router.post('/edit_user', [
+  verifyToken,
+  check('email').exists().isLength({ min: 1}).withMessage('email cannot be empty'),
+  check('email').isEmail().withMessage('email is incorrect'),
+  check('name').exists().isLength({ min: 1}).withMessage('name cannot be empty'),
+  check('dob').isISO8601().withMessage('date of birth needs to be a valid date'),
+  check('gender').exists().isLength({ min: 1}).withMessage('gender cannot be empty'),
+], (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    var result = {};
+    var errorsList = errors.array();
+    for(var i = 0; i < errorsList.length; i++)
+    {
+        result[errorsList[i].param] = errorsList[i].msg;
+    }
+    return res.status(422).json({ errors: result});
+  }
+    //Generate user id
+      //Check if user exist
+      User.findOne({_id: req.userId}).then(user=> {
+        if (user) {
+              req.body.modified_at = moment();
+              User.findByIdAndUpdate({_id: req.userId},req.body).then(user1=>{
+                
+                User.findOne({_id:req.userId},{__v:0,token:0},null).then(user=>{
+                  console.log('iser',user);
+                  let userResponse = {
+                    name:user.name,
+                    gender:user.gender,
+                    email:user.email,
+                    phone:user.phone,
+                    _id:user._id,
+                    last_login:user.last_login,
+                    dob:user.dob,
+                    modified_at:user.modified_at,
+                    profile_picture:user.profile_picture  && user.profile_picture === '' ? '' : user.profile_picture
+                  }
+                  console.log(userResponse);
+                res.status(201).send({status: "success", message: "user edited", data:userResponse})
+                let activity_log = {
+                  datetime: new Date(),
+                  id:req.userId,
+                  user_type: "user",
+                  activity: "user edited",
+                  name:req.name,
+                  message: req.name + " edited successfully",
+                }
+                ActivityLog(activity_log)
+              })
+            })
+        } else {
+            res.status(422).send({status: "failure", errors: {user:"user doesn't exist"}});
+        }
     }).catch(next);
 });
 
@@ -219,68 +277,68 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
 
 
 //Upload profile picture
-// router.post('/profile_picture',verifyToken, (req, res, next) => {
-//   console.log('hit profile pic')
-// if (!req.files)
-//     return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
-//     // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
-//     let File = req.files.image;
-//     let filename = req.files.image.name;
-//     //filename = path.pathname(filename)
-//     let name = path.parse(filename).name
-//     let ext = path.parse(filename).ext
-//     ext = ext.toLowerCase()
-//     filename = Date.now() + ext
-// 		pathLocation = "assets/images/profile/"
-// 			mkdirp(pathLocation,function(err) {
-// 				if (err) {
-// 					 return console.error(err);
-// 				}
-// 		// Use the mv() method to place the file somewhere on your server
-// 		File.mv(pathLocation+filename, function(err) {
-// 			if (err) 
-// 			return res.status(500).send(err);
-// 			let image = process.env.DOMAIN+ pathLocation + filename;
-// 			// Venue.findOneAndUpdate({_id:req.params.id},{"venue.venue_display_picture":image}).then(user=>{
-// 			res.status(201).send({
-// 					imageurl:image,
-// 					status: 'success',
-// 					message: "profile picture uploaded"
-// 			})
-// 		})
-//   });
-// });
-
-router.post('/profile_picture',verifyToken,
-    (req, res, next) => {
-    if (!req.files)
-        return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
-        // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
-        let File = req.files.image;
-        let filename = req.files.image.name;
-        //filename = path.pathname(filename)
-        // let name = path.parse(filename).name
-        // let ext = path.parse(filename).ext
-        // ext = ext.toLowerCase()
-        //filename =  Date.now() + filename 
-        console.log('FIle ',File)
-        // Use the mv() method to place the file somewhere on your server
-        File.mv('assets/images/venues/' + filename, function(err) {
-            if (err) {
-              console.log('rerr', err)
-            return res.status(500).send(err);
-            } else {
-            let image = link.domain+'/assets/images/venues/' + filename;
-            // Venue.findOneAndUpdate({_id:req.params.id},{$push:{"venue.venue_cover_picture":image}}).then(user=>{
-            res.status(201).send({
-                image,
-                status: 'success',
-                message: "profile picture uploaded"
-            })
-        // })
-        }
-    })
+router.post('/profile_picture',verifyToken, (req, res, next) => {
+  console.log('hit profile pic')
+if (!req.files)
+    return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
+    // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
+    let File = req.files.image;
+    let filename = req.files.image.name;
+    //filename = path.pathname(filename)
+    let name = path.parse(filename).name
+    let ext = path.parse(filename).ext
+    ext = ext.toLowerCase()
+    filename = Date.now() + ext
+		pathLocation = "assets/images/profile/"
+			mkdirp(pathLocation,function(err) {
+				if (err) {
+					 return console.error(err);
+				}
+		// Use the mv() method to place the file somewhere on your server
+		File.mv(pathLocation+filename, function(err) {
+			if (err) 
+			return res.status(500).send(err);
+			let image = process.env.DOMAIN+ pathLocation + filename;
+			// Venue.findOneAndUpdate({_id:req.params.id},{"venue.venue_display_picture":image}).then(user=>{
+			res.status(201).send({
+					imageurl:image,
+					status: 'success',
+					message: "profile picture uploaded"
+			})
+		})
+  });
 });
+
+// router.post('/profile_picture',verifyToken,
+//     (req, res, next) => {
+//     if (!req.files)
+//         return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
+//         // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
+//         let File = req.files.image;
+//         let filename = req.files.image.name;
+//         //filename = path.pathname(filename)
+//         // let name = path.parse(filename).name
+//         // let ext = path.parse(filename).ext
+//         // ext = ext.toLowerCase()
+//         //filename =  Date.now() + filename 
+//         console.log('FIle ',File)
+//         // Use the mv() method to place the file somewhere on your server
+//         File.mv('assets/images/venues/' + filename, function(err) {
+//             if (err) {
+//               console.log('rerr', err)
+//             return res.status(500).send(err);
+//             } else {
+//             let image = link.domain+'/assets/images/venues/' + filename;
+//             // Venue.findOneAndUpdate({_id:req.params.id},{$push:{"venue.venue_cover_picture":image}}).then(user=>{
+//             res.status(201).send({
+//                 image,
+//                 status: 'success',
+//                 message: "profile picture uploaded"
+//             })
+//         // })
+//         }
+//     })
+// });
 
 
 

@@ -24,13 +24,15 @@ const AccessControl = require("../scripts/accessControl")
 const SetKeyForSport = require("../scripts/setKeyForSport")
 const SlotsAvailable = require("../helper/slots_available")
 const BookSlot = require("../helper/book_slot")
+const mkdirp = require('mkdirp');
 
 const User = require('../models/user');
+const Event = require('./../models/event')
 const Booking = require('../models/booking');
 const EventBooking = require('../models/event_booking');
 const Venue = require('../models/venue');
 const Admin = require('../models/admin');
-
+const Ads = require('../models/ads')
 
 function ActivityLog(activity_log) {
   let user = activity_log.user_type==="user"?User:Admin
@@ -90,7 +92,7 @@ router.post('/create_user', [
                   user_type: "user",
                   activity: "user created",
                   name:req.name,
-                  message: user.name + " created successfully",
+                  message: req.name + " created successfully",
                 }
                 ActivityLog(activity_log)
               })
@@ -101,6 +103,64 @@ router.post('/create_user', [
             res.status(422).send({status: "failure", errors: {user:"user doesn't exist"}});
         }
       })
+    }).catch(next);
+});
+
+
+router.post('/edit_user', [
+  verifyToken,
+  check('email').exists().isLength({ min: 1}).withMessage('email cannot be empty'),
+  check('email').isEmail().withMessage('email is incorrect'),
+  check('name').exists().isLength({ min: 1}).withMessage('name cannot be empty'),
+  check('dob').isISO8601().withMessage('date of birth needs to be a valid date'),
+  check('gender').exists().isLength({ min: 1}).withMessage('gender cannot be empty'),
+], (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    var result = {};
+    var errorsList = errors.array();
+    for(var i = 0; i < errorsList.length; i++)
+    {
+        result[errorsList[i].param] = errorsList[i].msg;
+    }
+    return res.status(422).json({ errors: result});
+  }
+    //Generate user id
+      //Check if user exist
+      User.findOne({_id: req.userId}).then(user=> {
+        if (user) {
+              req.body.modified_at = moment();
+              User.findByIdAndUpdate({_id: req.userId},req.body).then(user1=>{
+                
+                User.findOne({_id:req.userId},{__v:0,token:0},null).then(user=>{
+                  console.log('iser',user);
+                  let userResponse = {
+                    name:user.name,
+                    gender:user.gender,
+                    email:user.email,
+                    phone:user.phone,
+                    _id:user._id,
+                    last_login:user.last_login,
+                    dob:user.dob,
+                    modified_at:user.modified_at,
+                    profile_picture:user.profile_picture  && user.profile_picture === '' ? '' : user.profile_picture
+                  }
+                  console.log(userResponse);
+                res.status(201).send({status: "success", message: "user edited", data:userResponse})
+                let activity_log = {
+                  datetime: new Date(),
+                  id:req.userId,
+                  user_type: "user",
+                  activity: "user edited",
+                  name:req.name,
+                  message: req.name + " edited successfully",
+                }
+                ActivityLog(activity_log)
+              })
+            })
+        } else {
+            res.status(422).send({status: "failure", errors: {user:"user doesn't exist"}});
+        }
     }).catch(next);
 });
 
@@ -149,7 +209,6 @@ router.post('/send_otp',[
               // })
             }
           }else{
-            console.log('test')
             User.create({phone:req.body.phone,otp:otp}).then(user=>{
               res.status(201).send({status:"success",message:"new user",otp:otp})
             })
@@ -218,7 +277,8 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
 
 
 //Upload profile picture
-router.post('/profile_picture/',verifyToken, (req, res, next) => {
+router.post('/profile_picture',verifyToken, (req, res, next) => {
+  console.log('hit profile pic')
 if (!req.files)
     return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
     // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
@@ -248,7 +308,6 @@ if (!req.files)
 		})
   });
 });
-
 
 
 router.post('/block_slot/:id', verifyToken, (req, res, next) => {
@@ -307,6 +366,7 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
               created_by:req.userId,
               venue:venue.venue.name,
               venue_id:body.venue_id,
+              venue_data:body.venue_id,
               venue_location:venue.venue.lat_long,
               user_id:body.user_id,
               sport_name:body.sport_name,
@@ -328,6 +388,7 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
               upi:body.upi,
               cash:body.cash
             }
+            console.log('booking ',booking);
             Booking.create(booking).then(booking=>{
               resolve(booking)
               setTimeout(() => {
@@ -395,7 +456,7 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
 router.post('/book_slot', verifyToken, (req, res, next) => {
   function BookSlot(body,id){
     return new Promise(function(resolve, reject){
-      Booking.findByIdAndUpdate({_id:body._id},{booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount, multiple_id:id}).lean().then(booking=>{
+      Booking.findByIdAndUpdate({_id:body._id},{booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount,coupon_amount:body.coupon_amount,coupons_used:body.coupons_used, multiple_id:id}).lean().then(booking=>{
         Booking.findById({_id:body._id}).lean().then(booking=>{
         resolve(booking)
 
@@ -413,16 +474,19 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
   }
   Promise.all(promisesToRun).then(values => {
     // Capture the payment
+     
     var data = {
       amount:req.body[0].booking_amount*100
     }
+   var result = Object.values(combineSlots([...values]))
     //Capture Payment
     axios.post('https://'+process.env.RAZORPAY_API+'@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
       .then(response => {
         console.log(response.data)
         if(response.data.status === "captured")
         {
-          res.send({status:"success", message:"slot booked"})
+
+          res.send({status:"success", message:"slot booked",data: result})
         }
       })
       .catch(error => {
@@ -627,6 +691,7 @@ router.post('/modify_booking/:id', verifyToken, (req, res, next) => {
 
 //Booking completed
 router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
+  console.log('request',req.body)
   Booking.find({booking_id:req.params.id}).then(booking=>{
     if(req.body.commission){
       req.body.commission = req.body.commission/booking.length
@@ -683,7 +748,9 @@ function isEmpty (object){
 router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
   Booking.findOne({booking_id:req.params.id}).then(booking=>{
     Venue.findById({_id:booking.venue_id}).then(venue=>{
-    if(booking.booking_type === "app"){
+      let date = new Date().addHours(8,30)
+      
+    if(booking.booking_type === "app" && booking.start_time > date){
       axios.post('https://'+process.env.RAZORPAY_API+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
       .then(response => {
         if(response.data.entity === "refund")
@@ -872,11 +939,12 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
     created_by:req.userId,
     booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}
   }
-  req.role==="super_admin"?delete filter.created_by:null
+  //req.role==="super_admin"?delete filter.created_by:null
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
-    EventBooking.find(filter).lean().populate('event_id','event').then(eventBooking=>{
+    EventBooking.find(filter).lean().populate('event_id').then(eventBooking=>{
       result = Object.values(combineSlots(booking))
       result = [...result,...eventBooking]
+      console.log('result -> ',result);
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
   }).catch(next)
@@ -902,12 +970,13 @@ router.post('/booking_history_by_venue', verifyToken, (req, res, next) => {
 router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
   Booking.find({booking_status:{$in:["booked","completed"]},venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}}).then(bookings=>{
     let booking_ids = []
+    console.log(bookings)
     bookings.filter(booking=>{
       if(booking_ids.indexOf(booking.booking_id)=== -1){
         booking_ids.push(booking.booking_id)
       }
     })
-    Booking.find({booking_id:{$in:booking_ids}}).lean().then(bookings=>{
+    Booking.find({booking_id:{$in:booking_ids}}).lean().populate('collected_by','name').then(bookings=>{
       result = Object.values(combineSlots(bookings))
       res.send({status:"success", message:"booking history fetched", data:result})
     })
@@ -934,8 +1003,8 @@ router.post('/booking_history_from_app_by_venue/:id', verifyToken, (req, res, ne
 
 //Booking History_from_app
 router.post('/booking_completed_list_by_venue', verifyToken, (req, res, next) => {
-  Booking.find({booking_status:"completed", venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().populate('admin','_id name').then(booking=>{
-      result = Object.values(combineSlots(booking))
+  Booking.find({booking_status:"completed", venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().populate('collected_by','name').then(booking=>{
+    result = Object.values(combineSlots(booking))
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
   })
@@ -1154,8 +1223,46 @@ router.post('/ads_list',
 	verifyToken,
 	AccessControl('ads', 'read'),
 	(req, res, next) => {
-	Ads.find({}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(ads=>{
-		res.send({status:"success", message:"ads fetched", data:ads})
+	Ads.find({$and: [{
+    start_date: {
+      $lte: new Date(),
+    },
+  }, {    
+    end_date: {
+      $gte: new Date(),
+    },
+  },
+  {    
+    sport_type: req.body.sport_type
+  },
+  {    
+    page: req.body.page
+  }],}).lean().populate('event').populate('venue').then(ads=>{
+    
+    //console.log(ads)
+    let finalads = []
+    if(req.body.page === 'Event Page'){
+
+    
+     ads.forEach((ad)=>{
+      console.log('event id => ',ad.event[0]._id);
+
+      Event.find({'_id':ad.event[0]._id}).lean().populate('venue').then(event=>{
+        //res.send({status:"success", message:"events fetched", data:event})
+        ad.event[0] = event[0]
+        finalads.push(ad)
+        console.log('final ads',finalads.length);
+        if(finalads.length === 7)
+          res.send({status:"success", message:"ads fetched", data:finalads})
+        
+        
+        
+        //console.log('ad event->',ad.event[0])
+    }).catch(next)
+    })
+  }else
+      res.send({status:"success", message:"ads fetched", data:ads})
+    
 	}).catch(next)
 })
 

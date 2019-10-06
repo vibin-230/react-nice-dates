@@ -1,3 +1,6 @@
 node_modules/
 .env
 ecosystem.config.js
+assets/images
+package-lock.json
+.gitignore

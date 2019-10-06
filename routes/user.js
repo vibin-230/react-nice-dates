@@ -24,6 +24,7 @@ const AccessControl = require("../scripts/accessControl")
 const SetKeyForSport = require("../scripts/setKeyForSport")
 const SlotsAvailable = require("../helper/slots_available")
 const BookSlot = require("../helper/book_slot")
+const mkdirp = require('mkdirp');
 
 const User = require('../models/user');
 const Booking = require('../models/booking');
@@ -149,7 +150,6 @@ router.post('/send_otp',[
               // })
             }
           }else{
-            console.log('test')
             User.create({phone:req.body.phone,otp:otp}).then(user=>{
               res.status(201).send({status:"success",message:"new user",otp:otp})
             })

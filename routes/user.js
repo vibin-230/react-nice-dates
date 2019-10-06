@@ -24,7 +24,8 @@ const AccessControl = require("../scripts/accessControl")
 const SetKeyForSport = require("../scripts/setKeyForSport")
 const SlotsAvailable = require("../helper/slots_available")
 const BookSlot = require("../helper/book_slot")
-var mkdirp = require('mkdirp');
+const mkdirp = require('mkdirp');
+
 const User = require('../models/user');
 const Event = require('./../models/event')
 const Booking = require('../models/booking');
@@ -208,7 +209,6 @@ router.post('/send_otp',[
               // })
             }
           }else{
-            console.log('test')
             User.create({phone:req.body.phone,otp:otp}).then(user=>{
               res.status(201).send({status:"success",message:"new user",otp:otp})
             })
@@ -309,48 +309,18 @@ if (!req.files)
   });
 });
 
-// router.post('/profile_picture',verifyToken,
-//     (req, res, next) => {
-//     if (!req.files)
-//         return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
-//         // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
-//         let File = req.files.image;
-//         let filename = req.files.image.name;
-//         //filename = path.pathname(filename)
-//         // let name = path.parse(filename).name
-//         // let ext = path.parse(filename).ext
-//         // ext = ext.toLowerCase()
-//         //filename =  Date.now() + filename 
-//         console.log('FIle ',File)
-//         // Use the mv() method to place the file somewhere on your server
-//         File.mv('assets/images/venues/' + filename, function(err) {
-//             if (err) {
-//               console.log('rerr', err)
-//             return res.status(500).send(err);
-//             } else {
-//             let image = link.domain+'/assets/images/venues/' + filename;
-//             // Venue.findOneAndUpdate({_id:req.params.id},{$push:{"venue.venue_cover_picture":image}}).then(user=>{
-//             res.status(201).send({
-//                 image,
-//                 status: 'success',
-//                 message: "profile picture uploaded"
-//             })
-//         // })
-//         }
-//     })
-// });
-
-
 
 router.post('/block_slot/:id', verifyToken, (req, res, next) => {
-  console.log(req.body);
   function BlockSlot(body,id,booking_id){
     return new Promise(function(resolve, reject){
       Venue.findById({_id:req.params.id}).then(venue=>{
-        console.log(venue.venue.name)
-        Booking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
-        Booking.find({venue:venue.venue.name, venue_id:req.params.id, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked"]}}).then(booking_history=>{
-          // console.log(booking_history)
+        let venue_id;
+        if(venue.secondary_venue){
+          venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
+        }else{
+          venue_id = [venue._id.toString()]
+        }
+        Booking.find({ venue:venue.venue.name, venue_id:{$in:venue_id}, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
           let conf = venue.configuration;
           let types = conf.types;
           let base_type = conf.base_type;
@@ -359,15 +329,14 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
           for(let i=0;i<types.length; i++){
             inventory[types[i]] = conf[types[i]];
           }
-          // console.log(inventory)
+          console.log(inventory)
           if(venue.configuration.convertable){
             if(booking_history.length>0){
               let available_inventory = Object.values(booking_history).map(booking =>{
-                inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.event_type])
+                inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.venue_type])
                 for(let i=0;i<types.length-1; i++){
                 inventory[types[i]] = parseInt(inventory[base_type] / conf.ratio[types[i]])
                 }
-                // console.log(inventory)
               })
             }
             convertable = inventory[body.venue_type]<=0
@@ -375,11 +344,12 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
           }else{
             convertable = inventory[body.venue_type]<=booking_history.length
           }
+          console.log(convertable);
           if(convertable){
             res.status(409).send({status:"failed", message:"slot already booked"})
           }else{
               if(booking_id){
-                var numb = bookingOrder.booking_id.match(/\d/g);
+                var numb = booking_id.match(/\d/g);
                 numb = numb.join("");
                 var str = "" + (parseInt(numb, 10) + 1)
                 var pad = "TT000000"
@@ -396,6 +366,7 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
               created_by:req.userId,
               venue:venue.venue.name,
               venue_id:body.venue_id,
+              venue_data:body.venue_id,
               venue_location:venue.venue.lat_long,
               user_id:body.user_id,
               sport_name:body.sport_name,
@@ -436,14 +407,19 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
         }).catch(next)
       }).catch(next)
     }).catch(next)
-    }).catch(next)
   }
   Booking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
+    let booking_id
+    if(!bookingOrder){
+      booking_id = "TT000000"
+    }else{
+      booking_id = bookingOrder.booking_id
+    }
     var id = mongoose.Types.ObjectId();
     let promisesToRun = [];
     for(let i=0;i<req.body.length;i++)
     {
-      promisesToRun.push(BlockSlot(req.body[i],id,bookingOrder.booking_id))
+      promisesToRun.push(BlockSlot(req.body[i],id, booking_id))
     }
     Promise.all(promisesToRun).then(values => {
       values = {...values}
@@ -589,7 +565,14 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
   function SlotsCheck(body,id){
     return new Promise((resolve,reject)=>{
       Venue.findById({_id:id},{bank:0,access:0}).lean().then(venue=>{
-        Booking.find({$and:[{venue:body.venue, venue_id:id, booking_date:{$gte:body.booking_date,$lt:moment(body.booking_date).add(1,"days")}}],booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
+        let venue_id;
+        if(venue.secondary_venue){
+          venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
+        }else{
+          venue_id = [venue._id.toString()]
+        }
+        Booking.find({ venue:body.venue, venue_id:{$in:venue_id}, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
+        // Booking.find({$and:[{venue:body.venue, venue_id:id, booking_date:{$gte:body.booking_date,$lt:moment(body.booking_date).add(1,"days")}}],booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
           let slots_available = SlotsAvailable(venue,booking_history)
           if(slots_available.slots_available[body.slot_time][body.venue_type]>0){
             resolve()
@@ -607,12 +590,19 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
   }
 
   Promise.all(promisesToRun).then(values => {
+    
     Booking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
+      let booking_id
+      if(!bookingOrder){
+        booking_id = "TT000000"
+      }else{
+        booking_id = bookingOrder.booking_id
+      }
       var id = mongoose.Types.ObjectId();
       let promisesToRun = [];
       for(let i=0;i<req.body.length;i++)
       {
-        promisesToRun.push(BookSlot(req.body[i],id,bookingOrder.booking_id,params,req,res,next))
+        promisesToRun.push(BookSlot(req.body[i],id, booking_id,params,req,res,next))
       }
   
       Promise.all(promisesToRun).then(values => {
@@ -758,7 +748,9 @@ function isEmpty (object){
 router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
   Booking.findOne({booking_id:req.params.id}).then(booking=>{
     Venue.findById({_id:booking.venue_id}).then(venue=>{
-    if(booking.booking_type === "app"){
+      let date = new Date().addHours(8,30)
+      
+    if(booking.booking_type === "app" && booking.start_time > date){
       axios.post('https://'+process.env.RAZORPAY_API+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
       .then(response => {
         if(response.data.entity === "refund")
@@ -846,7 +838,14 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
 //Slot Booked
 router.post('/slots_available/:id', verifyToken, (req, res, next) => {
   Venue.findById({_id:req.params.id},{bank:0,access:0}).lean().then(venue=>{
-    Booking.find({venue:req.body.venue, venue_id:req.params.id, booking_date:{$gte:new Date(req.body.booking_date),$lt:new Date(req.body.booking_date).addHours(24,0)},booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
+    let venue_id;
+        if(venue.secondary_venue){
+          venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
+        }else{
+          venue_id = [venue._id.toString()]
+        }
+        Booking.find({ venue:req.body.venue, venue_id:{$in:venue_id}, booking_date:req.body.booking_date,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
+    // Booking.find({venue:req.body.venue, venue_id:req.params.id, booking_date:{$gte:new Date(req.body.booking_date),$lt:new Date(req.body.booking_date).addHours(24,0)},booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
       console.log(booking_history)
       let slots_available = SlotsAvailable(venue,booking_history)
       // console.log(moment(req.body.booking_date).add(1,"day"))
@@ -986,7 +985,7 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
 
  //Booking History_from_app
  router.post('/booking_history_from_app', verifyToken, (req, res, next) => {
-  Booking.find({booking_status:{$in:["booked"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}, booking_type:"app"}).then(booking=>{
+  Booking.find({booking_status:{$in:["booked","completed"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}, booking_type:"app"}).then(booking=>{
       result = Object.values(combineSlots(booking))
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
@@ -994,7 +993,7 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
 
 //Booking History_from_app
 router.post('/booking_history_from_app_by_venue/:id', verifyToken, (req, res, next) => {
-  Booking.find({booking_status:{$in:["booked"]}, venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, booking_type:"app"}).then(booking=>{
+  Booking.find({booking_status:{$in:["booked","completed"]}, venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, booking_type:"app"}).then(booking=>{
       result = Object.values(combineSlots(booking))
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)

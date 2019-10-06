@@ -196,8 +196,19 @@ AccessControl('venue', 'create'),
 (req, res, next) => {
 	req.body.created_by = req.username
 	Venue.create(req.body).then(venue=>{
-		res.send({status:"success", message:"venue added", data:venue})
-		ActivityLog(req.userId, req.role, 'venue created', req.name+" created venue "+venue.venue.name,venue_id)
+		if(venue.secondary_venue){
+			let secondary_venue = {
+				secondary_venue : true,
+				secondary_venue_id : venue._id
+			}
+			Venue.findByIdAndUpdate({_id:venue.secondary_venue_id},secondary_venue).then(secondaryVenue=>{
+				res.send({status:"success", message:"venue added", data:venue})
+				ActivityLog(req.userId, req.role, 'venue created', req.name+" created venue "+venue.venue.name,venue_id)
+			})
+		}else{
+			res.send({status:"success", message:"venue added", data:venue})
+				ActivityLog(req.userId, req.role, 'venue created', req.name+" created venue "+venue.venue.name,venue_id)
+		}
 		}).catch(next)
 })
 
@@ -832,7 +843,7 @@ router.post('/edit_ad/:id',
 })
 
 //// Delete ad
-router.post('/delete_ad/:id',
+router.delete('/delete_ad/:id',
 	verifyToken,
 	AccessControl('ads', 'delete'),
 	(req, res, next) => {

@@ -390,7 +390,7 @@ router.post('/event',
 	verifyToken,
 	// AccessControl('event', 'read'),
 	(req, res, next) => {
-	Event.find({}).lean().populate('venue','_id name venue type').then(event=>{
+	Event.find({}).lean().populate('venue').then(event=>{
 		Offers.find({}).then(offers=>{
 				let filteredOffer = Object.values(offers).filter(offer=>offer.event.indexOf(event._id)!== -1)
 				event.offer = filteredOffer
@@ -508,7 +508,7 @@ router.post('/add_coupon',
 	(req, res, next) => {
 	req.body.created_by = req.username
 	Coupon.find({code:req.body.code}).lean().then(coupon=>{
-		if(coupon){
+		if(coupon && coupon.length > 0){
 			res.status(409).send({status:"failed", message:"coupon already exist"});
 		}else{
 			Coupon.create(req.body).then(coupon=>{
@@ -765,7 +765,7 @@ AccessControl('ads', 'create'),
 		let ext = path.parse(filename).ext
 		ext = ext.toLowerCase()
 		filename = Date.now() + ext
-		pathLocation = "assets/images/ads/"
+		pathLocation = "assets/images/custom/"
 			mkdirp(pathLocation,function(err) {
 				if (err) {
 					 return console.error(err);
@@ -806,12 +806,15 @@ router.post('/create_ad',
 	(req, res, next) => {
 	Ads.find({}).then(ads=>{
 		let check_position = ads.filter(ad=>ad.position===req.body.position && ad.sport_type === req.body.sport_type && ad.page === req.body.page)
+		console.log('position ',check_position.length);
 		if(check_position.length){
+			console.log('check ',check_position);
 			existing_positions = []
-			ads.map(ad=>{
-				existing_positions.push(ad.position)
+			check_position.map(ad=>{
+				let x =  'position: '+ad.position.toString()+"already exists in page: "+ad.page + 'in sport: '+ad.sport_type
+				existing_positions.push(x)
 			})
-			res.send({status:"failed", message:"position already exists", existing_positions})
+			res.send({status:"failed", message: existing_positions[0], existing_positions})
 		}else{
 			Ads.create(req.body).then(ads=>{
 				Ads.findById({_id:ads.id}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(ads=>{
@@ -835,7 +838,7 @@ router.post('/edit_ad/:id',
 			console.log(' edit ads',ads);
 			res.send({status:"success", message:"ad modified", data:ads})
 			ActivityLog(req.userId, req.role, 'ad modified', req.name+" modified ad ")
-		}).catch(next)
+		}).catch(next) 
 	}).catch(next)
 })
 

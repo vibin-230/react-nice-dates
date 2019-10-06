@@ -105,6 +105,9 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
       zipcode = zipcode[0].long_name
     }
     console.log(zipcode);
+    if(parseInt(zipcode, 10) > 600120 || parseInt(zipcode, 10) < 600000){
+      res.status(409).send({status:"failed", message: "No venues available at this location"})
+    }else{
       Venue.find({type:req.body.sport_type, "configuration.types":{$in:[req.body.venue_type]},status:true},{bank:0, offers:0, access:0}).lean().then(venue=>{
         Offer.find({}).then(offers=>{
 
@@ -135,6 +138,7 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
           res.status(201).send(list);
       }).catch(next);
     }).catch(next);
+    }
   }).catch(next);
 });
 
@@ -238,6 +242,22 @@ router.post('/review/:id', verifyToken, (req, res, next) => {
   }).catch(next);
 })
 
+//Post Review
+router.get('/ratings_by_user/:id', verifyToken, (req, res, next) => {
+  Venue.find({}).then(venues=>{
+    user_reviews = []
+    venues.map(venue=>{
+      venue.rating.map(rating=>{
+        if(rating.user_id === req.params.id){
+          rating.venue = venue.venue
+          user_reviews.push(rating)
+        }
+      })
+    })
+    res.send({status:"success", message:"Reviews fetched successfully", data: user_reviews})
+  }).catch(next);
+})
+
 //Post Rating
 router.post('/rating/:id', verifyToken, (req, res, next) => {
   let rating = {
@@ -247,16 +267,44 @@ router.post('/rating/:id', verifyToken, (req, res, next) => {
     date:new Date(),
     sport_name:req.body.sport_name
   }
-  Venue.findByIdAndUpdate({_id:req.params.id}, {$push:{rating:rating}}).then(venue=>{
-    Venue.findById({_id:req.params.id}).then(venue=>{
-      res.status(201).send({
-        data: venue,
-        status:'success',
-        message:"rating posted"
+  Venue.findOne({_id:req.params.id}).then(venue=>{
+    rating_list = venue.rating.filter(value=>value.user_id === rating.user_id)
+    if(rating_list.length){
+      Venue.findByIdAndUpdate({_id:req.params.id},{$pull:{rating:{user_id:rating.user_id}}}).then(venue=>{
+        Venue.findByIdAndUpdate({_id:req.params.id},{$push:{rating:rating}}).then(venue=>{
+          Venue.findById({_id:req.params.id}).then(venue=>{
+            res.status(201).send({
+              data: venue,
+              status:'success',
+              message:"rating posted"
+            })
+            ActivityLogForUser(req.userId,  req.phone, 'venue rated', req.phone + " rated " + venue.venue.name)
+          }).catch(next);
+        })
       })
-      ActivityLogForUser(req.userId,  req.phone, 'venue rated', req.phone + " rated " + venue.venue.name)
-    }).catch(next);
+    }else{
+      Venue.findByIdAndUpdate({_id:req.params.id},{$push:{rating:rating}}).then(venue=>{
+        Venue.findById({_id:req.params.id}).then(venue=>{
+          res.status(201).send({
+            data: venue,
+            status:'success',
+            message:"rating posted"
+          })
+          ActivityLogForUser(req.userId,  req.phone, 'venue rated', req.phone + " rated " + venue.venue.name)
+        }).catch(next);
+      })
+    }
   }).catch(next);
+  // Venue.findByIdAndUpdate({_id:req.params.id}, {$push:{rating:rating}}).then(venue=>{
+  //   Venue.findById({_id:req.params.id}).then(venue=>{
+  //     res.status(201).send({
+  //       data: venue,
+  //       status:'success',
+  //       message:"rating posted"
+  //     })
+  //     ActivityLogForUser(req.userId,  req.phone, 'venue rated', req.phone + " rated " + venue.venue.name)
+  //   }).catch(next);
+  // }).catch(next);
 })
 
 

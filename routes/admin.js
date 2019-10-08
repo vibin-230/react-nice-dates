@@ -708,7 +708,7 @@ router.post('/search',
 	AccessControl('venue', 'read'),
 	(req, res, next) => {
 	Venue.find({"venue.name":{ "$regex": req.body.search, "$options": "i" }}).then(venue=>{
-		Event.find({"event.name":{ "$regex": req.body.search, "$options": "i" }}).then(event=>{
+		Event.find({"event.name":{ "$regex": req.body.search, "$options": "i" }}).lean().populate('venue').then(event=>{
 			let combinedResult
 			if(venue){
 				combinedResult = venue.concat(event);

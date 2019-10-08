@@ -502,6 +502,8 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         let venue_name = values[0].venue
         let venue_type = SetKeyForSport(values[0].venue_type)
         let venue_area = venue.venue.area
+        let sport_name = values[0].sport_name
+        console.log('sport ', sport_name);
         let date = moment(values[0].booking_date).format("MMMM Do YYYY")
         let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
         let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},req.body[0].end_time)
@@ -530,7 +532,8 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         quantity:1,
         total_amount:total_amount,
         booking_amount:values[0].booking_amount,
-        directions:directions
+        directions:directions,
+        sport_name:sport_name,
       }
       // console.log(mailBody)
       ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
@@ -848,8 +851,8 @@ router.post('/slots_available/:id', verifyToken, (req, res, next) => {
         }else{
           venue_id = [venue._id.toString()]
         }
-        Booking.find({ venue:req.body.venue, venue_id:{$in:venue_id}, booking_date:req.body.booking_date,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
-    // Booking.find({venue:req.body.venue, venue_id:req.params.id, booking_date:{$gte:new Date(req.body.booking_date),$lt:new Date(req.body.booking_date).addHours(24,0)},booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
+  //      Booking.find({ venue:req.body.venue, venue_id:{$in:venue_id}, booking_date:req.body.booking_date,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
+   Booking.find({venue:req.body.venue, venue_id:req.params.id, booking_date:{$gte:new Date(req.body.booking_date),$lt:new Date(req.body.booking_date).addHours(24,0)},booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
       console.log(booking_history)
       let slots_available = SlotsAvailable(venue,booking_history)
       // console.log(moment(req.body.booking_date).add(1,"day"))

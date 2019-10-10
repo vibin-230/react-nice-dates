@@ -129,7 +129,7 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
               value.distance = distance.toFixed(2)
               value.pricing = price
               let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
-              value.offer = filteredOffer
+              value.offers = filteredOffer
               return value
           })
           list.sort(function(a, b) {

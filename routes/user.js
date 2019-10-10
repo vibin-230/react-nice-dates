@@ -944,14 +944,23 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
   let filter = {
     booking_status:{$in:["booked","completed"]},
     created_by:req.userId,
-    booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}
+    end_time:{$gte:req.body.fromdate, $lte:req.body.todate}
   }
+  let eventFilter = {
+    booking_status:{$in:["booked","completed"]},
+    created_by:req.userId,
+    //event_booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}
+  }
+  let booking_ids = []
+    console.log('hit',req.userId);
   //req.role==="super_admin"?delete filter.created_by:null
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
-    EventBooking.find(filter).lean().populate('event_id').then(eventBooking=>{
+    EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
       result = Object.values(combineSlots(booking))
+      console.log('normal -> ',eventBooking);
+      //result = [...result,...eventBooking]
       result = [...result,...eventBooking]
-      console.log('result -> ',result);
+     //console.log('result -> ',result);
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
   }).catch(next)
@@ -1048,7 +1057,7 @@ router.post('/incomplete_booking/:id', verifyToken, (req, res, next) => {
 
 //Event Booking
 router.post('/event_booking', verifyToken, (req, res, next) => {
-  EventBooking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
+  EventBooking.findOne({}, null, {sort: {$natural: -1}}).lean().populate('event_id').then(bookingOrder=>{
 
     let booking_id;
     if(bookingOrder){
@@ -1067,14 +1076,17 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
       booking_type:req.body.booking_type,
       booking_status:"booked",
       created_by:req.userId,
+      event_booking_date:req.event_booking_date,
       event_id:req.body.event_id,
       event_name:req.body.event_name,
       sport_name:req.body.sport_name,
       amount:req.body.amount,
+      venue:req.body.venue,
+      team_name:req.body.team_name,
       game_type:req.body.game_type,
       coupons_used:req.body.coupons_used,
-      coupon_amount:body.coupon_amount,
-      offer_amount:body.offer_amount,
+      coupon_amount:req.body.coupon_amount,
+      offer_amount:req.body.offer_amount,
       commission:req.body.commission,
       booking_amount:req.body.booking_amount,
       name:req.body.name,
@@ -1085,8 +1097,12 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
       cash:req.body.cash
     }
     EventBooking.create(booking_data).then(eventBooking=>{
-      res.send({status:"success", message:"event booked", data:eventBooking})
-
+      console.log('eventBooking',eventBooking)
+      //EventBooking.findOne({'booking_id':eventBooking.booking_id})
+      EventBooking.findOne({'booking_id':eventBooking.booking_id}).lean().populate('event_id').then(bookingOrder=>{
+        console.log('booking_order',bookingOrder)
+        res.send({status:"success", message:"event booked", data:bookingOrder})
+       
       // Send SMS
       let booking_id = eventBooking.booking_id
       let phone = eventBooking.phone
@@ -1151,6 +1167,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
       ActivityLog(activity_log)
     }).catch(next)
   })
+}).catch(next)
 })
 
 //Booking History Based on venue

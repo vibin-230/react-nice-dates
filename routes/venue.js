@@ -105,7 +105,7 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
       zipcode = zipcode[0].long_name
     }
     console.log(zipcode);
-    if(parseInt(zipcode, 10) > 600120 || parseInt(zipcode, 10) < 600000){
+    if(parseInt(zipcode, 10) > 700000 || parseInt(zipcode, 10) < 600000){
       res.status(409).send({status:"failed", message: "No venues available at this location"})
     }else{
       Venue.find({type:req.body.sport_type, "configuration.types":{$in:[req.body.venue_type]},status:true},{bank:0, offers:0, access:0}).lean().then(venue=>{
@@ -123,17 +123,18 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
                 return c
               },0)
               rating = rating/value.rating.length
-              let zCode = (featured.length>0?featured[0].type*20:0)+(value.exclusive?1*3:0)+(value.new?1*0.5:0)+(price?price*0.5:0)-(distance?distance*3:0)+(rating?rating*2:0)
+              let zCode = (featured.length>0?featured[0].type*20:0)+(value.exclusive?1*3:0)+(value.new?1*0.5:0)+(price?price*0.5:0)-(distance?distance*1:0)+(rating?rating*2:0)
               value.z_code = zCode
               value.rating = value.rating
               value.distance = distance.toFixed(2)
+              value.displacement = distance
               value.pricing = price
               let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
               value.offers = filteredOffer
               return value
           })
           list.sort(function(a, b) {
-              return b.zCode - a.zCode;
+              return a.displacement - b.displacement;
           });
           res.status(201).send(list);
       }).catch(next);
@@ -258,11 +259,20 @@ router.get('/ratings_by_user/:id', verifyToken, (req, res, next) => {
   }).catch(next);
 })
 
+
+router.get('/ratings_by_venue/:id', verifyToken, (req, res, next) => {
+  Venue.findOne({_id:req.params.id}).then(venues=>{
+    user_reviews = []
+    res.send({status:"success", message:"Reviews fetched successfully", data: venues.rating})
+  }).catch(next);
+})
+
 //Post Rating
 router.post('/rating/:id', verifyToken, (req, res, next) => {
   let rating = {
     user_id:req.userId,
-    name:req.name,
+    name:req.body.name,
+    user_profile_picture:req.body.profile_picture,
     rating:req.body,
     date:new Date(),
     sport_name:req.body.sport_name

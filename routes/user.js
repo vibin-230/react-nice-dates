@@ -949,7 +949,7 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
   let eventFilter = {
     booking_status:{$in:["booked","completed"]},
     created_by:req.userId,
-    //event_booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}
+    event_booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}
   }
   let booking_ids = []
     console.log('hit',req.userId);
@@ -1076,7 +1076,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
       booking_type:req.body.booking_type,
       booking_status:"booked",
       created_by:req.userId,
-      event_booking_date:req.event_booking_date,
+      event_booking_date:req.body.event_booking_date,
       event_id:req.body.event_id,
       event_name:req.body.event_name,
       sport_name:req.body.sport_name,
@@ -1292,7 +1292,6 @@ router.post('/ads_list',
         ad.event[0] = event[0]
         finalads.push(ad)
         console.log('final ads',finalads.length);
-        if(finalads.length === 7)
           res.send({status:"success", message:"ads fetched", data:finalads})
         
         

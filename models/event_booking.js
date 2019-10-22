@@ -17,6 +17,7 @@ const schema = new Schema({
   venue:Array,
   event_id:{ type: Schema.Types.ObjectId, ref: 'event' },
   amount:Number,
+  coupon_amount:Number,
   coupons_used:String,
   offers_used:Array,
   commission:Number,

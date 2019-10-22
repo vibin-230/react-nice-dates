@@ -942,12 +942,12 @@ router.post('/slots_list/:venue_id', verifyToken, (req, res, next) => {
 //Booking History
 router.post('/booking_history', verifyToken, (req, res, next) => {
   let filter = {
-    booking_status:{$in:["booked","completed"]},
+    booking_status:{$in:["booked","completed","cancelled"]},
     created_by:req.userId,
     end_time:{$gte:req.body.fromdate, $lte:req.body.todate}
   }
   let eventFilter = {
-    booking_status:{$in:["booked","completed"]},
+    booking_status:{$in:["booked","completed","cancelled"]},
     created_by:req.userId,
     event_booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}
   }
@@ -1001,7 +1001,7 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
 
  //Booking History_from_app
  router.post('/booking_history_from_app', verifyToken, (req, res, next) => {
-  Booking.find({booking_status:{$in:["booked","completed"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}, booking_type:"app"}).then(booking=>{
+  Booking.find({booking_status:{$in:["booked","completed"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}, booking_type:"app"}).lean().populate('venue_data','venue').then(booking=>{
       result = Object.values(combineSlots(booking))
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
@@ -1219,8 +1219,63 @@ router.post('/revenue_report', verifyToken, (req, res, next) => {
   }).catch(next)
 })
 
+router.post('/revenue_report_app', verifyToken, (req, res, next) => {
+  Booking.find({booking_status:{$in:["completed"]}, booking_type:'app', booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().then(booking_list=>{
+    
+    Booking.find({booking_status:{$in:["completed"]},booking_type:'app', booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}},{booking_date:1,booking_id:1,amount:1,multiple_id:1, commission:1,venue_offer:1,turftown_offer:1,venue_id:1}).lean().then(booking=>{
+      let result = {}
+      let group = booking.reduce((r, a) => {
+        r[a.venue_id] = [...r[a.venue_id] || [], a];
+        return r;
+      }, {});
+      let bookings = []
+      console.log(group)
+      console.log(booking)
+      let data = Object.values(group).map((value,index)=>{
+        let date = moment(value.booking_date).format("DD-MM-YYYY")
+        let venue_id = value.venue_id
+        let bookings_combined
+        if(!result[date]){
+          result[date] = value
+          result[date].bookings = 1
+          result[date].slots_booked = 1
+          result[date].commission = value.commission
+          result[date].venue_offer = value.venue_offer
+          result[date].turftown_offer = value.turftown_offer
+          bookings_combined = JSON.stringify([...bookings,booking_list[index]])
+          bookings_combined = JSON.parse(bookings_combined)
+          result[date].booking = bookings_combined
+          result[date].hours_played = 0.5
+        }else{
+          result[date].amount = result[date].amount + value.amount
+          result[date].slots_booked = result[date].slots_booked + 1
+          result[date].hours_played = (result[date].slots_booked*30)/60
+          result[date].commission = result[date].commission + value.commission
+          result[date].venue_offer = value.venue_offer
+          result[date].turftown_offer = value.turftown_offer
+          bookings_combined = JSON.stringify([...result[date].booking,booking_list[index]])
+          bookings_combined = JSON.parse(bookings_combined)
+          result[date].booking = bookings_combined
+
+        }
+      })
+      result = Object.values(result)
+      result.forEach(results=>{
+        results.booking = combineSlots(results.booking)
+        return results
+      })
+      
+
+
+
+      res.send({status:"success", message:"revenue reports fetched", data:result})
+    }).catch(next)
+  }).catch(next)
+})
+
 //Booking History Based on venue
 router.post('/revenue_report_booked', verifyToken, (req, res, next) => {
+  console.log('hit')
   Booking.find({booking_status:{$in:["booked"]}, venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().then(booking_list=>{
     Booking.find({booking_status:{$in:["booked"]}, venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}},{booking_date:1,booking_id:1,amount:1,multiple_id:1}).lean().then(booking=>{
       let result = {}
@@ -1285,19 +1340,18 @@ router.post('/ads_list',
 
     
      ads.forEach((ad)=>{
-      console.log('event id => ',ad.event[0]._id);
+       console.log('ad',ad)
+      if(ad.event.length > 0){
 
       Event.find({'_id':ad.event[0]._id}).lean().populate('venue').then(event=>{
         //res.send({status:"success", message:"events fetched", data:event})
         ad.event[0] = event[0]
         finalads.push(ad)
-        console.log('final ads',finalads.length);
+        //console.log('final ads',finalads.length);
           res.send({status:"success", message:"ads fetched", data:finalads})
-        
-        
-        
         //console.log('ad event->',ad.event[0])
     }).catch(next)
+  }
     })
   }else
       res.send({status:"success", message:"ads fetched", data:ads})

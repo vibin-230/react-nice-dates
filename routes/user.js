@@ -504,10 +504,11 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         let venue_area = venue.venue.area
         let sport_name = values[0].sport_name
         console.log('sport ', sport_name);
+        
         let date = moment(values[0].booking_date).format("MMMM Do YYYY")
         let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
         let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},req.body[0].end_time)
-        let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
+        let datetime = date + " " + moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
         let directions = "https://www.google.com/maps/dir/?api=1&destination="+venue.venue.latLong[0]+","+venue.venue.latLong[1]
         let total_amount = Object.values(values).reduce((total,value)=>{
           return total+value.amount
@@ -606,7 +607,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
       for(let i=0;i<req.body.length;i++)
       {
         promisesToRun.push(BookSlot(req.body[i],id, booking_id,params,req,res,next))
-      }
+      } 
   
       Promise.all(promisesToRun).then(values => {
         values = {...values}
@@ -1009,8 +1010,17 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
 
 //Booking History_from_app
 router.post('/booking_history_from_app_by_venue/:id', verifyToken, (req, res, next) => {
-  Booking.find({booking_status:{$in:["booked","completed"]}, venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, booking_type:"app"}).then(booking=>{
+  Booking.find({booking_status:{$in:["booked","completed","cancelled"]}, venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, booking_type:"app"}).then(booking=>{
       result = Object.values(combineSlots(booking))
+      res.send({status:"success", message:"booking history fetched", data:result})
+    }).catch(next)
+})
+
+router.post('/booking_history_from_app_by_venue_completed/:id', verifyToken, (req, res, next) => {
+  Booking.find({booking_status:{$in:["completed","cancelled",'booked']}, venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, booking_type:"app"}).then(booking=>{
+      result = Object.values(combineSlots(booking))
+
+      console.log(result);
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
 })

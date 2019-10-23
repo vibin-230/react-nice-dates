@@ -1010,16 +1010,15 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
 
 //Booking History_from_app
 router.post('/booking_history_from_app_by_venue/:id', verifyToken, (req, res, next) => {
-  Booking.find({booking_status:{$in:["booked","completed","cancelled"]}, venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, booking_type:"app"}).then(booking=>{
+  Booking.find({booking_status:{$in:["completed","cancelled"]}, venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, booking_type:"app"}).then(booking=>{
       result = Object.values(combineSlots(booking))
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
 })
 
 router.post('/booking_history_from_app_by_venue_completed/:id', verifyToken, (req, res, next) => {
-  Booking.find({booking_status:{$in:["completed","cancelled",'booked']}, venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, booking_type:"app"}).then(booking=>{
+  Booking.find({booking_status:{$in:["completed","cancelled"]}, venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, booking_type:"app"}).then(booking=>{
       result = Object.values(combineSlots(booking))
-
       console.log(result);
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)

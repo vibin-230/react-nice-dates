@@ -1028,7 +1028,7 @@ router.post('/booking_history_from_app_by_venue_completed/:id', verifyToken, (re
 
 //Booking History_from_app
 router.post('/booking_completed_list_by_venue', verifyToken, (req, res, next) => {
-  Booking.find({booking_status:"completed", venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().populate('collected_by','name').then(booking=>{
+  Booking.find({booking_status:{$in:["completed","cancelled"]}, venue_id:req.body.venue_id, booking_date:{$gt:req.body.fromdate, $lte:req.body.todate}}).lean().populate('collected_by','name').then(booking=>{
     result = Object.values(combineSlots(booking))
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)

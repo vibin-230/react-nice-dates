@@ -1002,8 +1002,10 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
 
  //Booking History_from_app
  router.post('/booking_history_from_app', verifyToken, (req, res, next) => {
-  Booking.find({booking_status:{$in:["booked","completed"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}, booking_type:"app"}).lean().populate('venue_data','venue').then(booking=>{
-      result = Object.values(combineSlots(booking))
+  Booking.find({booking_status:{$in:["booked","completed"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}, booking_type:"app"}).lean().populate('venue_data','venue').populate('collected_by','name').then(booking=>{
+    console.log('b',booking);  
+    result = Object.values(combineSlots(booking))
+
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
   })

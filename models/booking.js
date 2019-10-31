@@ -35,6 +35,7 @@ const schema = new Schema({
   venue_advance:Number,
   turftown_offer:Number,
   venue_offer:Number,
+  no_show:Boolean,
   card:Number,
   cash:Number,
   upi:Number,

@@ -987,7 +987,6 @@ router.post('/booking_history_by_venue', verifyToken, (req, res, next) => {
 router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
   Booking.find({booking_status:{$in:["booked","completed"]},venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}}).then(bookings=>{
     let booking_ids = []
-    console.log(bookings)
     bookings.filter(booking=>{
       if(booking_ids.indexOf(booking.booking_id)=== -1){
         booking_ids.push(booking.booking_id)

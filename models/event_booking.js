@@ -26,7 +26,8 @@ const schema = new Schema({
   user_id:String,
   name:String,
   phone:String,
-  email:String
+  email:String,
+  free_event: Boolean
 });
 
 //Model

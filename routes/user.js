@@ -760,7 +760,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
           .then(response => {
             if(response.data.entity === "refund")
             {
-              Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"}},{multi:true}).then(booking=>{
+              Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true}},{multi:true}).then(booking=>{
                 Booking.find({booking_id:req.params.id}).lean().then(booking=>{
                   res.send({status:"success", message:"booking cancelled"})
                   let booking_id = booking[0].booking_id
@@ -987,7 +987,6 @@ router.post('/booking_history_by_venue', verifyToken, (req, res, next) => {
 router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
   Booking.find({booking_status:{$in:["booked","completed"]},venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}}).then(bookings=>{
     let booking_ids = []
-    console.log(bookings)
     bookings.filter(booking=>{
       if(booking_ids.indexOf(booking.booking_id)=== -1){
         booking_ids.push(booking.booking_id)
@@ -1002,8 +1001,9 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
 
  //Booking History_from_app
  router.post('/booking_history_from_app', verifyToken, (req, res, next) => {
-  Booking.find({booking_status:{$in:["booked","completed"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}, booking_type:"app"}).lean().populate('venue_data','venue').then(booking=>{
-      result = Object.values(combineSlots(booking))
+  Booking.find({booking_status:{$in:["booked","completed"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}, booking_type:"app"}).lean().populate('venue_data','venue').populate('collected_by','name').then(booking=>{
+    result = Object.values(combineSlots(booking))
+
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
   })
@@ -1028,7 +1028,7 @@ router.post('/booking_history_from_app_by_venue_completed/:id', verifyToken, (re
 
 //Booking History_from_app
 router.post('/booking_completed_list_by_venue', verifyToken, (req, res, next) => {
-  Booking.find({booking_status:"completed", venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().populate('collected_by','name').then(booking=>{
+  Booking.find({booking_status:{$in:["completed","cancelled"]}, venue_id:req.body.venue_id, booking_date:{$gt:req.body.fromdate, $lte:req.body.todate}}).lean().populate('collected_by','name').then(booking=>{
     result = Object.values(combineSlots(booking))
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
@@ -1066,117 +1066,124 @@ router.post('/incomplete_booking/:id', verifyToken, (req, res, next) => {
 
 //Event Booking
 router.post('/event_booking', verifyToken, (req, res, next) => {
-  EventBooking.findOne({}, null, {sort: {$natural: -1}}).lean().populate('event_id').then(bookingOrder=>{
-
-    let booking_id;
-    if(bookingOrder){
-      var numb = bookingOrder.booking_id.match(/\d/g);
-      numb = numb.join("");
-      var str = "" + (parseInt(numb, 10) + 1)
-      var pad = "TTE00000"
-      booking_id = pad.substring(0, pad.length - str.length) + str
-    }else{
-      booking_id = "TTE00001";
-    }
-
-    let booking_data = {
-      booking_id:booking_id,
-      booking_date:req.body.booking_date,
-      booking_type:req.body.booking_type,
-      booking_status:"booked",
-      created_by:req.userId,
-      event_booking_date:req.body.event_booking_date,
-      event_id:req.body.event_id,
-      event_name:req.body.event_name,
-      sport_name:req.body.sport_name,
-      amount:req.body.amount,
-      venue:req.body.venue,
-      team_name:req.body.team_name,
-      game_type:req.body.game_type,
-      coupons_used:req.body.coupons_used,
-      coupon_amount:req.body.coupon_amount,
-      offer_amount:req.body.offer_amount,
-      commission:req.body.commission,
-      booking_amount:req.body.booking_amount,
-      name:req.body.name,
-      email:req.body.email,
-      phone:req.body.phone,
-      card:req.body.card,
-      upi:req.body.upi,
-      cash:req.body.cash
-    }
-    EventBooking.create(booking_data).then(eventBooking=>{
-      console.log('eventBooking',eventBooking)
-      //EventBooking.findOne({'booking_id':eventBooking.booking_id})
-      EventBooking.findOne({'booking_id':eventBooking.booking_id}).lean().populate('event_id').then(bookingOrder=>{
-        console.log('booking_order',bookingOrder)
-        res.send({status:"success", message:"event booked", data:bookingOrder})
-       
-      // Send SMS
-      let booking_id = eventBooking.booking_id
-      let phone = eventBooking.phone
-      let event_name = eventBooking.event_name
-      let sport_name = eventBooking.sport_name
-      let game_type = eventBooking.game_type
-      let date = moment(eventBooking.booking_date).format("MMMM Do YYYY")
-      let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
-
-
-      axios.get('textlocal/event_booking.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&sport_name='+sport_name+'&game_type='+game_type)
-      .then(response => {
-        console.log(response.data)
-      }).catch(error=>{
-        console.log(error.response.data)
-      })
-      //Send SMS to Event Manager
-      let name = eventBooking.name
-      let amount_paid = eventBooking.booking_amount
-      let balance = eventBooking.amount - eventBooking.booking_amount
-      
-      axios.get('textlocal/event_booking_manager.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance)
-      .then(response => {
-        console.log(response.data)
-      }).catch(error=>{
-        console.log(error.response.data)
-      })
-      console.log(values[0].amount)
-      //Send Mail
-      let mailBody = {
-        name:values[0].name,
-        date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
-        venue:values[0].venue,
-        booking_id:values[0].booking_id,
-        slot_time:datetime,
-        quantity:1,
-        total_amount:total_amount,
-        booking_amount:values[0].booking_amount
+  Event.findOne({_id: req.body.event_id}).then(event=>{
+    EventBooking.find({event_id:req.body.event_id, created_by:{$ne:req.decoded.id} }).lean().populate('event_id').then(bookingOrders=>{
+      if(bookingOrders.length<event.format.noofteams){
+          EventBooking.findOne({}, null, {sort: {$natural: -1}}).lean().populate('event_id').then(bookingOrder=>{
+            let booking_id;
+            if(bookingOrder){
+              var numb = bookingOrder.booking_id.match(/\d/g);
+              numb = numb.join("");
+              var str = "" + (parseInt(numb, 10) + 1)
+              var pad = "TTE00000"
+              booking_id = pad.substring(0, pad.length - str.length) + str
+            }else{
+              booking_id = "TTE00001";
+            }
+        
+            let booking_data = {
+              booking_id:booking_id,
+              booking_date:req.body.booking_date,
+              booking_type:req.body.booking_type,
+              booking_status:"booked",
+              created_by:req.userId,
+              event_booking_date:req.body.event_booking_date,
+              event_id:req.body.event_id,
+              event_name:req.body.event_name,
+              sport_name:req.body.sport_name,
+              amount:req.body.amount,
+              venue:req.body.venue,
+              team_name:req.body.team_name,
+              game_type:req.body.game_type,
+              coupons_used:req.body.coupons_used,
+              coupon_amount:req.body.coupon_amount,
+              offer_amount:req.body.offer_amount,
+              commission:req.body.commission,
+              booking_amount:req.body.booking_amount,
+              name:req.body.name,
+              email:req.body.email,
+              phone:req.body.phone,
+              card:req.body.card,
+              upi:req.body.upi,
+              cash:req.body.cash
+            }
+            EventBooking.create(booking_data).then(eventBooking=>{
+              console.log('eventBooking',eventBooking)
+              //EventBooking.findOne({'booking_id':eventBooking.booking_id})
+              EventBooking.findOne({'booking_id':eventBooking.booking_id}).lean().populate('event_id').then(bookingOrder=>{
+                console.log('booking_order',bookingOrder)
+                res.send({status:"success", message:"event booked", data:bookingOrder})
+              
+              // Send SMS
+              let booking_id = eventBooking.booking_id
+              let phone = eventBooking.phone
+              let event_name = eventBooking.event_name
+              let sport_name = eventBooking.sport_name
+              let game_type = eventBooking.game_type
+              let date = moment(eventBooking.booking_date).format("MMMM Do YYYY")
+              let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
+        
+        
+              axios.get('textlocal/event_booking.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&sport_name='+sport_name+'&game_type='+game_type)
+              .then(response => {
+                console.log(response.data)
+              }).catch(error=>{
+                console.log(error.response.data)
+              })
+              //Send SMS to Event Manager
+              let name = eventBooking.name
+              let amount_paid = eventBooking.booking_amount
+              let balance = eventBooking.amount - eventBooking.booking_amount
+              
+              axios.get('textlocal/event_booking_manager.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance)
+              .then(response => {
+                console.log(response.data)
+              }).catch(error=>{
+                console.log(error.response.data)
+              })
+              console.log(values[0].amount)
+              //Send Mail
+              let mailBody = {
+                name:values[0].name,
+                date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
+                venue:values[0].venue,
+                booking_id:values[0].booking_id,
+                slot_time:datetime,
+                quantity:1,
+                total_amount:total_amount,
+                booking_amount:values[0].booking_amount
+              }
+              console.log(req.body[0].email)
+              // console.log(mailBody)
+              ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
+                mail("support@turftown.in", req.body[0].email,"Venue Booked","test",html,response=>{
+                  if(response){
+                    console.log('success')
+                  }else{
+                    console.log('failed')
+                  }
+                })
+              }).catch(next)
+              //Activity Log
+              let activity_log = {
+                datetime: new Date(),
+                id:req.userId,
+                user_type: req.role?req.role:"user",
+                activity: 'event booked',
+                name:req.name,
+                booking_id:booking_id,
+                event_id:eventBooking.event_id,
+                message: "event "+booking_id+" booked at "+event_name+" "+datetime+" "+venue_type,
+              }
+              ActivityLog(activity_log)
+            }).catch(next)
+          })
+        }).catch(next)
+      }else{
+        res.send({status:"success", message: "Registrations full"})
       }
-      console.log(req.body[0].email)
-      // console.log(mailBody)
-      ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
-        mail("support@turftown.in", req.body[0].email,"Venue Booked","test",html,response=>{
-          if(response){
-            console.log('success')
-          }else{
-            console.log('failed')
-          }
-        })
-      }).catch(next)
-      //Activity Log
-      let activity_log = {
-        datetime: new Date(),
-        id:req.userId,
-        user_type: req.role?req.role:"user",
-        activity: 'event booked',
-        name:req.name,
-        booking_id:booking_id,
-        event_id:eventBooking.event_id,
-        message: "event "+booking_id+" booked at "+event_name+" "+datetime+" "+venue_type,
-      }
-      ActivityLog(activity_log)
-    }).catch(next)
+    })
   })
-}).catch(next)
 })
 
 //Booking History Based on venue

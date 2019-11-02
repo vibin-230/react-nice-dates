@@ -1075,6 +1075,26 @@ router.post('/check_booking', verifyToken, (req, res, next) => {
   })
 })
 
+//Cancel Booking
+router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
+  EventBooking.findOne({_id:req.params.id}).lean().then(eventBooking=>{
+    if(booking.free_event){
+      EventBooking.findOneAndUpdate({_id:req.params.id}, {booking_status: "cancelled"}).then(eventBooking=>{
+        res.send({status:"success", message:"Event booking cancelled"})
+      })
+    }else{
+      axios.post('https://'+process.env.RAZORPAY_API+'@api.razorpay.com/v1/payments/'+eventBooking.transaction_id+'/refund')
+      .then(response => {
+        if(response.data.entity === "refund"){
+          EventBooking.findOneAndUpdate({_id:req.params.id}, {booking_status: "cancelled"}).then(eventBooking=>{
+            res.send({status:"success", message:"Event booking cancelled"})
+          })
+        }
+      })
+    }
+  })
+})
+
 //Event Booking
 router.post('/event_booking', verifyToken, (req, res, next) => {
   Event.findOne({_id: req.body.event_id}).then(event=>{
@@ -1116,7 +1136,8 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               phone:req.body.phone,
               card:req.body.card,
               upi:req.body.upi,
-              cash:req.body.cash
+              cash:req.body.cash,
+              free_event: req.body.free_event
             }
             EventBooking.create(booking_data).then(eventBooking=>{
               console.log('eventBooking',eventBooking)

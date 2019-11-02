@@ -1098,7 +1098,7 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
 //Event Booking
 router.post('/event_booking', verifyToken, (req, res, next) => {
   Event.findOne({_id: req.body.event_id}).then(event=>{
-    EventBooking.find({event_id:req.body.event_id, created_by:{$ne:req.decoded.id} }).lean().populate('event_id').then(bookingOrders=>{
+    EventBooking.find({event_id:req.body.event_id}).lean().populate('event_id').then(bookingOrders=>{
       if(bookingOrders.length<event.format.noofteams){
           EventBooking.findOne({}, null, {sort: {$natural: -1}}).lean().populate('event_id').then(bookingOrder=>{
             let booking_id;

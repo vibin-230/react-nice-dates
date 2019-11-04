@@ -1066,9 +1066,40 @@ router.post('/incomplete_booking/:id', verifyToken, (req, res, next) => {
 })
 
 //Event Booking
+router.post('/check_booking', verifyToken, (req, res, next) => {
+  EventBooking.findOne({_id: req.body.event_id, created_by: req.decoded.id}).then(event=>{
+    if(event){
+      res.send({status:"success", message:"event fetched", data:event})
+    }else{
+      res.send({status:"failed", message:"no event found"})
+    }
+  })
+})
+
+//Cancel Booking
+router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
+  EventBooking.findOne({_id:req.params.id}).lean().then(eventBooking=>{
+    if(booking.free_event){
+      EventBooking.findOneAndUpdate({_id:req.params.id}, {booking_status: "cancelled"}).then(eventBooking=>{
+        res.send({status:"success", message:"Event booking cancelled"})
+      })
+    }else{
+      axios.post('https://'+process.env.RAZORPAY_API+'@api.razorpay.com/v1/payments/'+eventBooking.transaction_id+'/refund')
+      .then(response => {
+        if(response.data.entity === "refund"){
+          EventBooking.findOneAndUpdate({_id:req.params.id}, {booking_status: "cancelled"}).then(eventBooking=>{
+            res.send({status:"success", message:"Event booking cancelled"})
+          })
+        }
+      })
+    }
+  })
+})
+
+//Event Booking
 router.post('/event_booking', verifyToken, (req, res, next) => {
   Event.findOne({_id: req.body.event_id}).then(event=>{
-    EventBooking.find({event_id:req.body.event_id, created_by:{$ne:req.decoded.id} }).lean().populate('event_id').then(bookingOrders=>{
+    EventBooking.find({event_id:req.body.event_id}).lean().populate('event_id').then(bookingOrders=>{
       if(bookingOrders.length<event.format.noofteams){
           EventBooking.findOne({}, null, {sort: {$natural: -1}}).lean().populate('event_id').then(bookingOrder=>{
             let booking_id;
@@ -1106,14 +1137,31 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               phone:req.body.phone,
               card:req.body.card,
               upi:req.body.upi,
-              cash:req.body.cash
+              cash:req.body.cash,
+              free_event: req.body.free_event
             }
             EventBooking.create(booking_data).then(eventBooking=>{
               console.log('eventBooking',eventBooking)
               //EventBooking.findOne({'booking_id':eventBooking.booking_id})
               EventBooking.findOne({'booking_id':eventBooking.booking_id}).lean().populate('event_id').then(bookingOrder=>{
-                console.log('booking_order',bookingOrder)
-                res.send({status:"success", message:"event booked", data:bookingOrder})
+                if(req.body.free_event){
+                  res.send({status:"success", message:"event booked", data:bookingOrder})
+                }else{
+                  //Capture Payment
+                  axios.post('https://'+process.env.RAZORPAY_API+'@api.razorpay.com/v1/payments/'+req.body.transaction_id+'/capture',data)
+                  .then(response => {
+                    console.log(response.data)
+                    if(response.data.status === "captured")
+                    {
+                      res.send({status:"success", message:"event booked", data:bookingOrder})
+                    }
+                  })
+                  .catch(error => {
+                    console.log(error.response)
+                    res.send({error:error.response});
+                  }).catch(next);
+                }
+                
               
               // Send SMS
               let booking_id = eventBooking.booking_id
@@ -1123,7 +1171,6 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               let game_type = eventBooking.game_type
               let date = moment(eventBooking.booking_date).format("MMMM Do YYYY")
               let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
-        
         
               axios.get('textlocal/event_booking.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&sport_name='+sport_name+'&game_type='+game_type)
               .then(response => {

@@ -10,6 +10,7 @@ const schema = new Schema({
   modified_by:String,
   booking_date:Date,
   event_booking_date:Date,
+  start_time:Date,
   booking_type:String,
   team_name:String,
   booking_status:String,

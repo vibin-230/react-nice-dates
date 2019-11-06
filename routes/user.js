@@ -1067,9 +1067,11 @@ router.post('/incomplete_booking/:id', verifyToken, (req, res, next) => {
 
 //Event Booking
 router.post('/check_booking', verifyToken, (req, res, next) => {
-  EventBooking.findOne({_id: req.body.event_id, created_by: req.decoded.id}).then(event=>{
+  console.log(req.userId,req.body.event_id);
+  EventBooking.findOne({event_id: req.body.event_id, created_by: req.userId,booking_status:'booked'}).then(event=>{
+    console.log('event',event);
     if(event){
-      res.send({status:"success", message:"event fetched", data:event})
+      res.send({status:"success", message:"event fetched", data:{event}})
     }else{
       res.send({status:"failed", message:"no event found"})
     }
@@ -1078,19 +1080,23 @@ router.post('/check_booking', verifyToken, (req, res, next) => {
 
 //Cancel Booking
 router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
-  EventBooking.findOne({_id:req.params.id}).lean().then(eventBooking=>{
+  EventBooking.findOne({booking_id:req.params.id}).lean().then(booking=>{
     if(booking.free_event){
-      EventBooking.findOneAndUpdate({_id:req.params.id}, {booking_status: "cancelled"}).then(eventBooking=>{
+      EventBooking.findOneAndUpdate({booking_id:req.params.id}, {booking_status: "cancelled"}).then(eventBooking=>{
         res.send({status:"success", message:"Event booking cancelled"})
       })
     }else{
-      axios.post('https://'+process.env.RAZORPAY_API+'@api.razorpay.com/v1/payments/'+eventBooking.transaction_id+'/refund')
+      console.log(booking.transaction_id)
+      axios.post('https://'+process.env.RAZORPAY_API+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
       .then(response => {
+        console.log('pass',response);
         if(response.data.entity === "refund"){
-          EventBooking.findOneAndUpdate({_id:req.params.id}, {booking_status: "cancelled"}).then(eventBooking=>{
+          EventBooking.findOneAndUpdate({booking_id:req.params.id}, {booking_status: "cancelled"}).then(eventBooking=>{
             res.send({status:"success", message:"Event booking cancelled"})
           })
         }
+      }).catch(next =>{
+        console.log('pass',next);
       })
     }
   })
@@ -1125,6 +1131,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               sport_name:req.body.sport_name,
               amount:req.body.amount,
               venue:req.body.venue,
+              start_time:req.body.start_time,
               team_name:req.body.team_name,
               game_type:req.body.game_type,
               coupons_used:req.body.coupons_used,
@@ -1134,6 +1141,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               booking_amount:req.body.booking_amount,
               name:req.body.name,
               email:req.body.email,
+              transaction_id:req.body.transaction_id,
               phone:req.body.phone,
               card:req.body.card,
               upi:req.body.upi,
@@ -1148,6 +1156,9 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                   res.send({status:"success", message:"event booked", data:bookingOrder})
                 }else{
                   //Capture Payment
+                  let data = {
+                    amount:req.body.booking_amount*100
+                  }
                   axios.post('https://'+process.env.RAZORPAY_API+'@api.razorpay.com/v1/payments/'+req.body.transaction_id+'/capture',data)
                   .then(response => {
                     console.log(response.data)
@@ -1170,8 +1181,8 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               let sport_name = eventBooking.sport_name
               let game_type = eventBooking.game_type
               let date = moment(eventBooking.booking_date).format("MMMM Do YYYY")
-              let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
-        
+              //let start_date = moment(eventBooking.start_time).format("MMMM Do YYYY")
+              let datetime = date + " " + moment(eventBooking.start_time).format("hh:mma") 
               axios.get('textlocal/event_booking.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&sport_name='+sport_name+'&game_type='+game_type)
               .then(response => {
                 console.log(response.data)
@@ -1189,29 +1200,28 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               }).catch(error=>{
                 console.log(error.response.data)
               })
-              console.log(values[0].amount)
               //Send Mail
-              let mailBody = {
-                name:values[0].name,
-                date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
-                venue:values[0].venue,
-                booking_id:values[0].booking_id,
-                slot_time:datetime,
-                quantity:1,
-                total_amount:total_amount,
-                booking_amount:values[0].booking_amount
-              }
-              console.log(req.body[0].email)
+              // let mailBody = {
+              //   name:values[0].name,
+              //   date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
+              //   venue:values[0].venue,
+              //   booking_id:values[0].booking_id,
+              //   slot_time:datetime,
+              //   quantity:1,
+              //   total_amount:total_amount,
+              //   booking_amount:values[0].booking_amount
+              // }
+              // console.log(req.body[0].email)
               // console.log(mailBody)
-              ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
-                mail("support@turftown.in", req.body[0].email,"Venue Booked","test",html,response=>{
-                  if(response){
-                    console.log('success')
-                  }else{
-                    console.log('failed')
-                  }
-                })
-              }).catch(next)
+              // ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
+              //   mail("support@turftown.in", req.body[0].email,"Venue Booked","test",html,response=>{
+              //     if(response){
+              //       console.log('success')
+              //     }else{
+              //       console.log('failed')
+              //     }
+              //   })
+              // }).catch(next)
               //Activity Log
               let activity_log = {
                 datetime: new Date(),
@@ -1221,7 +1231,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 name:req.name,
                 booking_id:booking_id,
                 event_id:eventBooking.event_id,
-                message: "event "+booking_id+" booked at "+event_name+" "+datetime+" "+venue_type,
+                message: "event "+booking_id+" booked at "+event_name+" "+datetime,
               }
               ActivityLog(activity_log)
             }).catch(next)

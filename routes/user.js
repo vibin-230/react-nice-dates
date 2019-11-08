@@ -508,7 +508,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         let date = moment(values[0].booking_date).format("MMMM Do YYYY")
         let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
         let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},req.body[0].end_time)
-        let datetime = date + " " + moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
+        let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
         let directions = "https://www.google.com/maps/dir/?api=1&destination="+venue.venue.latLong[0]+","+venue.venue.latLong[1]
         let total_amount = Object.values(values).reduce((total,value)=>{
           return total+value.amount
@@ -760,7 +760,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
           .then(response => {
             if(response.data.entity === "refund")
             {
-              Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"}},{multi:true}).then(booking=>{
+              Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true}},{multi:true}).then(booking=>{
                 Booking.find({booking_id:req.params.id}).lean().then(booking=>{
                   res.send({status:"success", message:"booking cancelled"})
                   let booking_id = booking[0].booking_id
@@ -852,6 +852,7 @@ router.post('/slots_available/:id', verifyToken, (req, res, next) => {
         }else{
           venue_id = [venue._id.toString()]
         }
+        console.log('req.body',req.body)
   //      Booking.find({ venue:req.body.venue, venue_id:{$in:venue_id}, booking_date:req.body.booking_date,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
    Booking.find({venue:req.body.venue, venue_id:req.params.id, booking_date:{$gte:new Date(req.body.booking_date),$lt:new Date(req.body.booking_date).addHours(24,0)},booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
       console.log(booking_history)
@@ -1065,118 +1066,182 @@ router.post('/incomplete_booking/:id', verifyToken, (req, res, next) => {
 })
 
 //Event Booking
-router.post('/event_booking', verifyToken, (req, res, next) => {
-  EventBooking.findOne({}, null, {sort: {$natural: -1}}).lean().populate('event_id').then(bookingOrder=>{
-
-    let booking_id;
-    if(bookingOrder){
-      var numb = bookingOrder.booking_id.match(/\d/g);
-      numb = numb.join("");
-      var str = "" + (parseInt(numb, 10) + 1)
-      var pad = "TTE00000"
-      booking_id = pad.substring(0, pad.length - str.length) + str
+router.post('/check_booking', verifyToken, (req, res, next) => {
+  console.log(req.userId,req.body.event_id);
+  EventBooking.findOne({event_id: req.body.event_id, created_by: req.userId,booking_status:'booked'}).then(event=>{
+    console.log('event',event);
+    if(event){
+      res.send({status:"success", message:"event fetched", data:{event}})
     }else{
-      booking_id = "TTE00001";
+      res.send({status:"failed", message:"no event found"})
     }
-
-    let booking_data = {
-      booking_id:booking_id,
-      booking_date:req.body.booking_date,
-      booking_type:req.body.booking_type,
-      booking_status:"booked",
-      created_by:req.userId,
-      event_booking_date:req.body.event_booking_date,
-      event_id:req.body.event_id,
-      event_name:req.body.event_name,
-      sport_name:req.body.sport_name,
-      amount:req.body.amount,
-      venue:req.body.venue,
-      team_name:req.body.team_name,
-      game_type:req.body.game_type,
-      coupons_used:req.body.coupons_used,
-      coupon_amount:req.body.coupon_amount,
-      offer_amount:req.body.offer_amount,
-      commission:req.body.commission,
-      booking_amount:req.body.booking_amount,
-      name:req.body.name,
-      email:req.body.email,
-      phone:req.body.phone,
-      card:req.body.card,
-      upi:req.body.upi,
-      cash:req.body.cash
-    }
-    EventBooking.create(booking_data).then(eventBooking=>{
-      console.log('eventBooking',eventBooking)
-      //EventBooking.findOne({'booking_id':eventBooking.booking_id})
-      EventBooking.findOne({'booking_id':eventBooking.booking_id}).lean().populate('event_id').then(bookingOrder=>{
-        console.log('booking_order',bookingOrder)
-        res.send({status:"success", message:"event booked", data:bookingOrder})
-       
-      // Send SMS
-      let booking_id = eventBooking.booking_id
-      let phone = eventBooking.phone
-      let event_name = eventBooking.event_name
-      let sport_name = eventBooking.sport_name
-      let game_type = eventBooking.game_type
-      let date = moment(eventBooking.booking_date).format("MMMM Do YYYY")
-      let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
-
-
-      axios.get('textlocal/event_booking.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&sport_name='+sport_name+'&game_type='+game_type)
-      .then(response => {
-        console.log(response.data)
-      }).catch(error=>{
-        console.log(error.response.data)
-      })
-      //Send SMS to Event Manager
-      let name = eventBooking.name
-      let amount_paid = eventBooking.booking_amount
-      let balance = eventBooking.amount - eventBooking.booking_amount
-      
-      axios.get('textlocal/event_booking_manager.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance)
-      .then(response => {
-        console.log(response.data)
-      }).catch(error=>{
-        console.log(error.response.data)
-      })
-      console.log(values[0].amount)
-      //Send Mail
-      let mailBody = {
-        name:values[0].name,
-        date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
-        venue:values[0].venue,
-        booking_id:values[0].booking_id,
-        slot_time:datetime,
-        quantity:1,
-        total_amount:total_amount,
-        booking_amount:values[0].booking_amount
-      }
-      console.log(req.body[0].email)
-      // console.log(mailBody)
-      ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
-        mail("support@turftown.in", req.body[0].email,"Venue Booked","test",html,response=>{
-          if(response){
-            console.log('success')
-          }else{
-            console.log('failed')
-          }
-        })
-      }).catch(next)
-      //Activity Log
-      let activity_log = {
-        datetime: new Date(),
-        id:req.userId,
-        user_type: req.role?req.role:"user",
-        activity: 'event booked',
-        name:req.name,
-        booking_id:booking_id,
-        event_id:eventBooking.event_id,
-        message: "event "+booking_id+" booked at "+event_name+" "+datetime+" "+venue_type,
-      }
-      ActivityLog(activity_log)
-    }).catch(next)
   })
-}).catch(next)
+})
+
+//Cancel Booking
+router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
+  EventBooking.findOne({booking_id:req.params.id}).lean().then(booking=>{
+    if(booking.free_event){
+      EventBooking.findOneAndUpdate({booking_id:req.params.id}, {booking_status: "cancelled"}).then(eventBooking=>{
+        res.send({status:"success", message:"Event booking cancelled"})
+      })
+    }else{
+      console.log(booking.transaction_id)
+      axios.post('https://'+process.env.RAZORPAY_API+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
+      .then(response => {
+        console.log('pass',response);
+        if(response.data.entity === "refund"){
+          EventBooking.findOneAndUpdate({booking_id:req.params.id}, {booking_status: "cancelled"}).then(eventBooking=>{
+            res.send({status:"success", message:"Event booking cancelled"})
+          })
+        }
+      }).catch(next =>{
+        console.log('pass',next);
+      })
+    }
+  })
+})
+
+//Event Booking
+router.post('/event_booking', verifyToken, (req, res, next) => {
+  Event.findOne({_id: req.body.event_id}).then(event=>{
+    EventBooking.find({event_id:req.body.event_id}).lean().populate('event_id').then(bookingOrders=>{
+      if(bookingOrders.length<event.format.noofteams){
+          EventBooking.findOne({}, null, {sort: {$natural: -1}}).lean().populate('event_id').then(bookingOrder=>{
+            let booking_id;
+            if(bookingOrder){
+              var numb = bookingOrder.booking_id.match(/\d/g);
+              numb = numb.join("");
+              var str = "" + (parseInt(numb, 10) + 1)
+              var pad = "TTE00000"
+              booking_id = pad.substring(0, pad.length - str.length) + str
+            }else{
+              booking_id = "TTE00001";
+            }
+        
+            let booking_data = {
+              booking_id:booking_id,
+              booking_date:req.body.booking_date,
+              booking_type:req.body.booking_type,
+              booking_status:"booked",
+              created_by:req.userId,
+              event_booking_date:req.body.event_booking_date,
+              event_id:req.body.event_id,
+              event_name:req.body.event_name,
+              sport_name:req.body.sport_name,
+              amount:req.body.amount,
+              venue:req.body.venue,
+              start_time:req.body.start_time,
+              team_name:req.body.team_name,
+              game_type:req.body.game_type,
+              coupons_used:req.body.coupons_used,
+              coupon_amount:req.body.coupon_amount,
+              offer_amount:req.body.offer_amount,
+              commission:req.body.commission,
+              booking_amount:req.body.booking_amount,
+              name:req.body.name,
+              email:req.body.email,
+              transaction_id:req.body.transaction_id,
+              phone:req.body.phone,
+              card:req.body.card,
+              upi:req.body.upi,
+              cash:req.body.cash,
+              free_event: req.body.free_event
+            }
+            EventBooking.create(booking_data).then(eventBooking=>{
+              console.log('eventBooking',eventBooking)
+              //EventBooking.findOne({'booking_id':eventBooking.booking_id})
+              EventBooking.findOne({'booking_id':eventBooking.booking_id}).lean().populate('event_id').then(bookingOrder=>{
+                if(req.body.free_event){
+                  res.send({status:"success", message:"event booked", data:bookingOrder})
+                }else{
+                  //Capture Payment
+                  let data = {
+                    amount:req.body.booking_amount*100
+                  }
+                  axios.post('https://'+process.env.RAZORPAY_API+'@api.razorpay.com/v1/payments/'+req.body.transaction_id+'/capture',data)
+                  .then(response => {
+                    console.log(response.data)
+                    if(response.data.status === "captured")
+                    {
+                      res.send({status:"success", message:"event booked", data:bookingOrder})
+                    }
+                  })
+                  .catch(error => {
+                    console.log(error.response)
+                    res.send({error:error.response});
+                  }).catch(next);
+                }
+                
+              
+              // Send SMS
+              let booking_id = eventBooking.booking_id
+              let phone = eventBooking.phone
+              let event_name = eventBooking.event_name
+              let sport_name = eventBooking.sport_name
+              let game_type = eventBooking.game_type
+              let date = moment(eventBooking.booking_date).format("MMMM Do YYYY")
+              //let start_date = moment(eventBooking.start_time).format("MMMM Do YYYY")
+              let datetime = date + " " + moment(eventBooking.start_time).format("hh:mma") 
+              axios.get('textlocal/event_booking.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&sport_name='+sport_name+'&game_type='+game_type)
+              .then(response => {
+                console.log(response.data)
+              }).catch(error=>{
+                console.log(error.response.data)
+              })
+              //Send SMS to Event Manager
+              let name = eventBooking.name
+              let amount_paid = eventBooking.booking_amount
+              let balance = eventBooking.amount - eventBooking.booking_amount
+              
+              axios.get('textlocal/event_booking_manager.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance)
+              .then(response => {
+                console.log(response.data)
+              }).catch(error=>{
+                console.log(error.response.data)
+              })
+              //Send Mail
+              // let mailBody = {
+              //   name:values[0].name,
+              //   date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
+              //   venue:values[0].venue,
+              //   booking_id:values[0].booking_id,
+              //   slot_time:datetime,
+              //   quantity:1,
+              //   total_amount:total_amount,
+              //   booking_amount:values[0].booking_amount
+              // }
+              // console.log(req.body[0].email)
+              // console.log(mailBody)
+              // ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
+              //   mail("support@turftown.in", req.body[0].email,"Venue Booked","test",html,response=>{
+              //     if(response){
+              //       console.log('success')
+              //     }else{
+              //       console.log('failed')
+              //     }
+              //   })
+              // }).catch(next)
+              //Activity Log
+              let activity_log = {
+                datetime: new Date(),
+                id:req.userId,
+                user_type: req.role?req.role:"user",
+                activity: 'event booked',
+                name:req.name,
+                booking_id:booking_id,
+                event_id:eventBooking.event_id,
+                message: "event "+booking_id+" booked at "+event_name+" "+datetime,
+              }
+              ActivityLog(activity_log)
+            }).catch(next)
+          })
+        }).catch(next)
+      }else{
+        res.send({status:"success", message: "Registrations full"})
+      }
+    })
+  })
 })
 
 //Booking History Based on venue

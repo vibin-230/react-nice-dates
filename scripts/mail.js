@@ -24,7 +24,6 @@ const sendMail = (from,to,subject,text,html,callback,name) => {
         if (error) {
             return console.log(error);
             callback(false);
-
         }
             console.log(info)
             callback(true);

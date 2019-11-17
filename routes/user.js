@@ -854,7 +854,7 @@ router.post('/slots_available/:id', verifyToken, (req, res, next) => {
         }
         console.log('req.body',req.body)
   //      Booking.find({ venue:req.body.venue, venue_id:{$in:venue_id}, booking_date:req.body.booking_date,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
-   Booking.find({venue:req.body.venue, venue_id:req.params.id, booking_date:{$gte:new Date(req.body.booking_date),$lt:new Date(req.body.booking_date).addHours(24,0)},booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
+   Booking.find({ venue_id:{$in:venue_id}, booking_date:{$gte:new Date(req.body.booking_date),$lt:new Date(req.body.booking_date).addHours(24,0)},booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
       console.log(booking_history)
       let slots_available = SlotsAvailable(venue,booking_history)
       // console.log(moment(req.body.booking_date).add(1,"day"))

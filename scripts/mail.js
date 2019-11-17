@@ -7,7 +7,7 @@ const sendMail = (from,to,subject,text,html,callback,name) => {
         host: "smtp.gmail.com", port: 465, secure: true, // true for 465, false for other ports
         auth: {
             user: "support@turftown.in", // generated ethereal user
-            pass: "kopsupport" // generated ethereal password
+            pass: "kopsupport8" // generated ethereal password
         }
         });
 
@@ -24,7 +24,6 @@ const sendMail = (from,to,subject,text,html,callback,name) => {
         if (error) {
             return console.log(error);
             callback(false);
-
         }
             console.log(info)
             callback(true);

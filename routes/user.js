@@ -970,33 +970,49 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
 
   //Booking History Based on venue
 router.post('/booking_history_by_venue', verifyToken, (req, res, next) => {
-  Booking.find({booking_status:{$in:["booked"]}, venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(booking=>{
-    result = Object.values(combineSlots(booking))
-      let booking_list = []
-        result = result.map(booking=>{
-            // console.log(new Date().addHours(4,30))
-            // console.log("booking.end_time",new Date(booking.end_time))
-            if(booking.end_time.getTime()>new Date().addHours(4,30).getTime()){
-            booking_list.push(booking)
-          }
-        })
-      res.send({status:"success", message:"booking history fetched", data:booking_list})
+  Venue.findById({_id:req.body.venue_id},{bank:0,access:0}).lean().then(venue=>{
+    let venue_id;
+    if(venue.secondary_venue){
+      venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
+    }else{
+      venue_id = [venue._id.toString()]
+    }
+    Booking.find({booking_status:{$in:["booked"]}, venue_id:{$in:venue_id}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(booking=>{
+      result = Object.values(combineSlots(booking))
+        let booking_list = []
+          result = result.map(booking=>{
+              // console.log(new Date().addHours(4,30))
+              // console.log("booking.end_time",new Date(booking.end_time))
+              if(booking.end_time.getTime()>new Date().addHours(4,30).getTime()){
+              booking_list.push(booking)
+            }
+          })
+        res.send({status:"success", message:"booking history fetched", data:booking_list})
+      }).catch(next)
     }).catch(next)
   })
 
   //Booking History
 router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
-  Booking.find({booking_status:{$in:["booked","completed"]},venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}}).then(bookings=>{
-    let booking_ids = []
-    bookings.filter(booking=>{
-      if(booking_ids.indexOf(booking.booking_id)=== -1){
-        booking_ids.push(booking.booking_id)
-      }
-    })
-    Booking.find({booking_id:{$in:booking_ids}}).lean().populate('collected_by','name').then(bookings=>{
-      result = Object.values(combineSlots(bookings))
-      res.send({status:"success", message:"booking history fetched", data:result})
-    })
+  Venue.findById({_id:req.body.venue_id},{bank:0,access:0}).lean().then(venue=>{
+    let venue_id;
+    if(venue.secondary_venue){
+      venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
+    }else{
+      venue_id = [venue._id.toString()]
+    }
+    Booking.find({booking_status:{$in:["booked","completed"]},venue_id:{$in:venue_id}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}}).then(bookings=>{
+      let booking_ids = []
+      bookings.filter(booking=>{
+        if(booking_ids.indexOf(booking.booking_id)=== -1){
+          booking_ids.push(booking.booking_id)
+        }
+      })
+      Booking.find({booking_id:{$in:booking_ids}}).lean().populate('collected_by','name').then(bookings=>{
+        result = Object.values(combineSlots(bookings))
+        res.send({status:"success", message:"booking history fetched", data:result})
+      })
+      }).catch(next)
     }).catch(next)
   })
 
@@ -1058,17 +1074,25 @@ router.post('/booking_completed_list', verifyToken, (req, res, next) => {
 
 //Incomplete Booking
 router.post('/incomplete_booking/:id', verifyToken, (req, res, next) => {
-  Booking.find({venue_id:req.params.id, booking_status:"booked", booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(bookings=>{
-    User.find({},{_id:1,name:1,email:1,phone:1},null).lean().then(users=> {
-      Admin.find({},{_id:1,name:1,email:1,phone:1},null).lean().then(admins=> {
-        result = Object.values(combineSlots(bookings,users,admins))
-        let booking_list = []
-        result = result.map(booking=>{
-            if(booking.end_time.getTime()<=new Date().addHours(4,30).getTime()){
-            booking_list.push(booking)
-          }
-        })
-        res.send({status:"success", message:"incomplete booking fetched", data:booking_list})
+  Venue.findById({_id:req.body.venue_id},{bank:0,access:0}).lean().then(venue=>{
+    let venue_id;
+    if(venue.secondary_venue){
+      venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
+    }else{
+      venue_id = [venue._id.toString()]
+    }
+    Booking.find({venue_id:{$in:venue_id}, booking_status:"booked", booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).then(bookings=>{
+      User.find({},{_id:1,name:1,email:1,phone:1},null).lean().then(users=> {
+        Admin.find({},{_id:1,name:1,email:1,phone:1},null).lean().then(admins=> {
+          result = Object.values(combineSlots(bookings,users,admins))
+          let booking_list = []
+          result = result.map(booking=>{
+              if(booking.end_time.getTime()<=new Date().addHours(4,30).getTime()){
+              booking_list.push(booking)
+            }
+          })
+          res.send({status:"success", message:"incomplete booking fetched", data:booking_list})
+        }).catch(next)
       }).catch(next)
     }).catch(next)
   }).catch(next)

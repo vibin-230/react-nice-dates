@@ -994,7 +994,7 @@ router.post('/booking_history_by_venue', verifyToken, (req, res, next) => {
 
   //Booking History
 router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
-  Venue.findById({_id:req.params.venue_id},{bank:0,access:0}).lean().then(venue=>{
+  Venue.findById({_id:req.params.id},{bank:0,access:0}).lean().then(venue=>{
     let venue_id;
     if(venue.secondary_venue){
       venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
@@ -1074,7 +1074,7 @@ router.post('/booking_completed_list', verifyToken, (req, res, next) => {
 
 //Incomplete Booking
 router.post('/incomplete_booking/:id', verifyToken, (req, res, next) => {
-  Venue.findById({_id:req.params.venue_id},{bank:0,access:0}).lean().then(venue=>{
+  Venue.findById({_id:req.params.id},{bank:0,access:0}).lean().then(venue=>{
     let venue_id;
     if(venue.secondary_venue){
       venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]

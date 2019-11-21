@@ -320,6 +320,7 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
         }else{
           venue_id = [venue._id.toString()]
         }
+        console.log('pass2',body.booking_date,body.slot_time)
         Booking.find({ venue:venue.venue.name, venue_id:{$in:venue_id}, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
           let conf = venue.configuration;
           let types = conf.types;
@@ -432,7 +433,7 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
       let start_time = Object.values(req.body).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
       let end_time = Object.values(req.body).reduce((total,value)=>{return total>value.end_time?total:value.end_time},req.body[0].end_time)
       let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
-
+      console.log('pass '+date+' '+start_time+ ' '+end_time)
       User.findById({_id:req.body[0].user_id}).then(user=>{
       //Activity Log
       let activity_log = {
@@ -508,7 +509,8 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         let date = moment(values[0].booking_date).format("MMMM Do YYYY")
         let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
         let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},req.body[0].end_time)
-        let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
+        //onsole.log('object',start_time,end_time);
+        let datetime = date + " " + moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
         let directions = "https://www.google.com/maps/dir/?api=1&destination="+venue.venue.latLong[0]+","+venue.venue.latLong[1]
         let total_amount = Object.values(values).reduce((total,value)=>{
           return total+value.amount
@@ -756,6 +758,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
       let role = req.role === "venue_staff" || req.role === "venue_manager"
       let date = new Date().addHours(8,30)
         if(booking.booking_type === "app" && (booking.start_time > date || role)){
+          console.log(process.env.RAZORPAY_API,booking.transaction_id);
           axios.post('https://'+process.env.RAZORPAY_API+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
             if(response.data.entity === "refund")
@@ -772,8 +775,8 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
                   let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
                   let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
-                  
                   //Send SMS
+                  console.log(booking);
                   axios.get(process.env.PHP_SERVER+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
                     console.log(response.data)
                   }).catch(error=>{
@@ -943,6 +946,8 @@ router.post('/slots_list/:venue_id', verifyToken, (req, res, next) => {
 
 //Booking History
 router.post('/booking_history', verifyToken, (req, res, next) => {
+
+  let past_date  = moment(req.body.todate).add(1,'month')
   let filter = {
     booking_status:{$in:["booked","completed","cancelled"]},
     created_by:req.userId,
@@ -953,20 +958,37 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
     created_by:req.userId,
     event_booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}
   }
+  let cancel_filter = {
+    booking_status:{$in:["cancelled"]},
+    created_by:req.userId,
+    end_time:{$gte:req.body.fromdate, $lte:past_date}
+  }
   let booking_ids = []
-    console.log('hit',req.userId);
   //req.role==="super_admin"?delete filter.created_by:null
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
     EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
       result = Object.values(combineSlots(booking))
-      console.log('normal -> ',eventBooking);
       //result = [...result,...eventBooking]
       result = [...result,...eventBooking]
-     //console.log('result -> ',result);
-      res.send({status:"success", message:"booking history fetched", data:result})
+
+      if(req.body.cancel){
+        Booking.find(cancel_filter).lean().populate('venue_data','venue').then(booking=>{
+          EventBooking.find(cancel_filter).lean().populate('event_id').then(eventBooking=>{
+            result1 = Object.values(combineSlots(booking))
+          result = [...result,...result1,...eventBooking]
+         res.send({status:"success", message:"booking history fetched", data:result})
+          }).catch(next)
+        }).catch(next)
+      }else{
+        
+         res.send({status:"success", message:"booking history fetched", data:result})
+      }
     }).catch(next)
+  
   }).catch(next)
+  
 })
+
 
   //Booking History Based on venue
 router.post('/booking_history_by_venue', verifyToken, (req, res, next) => {
@@ -1086,17 +1108,18 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
         res.send({status:"success", message:"Event booking cancelled"})
       })
     }else{
-      console.log(booking.transaction_id)
+      console.log(process.env.RAZORPAY_API,booking.transaction_id)
       axios.post('https://'+process.env.RAZORPAY_API+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
       .then(response => {
         console.log('pass',response);
+        
         if(response.data.entity === "refund"){
           EventBooking.findOneAndUpdate({booking_id:req.params.id}, {booking_status: "cancelled"}).then(eventBooking=>{
             res.send({status:"success", message:"Event booking cancelled"})
           })
         }
       }).catch(next =>{
-        console.log('pass',next);
+        console.log('pass',next.response.data);
       })
     }
   })

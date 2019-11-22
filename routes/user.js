@@ -84,7 +84,7 @@ router.post('/create_user', [
             }else{
               req.body.created_at = moment();
               User.findByIdAndUpdate({_id: req.userId},req.body).then(user=>{
-                User.findOne({phone:req.phone},{__v:0,token:0},null).then(user=>{
+                User.findOne({phone:req.body.phone},{__v:0,token:0},null).then(user=>{
                 res.status(201).send({status: "success", message: "user created", data:user})
                 let activity_log = {
                   datetime: new Date(),

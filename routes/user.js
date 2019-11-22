@@ -68,6 +68,7 @@ router.post('/create_user', [
     return res.status(422).json({ errors: result});
   }
     //Generate user id
+    console.log(req.body);
     User.findOne({},null,{sort: {$natural:-1}}).then(users=> {
       if(!users){
         req.body.userid = 1;
@@ -84,11 +85,12 @@ router.post('/create_user', [
             }else{
               req.body.created_at = moment();
               User.findByIdAndUpdate({_id: req.userId},req.body).then(user=>{
-                User.findOne({phone:req.phone},{__v:0,token:0},null).then(user=>{
-                res.status(201).send({status: "success", message: "user created", data:user})
-                let activity_log = {
+                User.findOne({phone:req.body.phone},{__v:0,token:0},null).then(user1=>{
+                  console.log('user',user1);
+                res.status(201).send({status: "success", message: "user created", data:user1})
+                let activity_log = {  
                   datetime: new Date(),
-                  id:req.userId,
+                  id:req.userId,  
                   user_type: "user",
                   activity: "user created",
                   name:req.name,

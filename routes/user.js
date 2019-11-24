@@ -457,7 +457,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
   function BookSlot(body,id){
     return new Promise(function(resolve, reject){
       Booking.findByIdAndUpdate({_id:body._id},{booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount,coupon_amount:body.coupon_amount,coupons_used:body.coupons_used, multiple_id:id}).lean().then(booking=>{
-        Booking.findById({_id:body._id}).lean().then(booking=>{
+        Booking.findById({_id:body._id}).lean().populate('venue_data').then(booking=>{
         resolve(booking)
 
       }).catch(next)
@@ -485,7 +485,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         console.log(response.data)
         if(response.data.status === "captured")
         {
-
+          console.log(result)
           res.send({status:"success", message:"slot booked",data: result})
         }
       })

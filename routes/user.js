@@ -960,6 +960,10 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
     created_by:req.userId,
     end_time:{$gte:req.body.fromdate, $lte:req.body.todate}
   }
+  let cancel_filter = {
+    booking_status:{$in:["cancelled"]},
+    created_by:req.userId,
+  }
   let eventFilter = {
     booking_status:{$in:["booked","completed","cancelled"]},
     created_by:req.userId,
@@ -969,14 +973,16 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
     console.log('hit',req.userId);
   //req.role==="super_admin"?delete filter.created_by:null
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
+    Booking.find(cancel_filter).lean().populate('venue_data','venue').then(cancel_booking=>{
     EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
       result = Object.values(combineSlots(booking))
-      console.log('normal -> ',eventBooking);
+      result1 = Object.values(combineSlots(cancel_booking))
       //result = [...result,...eventBooking]
-      result = [...result,...eventBooking]
-     //console.log('result -> ',result);
+      result = [...result,...result1,...eventBooking]
+     console.log('result -> ',result);
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
+  }).catch(next)
   }).catch(next)
 })
 

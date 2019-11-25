@@ -104,16 +104,13 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
       zipcode = Object.values(response.data.results[0].address_components).filter(value=>value.types[0]==='postal_code')
       zipcode = zipcode[0].long_name
     }
-    console.log(zipcode);
     if(parseInt(zipcode, 10) > 700000 || parseInt(zipcode, 10) < 600000){
       res.status(409).send({status:"failed", message: "No venues available at this location"})
     }else{
       Venue.find({type:req.body.sport_type, "configuration.types":{$in:[req.body.venue_type]},status:true},{bank:0, offers:0, access:0}).lean().then(venue=>{
         Offer.find({}).then(offers=>{
-
           var list = Object.values(venue).map((value,index)=>{
               let distance = getDistanceFromLatLonInKm(req.body.latLong[0],req.body.latLong[1],value.venue.latLong[0],value.venue.latLong[1])
-
               let featured = value.featured.filter(featured=>featured.zipcode==zipcode)
               
               let pricing = Object.values(value.configuration.pricing).filter(price=>price.day===findDay())

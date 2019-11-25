@@ -975,13 +975,15 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
     Booking.find(cancel_filter).lean().populate('venue_data','venue').then(cancel_booking=>{
     EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
+      EventBooking.find(cancel_filter).lean().populate('event_id').then(cancel_event_booking=>{
       result = Object.values(combineSlots(booking))
       result1 = Object.values(combineSlots(cancel_booking))
       //result = [...result,...eventBooking]
-      result = [...result,...result1,...eventBooking]
+      result = [...result,...result1,...eventBooking,...cancel_event_booking]
      console.log('result -> ',result);
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
+  }).catch(next)
   }).catch(next)
   }).catch(next)
 })

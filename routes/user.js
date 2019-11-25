@@ -976,11 +976,7 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
     created_by:req.userId,
     event_booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}
   }
-  let cancel_filter = {
-    booking_status:{$in:["cancelled"]},
-    created_by:req.userId,
-    end_time:{$gte:req.body.fromdate, $lte:past_date}
-  }
+  
   let booking_ids = []
   //req.role==="super_admin"?delete filter.created_by:null
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{

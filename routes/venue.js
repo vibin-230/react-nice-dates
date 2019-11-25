@@ -272,6 +272,7 @@ router.post('/rating/:id', verifyToken, (req, res, next) => {
   let rating = {
     user_id:req.userId,
     name:req.body.name,
+    time_stamp:new Date(),
     user_profile_picture:req.body.profile_picture,
     rating:req.body,
     date:new Date(),

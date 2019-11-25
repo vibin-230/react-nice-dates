@@ -1474,7 +1474,7 @@ router.post('/ads_list',
     if(req.body.page === 'Event Page'){
 
     
-     ads.forEach((ad)=>{
+     ads.map((ad)=>{
        console.log('ad',ad)
       if(ad.event.length > 0){
 
@@ -1482,12 +1482,18 @@ router.post('/ads_list',
         //res.send({status:"success", message:"events fetched", data:event})
         ad.event[0] = event[0]
         finalads.push(ad)
+        console.log('finalads',finalads.length);
         //console.log('final ads',finalads.length);
-          res.send({status:"success", message:"ads fetched", data:finalads})
+       
+          
         //console.log('ad event->',ad.event[0])
     }).catch(next)
   }
     })
+    setTimeout(()=>{
+      res.send({status:"success", message:"ads fetched", data:finalads})
+    },1111)
+    
   }else
       res.send({status:"success", message:"ads fetched", data:ads})
     

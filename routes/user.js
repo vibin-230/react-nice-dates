@@ -527,12 +527,12 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
           console.log(error.response.data)
         })
 
-        axios.get(process.env.PHP_SERVER+'/textlocal/slot_booked_man.php?booking_id='+booking_id+'&phone='+venue_phone+'&venue_name='+venue_name+'&user_name='+req.username+'&user_phone='+phone+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount+'&name='+total_amount)
-        .then(response => {
-          console.log(response.data,'passed')
-        }).catch(error=>{
-          console.log(error.response.data)
-        })
+        // axios.get(process.env.PHP_SERVER+'/textlocal/slot_booked_man.php?booking_id='+booking_id+'&phone='+venue_phone+'&venue_name='+venue_name+'&user_name='+req.username+'&user_phone='+phone+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount+'&name='+total_amount)
+        // .then(response => {
+        //   console.log(response.data,'passed')
+        // }).catch(error=>{
+        //   console.log(error.response.data)
+        // })
 
 
 

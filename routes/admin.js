@@ -123,20 +123,28 @@ router.post('/forget_password', (req, res, next) => {
 		if (data) {
 			//Send mail
 			var id = mongoose.Types.ObjectId();
-			let html = "<h4>Please click here to reset your password</h4><a href="+process.env.DOMAIN+"reset-password/"+id+">Reset Password</a>"
-			mail("support@turftown.in", req.body.email,"Reset Your Password","test",html,response=>{
-			if(response){
-				let body = {
-				reset_password_expiry:moment().add(1,"days"),
-				reset_password_hash:id
-				}
-				Admin.findOneAndUpdate({email: req.body.email},body).then(function(data) {
-				res.send({status:"success",message:"Reset password has been sent to the E-mail"})
-				}).catch(next);
-			}else{
-				res.status(409).send({status:"failed", message: "failed to send mail"});
+			let mailBody = {
+				name:data.name,
+				link:process.env.DOMAIN+"reset-password/"+id
 			}
-			})
+			ejs.renderFile('views/reset_password/reset_password.ejs',mailBody).then(html=>{
+				mail("support@turftown.in", req.body.email,"Reset Password","test",html,response=>{
+					if(response){
+						let body = {
+						reset_password_expiry:moment().add(1,"days"),
+						reset_password_hash:id
+						}
+						Admin.findOneAndUpdate({username: req.body.email},body).then(function(data) {
+							res.send({status:"success",message:"Reset password has been sent to the E-mail"})
+						}).catch(next);
+					}else{
+						res.status(409).send({status:"failed", message: "failed to send mail"});
+					}
+				})
+			}).catch(next)
+			// let html = "<h4>Please click here to reset your password</h4><a href="+process.env.DOMAIN+"reset-password/"+id+">Reset Password</a>"
+			// mail("support@turftown.in", req.body.email,"Reset Your Password","test",html,response=>{
+			// })
 		} else {
 			res.status(409).send({status:"failed", message: "user doesn't exist"});
 		}
@@ -272,28 +280,31 @@ router.post('/add_venue_manager',
 			Admin.create(req.body).then(venueManager=>{
 				var id = mongoose.Types.ObjectId();
 				let reset_url = process.env.DOMAIN+"reset-password/"+req.body.reset_password_hash
-				let html = "<h4>Please click here to set your password for your venue manager account</h4><a href="+reset_url+">Reset Password</a>"
 				let mailBody = {
-					reset_url:reset_url,
-					name:req.body.username
+					name:data.name,
+					link:reset_url
 				}
-				// ejs.renderFile('views/set_password.ejs',mailBody).then(html=>{
-				// 	mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
-				// 	  if(response){
-				// 		console.log('success')
-				// 	  }else{
-				// 		console.log('failed')
-				// 	  }
-				// 	})
-				//   })
-
-				mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
-					if(response){
-					  res.send({status:"success"})
-					}else{
-					  res.send({status:"failed"})
-					}
-				})
+				ejs.renderFile('views/set_password/set_password.ejs',mailBody).then(html=>{
+					mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
+						if(response){
+							let body = {
+							reset_password_expiry:moment().add(1,"days"),
+							reset_password_hash:id
+							}
+							// res.send({status:"success"})
+						}else{
+							// res.send({status:"failed"});
+						}
+					})
+				}).catch(next)
+				// let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
+				// mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
+				// 	if(response){
+				// 	  res.send({status:"success"})
+				// 	}else{
+				// 	  res.send({status:"failed"})
+				// 	}
+				// })
 				Venue.find({_id:{$in:venueManager.venue}},{_id:1, name:1, venue:1, type:1}).lean().then(venue=>{
 					venueManager.venue = venue
 					res.send({status:"success", message:"venue manager added", data:venueManager})

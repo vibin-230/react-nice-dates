@@ -19,6 +19,7 @@ const config = require('../config');
 const data = require('../sample/venue.js')
 const mail = require('../scripts/mail');
 var mkdirp = require('mkdirp');
+const ejs = require('ejs');
 
 const User = require('../models/user');
 const Venue = require('../models/venue');

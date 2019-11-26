@@ -127,24 +127,35 @@ router.post('/forget_password', (req, res, next) => {
 				name:data.name,
 				link:process.env.DOMAIN+"reset-password/"+id
 			}
-			ejs.renderFile('views/reset_password/reset_password.ejs',mailBody).then(html=>{
-				mail("support@turftown.in", req.body.email,"Reset Password","test",html,response=>{
-					if(response){
-						let body = {
-						reset_password_expiry:moment().add(1,"days"),
-						reset_password_hash:id
-						}
-						Admin.findOneAndUpdate({username: req.body.email},body).then(function(data) {
-							res.send({status:"success",message:"Reset password has been sent to the E-mail"})
-						}).catch(next);
-					}else{
-						res.status(409).send({status:"failed", message: "failed to send mail"});
-					}
-				})
-			}).catch(next)
-			// let html = "<h4>Please click here to reset your password</h4><a href="+process.env.DOMAIN+"reset-password/"+id+">Reset Password</a>"
-			// mail("support@turftown.in", req.body.email,"Reset Your Password","test",html,response=>{
-			// })
+			// ejs.renderFile('views/reset_password/reset_password.ejs',mailBody).then(html=>{
+			// 	mail("support@turftown.in", req.body.email,"Reset Password","test",html,response=>{
+			// 		if(response){
+			// 			let body = {
+			// 			reset_password_expiry:moment().add(1,"days"),
+			// 			reset_password_hash:id
+			// 			}
+			// 			Admin.findOneAndUpdate({username: req.body.email},body).then(function(data) {
+			// 				res.send({status:"success",message:"Reset password has been sent to the E-mail"})
+			// 			}).catch(next);
+			// 		}else{
+			// 			res.status(409).send({status:"failed", message: "failed to send mail"});
+			// 		}
+			// 	})
+			// }).catch(next)
+			let html = "<h4>Please click here to reset your password</h4><a href="+process.env.DOMAIN+"reset-password/"+id+">Reset Password</a>"
+			mail("support@turftown.in", req.body.email,"Reset Your Password","test",html,response=>{
+				if(response){
+								let body = {
+								reset_password_expiry:moment().add(1,"days"),
+								reset_password_hash:id
+								}
+								Admin.findOneAndUpdate({username: req.body.email},body).then(function(data) {
+									res.send({status:"success",message:"Reset password has been sent to the E-mail"})
+								}).catch(next);
+							}else{
+								res.status(409).send({status:"failed", message: "failed to send mail"});
+							}
+			})
 		} else {
 			res.status(409).send({status:"failed", message: "user doesn't exist"});
 		}

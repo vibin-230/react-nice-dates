@@ -1277,15 +1277,15 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 // booking_amount:values[0].booking_amount
               }
 
-              ejs.renderFile('views/event_booking/event_booking.ejs',mailBody).then(html=>{
-                mail("support@turftown.in", bookingOrder.event_id.event.email,"Event Booked","test",html,response=>{
-                  if(response){
-                    console.log('success')
-                  }else{
-                    console.log('failed')
-                  }
-                })
-              }).catch(next)
+              // ejs.renderFile('views/event_booking/event_booking.ejs',mailBody).then(html=>{
+              //   mail("support@turftown.in", bookingOrder.event_id.event.email,"Event Booked","test",html,response=>{
+              //     if(response){
+              //       console.log('success')
+              //     }else{
+              //       console.log('failed')
+              //     }
+              //   })
+              // }).catch(next)
               //Activity Log
               let activity_log = {
                 datetime: new Date(),

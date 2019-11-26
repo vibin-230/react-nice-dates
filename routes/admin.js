@@ -284,27 +284,27 @@ router.post('/add_venue_manager',
 					name:data.name,
 					link:reset_url
 				}
-				ejs.renderFile('views/set_password/set_password.ejs',mailBody).then(html=>{
-					mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
-						if(response){
-							let body = {
-							reset_password_expiry:moment().add(1,"days"),
-							reset_password_hash:id
-							}
-							// res.send({status:"success"})
-						}else{
-							// res.send({status:"failed"});
-						}
-					})
-				}).catch(next)
-				// let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
-				// mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
-				// 	if(response){
-				// 	  res.send({status:"success"})
-				// 	}else{
-				// 	  res.send({status:"failed"})
-				// 	}
-				// })
+				// ejs.renderFile('views/set_password/set_password.ejs',mailBody).then(html=>{
+				// 	mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
+				// 		if(response){
+				// 			let body = {
+				// 			reset_password_expiry:moment().add(1,"days"),
+				// 			reset_password_hash:id
+				// 			}
+				// 			// res.send({status:"success"})
+				// 		}else{
+				// 			// res.send({status:"failed"});
+				// 		}
+				// 	})
+				// }).catch(next)
+				let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
+				mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
+					if(response){
+					  res.send({status:"success"})
+					}else{
+					  res.send({status:"failed"})
+					}
+				})
 				Venue.find({_id:{$in:venueManager.venue}},{_id:1, name:1, venue:1, type:1}).lean().then(venue=>{
 					venueManager.venue = venue
 					res.send({status:"success", message:"venue manager added", data:venueManager})

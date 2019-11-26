@@ -1234,27 +1234,29 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 console.log(error.response.data)
               })
               //Send Mail
-              // let mailBody = {
-              //   name:values[0].name,
-              //   date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
-              //   venue:values[0].venue,
-              //   booking_id:values[0].booking_id,
-              //   slot_time:datetime,
-              //   quantity:1,
-              //   total_amount:total_amount,
-              //   booking_amount:values[0].booking_amount
-              // }
-              // console.log(req.body[0].email)
-              // console.log(mailBody)
-              // ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
-              //   mail("support@turftown.in", req.body[0].email,"Venue Booked","test",html,response=>{
-              //     if(response){
-              //       console.log('success')
-              //     }else{
-              //       console.log('failed')
-              //     }
-              //   })
-              // }).catch(next)
+              let mailBody = {
+                name:eventBooking.name,
+                phone:eventBooking.phone,
+                team_name:eventBooking.team_name,
+                event_name:eventBooking.event_name,
+                // date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),   
+                // venue:values[0].venue,
+                // booking_id:values[0].booking_id,
+                // slot_time:datetime,
+                // quantity:1,
+                // total_amount:total_amount,
+                // booking_amount:values[0].booking_amount
+              }
+
+              ejs.renderFile('views/event_booking/event_booking.ejs',mailBody).then(html=>{
+                mail("support@turftown.in", bookingOrder.event_id.event.email,"Event Booked","test",html,response=>{
+                  if(response){
+                    console.log('success')
+                  }else{
+                    console.log('failed')
+                  }
+                })
+              }).catch(next)
               //Activity Log
               let activity_log = {
                 datetime: new Date(),

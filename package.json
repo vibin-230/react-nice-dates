@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha",
-    "start": "node index.js",
+    "start": "nodemon index.js",
     "build": "webpack -d && webpack-dev-server --content-base src/ --inline --hot --port 8000 --host 159.65.146.12 --history-api-fallback"
   },
   "author": "",

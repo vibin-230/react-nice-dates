@@ -12,6 +12,7 @@ const schema = new Schema({
   description:String,
   first_time_user:Boolean,
   discount:Number,
+  minhours:Number,
   discount_limit:Number,
   discount_type:String,
   usage_limit_per_user:Number,

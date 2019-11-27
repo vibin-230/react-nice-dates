@@ -780,7 +780,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
           .then(response => {
             if(response.data.entity === "refund")
             {
-              Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true}},{multi:true}).then(booking=>{
+              Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true, refund_status:true}},{multi:true}).then(booking=>{
                 Booking.find({booking_id:req.params.id}).lean().then(booking=>{
                   res.send({status:"success", message:"booking cancelled"})
                   let booking_id = booking[0].booking_id
@@ -819,7 +819,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
             console.log(error)
           }).catch(next);
         }else{
-          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"}},{multi:true}).then(booking=>{
+          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled",refund_status:false}},{multi:true}).then(booking=>{
                 Booking.find({booking_id:req.params.id}).lean().then(booking=>{
                   res.send({status:"success", message:"booking cancelled"})
                   console.log(booking);
@@ -876,7 +876,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
           .then(response => {
             if(response.data.entity === "refund")
             {
-              Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true}},{multi:true}).then(booking=>{
+              Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true, refund_status:true}},{multi:true}).then(booking=>{
                 Booking.find({booking_id:req.params.id}).lean().then(booking=>{
                   res.send({status:"success", message:"booking cancelled"})
                   let booking_id = booking[0].booking_id
@@ -915,7 +915,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
             console.log(error)
           }).catch(next);
         }else{
-          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"}},{multi:true}).then(booking=>{
+          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refund_status:false}},{multi:true}).then(booking=>{
                 Booking.find({booking_id:req.params.id}).lean().then(booking=>{
                   res.send({status:"success", message:"booking cancelled"})
                   console.log(booking);

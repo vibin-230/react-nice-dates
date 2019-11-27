@@ -482,6 +482,9 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
       amount:req.body[0].booking_amount*100
     }
    var result = Object.values(combineSlots([...values]))
+   console.log('razorpay api',process.env.RAZORPAY_API)
+   console.log('transaction api',req.body)
+
     //Capture Payment
     axios.post('https://'+process.env.RAZORPAY_API+'@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
       .then(response => {

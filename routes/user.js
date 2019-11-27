@@ -871,7 +871,9 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
       let role = req.role === "venue_staff" || req.role === "venue_manager"
       let date = new Date().addHours(8,30)
       let refund = req.body.refund_status
+      console.log('ref',refund)
         if(booking.booking_type === "app" && (refund)){
+          console.log('ref hit')
           axios.post('https://rzp_live_rLHijT57u1dFKx:9pyjbZPJO9vZneEdGLxLqYse@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
             if(response.data.entity === "refund")
@@ -915,6 +917,8 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
             console.log(error)
           }).catch(next);
         }else{
+          console.log('ref fail')
+
           Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refund_status:false}},{multi:true}).then(booking=>{
                 Booking.find({booking_id:req.params.id}).lean().then(booking=>{
                   res.send({status:"success", message:"booking cancelled"})

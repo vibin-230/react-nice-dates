@@ -42,6 +42,7 @@ const schema = new Schema({
   academy:Boolean,
   membership:Boolean,
   collected_by:{ type: Schema.Types.ObjectId, ref: 'admin' },
+  refund_status:Boolean,
   refunded: {
     type: Boolean,
     default: false

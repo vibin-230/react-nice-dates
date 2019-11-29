@@ -88,10 +88,10 @@ function getValue(key,total){
     return total/2
   }
   else if(key === 'ac'){
-    return total/2
+    return total/1
   }
   else if(key === 'nonac'){
-    return total/2
+    return total/1
   }
   else if(key === 'hc'){
     return total/3

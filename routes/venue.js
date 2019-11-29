@@ -111,7 +111,6 @@ function findTime() {
 }
 
 router.post('/venue_list', verifyToken, (req, res, next) => {
-  console.log(req.body);
   function findDay() {
     var d = new Date();
     var weekday = new Array(7);
@@ -155,7 +154,7 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
               value.rating = value.rating
               value.distance = distance.toFixed(2)
               value.displacement = distance
-              value.pricing = getValue(req.body.sport_type,price)
+              value.pricing = getValue(req.body.venue_type,price)
               let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
               value.offers = filteredOffer
               return value

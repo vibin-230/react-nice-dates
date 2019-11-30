@@ -509,7 +509,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         let venue_type = SetKeyForSport(values[0].venue_type)
         let venue_area = venue.venue.area
         let sport_name = values[0].sport_name
-        let venue_phone = "91"+venue.venue.contact
+        let manager_phone = "91"+venue.venue.contact
       
         console.log('sport ', sport_name);
         
@@ -522,8 +522,10 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         let total_amount = Object.values(values).reduce((total,value)=>{
           return total+value.amount
         },0)
-        
-        axios.get(process.env.PHP_SERVER+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount)
+
+        console.log(phone);
+
+        axios.get(process.env.PHP_SERVER+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&manager_phone='+manager_phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount)
         .then(response => {
           console.log(response.data)
         }).catch(error=>{
@@ -555,9 +557,11 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         directions:directions,
         sport_name:sport_name,
       }
+
+      let to_mail = `${values[0],email}, rajasekar@turftown.in`
       // console.log(mailBody)
       ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
-        mail("support@turftown.in", values[0].email,"Venue Booked","test",html,response=>{
+        mail("support@turftown.in", to_mail,"Venue Booked","test",html,response=>{
           if(response){
             console.log('success')
           }else{
@@ -888,13 +892,35 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
                   let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
                   let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
+                  let manager_phone = "91"+venue.venue.contact
+
                   //Send SMS
                   console.log(booking);
-                  axios.get(process.env.PHP_SERVER+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
+                  axios.get(process.env.PHP_SERVER+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&manager_phone='+manager_phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
                     console.log(response.data)
                   }).catch(error=>{
                     console.log(error.response)
                   })
+
+                  //Send Mail
+                  let mailBody = {
+                    name:eventBooking.name,
+                    phone:eventBooking.phone,
+                    team_name:eventBooking.team_name,
+                    event_name:eventBooking.event_name,
+                  }
+
+                  let to_emails = `${bookingOrder.event_id.event.email}, rajasekar@turftown.in`
+
+                  ejs.renderFile('views/event_manager/event_manager.ejs',mailBody).then(html=>{
+                    mail("support@turftown.in", to_emails,"Event Booked","test",html,response=>{
+                      if(response){
+                        console.log('success')
+                      }else{
+                        console.log('failed')
+                      }
+                    })
+                  }).catch(next)
     
                   //Activity Log
                   let activity_log = {
@@ -928,13 +954,34 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
                   let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
                   let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
+                  let manager_phone = "91"+venue.venue.contact
     
                   //Send SMS
-                  axios.get(process.env.PHP_SERVER+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
+                  axios.get(process.env.PHP_SERVER+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&manager_phone='+manager_phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
                     console.log(response.data)
                   }).catch(error=>{
                     console.log(error.response)
                   })
+
+                  //Send Mail
+                  // let mailBody = {
+                  //   name:eventBooking.name,
+                  //   phone:eventBooking.phone,
+                  //   team_name:eventBooking.team_name,
+                  //   event_name:eventBooking.event_name,
+                  // }
+
+                  // let to_emails = [bookingOrder.event_id.event.email, "rajasekar@turftown.in"]
+
+                  // ejs.renderFile('views/event_manager/event_manager.ejs',mailBody).then(html=>{
+                  //   mail("support@turftown.in", to_emails,"Event Booked","test",html,response=>{
+                  //     if(response){
+                  //       console.log('success')
+                  //     }else{
+                  //       console.log('failed')
+                  //     }
+                  //   })
+                  // }).catch(next)
     
                   //Activity Log
                   let activity_log = {
@@ -1240,8 +1287,8 @@ router.post('/check_booking', verifyToken, (req, res, next) => {
 
 //Cancel Booking
 router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
-  EventBooking.findOne({booking_id:req.params.id}).lean().then(booking=>{
-    if(booking.free_event){
+  EventBooking.findOne({booking_id:req.params.id}).populate('event_id', "event").lean().then(eventBooking=>{
+    if(eventBooking.free_event){
       EventBooking.findOneAndUpdate({booking_id:req.params.id}, {booking_status: "cancelled"}).then(eventBooking=>{
         res.send({status:"success", message:"Event booking cancelled"})
       })
@@ -1260,6 +1307,47 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
         console.log('pass',next.response.data);
       })
     }
+    // Send SMS
+    let booking_id = eventBooking.booking_id
+    let phone = eventBooking.phone
+    let event_name = eventBooking.event_name
+    let sport_name = eventBooking.sport_name
+    let game_type = eventBooking.game_type
+    let date = moment(eventBooking.booking_date).format("MMMM Do YYYY")
+    //let start_date = moment(eventBooking.start_time).format("MMMM Do YYYY")
+    let datetime = date + " " + moment(eventBooking.start_time).format("hh:mma") 
+    
+    //Send SMS to Event Manager
+    let name = eventBooking.name
+    let amount_paid = eventBooking.booking_amount
+    let balance = eventBooking.amount - eventBooking.booking_amount
+    let event_contact = eventBooking.event_id.event.contact
+    
+    axios.get(process.env.PHP_SERVER+'/textlocal/cancel_event.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+event_contact)
+    .then(response => {
+      console.log(response.data)
+    }).catch(error=>{
+      console.log(error.response.data)
+    })
+    // //Send Mail
+    // let mailBody = {
+    //   name:eventBooking.name,
+    //   phone:eventBooking.phone,
+    //   team_name:eventBooking.team_name,
+    //   event_name:eventBooking.event_name,
+    // }
+
+    // let to_emails = [bookingOrder.event_id.event.email, "rajasekar@turftown.in"]
+
+    // ejs.renderFile('views/event_manager/event_manager.ejs',mailBody).then(html=>{
+    //   mail("support@turftown.in", to_emails,"Event Booked","test",html,response=>{
+    //     if(response){
+    //       console.log('success')
+    //     }else{
+    //       console.log('failed')
+    //     }
+    //   })
+    // }).catch(next)
   })
 })
 
@@ -1312,7 +1400,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
             EventBooking.create(booking_data).then(eventBooking=>{
               console.log('eventBooking',eventBooking)
               //EventBooking.findOne({'booking_id':eventBooking.booking_id})
-              EventBooking.findOne({'booking_id':eventBooking.booking_id}).lean().populate('event_id').then(bookingOrder=>{
+              EventBooking.findOne({'booking_id':eventBooking.booking_id}).lean().then(bookingOrder=>{
                 if(req.body.free_event){
                   res.send({status:"success", message:"event booked", data:bookingOrder})
                 }else{
@@ -1342,20 +1430,15 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               let sport_name = eventBooking.sport_name
               let game_type = eventBooking.game_type
               let date = moment(eventBooking.booking_date).format("MMMM Do YYYY")
-              //let start_date = moment(eventBooking.start_time).format("MMMM Do YYYY")
               let datetime = date + " " + moment(eventBooking.start_time).format("hh:mma") 
-              axios.get('textlocal/event_booking.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&sport_name='+sport_name+'&game_type='+game_type)
-              .then(response => {
-                console.log(response.data)
-              }).catch(error=>{
-                console.log(error.response.data)
-              })
+              
               //Send SMS to Event Manager
               let name = eventBooking.name
               let amount_paid = eventBooking.booking_amount
               let balance = eventBooking.amount - eventBooking.booking_amount
+              let event_contact = event.event.contact
               
-              axios.get('textlocal/event_booking_manager.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance)
+              axios.get(process.env.PHP_SERVER+'/textlocal/event_booking_manager.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+event_contact)
               .then(response => {
                 console.log(response.data)
               }).catch(error=>{
@@ -1376,8 +1459,10 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 // booking_amount:values[0].booking_amount
               }
 
+              let to_emails = `${bookingOrder.event_id.event.email}, rajasekar@turftown.in`
+
               ejs.renderFile('views/event_manager/event_manager.ejs',mailBody).then(html=>{
-                mail("support@turftown.in", bookingOrder.event_id.event.email,"Event Booked","test",html,response=>{
+                mail("support@turftown.in", to_emails,"Event Booked","test",html,response=>{
                   if(response){
                     console.log('success')
                   }else{
@@ -1614,16 +1699,20 @@ router.post('/ads_list',
 router.post('/test_sms', (req, res, next) => {
   let booking_id = "sh.unique"
   let venue_name = "kilpauk"
-  let phone = "7401415754"
+  let event_name = "kilpauk"
+  let phone = "917401415754"
+  let manager_phone = "918667309360"
   let datetime = "May 15"
   let venue_type = "kdjflsjf"
   let venue_area = "kdjflsjf"
   let sport_name = "lkdjfsljf"
+  let balance = 500
+  let amount_paid = 500
   //Send SMS
-  axios.get(process.env.PHP_SERVER+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+venue_type+'&sport_name='+sport_name+'&venue_area='+venue_area).then(response => {
+  axios.get(process.env.PHP_SERVER+'/textlocal/cancel_event.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+event_name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+manager_phone).then(response => {
     console.log(response.data)
   }).catch(error=>{
-    console.log(error.response)
+    console.log(error)
   })
 })
 
@@ -1633,7 +1722,7 @@ router.post('/test_php', (req, res, next) => {
       console.log(response.data)
       res.send({data:response.data})
     }).catch(error=>{
-      res.send(error.response)
+      res.send(error)
     })
 })
 

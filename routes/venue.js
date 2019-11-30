@@ -76,34 +76,33 @@ function getDistanceFromLatLonInKm(lat1,lon1,lat2,lon2) {
 
 function getValue(key,total){
   if(key === '5s'){
-    return total/10
+    return total/5
   }
   else if(key === '7s'){
-    return total/14
+    return total/7
   }
   else if(key === '9s'){
-    return total/18
+    return total/9
   }
   else if(key === 'net'){
-    return total/4
+    return total/2
   }
   else if(key === 'ac'){
-    return total/2
+    return total/1
   }
   else if(key === 'nonac'){
-    return total/2
+    return total/1
   }
   else if(key === 'hc'){
-    return total/6
+    return total/3
   }
   else if(key === 'fc'){
-    return total/10
+    return total/5
   }
   else if(key === 'ground' || key === 'pitch'){
-    return total/10
+    return total/5
   }
 };
-
 
 function findTime() {
   var d = new Date();
@@ -143,7 +142,7 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
               let featured = value.featured.filter(featured=>featured.zipcode==zipcode)
               
               let pricing = Object.values(value.configuration.pricing).filter(price=>price.day===findDay())
-              let price = Math.min(...pricing[0].rate[0].pricing)
+              let price = Math.max(...pricing[0].rate[0].pricing)
               let rating = Object.values(value.rating).reduce((a,b)=>{
                 let c = a+b.rating.rating
                 return c

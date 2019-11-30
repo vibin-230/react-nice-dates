@@ -88,10 +88,10 @@ function getValue(key,total){
     return total/2
   }
   else if(key === 'ac'){
-    return total/2
+    return total/1
   }
   else if(key === 'nonac'){
-    return total/2
+    return total/1
   }
   else if(key === 'hc'){
     return total/3
@@ -143,7 +143,7 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
               let featured = value.featured.filter(featured=>featured.zipcode==zipcode)
               
               let pricing = Object.values(value.configuration.pricing).filter(price=>price.day===findDay())
-              let price = Math.min(...pricing[0].rate[0].pricing)
+              let price = Math.max(...pricing[0].rate[0].pricing)
               let rating = Object.values(value.rating).reduce((a,b)=>{
                 let c = a+b.rating.rating
                 return c
@@ -154,7 +154,7 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
               value.rating = value.rating
               value.distance = distance.toFixed(2)
               value.displacement = distance
-              value.pricing = getValue(req.body.venue_type,price)
+              value.pricing = Math.round(getValue(req.body.venue_type,price))
               let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
               value.offers = filteredOffer
               return value

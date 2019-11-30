@@ -558,7 +558,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         sport_name:sport_name,
       }
 
-      to_mail = [values[0],email, "rajasekar@turftown.in"]
+      let to_mail = `${values[0],email}, rajasekar@turftown.in`
       // console.log(mailBody)
       ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
         mail("support@turftown.in", to_mail,"Venue Booked","test",html,response=>{
@@ -910,7 +910,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                     event_name:eventBooking.event_name,
                   }
 
-                  let to_emails = [bookingOrder.event_id.event.email, "rajasekar@turftown.in"]
+                  let to_emails = `${bookingOrder.event_id.event.email}, rajasekar@turftown.in`
 
                   ejs.renderFile('views/event_manager/event_manager.ejs',mailBody).then(html=>{
                     mail("support@turftown.in", to_emails,"Event Booked","test",html,response=>{
@@ -1459,7 +1459,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 // booking_amount:values[0].booking_amount
               }
 
-              let to_emails = [bookingOrder.event_id.event.email, "rajasekar@turftown.in"]
+              let to_emails = `${bookingOrder.event_id.event.email}, rajasekar@turftown.in`
 
               ejs.renderFile('views/event_manager/event_manager.ejs',mailBody).then(html=>{
                 mail("support@turftown.in", to_emails,"Event Booked","test",html,response=>{

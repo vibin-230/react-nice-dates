@@ -74,6 +74,36 @@ function getDistanceFromLatLonInKm(lat1,lon1,lat2,lon2) {
 //     }).catch(next);
 // });
 
+function getValue(key,total){
+  if(key === '5s'){
+    return total/10
+  }
+  else if(key === '7s'){
+    return total/14
+  }
+  else if(key === '9s'){
+    return total/18
+  }
+  else if(key === 'net'){
+    return total/4
+  }
+  else if(key === 'ac'){
+    return total/2
+  }
+  else if(key === 'nonac'){
+    return total/2
+  }
+  else if(key === 'hc'){
+    return total/6
+  }
+  else if(key === 'fc'){
+    return total/10
+  }
+  else if(key === 'ground' || key === 'pitch'){
+    return total/10
+  }
+};
+
 
 function findTime() {
   var d = new Date();
@@ -81,7 +111,6 @@ function findTime() {
 }
 
 router.post('/venue_list', verifyToken, (req, res, next) => {
-  console.log(req.body);
   function findDay() {
     var d = new Date();
     var weekday = new Array(7);
@@ -125,7 +154,7 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
               value.rating = value.rating
               value.distance = distance.toFixed(2)
               value.displacement = distance
-              value.pricing = price
+              value.pricing = getValue(req.body.venue_type,price)
               let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
               value.offers = filteredOffer
               return value

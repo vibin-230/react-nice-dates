@@ -486,7 +486,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
    console.log('transaction api',req.body)
 
     //Capture Payment
-    axios.post('https://rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
+    axios.post('https://rzp_live_rLHijT57u1dFKx:9pyjbZPJO9vZneEdGLxLqYse@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
       .then(response => {
         console.log(response.data)
         if(response.data.status === "captured")
@@ -780,7 +780,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
       let date = new Date().addHours(8,30)
         if(booking.booking_type === "app" && (booking.start_time > date || role)){
           console.log(process.env.RAZORPAY_API,booking.transaction_id);
-          axios.post('https://rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
+          axios.post('https://rzp_live_rLHijT57u1dFKx:9pyjbZPJO9vZneEdGLxLqYse@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
             if(response.data.entity === "refund")
             {
@@ -798,8 +798,6 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
                   let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
                   //Send SMS
-                  console.log('pass')
-                  console.log('===================',booking[0].venue_data);
                   axios.get(process.env.PHP_SERVER+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
                     console.log(response.data)
                   }).catch(error=>{
@@ -828,7 +826,6 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
           Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"},refund_status:false},{multi:true}).then(booking=>{
                 Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
                   res.send({status:"success", message:"booking cancelled"})
-                  console.log(booking);
                   let booking_id = booking[0].booking_id
                   let venue_name = booking[0].venue
                   let venue_type = SetKeyForSport(booking[0].venue_type)
@@ -840,8 +837,6 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
     
                   //Send SMS
-                  console.log('pass')
-                  console.log('===================',);
                   axios.get(process.env.PHP_SERVER+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
                     console.log(response.data)
                   }).catch(error=>{
@@ -879,8 +874,10 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
       let role = req.role === "venue_staff" || req.role === "venue_manager"
       let date = new Date().addHours(8,30)
       let refund = req.body.refund_status
+      console.log('ref',refund)
         if(booking.booking_type === "app" && (refund)){
-          axios.post('https://rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
+          console.log('ref hit')
+          axios.post('https://rzp_live_rLHijT57u1dFKx:9pyjbZPJO9vZneEdGLxLqYse@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
             if(response.data.entity === "refund")
             {
@@ -945,7 +942,9 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
             console.log(error)
           }).catch(next);
         }else{
-          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled",refund_status:false}},{multi:true}).then(booking=>{
+          console.log('ref fail')
+
+          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refund_status:false}},{multi:true}).then(booking=>{
                 Booking.find({booking_id:req.params.id}).lean().then(booking=>{
                   res.send({status:"success", message:"booking cancelled"})
                   console.log(booking);
@@ -1299,8 +1298,7 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
         res.send({status:"success", message:"Event booking cancelled"})
       })
     }else{
-      console.log(process.env.RAZORPAY_API,eventBooking.transaction_id)
-      axios.post('https://rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch@api.razorpay.com/v1/payments/'+eventBooking.transaction_id+'/refund')
+      axios.post('https://rzp_live_rLHijT57u1dFKx:9pyjbZPJO9vZneEdGLxLqYse@api.razorpay.com/v1/payments/'+eventBooking.transaction_id+'/refund')
       .then(response => {
         console.log('pass',response);
         
@@ -1328,7 +1326,6 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
     let amount_paid = eventBooking.booking_amount
     let balance = eventBooking.amount - eventBooking.booking_amount
     let event_contact = eventBooking.event_id.event.contact
-    console.log(eventBooking);
     
     axios.get(process.env.PHP_SERVER+'/textlocal/cancel_event.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+event_contact)
     .then(response => {
@@ -1415,7 +1412,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                   let data = {
                     amount:req.body.booking_amount*100
                   }
-                  axios.post('https://rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch@api.razorpay.com/v1/payments/'+req.body.transaction_id+'/capture',data)
+                  axios.post('https://rzp_live_rLHijT57u1dFKx:9pyjbZPJO9vZneEdGLxLqYse@api.razorpay.com/v1/payments/'+req.body.transaction_id+'/capture',data)
                   .then(response => {
                     console.log(response.data)
                     if(response.data.status === "captured")

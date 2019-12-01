@@ -801,6 +801,37 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   }).catch(error=>{
                     console.log(error.response)
                   })
+
+                  //Send Mail
+                  let mailBody = {
+                    booking_id:booking_id,
+                    venue:venue_name,
+                    venue_area:venue_area,
+                    datetime:datetime,
+                    venue_type:venue_type,
+                    amount: booking.reduce((acc,value)=>{
+                      return acc + value.amount
+                    }, 0),
+                    commission: booking.reduce((acc,value)=>{
+                      return acc + value.commission
+                    }, 0),
+                    amount_paid: booking.reduce((acc,value)=>{
+                      return acc + value.booking_amount
+                    }, 0),
+                    event_name:eventBooking.event_name,
+                  }
+
+                  let to_emails = [eventBooking.event_id.event.email, "rajasekar@turftown.in"]
+
+                  ejs.renderFile('views/cancel_slot/cancel_slot.ejs',mailBody).then(html=>{
+                    mail("support@turftown.in", to_emails,"Booking Cancelled","test",html,response=>{
+                      if(response){
+                        console.log('success')
+                      }else{
+                        console.log('failed')
+                      }
+                    })
+                  }).catch(next)
     
                   //Activity Log
                   let activity_log = {
@@ -840,6 +871,37 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   }).catch(error=>{
                     console.log(error.response)
                   })
+
+                  //Send Mail
+                  let mailBody = {
+                    booking_id:booking_id,
+                    venue:venue_name,
+                    venue_area:venue_area,
+                    datetime:datetime,
+                    venue_type:venue_type,
+                    amount: booking.reduce((acc,value)=>{
+                      return acc + value.amount
+                    }, 0),
+                    commission: booking.reduce((acc,value)=>{
+                      return acc + value.commission
+                    }, 0),
+                    amount_paid: booking.reduce((acc,value)=>{
+                      return acc + value.booking_amount
+                    }, 0),
+                    event_name:eventBooking.event_name,
+                  }
+
+                  let to_emails = [eventBooking.event_id.event.email, "rajasekar@turftown.in"]
+
+                  ejs.renderFile('views/cancel_slot/cancel_slot.ejs',mailBody).then(html=>{
+                    mail("support@turftown.in", to_emails,"Booking Cancelled","test",html,response=>{
+                      if(response){
+                        console.log('success')
+                      }else{
+                        console.log('failed')
+                      }
+                    })
+                  }).catch(next)
     
                   //Activity Log
                   let activity_log = {
@@ -1294,6 +1356,26 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
     if(eventBooking.free_event){
       EventBooking.findOneAndUpdate({booking_id:req.params.id}, {booking_status: "cancelled"}).then(eventBooking1=>{
         res.send({status:"success", message:"Event booking cancelled"})
+        //Send Mail
+        let mailBody = {
+          name:eventBooking.name,
+          phone:eventBooking.phone,
+          team_name:eventBooking.team_name,
+          event_name:eventBooking.event_name,
+          booking_amount: eventBooking.booking_amount
+        }
+
+        let to_emails = `${eventBooking.event_id.event.email}, rajasekar@turftown.in`
+
+        ejs.renderFile('views/cancel_event/cancel_event.ejs',mailBody).then(html=>{
+          mail("support@turftown.in", to_emails,"Event Cancelled","test",html,response=>{
+            if(response){
+              console.log('success')
+            }else{
+              console.log('failed')
+            }
+          })
+        }).catch(next)
       })
     }else{
       axios.post('https://rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch@api.razorpay.com/v1/payments/'+eventBooking.transaction_id+'/refund')
@@ -1331,25 +1413,26 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
     }).catch(error=>{
       console.log(error.response.data)
     })
-    // //Send Mail
-    // let mailBody = {
-    //   name:eventBooking.name,
-    //   phone:eventBooking.phone,
-    //   team_name:eventBooking.team_name,
-    //   event_name:eventBooking.event_name,
-    // }
+    //Send Mail
+    let mailBody = {
+      name:eventBooking.name,
+      phone:eventBooking.phone,
+      team_name:eventBooking.team_name,
+      event_name:eventBooking.event_name,
+      booking_amount: eventBooking.booking_amount
+    }
 
-    // let to_emails = [bookingOrder.event_id.event.email, "rajasekar@turftown.in"]
+    let to_emails = `${eventBooking.event_id.event.email}, rajasekar@turftown.in`
 
-    // ejs.renderFile('views/event_manager/event_manager.ejs',mailBody).then(html=>{
-    //   mail("support@turftown.in", to_emails,"Event Booked","test",html,response=>{
-    //     if(response){
-    //       console.log('success')
-    //     }else{
-    //       console.log('failed')
-    //     }
-    //   })
-    // }).catch(next)
+    ejs.renderFile('views/cancel_event/cancel_event.ejs',mailBody).then(html=>{
+      mail("support@turftown.in", to_emails,"Event Cancelled","test",html,response=>{
+        if(response){
+          console.log('success')
+        }else{
+          console.log('failed')
+        }
+      })
+    }).catch(next)
   })
 })
 

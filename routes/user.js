@@ -1275,6 +1275,8 @@ router.post('/incomplete_booking/:id', verifyToken, (req, res, next) => {
 //Event Booking
 router.post('/check_booking', verifyToken, (req, res, next) => {
   console.log(req.userId,req.body.event_id);
+  EventBooking.find({event_id:req.body.event_id}).lean().populate('event_id').then(bookingOrders=>{
+    if(bookingOrders.length<=event.format.noofteams){
   EventBooking.findOne({event_id: req.body.event_id, created_by: req.userId,booking_status:'booked'}).then(event=>{
     console.log('event',event);
     if(event){
@@ -1282,7 +1284,14 @@ router.post('/check_booking', verifyToken, (req, res, next) => {
     }else{
       res.send({status:"failed", message:"no event found"})
     }
-  })
+  })}
+  else{
+    res.send({status:"failed", message:"Registerations full"})
+  }
+
+}).catch(next =>{
+})
+}).catch(next =>{
 })
 
 //Cancel Booking
@@ -1355,7 +1364,7 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
 router.post('/event_booking', verifyToken, (req, res, next) => {
   Event.findOne({_id: req.body.event_id}).then(event=>{
     EventBooking.find({event_id:req.body.event_id}).lean().populate('event_id').then(bookingOrders=>{
-      if(bookingOrders.length<event.format.noofteams){
+      if(bookingOrders.length<=event.format.noofteams){
           EventBooking.findOne({}, null, {sort: {$natural: -1}}).lean().populate('event_id').then(bookingOrder=>{
             let booking_id;
             if(bookingOrder){

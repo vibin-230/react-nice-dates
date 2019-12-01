@@ -1289,9 +1289,7 @@ router.post('/check_booking', verifyToken, (req, res, next) => {
     res.send({status:"failed", message:"Registerations full"})
   }
 
-}).catch(next =>{
 })
-}).catch(next =>{
 })
 
 //Cancel Booking

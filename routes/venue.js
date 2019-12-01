@@ -104,7 +104,6 @@ function getValue(key,total){
   }
 };
 
-
 function findTime() {
   var d = new Date();
   return d.getDay()

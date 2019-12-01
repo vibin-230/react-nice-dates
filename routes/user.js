@@ -1276,9 +1276,8 @@ router.post('/incomplete_booking/:id', verifyToken, (req, res, next) => {
 router.post('/check_booking', verifyToken, (req, res, next) => {
   console.log(req.userId,req.body.event_id);
   EventBooking.find({event_id:req.body.event_id}).lean().populate('event_id').then(bookingOrders=>{
-    if(bookingOrders.length<=event.format.noofteams){
+    if(bookingOrders.length<=bookingOrders[0].event_id.format.noofteams){
   EventBooking.findOne({event_id: req.body.event_id, created_by: req.userId,booking_status:'booked'}).then(event=>{
-    console.log('event',event);
     if(event){
       res.send({status:"success", message:"event fetched", data:{event}})
     }else{
@@ -1407,7 +1406,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
             EventBooking.create(booking_data).then(eventBooking=>{
               console.log('eventBooking',eventBooking)
               //EventBooking.findOne({'booking_id':eventBooking.booking_id})
-              EventBooking.findOne({'booking_id':eventBooking.booking_id}).lean().then(bookingOrder=>{
+              EventBooking.findOne({'booking_id':eventBooking.booking_id}).lean().populate('event_id').then(bookingOrder=>{
                 if(req.body.free_event){
                   res.send({status:"success", message:"event booked", data:bookingOrder})
                 }else{
@@ -1432,8 +1431,9 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               
               // Send SMS
               let booking_id = eventBooking.booking_id
+              
               let phone = eventBooking.phone
-              let event_name = eventBooking.event_name
+              let event_name = req.body.event_name
               let sport_name = eventBooking.sport_name
               let game_type = eventBooking.game_type
               let date = moment(eventBooking.booking_date).format("MMMM Do YYYY")
@@ -1444,6 +1444,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               let amount_paid = eventBooking.booking_amount
               let balance = eventBooking.amount - eventBooking.booking_amount
               let event_contact = event.event.contact
+              console.log('phone',phone,name,eventBooking,)
               
               axios.get(process.env.PHP_SERVER+'/textlocal/event_booking_manager.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+event_contact)
               .then(response => {
@@ -1465,7 +1466,6 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 // total_amount:total_amount,
                 // booking_amount:values[0].booking_amount
               }
-
 
               let to_emails = `${bookingOrder.event_id.event.email}, rajasekar@turftown.in`
 

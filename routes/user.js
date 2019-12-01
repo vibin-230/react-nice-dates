@@ -482,11 +482,9 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
       amount:req.body[0].booking_amount*100
     }
    var result = Object.values(combineSlots([...values]))
-   console.log('razorpay api',process.env.RAZORPAY_API)
-   console.log('transaction api',req.body)
 
     //Capture Payment
-    axios.post('https://rzp_live_rLHijT57u1dFKx:9pyjbZPJO9vZneEdGLxLqYse@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
+    axios.post('https://rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
       .then(response => {
         console.log(response.data)
         if(response.data.status === "captured")
@@ -780,7 +778,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
       let date = new Date().addHours(8,30)
         if(booking.booking_type === "app" && (booking.start_time > date || role)){
           console.log(process.env.RAZORPAY_API,booking.transaction_id);
-          axios.post('https://rzp_live_rLHijT57u1dFKx:9pyjbZPJO9vZneEdGLxLqYse@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
+          axios.post('https://rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
             if(response.data.entity === "refund")
             {
@@ -877,7 +875,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
       console.log('ref',refund)
         if(booking.booking_type === "app" && (refund)){
           console.log('ref hit')
-          axios.post('https://rzp_live_rLHijT57u1dFKx:9pyjbZPJO9vZneEdGLxLqYse@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
+          axios.post('https://rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
             if(response.data.entity === "refund")
             {
@@ -1298,7 +1296,7 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
         res.send({status:"success", message:"Event booking cancelled"})
       })
     }else{
-      axios.post('https://rzp_live_rLHijT57u1dFKx:9pyjbZPJO9vZneEdGLxLqYse@api.razorpay.com/v1/payments/'+eventBooking.transaction_id+'/refund')
+      axios.post('https://rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch@api.razorpay.com/v1/payments/'+eventBooking.transaction_id+'/refund')
       .then(response => {
         console.log('pass',response);
         
@@ -1412,7 +1410,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                   let data = {
                     amount:req.body.booking_amount*100
                   }
-                  axios.post('https://rzp_live_rLHijT57u1dFKx:9pyjbZPJO9vZneEdGLxLqYse@api.razorpay.com/v1/payments/'+req.body.transaction_id+'/capture',data)
+                  axios.post('https://rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch@api.razorpay.com/v1/payments/'+req.body.transaction_id+'/capture',data)
                   .then(response => {
                     console.log(response.data)
                     if(response.data.status === "captured")

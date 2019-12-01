@@ -876,18 +876,17 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
       let refund = req.body.refund_status
       console.log('ref',refund)
         if(booking.booking_type === "app" && (refund)){
-          console.log('ref hit')
           axios.post('https://rzp_live_rLHijT57u1dFKx:9pyjbZPJO9vZneEdGLxLqYse@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
             if(response.data.entity === "refund")
             {
               Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true, refund_status:true}},{multi:true}).then(booking=>{
-                Booking.find({booking_id:req.params.id}).lean().then(booking=>{
+                Booking.find({booking_id:req.params.id}).lean().pothen(booking=>{
                   res.send({status:"success", message:"booking cancelled"})
                   let booking_id = booking[0].booking_id
                   let venue_name = booking[0].venue
                   let venue_type = SetKeyForSport(booking[0].venue_type)
-                  let venue_area = booking[0].venue_area
+                  let venue_area = booking[0].venue_data.venue.area
                   let phone = "91"+booking[0].phone
                   let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
                   let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
@@ -951,7 +950,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   let booking_id = booking[0].booking_id
                   let venue_name = booking[0].venue
                   let venue_type = SetKeyForSport(booking[0].venue_type)
-                  let venue_area = booking[0].venue_area
+                  let venue_area = booking[0].venue_data.venue.area
                   let phone = "91"+booking[0].phone
                   let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
                   let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)

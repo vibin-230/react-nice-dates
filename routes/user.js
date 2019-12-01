@@ -482,8 +482,6 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
       amount:req.body[0].booking_amount*100
     }
    var result = Object.values(combineSlots([...values]))
-   console.log('razorpay api',process.env.RAZORPAY_API)
-   console.log('transaction api',req.body)
 
     //Capture Payment
     axios.post('https://rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
@@ -785,19 +783,19 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
             if(response.data.entity === "refund")
             {
               Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true,refund_status:true}},{multi:true}).then(booking=>{
-                Booking.find({booking_id:req.params.id}).lean().then(booking=>{
+                Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
                   res.send({status:"success", message:"booking cancelled"})
                   let booking_id = booking[0].booking_id
                   let venue_name = booking[0].venue
                   let venue_type = SetKeyForSport(booking[0].venue_type)
-                  let venue_area = booking[0].venue_area
+                  let venue_area = booking[0].venue_data.venue.area
+
                   let phone = "91"+booking[0].phone
                   let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
                   let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
                   let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
                   let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
                   //Send SMS
-                  console.log(booking);
                   axios.get(process.env.PHP_SERVER+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
                     console.log(response.data)
                   }).catch(error=>{
@@ -855,13 +853,12 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
           }).catch(next);
         }else{
           Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"},refund_status:false},{multi:true}).then(booking=>{
-                Booking.find({booking_id:req.params.id}).lean().then(booking=>{
+                Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
                   res.send({status:"success", message:"booking cancelled"})
-                  console.log(booking);
                   let booking_id = booking[0].booking_id
                   let venue_name = booking[0].venue
                   let venue_type = SetKeyForSport(booking[0].venue_type)
-                  let venue_area = booking[0].venue_area
+                  let venue_area = booking[0].venue_data.venue.area
                   let phone = "91"+booking[0].phone
                   let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
                   let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
@@ -937,7 +934,9 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
       let role = req.role === "venue_staff" || req.role === "venue_manager"
       let date = new Date().addHours(8,30)
       let refund = req.body.refund_status
+      console.log('ref',refund)
         if(booking.booking_type === "app" && (refund)){
+          console.log('ref hit')
           axios.post('https://rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
             if(response.data.entity === "refund")
@@ -1003,7 +1002,9 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
             console.log(error)
           }).catch(next);
         }else{
-          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled",refund_status:false}},{multi:true}).then(booking=>{
+          console.log('ref fail')
+
+          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refund_status:false}},{multi:true}).then(booking=>{
                 Booking.find({booking_id:req.params.id}).lean().then(booking=>{
                   res.send({status:"success", message:"booking cancelled"})
                   console.log(booking);
@@ -1080,11 +1081,8 @@ router.post('/slots_available/:id', verifyToken, (req, res, next) => {
         console.log('req.body',req.body)
   //      Booking.find({ venue:req.body.venue, venue_id:{$in:venue_id}, booking_date:req.body.booking_date,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
    Booking.find({ venue_id:{$in:venue_id}, booking_date:{$gte:new Date(req.body.booking_date),$lt:new Date(req.body.booking_date).addHours(24,0)},booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
-      console.log(booking_history)
       let slots_available = SlotsAvailable(venue,booking_history)
       // console.log(moment(req.body.booking_date).add(1,"day"))
-      console.log(new Date(req.body.booking_date).addHours(5,30))
-      console.log(new Date(req.body.booking_date).addHours(29,30))
       if(!slots_available)
       {
         res.send({status:"success", message:"available slots fetched", data:[]})
@@ -1195,7 +1193,6 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
       result1 = Object.values(combineSlots(cancel_booking))
       //result = [...result,...eventBooking]
       result = [...result,...result1,...eventBooking,...cancel_event_booking]
-     console.log('result -> ',result);
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
   }).catch(next)
@@ -1337,21 +1334,27 @@ router.post('/incomplete_booking/:id', verifyToken, (req, res, next) => {
 //Event Booking
 router.post('/check_booking', verifyToken, (req, res, next) => {
   console.log(req.userId,req.body.event_id);
+  EventBooking.find({event_id:req.body.event_id}).lean().populate('event_id').then(bookingOrders=>{
+    if(bookingOrders.length<=bookingOrders[0].event_id.format.noofteams){
   EventBooking.findOne({event_id: req.body.event_id, created_by: req.userId,booking_status:'booked'}).then(event=>{
-    console.log('event',event);
     if(event){
       res.send({status:"success", message:"event fetched", data:{event}})
     }else{
       res.send({status:"failed", message:"no event found"})
     }
-  })
+  })}
+  else{
+    res.send({status:"failed", message:"Registerations full"})
+  }
+
+})
 })
 
 //Cancel Booking
 router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
   EventBooking.findOne({booking_id:req.params.id}).populate('event_id', "event").lean().then(eventBooking=>{
     if(eventBooking.free_event){
-      EventBooking.findOneAndUpdate({booking_id:req.params.id}, {booking_status: "cancelled"}).then(eventBooking=>{
+      EventBooking.findOneAndUpdate({booking_id:req.params.id}, {booking_status: "cancelled"}).then(eventBooking1=>{
         res.send({status:"success", message:"Event booking cancelled"})
         //Send Mail
         let mailBody = {
@@ -1375,8 +1378,7 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
         }).catch(next)
       })
     }else{
-      console.log(process.env.RAZORPAY_API,booking.transaction_id)
-      axios.post('https://rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
+      axios.post('https://rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch@api.razorpay.com/v1/payments/'+eventBooking.transaction_id+'/refund')
       .then(response => {
         console.log('pass',response);
         
@@ -1438,7 +1440,7 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
 router.post('/event_booking', verifyToken, (req, res, next) => {
   Event.findOne({_id: req.body.event_id}).then(event=>{
     EventBooking.find({event_id:req.body.event_id}).lean().populate('event_id').then(bookingOrders=>{
-      if(bookingOrders.length<event.format.noofteams){
+      if(bookingOrders.length<=event.format.noofteams){
           EventBooking.findOne({}, null, {sort: {$natural: -1}}).lean().populate('event_id').then(bookingOrder=>{
             let booking_id;
             if(bookingOrder){
@@ -1483,7 +1485,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
             EventBooking.create(booking_data).then(eventBooking=>{
               console.log('eventBooking',eventBooking)
               //EventBooking.findOne({'booking_id':eventBooking.booking_id})
-              EventBooking.findOne({'booking_id':eventBooking.booking_id}).lean().then(bookingOrder=>{
+              EventBooking.findOne({'booking_id':eventBooking.booking_id}).lean().populate('event_id').then(bookingOrder=>{
                 if(req.body.free_event){
                   res.send({status:"success", message:"event booked", data:bookingOrder})
                 }else{
@@ -1508,8 +1510,9 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               
               // Send SMS
               let booking_id = eventBooking.booking_id
+              
               let phone = eventBooking.phone
-              let event_name = eventBooking.event_name
+              let event_name = req.body.event_name
               let sport_name = eventBooking.sport_name
               let game_type = eventBooking.game_type
               let date = moment(eventBooking.booking_date).format("MMMM Do YYYY")
@@ -1520,6 +1523,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               let amount_paid = eventBooking.booking_amount
               let balance = eventBooking.amount - eventBooking.booking_amount
               let event_contact = event.event.contact
+              console.log('phone',phone,name,eventBooking,)
               
               axios.get(process.env.PHP_SERVER+'/textlocal/event_booking_manager.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+event_contact)
               .then(response => {
@@ -1541,7 +1545,6 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 // total_amount:total_amount,
                 // booking_amount:values[0].booking_amount
               }
-
 
               let to_emails = `${bookingOrder.event_id.event.email}, rajasekar@turftown.in`
 

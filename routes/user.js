@@ -821,7 +821,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                     event_name:eventBooking.event_name,
                   }
 
-                  let to_emails = [eventBooking.event_id.event.email, "rajasekar@turftown.in"]
+                  let to_emails = `${eventBooking.event_id.event.email}, rajasekar@turftown.in`
 
                   ejs.renderFile('views/cancel_slot/cancel_slot.ejs',mailBody).then(html=>{
                     mail("support@turftown.in", to_emails,"Booking Cancelled","test",html,response=>{
@@ -891,7 +891,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                     event_name:eventBooking.event_name,
                   }
 
-                  let to_emails = [eventBooking.event_id.event.email, "rajasekar@turftown.in"]
+                  let to_emails = `${eventBooking.event_id.event.email}, rajasekar@turftown.in`
 
                   ejs.renderFile('views/cancel_slot/cancel_slot.ejs',mailBody).then(html=>{
                     mail("support@turftown.in", to_emails,"Booking Cancelled","test",html,response=>{
@@ -1380,7 +1380,7 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
     }else{
       axios.post('https://rzp_test_xLRyYe3WX7insB:wtk7oizETOvj4qKeZS8nVSch@api.razorpay.com/v1/payments/'+eventBooking.transaction_id+'/refund')
       .then(response => {
-        console.log('pass',response);
+        console.log('pass',response.data);
         
         if(response.data.entity === "refund"){
           EventBooking.findOneAndUpdate({booking_id:req.params.id}, {booking_status: "cancelled"}).then(eventBooking=>{
@@ -1393,11 +1393,12 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
     }
     // Send SMS
     let booking_id = eventBooking.booking_id
-    let phone = eventBooking.phone
+    let phone = "91"+eventBooking.phone
     let event_name = eventBooking.event_name
+    let team_name = eventBooking.team_name
     let sport_name = eventBooking.sport_name
     let game_type = eventBooking.game_type
-    let date = moment(eventBooking.booking_date).format("MMMM Do YYYY")
+    let date = moment(eventBooking.booking_date).format("DD-MM-YYYY")
     //let start_date = moment(eventBooking.start_time).format("MMMM Do YYYY")
     let datetime = date + " " + moment(eventBooking.start_time).format("hh:mma") 
     
@@ -1405,14 +1406,15 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
     let name = eventBooking.name
     let amount_paid = eventBooking.booking_amount
     let balance = eventBooking.amount - eventBooking.booking_amount
-    let event_contact = eventBooking.event_id.event.contact
-    
-    axios.get(process.env.PHP_SERVER+'/textlocal/cancel_event.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+event_contact)
+    let event_contact = "91"+eventBooking.event_id.event.contact
+
+    axios.get(process.env.PHP_SERVER+'/textlocal/cancel_event.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+"event_name"+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+event_contact)
     .then(response => {
       console.log(response.data)
     }).catch(error=>{
       console.log(error.response.data)
     })
+
     //Send Mail
     let mailBody = {
       name:eventBooking.name,
@@ -1515,7 +1517,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               let event_name = req.body.event_name
               let sport_name = eventBooking.sport_name
               let game_type = eventBooking.game_type
-              let date = moment(eventBooking.booking_date).format("MMMM Do YYYY")
+              let date = moment(eventBooking.booking_date).format("DD-MM-YYYY")
               let datetime = date + " " + moment(eventBooking.start_time).format("hh:mma") 
               
               //Send SMS to Event Manager
@@ -1841,18 +1843,40 @@ router.post('/test_s3', (req, res, next) => {
 router.post('/test_mail', verifyToken, (req, res, next) => {
   // let html = fs.readFileSync('views/mail.ejs',{encoding:'utf-8'});
   // ejs.renderFile('views/mail.ejs',{name:req.body.name}).then(html=>{
-    let to_emails = `"kishorepadmanaban@gmail.com, kishorepadmanaban.backup@gmail.com"`
+  //   let to_emails = `"kishorepadmanaban@gmail.com, kishorepadmanaban.backup@gmail.com"`
 
-    mail("support@turftown.in", to_emails,"test","test","",response=>{
+  //   mail("support@turftown.in", to_emails,"test","test","",response=>{
+  //     if(response){
+  //       res.send({status:"success"})
+  //     }else{
+  //       res.send({status:"failed"})
+  //     }
+  //   })
+  // // }).catch(next)
+
+
+  //Send Mail
+  let mailBody = {
+    name:"eventBooking.name",
+    phone:"eventBooking.phone",
+    team_name:"eventBooking.team_name",
+    event_name:"eventBooking.event_name",
+    booking_amount: "eventBooking.booking_amount"
+  }
+
+  let to_emails = `kishorepadmanaban@gmail.com, kishorepadmanaban.backup@gmail.com`
+
+  ejs.renderFile('views/cancel_event/cancel_event.ejs',mailBody).then(html=>{
+    mail("support@turftown.in", to_emails,"Event Cancelled","test",html,response=>{
       if(response){
-        res.send({status:"success"})
+        console.log('success')
       }else{
-        res.send({status:"failed"})
+        console.log('failed')
       }
     })
-  // }).catch(next)
-})
+  }).catch(next)
 
+})
 
 
 module.exports = router;

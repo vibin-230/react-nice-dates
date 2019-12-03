@@ -33,6 +33,7 @@ const EventBooking = require('../models/event_booking');
 const Venue = require('../models/venue');
 const Admin = require('../models/admin');
 const Ads = require('../models/ads')
+const rzp_key = require('../scripts/rzp')
 
 function ActivityLog(activity_log) {
   let user = activity_log.user_type==="user"?User:Admin
@@ -486,7 +487,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
    console.log('transaction api',req.body)
 
     //Capture Payment
-    axios.post('https://rzp_live_rLHijT57u1dFKx:9pyjbZPJO9vZneEdGLxLqYse@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
+    axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
       .then(response => {
         console.log(response.data)
         if(response.data.status === "captured")
@@ -780,7 +781,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
       let date = new Date().addHours(8,30)
         if(booking.booking_type === "app" && (booking.start_time > date || role)){
           console.log(process.env.RAZORPAY_API,booking.transaction_id);
-          axios.post('https://rzp_live_rLHijT57u1dFKx:9pyjbZPJO9vZneEdGLxLqYse@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
+          axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
             if(response.data.entity === "refund")
             {
@@ -876,7 +877,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
       let refund = req.body.refund_status
       console.log('ref',refund)
         if(booking.booking_type === "app" && (refund)){
-          axios.post('https://rzp_live_rLHijT57u1dFKx:9pyjbZPJO9vZneEdGLxLqYse@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
+          axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
             if(response.data.entity === "refund")
             {
@@ -1134,7 +1135,7 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
       let finalResult = result.sort((a, b) => {
         return parseInt(moment(a.end_time).utc().format("YYYYMD")) > parseInt(moment(b.end_time).utc().format("YYYYMD")) ? 1 : -1
       })
-      res.send({status:"success", message:"booking history fetched", data:result})
+      res.send({status:"success", message:"booking history fetched", data:finalResult})
     }).catch(next)
   }).catch(next)
   }).catch(next)
@@ -1299,7 +1300,7 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
         res.send({status:"success", message:"Event booking cancelled"})
       })
     }else{
-      axios.post('https://rzp_live_rLHijT57u1dFKx:9pyjbZPJO9vZneEdGLxLqYse@api.razorpay.com/v1/payments/'+eventBooking.transaction_id+'/refund')
+      axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+eventBooking.transaction_id+'/refund')
       .then(response => {
         console.log('pass',response);
         
@@ -1413,7 +1414,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                   let data = {
                     amount:req.body.booking_amount*100
                   }
-                  axios.post('https://rzp_live_rLHijT57u1dFKx:9pyjbZPJO9vZneEdGLxLqYse@api.razorpay.com/v1/payments/'+req.body.transaction_id+'/capture',data)
+                  axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+req.body.transaction_id+'/capture',data)
                   .then(response => {
                     console.log(response.data)
                     if(response.data.status === "captured")
@@ -1668,6 +1669,7 @@ router.post('/ads_list',verifyToken,AccessControl('ads', 'read'),(req, res, next
           event_ad.event[0] = event
           event_ads.push(event_ad)
           if( i === final_event_ds.length - 1){
+            let result = [...final_venue_ads,...event_ads]
             res.send({status:"success", message:"ads fetched", data:[...final_venue_ads,...event_ads]})
           }
       }).catch(next)

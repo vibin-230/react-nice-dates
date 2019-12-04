@@ -1654,7 +1654,7 @@ router.post('/revenue_report_booked', verifyToken, (req, res, next) => {
 //// Ads
 router.post('/ads_list',verifyToken,AccessControl('ads', 'read'),(req, res, next) => {
   Ads.find({$and: [{ start_date: { $lte: new Date(),},}, { end_date: {$gte: new Date(),},},{sport_type: req.body.sport_type},{ page: req.body.page}],}).lean().populate('event').populate('venue').then(ads=>{
-   // console.log('pass',ads);
+    console.log('pass',ads);
    let event_ads = []
    let final_event_ds = ads.filter((ad,i)=>{
      if(ad.event.length>0)
@@ -1664,16 +1664,21 @@ router.post('/ads_list',verifyToken,AccessControl('ads', 'read'),(req, res, next
       if(ad.venue.length>0)
         return ad
      })
-    final_event_ds.map((event_ad,i)=>{
-      Event.find({'_id':event_ad.event[0]._id}).lean().populate('venue').then(event=>{
-          event_ad.event[0] = event
-          event_ads.push(event_ad)
-          if( i === final_event_ds.length - 1){
-            let result = [...final_venue_ads,...event_ads]
-            res.send({status:"success", message:"ads fetched", data:[...final_venue_ads,...event_ads]})
-          }
-      }).catch(next)
-    })
+     if(final_event_ds.length > 0){
+      final_event_ds.map((event_ad,i)=>{
+        Event.find({'_id':event_ad.event[0]._id}).lean().populate('venue').then(event=>{
+            event_ad.event[0] = event
+            event_ads.push(event_ad)
+            if( i === final_event_ds.length - 1){
+              let result = [...final_venue_ads,...event_ads]
+              res.send({status:"success", message:"ads fetched", data:[...final_venue_ads,...event_ads]})
+            }
+        }).catch(next)
+      })
+     }else{
+      res.send({status:"success", message:"ads fetched", data:[...final_venue_ads]})
+     }
+    
 	}).catch(next)
 })
 

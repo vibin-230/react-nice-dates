@@ -1275,18 +1275,17 @@ router.post('/incomplete_booking/:id', verifyToken, (req, res, next) => {
 
 //Event Booking
 router.post('/check_booking', verifyToken, (req, res, next) => {
-  console.log(req.userId,req.body.event_id);
   EventBooking.find({event_id:req.body.event_id}).lean().populate('event_id').then(bookingOrders=>{
-    if(bookingOrders.length<=bookingOrders[0].event_id.format.noofteams){
-  EventBooking.findOne({event_id: req.body.event_id, created_by: req.userId,booking_status:'booked'}).then(event=>{
+    if(bookingOrders.length<bookingOrders[0].event_id.format.noofteams){
+      EventBooking.findOne({event_id: req.body.event_id, created_by: req.userId,booking_status:'booked'}).then(event=>{
     if(event){
-      res.send({status:"success", message:"event fetched", data:{event}})
+      res.send({status:"success", message:"Already Registered!", data:{event}})
     }else{
       res.send({status:"failed", message:"no event found"})
     }
   })}
   else{
-    res.send({status:"failed", message:"Registerations full"})
+    res.send({status:"success", message:"Registerations full!"})
   }
 
 })

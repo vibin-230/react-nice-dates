@@ -882,7 +882,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
             if(response.data.entity === "refund")
             {
               Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true, refund_status:true}},{multi:true}).then(booking=>{
-                Booking.find({booking_id:req.params.id}).lean().pothen(booking=>{
+                Booking.find({booking_id:req.params.id}).lean().populate("venue_data").then(booking=>{
                   res.send({status:"success", message:"booking cancelled"})
                   let booking_id = booking[0].booking_id
                   let venue_name = booking[0].venue

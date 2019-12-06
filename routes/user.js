@@ -882,7 +882,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
             if(response.data.entity === "refund")
             {
               Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true, refund_status:true}},{multi:true}).then(booking=>{
-                Booking.find({booking_id:req.params.id}).lean().pothen(booking=>{
+                Booking.find({booking_id:req.params.id}).lean().populate("venue_data").then(booking=>{
                   res.send({status:"success", message:"booking cancelled"})
                   let booking_id = booking[0].booking_id
                   let venue_name = booking[0].venue
@@ -1132,9 +1132,7 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
       result1 = Object.values(combineSlots(cancel_booking))
       //result = [...result,...eventBooking]
       result = [...result,...result1,...eventBooking,...cancel_event_booking]
-      let finalResult = result.sort((a, b) => {
-        return parseInt(moment(a.end_time).utc().format("YYYYMD")) > parseInt(moment(b.end_time).utc().format("YYYYMD")) ? 1 : -1
-      })
+      let finalResult = result.sort((a, b) => moment(a.start_time).format("YYYYMMDDHHmm") > moment(b.start_time).format("YYYYMMDDHHmm") ? 1 : -1 )
       res.send({status:"success", message:"booking history fetched", data:finalResult})
     }).catch(next)
   }).catch(next)
@@ -1275,18 +1273,17 @@ router.post('/incomplete_booking/:id', verifyToken, (req, res, next) => {
 
 //Event Booking
 router.post('/check_booking', verifyToken, (req, res, next) => {
-  console.log(req.userId,req.body.event_id);
   EventBooking.find({event_id:req.body.event_id}).lean().populate('event_id').then(bookingOrders=>{
-    if(bookingOrders.length<=bookingOrders[0].event_id.format.noofteams){
-  EventBooking.findOne({event_id: req.body.event_id, created_by: req.userId,booking_status:'booked'}).then(event=>{
+    if(bookingOrders.length<bookingOrders[0].event_id.format.noofteams){
+      EventBooking.findOne({event_id: req.body.event_id, created_by: req.userId,booking_status:'booked'}).then(event=>{
     if(event){
-      res.send({status:"success", message:"event fetched", data:{event}})
+      res.send({status:"success", message:"Already Registered!", data:{event}})
     }else{
       res.send({status:"failed", message:"no event found"})
     }
   })}
   else{
-    res.send({status:"failed", message:"Registerations full"})
+    res.send({status:"success", message:"Registerations full!"})
   }
 
 })
@@ -1654,7 +1651,7 @@ router.post('/revenue_report_booked', verifyToken, (req, res, next) => {
 //// Ads
 router.post('/ads_list',verifyToken,AccessControl('ads', 'read'),(req, res, next) => {
   Ads.find({$and: [{ start_date: { $lte: new Date(),},}, { end_date: {$gte: new Date(),},},{sport_type: req.body.sport_type},{ page: req.body.page}],}).lean().populate('event').populate('venue').then(ads=>{
-   // console.log('pass',ads);
+    console.log('pass',ads);
    let event_ads = []
    let final_event_ds = ads.filter((ad,i)=>{
      if(ad.event.length>0)
@@ -1664,16 +1661,21 @@ router.post('/ads_list',verifyToken,AccessControl('ads', 'read'),(req, res, next
       if(ad.venue.length>0)
         return ad
      })
-    final_event_ds.map((event_ad,i)=>{
-      Event.find({'_id':event_ad.event[0]._id}).lean().populate('venue').then(event=>{
-          event_ad.event[0] = event
-          event_ads.push(event_ad)
-          if( i === final_event_ds.length - 1){
-            let result = [...final_venue_ads,...event_ads]
-            res.send({status:"success", message:"ads fetched", data:[...final_venue_ads,...event_ads]})
-          }
-      }).catch(next)
-    })
+     if(final_event_ds.length > 0){
+      final_event_ds.map((event_ad,i)=>{
+        Event.find({'_id':event_ad.event[0]._id}).lean().populate('venue').then(event=>{
+            event_ad.event[0] = event
+            event_ads.push(event_ad)
+            if( i === final_event_ds.length - 1){
+              let result = [...final_venue_ads,...event_ads]
+              res.send({status:"success", message:"ads fetched", data:[...final_venue_ads,...event_ads]})
+            }
+        }).catch(next)
+      })
+     }else{
+      res.send({status:"success", message:"ads fetched", data:[...final_venue_ads]})
+     }
+    
 	}).catch(next)
 })
 

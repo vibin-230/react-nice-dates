@@ -109,6 +109,8 @@ function findTime() {
   return d.getDay()
 }
 
+
+
 router.post('/venue_list', verifyToken, (req, res, next) => {
   function findDay() {
     var d = new Date();
@@ -124,24 +126,25 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
     return n
   }
   let zipcode;
-  axios.get('https://maps.googleapis.com/maps/api/geocode/json?latlng='+req.body.latLong[0]+','+req.body.latLong[1]+'&key=AIzaSyAJUmuoOippG_r1aw3e32kW1ceIA3yexHQ').then(response=>{
-
-    if(response.data.error_message){
-      zipcode = "600017"
-    }else{
-      zipcode = Object.values(response.data.results[0].address_components).filter(value=>value.types[0]==='postal_code')
-      zipcode = zipcode[0].long_name
-    }
-    if(parseInt(zipcode, 10) > 700000 || parseInt(zipcode, 10) < 600000){
-      res.status(409).send({status:"failed", message: "No venues available at this location"})
-    }else{
+  // axios.get('https://maps.googleapis.com/maps/api/geocode/json?latlng='+req.body.latLong[0]+','+req.body.latLong[1]+'&key=AIzaSyAJUmuoOippG_r1aw3e32kW1ceIA3yexHQ').then(response=>{
+  //     console.log(response);
+  //   if(response.data.error_message){
+  //     zipcode = "600017"
+  //   }else{
+  //     zipcode = Object.values(response.data.results[0].address_components).filter(value=>value.types[0]==='postal_code')
+  //     zipcode = zipcode[0].long_name
+  //   }
+  //   if(parseInt(zipcode, 10) > 700000 || parseInt(zipcode, 10) < 600000){
+  //     res.status(409).send({status:"failed", message: "No venues available at this location"})
+  //   }else{
       Venue.find({type:req.body.sport_type, "configuration.types":{$in:[req.body.venue_type]},status:true},{bank:0, offers:0, access:0}).lean().then(venue=>{
         Offer.find({}).then(offers=>{
           var list = Object.values(venue).map((value,index)=>{
               let distance = getDistanceFromLatLonInKm(req.body.latLong[0],req.body.latLong[1],value.venue.latLong[0],value.venue.latLong[1])
               let featured = value.featured.filter(featured=>featured.zipcode==zipcode)
-              
+             
               let pricing = Object.values(value.configuration.pricing).filter(price=>price.day===findDay())
+              console.log(pricing[0].rate)
               let price = Math.max(...pricing[0].rate[0].pricing)
               let rating = Object.values(value.rating).reduce((a,b)=>{
                 let c = a+b.rating.rating
@@ -164,8 +167,8 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
           res.status(201).send(list);
       }).catch(next);
     }).catch(next);
-    }
-  }).catch(next);
+  //   }
+  // }).catch(next);
 });
 
 

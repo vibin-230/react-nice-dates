@@ -1132,9 +1132,7 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
       result1 = Object.values(combineSlots(cancel_booking))
       //result = [...result,...eventBooking]
       result = [...result,...result1,...eventBooking,...cancel_event_booking]
-      let finalResult = result.sort((a, b) => {
-        return parseInt(moment(a.end_time).utc().format("YYYYMD")) > parseInt(moment(b.end_time).utc().format("YYYYMD")) ? 1 : -1
-      })
+      let finalResult = result.sort((a, b) => moment(a.start_time).format("YYYYMMDDHHmm") > moment(b.start_time).format("YYYYMMDDHHmm") ? 1 : -1 )
       res.send({status:"success", message:"booking history fetched", data:finalResult})
     }).catch(next)
   }).catch(next)
@@ -1612,7 +1610,6 @@ router.post('/revenue_report_app', verifyToken, (req, res, next) => {
 
 //Booking History Based on venue
 router.post('/revenue_report_booked', verifyToken, (req, res, next) => {
-  console.log('hit')
   Booking.find({booking_status:{$in:["booked"]}, venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().then(booking_list=>{
     Booking.find({booking_status:{$in:["booked"]}, venue_id:req.body.venue_id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}},{booking_date:1,booking_id:1,amount:1,multiple_id:1}).lean().then(booking=>{
       let result = {}
@@ -1653,7 +1650,7 @@ router.post('/revenue_report_booked', verifyToken, (req, res, next) => {
 //// Ads
 router.post('/ads_list',verifyToken,AccessControl('ads', 'read'),(req, res, next) => {
   Ads.find({$and: [{ start_date: { $lte: new Date(),},}, { end_date: {$gte: new Date(),},},{sport_type: req.body.sport_type},{ page: req.body.page}],}).lean().populate('event').populate('venue').then(ads=>{
-    console.log('pass',ads);
+    
    let event_ads = []
    let final_event_ds = ads.filter((ad,i)=>{
      if(ad.event.length>0)

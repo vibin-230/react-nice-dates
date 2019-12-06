@@ -1132,9 +1132,7 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
       result1 = Object.values(combineSlots(cancel_booking))
       //result = [...result,...eventBooking]
       result = [...result,...result1,...eventBooking,...cancel_event_booking]
-      let finalResult = result.sort((a, b) => {
-        return parseInt(moment(a.end_time).utc().format("YYYYMD")) > parseInt(moment(b.end_time).utc().format("YYYYMD")) ? 1 : -1
-      })
+      let finalResult = result.sort((a, b) => moment(a.start_time).format("YYYYMMDDHHmm") > moment(b.start_time).format("YYYYMMDDHHmm") ? 1 : -1 )
       res.send({status:"success", message:"booking history fetched", data:finalResult})
     }).catch(next)
   }).catch(next)

@@ -880,7 +880,9 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
       Admin.findById({_id:req.userId}).then(admin=>{
       let role = req.role === "venue_staff" || req.role === "venue_manager"
       let date = new Date().addHours(8,30)
+      console.log('pass', req.body)
         if(booking.booking_type === "app" && req.body.refund_status){
+          console.log('pass 2')
           console.log(process.env.RAZORPAY_API,booking.transaction_id);
           axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
@@ -925,6 +927,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
             console.log(error)
           }).catch(next);
         }else{
+          console.log('pass 3')
           Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"},refund_status:false},{multi:true}).then(booking=>{
                 Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
                   res.send({status:"success", message:"booking cancelled"})

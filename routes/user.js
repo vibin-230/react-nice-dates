@@ -1381,18 +1381,26 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
         res.send({status:"success", message:"Event booking cancelled"})
       })
     }else{
-      axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+eventBooking.transaction_id+'/refund')
-      .then(response => {
-        console.log('pass',response);
-        
-        if(response.data.entity === "refund"){
-          EventBooking.findOneAndUpdate({booking_id:req.params.id}, {booking_status: "cancelled"}).then(eventBooking=>{
-            res.send({status:"success", message:"Event booking cancelled"})
-          })
-        }
-      }).catch(next =>{
-        console.log('pass',next.response.data);
-      })
+      if(req.body.refund_status){
+        axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+eventBooking.transaction_id+'/refund')
+        .then(response => {
+          console.log('pass',response);
+          
+          if(response.data.entity === "refund"){
+            EventBooking.findOneAndUpdate({booking_id:req.params.id}, {booking_status: "cancelled",refund_status:true}).then(eventBooking=>{
+              res.send({status:"success", message:"Event booking cancelled"})
+            })
+          }
+        }).catch(next =>{
+          console.log('pass',next.response.data);
+        })
+      }
+      else{
+        EventBooking.findOneAndUpdate({booking_id:req.params.id}, {booking_status: "cancelled",refund_status:false}).then(eventBooking=>{
+          res.send({status:"success", message:"Event booking cancelled"})
+        })
+      }
+     
     }
     // Send SMS
     let booking_id = eventBooking.booking_id

@@ -12,6 +12,8 @@ const schema = new Schema({
   event_booking_date:Date,
   start_time:Date,
   end_time:Date,
+  refund_status:Boolean,
+  comments:String,
   booking_type:String,
   team_name:String,
   booking_status:String,

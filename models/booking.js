@@ -37,6 +37,7 @@ const schema = new Schema({
   venue_offer:Number,
   no_show:Boolean,
   card:Number,
+  comments:String,
   cash:Number,
   upi:Number,
   academy:Boolean,

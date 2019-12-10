@@ -25,6 +25,7 @@ const SetKeyForSport = require("../scripts/setKeyForSport")
 const SlotsAvailable = require("../helper/slots_available")
 const BookSlot = require("../helper/book_slot")
 const mkdirp = require('mkdirp');
+const Offers = require('../models/offers');
 
 const User = require('../models/user');
 const Event = require('./../models/event')

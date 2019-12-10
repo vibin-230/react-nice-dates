@@ -412,7 +412,7 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
                     })
                   }
                 }).catch(next)
-              }, 305000);
+              }, 35000);
             }).catch(error=>{
               reject()
             })
@@ -463,6 +463,8 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
   })
   })
 })
+
+
 
 
 //Slot Booked
@@ -685,6 +687,18 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
     }).catch(next)
   }).catch(error=>{
     res.send({status:"failed", message:"slots not available"})
+  })
+})
+
+router.post('/check_coupon/:id', verifyToken, (req, res, next) => {
+  Booking.find({user_id: req.params.id,booking_status:{$in:["completed","booked"]}}).lean().then(coupon=>{
+    let coupons_used = []
+    coupon.filter(booking=>{
+      if(booking.coupons_used !== ""){ 
+        coupons_used.push(booking.coupons_used)
+      }
+    })
+    res.send({status:"success", message:"coupons fetched", data:coupons_used})
   })
 })
 

@@ -139,7 +139,7 @@ function getValue(key,total,type){
   }
   else if(key === 'ground' || key === 'pitch'){
     const index= type.indexOf("ground")
-    return total[index]/5
+    return total[index]*2
   }
 };
 function getPrice(key){

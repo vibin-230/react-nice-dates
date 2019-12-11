@@ -691,8 +691,22 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
   })
 })
 
+
+
 router.post('/check_coupon/:id', verifyToken, (req, res, next) => {
   Booking.find({user_id: req.params.id,booking_status:{$in:["completed","booked"]}}).lean().then(coupon=>{
+    let coupons_used = []
+    coupon.filter(booking=>{
+      if(booking.coupons_used !== ""){ 
+        coupons_used.push(booking.coupons_used)
+      }
+    })
+    res.send({status:"success", message:"coupons fetched", data:coupons_used})
+  })
+})
+
+router.post('/check_event_coupon/:id', verifyToken, (req, res, next) => {
+  EventBooking.find({created_by: req.params.id,booking_status:{$in:["completed","booked"]}}).lean().then(coupon=>{
     let coupons_used = []
     coupon.filter(booking=>{
       if(booking.coupons_used !== ""){ 

@@ -691,8 +691,22 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
   })
 })
 
+
+
 router.post('/check_coupon/:id', verifyToken, (req, res, next) => {
   Booking.find({user_id: req.params.id,booking_status:{$in:["completed","booked"]}}).lean().then(coupon=>{
+    let coupons_used = []
+    coupon.filter(booking=>{
+      if(booking.coupons_used !== ""){ 
+        coupons_used.push(booking.coupons_used)
+      }
+    })
+    res.send({status:"success", message:"coupons fetched", data:coupons_used})
+  })
+})
+
+router.post('/check_event_coupon/:id', verifyToken, (req, res, next) => {
+  EventBooking.find({created_by: req.params.id,booking_status:{$in:["completed","booked"]}}).lean().then(coupon=>{
     let coupons_used = []
     coupon.filter(booking=>{
       if(booking.coupons_used !== ""){ 
@@ -1891,8 +1905,8 @@ router.post('/ads_list',verifyToken,AccessControl('ads', 'read'),(req, res, next
     let final_venue_ads = ads.filter((ad,i)=>{
       if(ad.venue.length>0){
         let list = Object.values(ad.venue).map((value,index)=>{
-          
-					let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
+          let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
+          value.rating = value.rating
 					value.offers = filteredOffer
 					return value
         })
@@ -1919,6 +1933,46 @@ router.post('/ads_list',verifyToken,AccessControl('ads', 'read'),(req, res, next
   }).catch(next);
 
 })
+// router.post('/ads_list',verifyToken,AccessControl('ads', 'read'),(req, res, next) => {
+//   Ads.find({$and: [{ start_date: { $lte: new Date(),},}, { end_date: {$gte: new Date(),},},{sport_type: req.body.sport_type},{ page: req.body.page}],}).lean().populate('event').populate('venue').then(ads=>{
+//       Offers.find({}).then(offers=>{
+
+//    let event_ads = []
+//    let final_event_ds = ads.filter((ad,i)=>{
+//      if(ad.event.length>0)
+//        return ad
+//     })
+//     let final_venue_ads = ads.filter((ad,i)=>{
+//       if(ad.venue.length>0){
+//         let list = Object.values(ad.venue).map((value,index)=>{
+          
+// 					let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
+// 					value.offers = filteredOffer
+// 					return value
+//         })
+//         return list
+//       }
+        
+//      })
+//      if(final_event_ds.length > 0){
+//       final_event_ds.map((event_ad,i)=>{
+//         Event.find({'_id':event_ad.event[0]._id}).lean().populate('venue').then(event=>{
+//             event_ad.event[0] = event
+//             event_ads.push(event_ad)
+//             if( i === final_event_ds.length - 1){
+//               let result = [...final_venue_ads,...event_ads]
+//               res.send({status:"success", message:"ads fetched", data:[...final_venue_ads,...event_ads]})
+//             }
+//         }).catch(next)
+//       })
+//      }else{
+//       res.send({status:"success", message:"ads fetched", data:[...final_venue_ads]})
+//      }
+    
+//   }).catch(next)
+//   }).catch(next);
+
+// })
 
 
 

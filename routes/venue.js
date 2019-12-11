@@ -185,7 +185,7 @@ function getValue(key,total,type){
   }
   else if(key === 'net'){ // 1hour pricing 
     const index = type.indexOf("net")
-    return total[index]
+    return total[index]*2
   }
   else if(key === 'ac'){ // 1hour pricing 
     const index = type.indexOf("ac")

@@ -807,7 +807,6 @@ router.post('/search',
 			}else{
 				combinedResult = event
 			}			
-			console.log(combinedResult)	
 			res.send({status:"success", message:"venues and events fetched based on search", data:combinedResult})
 		}).catch(next)
 	}).catch(next)

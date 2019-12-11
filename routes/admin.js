@@ -764,6 +764,30 @@ AccessControl('venue', 'create'),
 // 	}).catch(next)
 // })
 
+// router.post('/search',
+// 	verifyToken,
+// 	AccessControl('venue', 'read'),
+// 	(req, res, next) => {
+// 	Venue.find({"venue.name":{ "$regex": req.body.search, "$options": "i" }}).then(venue=>{
+// 		Event.find({"event.name":{ "$regex": req.body.search, "$options": "i" }}).lean().populate('venue').then(event=>{
+// 			Offers.find({}).then(offers=>{
+// 			let combinedResult
+// 			if(venue){
+// 				let list = Object.values(venue).map((value,index)=>{
+// 					let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
+// 					value.offers = filteredOffer
+// 					return value
+// 				})
+// 				combinedResult = list.concat(event);
+// 			}else{
+// 				combinedResult = event
+// 			}				
+// 			res.send({status:"success", message:"venues and events fetched based on search", data:combinedResult})
+// 		}).catch(next)
+// 	}).catch(next)
+// }).catch(next);
+// })
+
 router.post('/search',
 	verifyToken,
 	AccessControl('venue', 'read'),
@@ -773,15 +797,17 @@ router.post('/search',
 			Offers.find({}).then(offers=>{
 			let combinedResult
 			if(venue){
-				let list = Object.values(venue).map((value,index)=>{
+					let list = Object.values(venue).map((value,index)=>{
 					let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
+					value.rating = value.rating
 					value.offers = filteredOffer
 					return value
 				})
 				combinedResult = list.concat(event);
 			}else{
 				combinedResult = event
-			}				
+			}			
+			console.log(combinedResult)	
 			res.send({status:"success", message:"venues and events fetched based on search", data:combinedResult})
 		}).catch(next)
 	}).catch(next)

@@ -119,7 +119,7 @@ function getValue(key,total,type){
   }
   else if(key === 'net'){ // 1hour pricing 
     const index = type.indexOf("net")
-    return total[index]*2
+    return total[index]
   }
   else if(key === 'ac'){ // 1hour pricing 
     const index = type.indexOf("ac")
@@ -144,7 +144,7 @@ function getValue(key,total,type){
 };
 function getPrice(key){
   const highestPricing = key.sort((a,b)=> Math.round(b.pricing[0]) > Math.round(a.pricing[0]) ?  1 : -1 )
-  return highestPricing[0]
+  return highestPricing[0].pricing
 }
 
 function findTime() {
@@ -200,7 +200,7 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
               value.rating = value.rating
               value.distance = distance.toFixed(2)
               value.displacement = distance
-              value.pricing = Math.round(getValue(req.body.venue_type,price,types))
+              value.pricing = Math.round(getValue(req.body.venue_type,highestPricing,types))
               let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
               value.offers = filteredOffer
               return value

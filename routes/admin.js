@@ -798,11 +798,6 @@ router.post('/search',
 			let combinedResult
 			if(venue){
 					let list = Object.values(venue).map((value,index)=>{
-					let rating = Object.values(value.rating).reduce((a,b)=>{
-						let c = a+b.rating.rating
-						return c
-					  },0)
-					  rating = rating/value.rating.length 
 					let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
 					value.rating = value.rating
 					value.offers = filteredOffer
@@ -811,7 +806,8 @@ router.post('/search',
 				combinedResult = list.concat(event);
 			}else{
 				combinedResult = event
-			}				
+			}			
+			console.log(combinedResult)	
 			res.send({status:"success", message:"venues and events fetched based on search", data:combinedResult})
 		}).catch(next)
 	}).catch(next)

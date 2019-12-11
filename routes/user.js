@@ -1905,11 +1905,6 @@ router.post('/ads_list',verifyToken,AccessControl('ads', 'read'),(req, res, next
     let final_venue_ads = ads.filter((ad,i)=>{
       if(ad.venue.length>0){
         let list = Object.values(ad.venue).map((value,index)=>{
-          let rating = Object.values(value.rating).reduce((a,b)=>{
-            let c = a+b.rating.rating
-            return c
-          },0)
-          rating = rating/value.rating.length
           let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
           value.rating = value.rating
 					value.offers = filteredOffer

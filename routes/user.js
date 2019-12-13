@@ -555,6 +555,21 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
 
 
       //Send Mail
+      // let mailBody = {
+      //   name:values[0].name,
+      //   date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
+      //   day:moment(values[0].booking_date).format("Do"),
+      //   venue:values[0].venue,
+      //   area:values[0].area,
+      //   venue_type:values[0].venue_type,
+      //   booking_id:values[0].booking_id,
+      //   slot_time:datetime,
+      //   quantity:1,
+      //   total_amount:total_amount,
+      //   booking_amount:values[0].booking_amount,
+      //   directions:directions,
+      //   sport_name:sport_name,
+      // }
       let mailBody = {
         name:values[0].name,
         date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
@@ -565,10 +580,12 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         booking_id:values[0].booking_id,
         slot_time:datetime,
         quantity:1,
-        total_amount:total_amount,
-        booking_amount:values[0].booking_amount,
+        total_amount:result[0].amount,
+        booking_amount:result[0].booking_amount,
         directions:directions,
         sport_name:sport_name,
+        venue_discount:result[0].commission,
+        coupon_amount:result[0].coupon_amount
       }
 
       let to_mail = `${values[0].email}, rajasekar@turftown.in`
@@ -1242,7 +1259,7 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
 
   let past_date  = moment(req.body.todate).add(1,'month')
   let filter = {
-    booking_status:{$in:["booked","completed","cancelled"]},
+    booking_status:{$in:["booked","completed"]},
     created_by:req.userId,
     end_time:{$gte:req.body.fromdate, $lte:req.body.todate}
   }
@@ -1251,7 +1268,7 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
     created_by:req.userId,
   }
   let eventFilter = {
-    booking_status:{$in:["booked","completed","cancelled"]},
+    booking_status:{$in:["booked","completed"]},
     created_by:req.userId,
     event_booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}
   }

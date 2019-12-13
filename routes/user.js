@@ -1698,7 +1698,6 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               //   // total_amount:total_amount,
               //   // booking_amount:values[0].booking_amount
               // }
-
               let mailBody = {
                 name:eventBooking.name,
                 phone:eventBooking.phone,

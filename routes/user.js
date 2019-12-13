@@ -575,7 +575,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
         day:moment(values[0].booking_date).format("Do"),
         venue:values[0].venue,
-        area:values[0].area,
+        area:venue_area,
         venue_type:values[0].venue_type,
         booking_id:values[0].booking_id,
         slot_time:datetime,
@@ -585,7 +585,9 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         directions:directions,
         sport_name:sport_name,
         venue_discount:result[0].commission,
-        coupon_amount:result[0].coupon_amount
+        coupon_amount:result[0].coupon_amount,
+        venue_name:venue.venue.name
+        
       }
 
       let to_mail = `${values[0].email}, rajasekar@turftown.in`
@@ -1683,11 +1685,27 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 console.log(error.response.data)
               })
               //Send Mail
+              // let mailBody = {
+              //   name:eventBooking.name,
+              //   phone:eventBooking.phone,
+              //   team_name:eventBooking.team_name,
+              //   event_name:eventBooking.event_name,
+              //   // date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),   
+              //   // venue:values[0].venue,
+              //   // booking_id:values[0].booking_id,
+              //   // slot_time:datetime,
+              //   // quantity:1,
+              //   // total_amount:total_amount,
+              //   // booking_amount:values[0].booking_amount
+              // }
+
               let mailBody = {
                 name:eventBooking.name,
                 phone:eventBooking.phone,
                 team_name:eventBooking.team_name,
-                event_name:eventBooking.event_name,
+                event_name:event.event.name,
+                manager_name:event.event.organizer,
+                booking_id:booking_id
                 // date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),   
                 // venue:values[0].venue,
                 // booking_id:values[0].booking_id,

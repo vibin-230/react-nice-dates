@@ -1674,7 +1674,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               //Send SMS to Event Manager
               let name = eventBooking.name
               let amount_paid = eventBooking.booking_amount
-              let balance = eventBooking.amount - eventBooking.booking_amount
+              let balance = eventBooking.amount - eventBooking.booking_amount -eventBooking.coupon_amount
               let event_contact = event.event.contact
               console.log('phone',phone,name,eventBooking,)
               

@@ -1358,6 +1358,17 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
 //     }).catch(next)
 // })
 
+router.post('/booking_history_from_app_by_venue/:id', verifyToken, (req, res, next) => {
+  Booking.find({booking_status:{$in:["completed"]}, venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, booking_type:"app"}).lean().populate('venue_data','venue').populate('collected_by','name').then(booking=>{
+      result = Object.values(combineSlots(booking))
+      Booking.find({booking_status:{$in:["cancelled"]},refund_status:false,venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, booking_type:"app"}).then(booking1=>{
+        let result1 = Object.values(combineSlots(booking1))
+        let finalResult = [...result,...result1]
+        res.send({status:"success", message:"booking history fetched", data:finalResult})
+    }).catch(next)
+  }).catch(next)
+})
+
 router.post('/payment_tracker_app_bookings', verifyToken, (req, res, next) => {
   Booking.find({booking_status:{$in:["completed"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}, booking_type:"app"}).lean().populate('venue_data','venue').populate('collected_by','name').then(booking=>{
     Booking.find({booking_status:{$in:["cancelled"]},refund_status:false,booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}, booking_type:"app"}).lean().populate('venue_data','venue').then(booking1=>{

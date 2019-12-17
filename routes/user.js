@@ -1781,8 +1781,8 @@ router.post('/revenue_report_cancel', verifyToken, (req, res, next) => {
             result[date].bookings = 1
             result[date].slots_booked = 1
             result[date].commission = value.commission
-            // result[date].booking_amount = value.booking_amount
-            // result[date].coupon_amount = value.coupon_amount
+            result[date].booking_amount = value.booking_amount
+            result[date].coupon_amount = value.coupon_amount
             bookings_combined = JSON.stringify([...bookings,booking_list[index]])
             bookings_combined = JSON.parse(bookings_combined)
             result[date].booking = bookings_combined
@@ -1792,8 +1792,8 @@ router.post('/revenue_report_cancel', verifyToken, (req, res, next) => {
             result[date].slots_booked = result[date].slots_booked + 1
             result[date].hours_played = (result[date].slots_booked*30)/60
             result[date].commission = result[date].commission + value.commission
-            result[date].booking_amount = parseInt(result[date].booking_amount)+parseInt(value.booking_amount)
-            result[date].coupon_amount = parseInt(result[date].coupon_amount)+parseInt(value.coupon_amount)
+            result[date].booking_amount =result[date].booking_amount
+            result[date].coupon_amount = result[date].coupon_amount
 
             bookings_combined = JSON.stringify([...result[date].booking,booking_list[index]])
             bookings_combined = JSON.parse(bookings_combined)
@@ -1801,7 +1801,7 @@ router.post('/revenue_report_cancel', verifyToken, (req, res, next) => {
 
           }
         })
-        
+        console.log("REEEEE",result)
         result = Object.values(result)
         
         result.forEach(results=>{

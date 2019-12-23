@@ -41,6 +41,7 @@ const schema = new Schema({
   cash:Number,
   upi:Number,
   academy:Boolean,
+  cancelled_by:{ type: Schema.Types.ObjectId, ref: 'admin' },
   membership:Boolean,
   collected_by:{ type: Schema.Types.ObjectId, ref: 'admin' },
   refund_status:Boolean,

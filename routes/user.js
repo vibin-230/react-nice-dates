@@ -592,7 +592,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         
       }
 
-      let to_mail = `${values[0].email}, rajasekar@turftown.in`
+      let to_mail = `${values[0].email}, rajasekar@turftown.in,support@turftown.in`
       // console.log(mailBody)
       ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
         mail("support@turftown.in", to_mail,"Venue Booked","test",html,response=>{

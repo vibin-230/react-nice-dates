@@ -111,6 +111,70 @@ router.post('/create_user', [
 });
 
 
+router.post('/force_update_all', [
+  verifyToken,
+], (req, res, next) => {
+    User.updateMany({force_update:true}).then((user)=>{
+        res.status(201).send({status: "success", message: "user updated all"})
+    })
+});
+
+router.post('/stop_force_update_all', [
+  verifyToken,
+], (req, res, next) => {
+    User.updateMany({force_update:false}).then((user)=>{
+        res.status(201).send({status: "success", message: "user updated all"})
+    })
+});
+
+router.post('/force_update_by_user', [
+  verifyToken,
+], (req, res, next) => {
+      //Check if user exist
+      User.findOne({_id: req.body.userId}).then(user=> {
+        if (user) {
+              req.body.modified_at = moment();
+              User.findByIdAndUpdate({_id: req.body.userId},{force_update:req.body.force_update}).then(user1=>{
+                   res.status(201).send({status: "success", message: "user force_updated"})
+            })
+        } else {
+            res.status(422).send({status: "failure", errors: {user:"force update failed"}});
+        }
+    }).catch(next);
+});
+router.post('/force_update_by_user_app', [
+  verifyToken,
+], (req, res, next) => {
+      //Check if user exist
+      User.findOne({_id: req.body.userId}).then(user=> {
+        if (user) {
+              req.body.modified_at = moment();
+              User.findByIdAndUpdate({_id: req.body.userId},{force_update:req.body.force_update,version:req.body.version}).then(user1=>{
+                console.log(user1);
+            })
+        } else {
+            res.status(422).send({status: "failure", errors: {user:"force update failed"}});
+        }
+    }).catch(next);
+});
+
+router.post('/get_user', [
+  verifyToken,
+], (req, res, next) => {
+      //Check if user exist
+      console.log('get user',req.userId);
+      User.findOne({_id: req.userId}).then(user=> {
+      console.log('get user 1',user);
+
+        if (user) {
+          res.status(201).send({status: "success", message: "user collected",data:user})
+        } else {
+            res.status(422).send({status: "failure", errors: {user:"force update failed"}});
+        }
+    }).catch(next);
+});
+
+
 router.post('/edit_user', [
   verifyToken,
   check('email').exists().isLength({ min: 1}).withMessage('email cannot be empty'),

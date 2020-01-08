@@ -246,7 +246,7 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
   //     res.status(409).send({status:"failed", message: "No venues available at this location"})
   //   }else{
       Venue.find({type:req.body.sport_type, "configuration.types":{$in:[req.body.venue_type]},status:true},{bank:0, offers:0, access:0}).lean().then(venue=>{
-        Offer.find({}).then(offers=>{
+        Offer.find({status:true}).then(offers=>{
           var list = Object.values(venue).map((value,index)=>{
               let distance = getDistanceFromLatLonInKm(req.body.latLong[0],req.body.latLong[1],value.venue.latLong[0],value.venue.latLong[1])
               let featured = value.featured.filter(featured=>featured.zipcode==zipcode)

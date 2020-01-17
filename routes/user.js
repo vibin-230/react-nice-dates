@@ -804,7 +804,7 @@ router.post('/check_slots_for_admin/:id', verifyToken, AccessControl('booking', 
   let promisesToRun = [];
   let bookOverTimeSlots = [];
   Object.entries(req.body).map((index,arr=>{
-    for(let i=0;i<arr.bookings.length;i++){
+    for(let i=0;i<arr.length;i++){
       promisesToRun.push(SlotsCheck(req.body.bookings[i],req.params.id))
     }
     bookOverTimeSlots.push(promisesToRun)
@@ -1324,6 +1324,14 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
 //   }).catch(next)
 // })
 
+router.post('/booking_history_from_app_event_bookings', verifyToken, (req, res, next) => {
+  EventBooking.find({booking_status:{$in:["booked","completed","cancelled"]}, created_at:{$gte:req.body.fromdate, $lte:req.body.todate},booking_type:"app"}).lean().populate('event_id').then(booking=>{    
+    // console.log("veeee",result)
+    result = [...booking]
+    res.send({status:"success", message:"booking history fetched", data:result})
+    }).catch(next)
+})
+
 router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
   Booking.findOne({booking_id:req.params.id}).then(booking=>{
     Venue.findById({_id:booking.venue_id}).then(venue=>{
@@ -1554,6 +1562,88 @@ router.post('/slots_list/:venue_id', verifyToken, (req, res, next) => {
 
     res.send({slots:slots_list})
   // })
+  })
+})
+
+router.post('/slots_value/:venue_id', verifyToken, (req, res, next) => {
+  Venue.findById({_id:req.params.venue_id}).lean().then(venue=>{
+    let new_availabaility = req.body 
+    console.log(req.body)
+    new_availabaility.map((a,e)=>{
+      console.log('pass',e)
+      let venue_type_index = venue.configuration.types.indexOf(a.venue_type)
+      let find_day = venue.configuration.pricing.filter(value=>value.day===a.day)[0]
+      let availablility = []
+      let price = []
+      //a.rate = find_day.rate
+        let venue_id;
+            if(venue.secondary_venue){
+              venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
+            }else{
+              venue_id = [venue._id.toString()]
+            }
+      //      Booking.find({ venue:req.body.venue, venue_id:{$in:venue_id}, booking_date:req.body.booking_date,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
+      let slots_available1 = Booking.find({ venue_id:{$in:venue_id}, booking_date:{$gte:new Date(a.booking_date),$lt:new Date(a.booking_date).addHours(24,0)},booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
+        let slots_available = SlotsAvailable(venue,booking_history)
+          //a.slots_available = slots_available.slots_available ? slots_available.slots_available : []
+          if(!slots_available)
+          {
+            return slots_available
+            //res.send({status:"success", message:"available slots fetched", data:new_availabaility})
+          }else{
+            return slots_available
+            //res.send({status:"success", message:"booking history fetched", data:new_availabaility})
+           //return a
+
+          }
+          }).catch(next)
+          console.log(slots_available1);
+          // for (let key in slots_available.slots_available){
+          //       for(let time = 0 ; time<=a.timeRepresentation.length-1;time++){
+          //         if(key === a.timeRepresentation[time]){
+          //           availablility.push(slots_available.slots_available[key])
+          //           console.log('pass',key,a.timeRepresentation[time])
+          //             let find_price = find_day.rate.filter((price,index)=>{
+          //                   let price_time = price.time.replace(/[#:]/g,'');
+          //                   let price_start_time = price_time.split("-")[0]
+          //                   let price_end_time = price_time.split("-")[1]
+          //                   let slot_start_time = a.timeRepresentation[time].split("-")[0]
+          //                   let slot_end_time = a.timeRepresentation[time].split("-")[1]
+          //               if(slot_end_time === "0000"){
+          //                    slot_end_time = "2400"
+          //                    }
+          //               if(price_start_time <= slot_start_time && price_end_time >= slot_end_time){
+          //                 // 0900 < 1530 && 1600 > 1600
+          //                 return price
+          //               }
+          //               else if(index===find_day.rate.length - 1){
+          //                 return price
+          //             }
+          //          })
+          //     console.log('run',find_price,venue_type_index)
+          //    price.push(find_price[0].pricing[venue_type_index])
+          //         }
+          //       }
+              
+          //   } 
+          //   a.price = price
+          //   a.availablility = availablility
+          //   console.log(availablility);
+          //   console.log(new_availabaility);
+          // console.log(slots_available1)
+
+          
+      
+      //res.send({status:"success", message:"booking history fetched", data:find_day})
+    })
+
+
+    // let slots = combinedSlots.map(slot=>{
+    //   let find_price = find_day.rate.filter((price,index)=>{
+    
+    // })
+
+   
   })
 })
 

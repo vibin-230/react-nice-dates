@@ -23,6 +23,8 @@ const upload = require("../scripts/aws-s3")
 const AccessControl = require("../scripts/accessControl")
 const SetKeyForSport = require("../scripts/setKeyForSport")
 const SlotsAvailable = require("../helper/slots_available")
+
+const SlotsValueAvailable = require("../helper/slots_value_available")
 const BookSlot = require("../helper/book_slot")
 const mkdirp = require('mkdirp');
 const Offers = require('../models/offers');
@@ -1564,88 +1566,91 @@ router.post('/slots_list/:venue_id', verifyToken, (req, res, next) => {
   // })
   })
 })
+let slots_av1 = [];
+
+
+// router.post('/slots_value/:venue_id', verifyToken, (req, res, next) => {
+//   Venue.findById({_id:req.params.venue_id}).lean().then(venue=>{
+//     let new_availabaility = req.body 
+//     let venue_id;
+//     if(venue.secondary_venue){
+//       venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
+//     }else{
+//       venue_id = [venue._id.toString()]
+//     }
+//      Promise.all(new_availabaility.map((a,e)=>{
+//         const promise = Booking.find({ venue_id:req.params.venue_id, booking_date:{$gte:new Date(a.booking_date),$lt:new Date(a.booking_date).addHours(24,0)},booking_status:{$in:["booked","blocked","completed"]}}).lean().then(booking_history=>{
+//         let slots_available = SlotsAvailable(venue,booking_history)
+//         return slots_available
+//           }).catch(next)
+//          return promise
+//     })
+//     ).then(item =>{
+//       let total =  new_availabaility.map((a,e)=>{
+//         let availablility = []
+//         let price = []
+//         let venue_type_index = venue.configuration.types.indexOf(a.venue_type)
+//         let find_day = venue.configuration.pricing.filter(value=>value.day===a.day)[0]
+//         a.rate = find_day.rate
+//         for (let key in item[e].slots_available){
+//             for(let time = 0 ; time<=a.timeRepresentation.length-1;time++){
+//                     if(key === a.timeRepresentation[time]){
+//                        availablility.push(item[e].slots_available[key])
+//                               let find_price = a.rate.filter((price,index)=>{
+//                               let price_time = price.time.replace(/[#:]/g,'');
+//                               let price_start_time = price_time.split("-")[0]
+//                               let price_end_time = price_time.split("-")[1]
+//                               let slot_start_time = a.timeRepresentation[time].split("-")[0]
+//                               let slot_end_time = a.timeRepresentation[time].split("-")[1]
+//                               if(slot_end_time === "0000"){
+//                                   slot_end_time = "2400"
+//                                   }
+//                                 if(price_start_time <= slot_start_time && price_end_time >= slot_end_time){
+//                                   return price
+//                                 }
+//                           else if(index===find_day.rate.length - 1){
+//                             return price
+//                         }
+//                      })
+//                price.push(find_price[0].pricing[venue_type_index])
+//                     }
+//                   }
+//               } 
+//               a.price = price
+//               a.availablility = availablility
+//               return a
+//             })
+//             res.send({status:"success", message:"available slots fetched", data:total})
+//         })
+
+
+
+//   })
+// })
+
+
 
 router.post('/slots_value/:venue_id', verifyToken, (req, res, next) => {
   Venue.findById({_id:req.params.venue_id}).lean().then(venue=>{
-    let new_availabaility = req.body 
-    console.log(req.body)
-    new_availabaility.map((a,e)=>{
-      console.log('pass',e)
-      let venue_type_index = venue.configuration.types.indexOf(a.venue_type)
-      let find_day = venue.configuration.pricing.filter(value=>value.day===a.day)[0]
-      let availablility = []
-      let price = []
-      //a.rate = find_day.rate
-        let venue_id;
-            if(venue.secondary_venue){
-              venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
-            }else{
-              venue_id = [venue._id.toString()]
-            }
-      //      Booking.find({ venue:req.body.venue, venue_id:{$in:venue_id}, booking_date:req.body.booking_date,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
-      let slots_available1 = Booking.find({ venue_id:{$in:venue_id}, booking_date:{$gte:new Date(a.booking_date),$lt:new Date(a.booking_date).addHours(24,0)},booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
-        let slots_available = SlotsAvailable(venue,booking_history)
-          //a.slots_available = slots_available.slots_available ? slots_available.slots_available : []
-          if(!slots_available)
-          {
-            return slots_available
-            //res.send({status:"success", message:"available slots fetched", data:new_availabaility})
-          }else{
-            return slots_available
-            //res.send({status:"success", message:"booking history fetched", data:new_availabaility})
-           //return a
+    Booking.find({ venue_id:req.params.venue_id, booking_date:{$gte:new Date(req.body[0].booking_date),$lt:new Date(req.body[req.body.length-1].booking_date).addHours(24,0)},booking_status:{$in:["booked","blocked","completed"]}}).lean().then(booking_history=>{
+      let slots_available = SlotsValueAvailable(venue,booking_history,req.body)
+      //onsole.log(slots_available)
+      res.send({status:"success", message:"available slots fetched", data:slots_available})
+      // for(let time = 0 ; time<=req.body.length-1;time++){
+      //   Object.entries( slots_available.slots_available).forEach(([key, value]) => {
+      //     if(key === moment(req.body[time].booking_date).format('YYYY-MM-DD')){
 
-          }
-          }).catch(next)
-          console.log(slots_available1);
-          // for (let key in slots_available.slots_available){
-          //       for(let time = 0 ; time<=a.timeRepresentation.length-1;time++){
-          //         if(key === a.timeRepresentation[time]){
-          //           availablility.push(slots_available.slots_available[key])
-          //           console.log('pass',key,a.timeRepresentation[time])
-          //             let find_price = find_day.rate.filter((price,index)=>{
-          //                   let price_time = price.time.replace(/[#:]/g,'');
-          //                   let price_start_time = price_time.split("-")[0]
-          //                   let price_end_time = price_time.split("-")[1]
-          //                   let slot_start_time = a.timeRepresentation[time].split("-")[0]
-          //                   let slot_end_time = a.timeRepresentation[time].split("-")[1]
-          //               if(slot_end_time === "0000"){
-          //                    slot_end_time = "2400"
-          //                    }
-          //               if(price_start_time <= slot_start_time && price_end_time >= slot_end_time){
-          //                 // 0900 < 1530 && 1600 > 1600
-          //                 return price
-          //               }
-          //               else if(index===find_day.rate.length - 1){
-          //                 return price
-          //             }
-          //          })
-          //     console.log('run',find_price,venue_type_index)
-          //    price.push(find_price[0].pricing[venue_type_index])
-          //         }
-          //       }
-              
-          //   } 
-          //   a.price = price
-          //   a.availablility = availablility
-          //   console.log(availablility);
-          //   console.log(new_availabaility);
-          // console.log(slots_available1)
+      //       }else{
 
-          
+      //       }
+      //     });
+      //   }
+      }).catch(next)
       
-      //res.send({status:"success", message:"booking history fetched", data:find_day})
-    })
-
-
-    // let slots = combinedSlots.map(slot=>{
-    //   let find_price = find_day.rate.filter((price,index)=>{
-    
-    // })
-
-   
   })
 })
+
+
 
 
 //Booking History

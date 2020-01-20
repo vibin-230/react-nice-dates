@@ -84,7 +84,6 @@ module.exports =  function slotsValueAvailable(venue,booking_history,body){
                                     //console.log('slot_time hit',booking.slot_time, inventory,requestObject.timeRepresentation)
                                                         slots_available[requestDate][booking.slot_time] = inventory
                                                         slots_available[requestDate][booking.slot_time][booking.venue_type] = parseInt(inventory[booking.venue_type] - 1)
-                                                        //console.log('slot_time hit final',slots_available[requestDate])
                                                     }else if(slots_available[representation]){
                                                         slots_available[requestDate][booking.slot_time][booking.venue_type] = parseInt(slots_available[booking.slot_time][booking.venue_type] - 1)
                                                     //console.log('slot_time pass',booking.slot_time)
@@ -99,9 +98,10 @@ module.exports =  function slotsValueAvailable(venue,booking_history,body){
           
 
         }else{
-            requestObject.timeRepresentation.map((representation)=>{ 
-                    slots_available[requestDate][representation] = Object.assign({}, stock);
-        })
+        //     console.log('hit')
+        //     requestObject.timeRepresentation.map((representation)=>{ 
+        //             slots_available[requestDate][representation] = Object.assign({}, stock);
+        // })
         }
         //let objectDate = 
     //     inventory =  Object.assign({}, stock);

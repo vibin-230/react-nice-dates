@@ -778,10 +778,11 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
   })
 })
 
-router.post('/check_slots_for_admin/:id', verifyToken, AccessControl('booking', 'create'), (req, res, next) => {
+router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'create'), (req, res, next) => {
   let params = req.params.id
   //Check of Slot Exist
   function SlotsCheck(body,id){
+
     return new Promise((resolve,reject)=>{
       Venue.findById({_id:id},{bank:0,access:0}).lean().then(venue=>{
         let venue_id;
@@ -792,11 +793,11 @@ router.post('/check_slots_for_admin/:id', verifyToken, AccessControl('booking', 
         }
         Booking.find({ venue:body.venue, venue_id:{$in:venue_id}, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
         // Booking.find({$and:[{venue:body.venue, venue_id:id, booking_date:{$gte:body.booking_date,$lt:moment(body.booking_date).add(1,"days")}}],booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
-          let slots_available = SlotsAvailable(venue,booking_history)
+        let slots_available = SlotsAvailable(venue,booking_history)
           if(slots_available.slots_available[body.slot_time][body.venue_type]>0){
             resolve()
           }else{
-            reject()
+            reject(body)
           }
         }).catch(next)
       }).catch(next)
@@ -805,74 +806,78 @@ router.post('/check_slots_for_admin/:id', verifyToken, AccessControl('booking', 
 
   let promisesToRun = [];
   let bookOverTimeSlots = [];
-  Object.entries(req.body).map((index,arr=>{
-    for(let i=0;i<arr.length;i++){
-      promisesToRun.push(SlotsCheck(req.body.bookings[i],req.params.id))
+  req.body.map((arr=>{
+    for(let i=0;i<arr.block.length;i++){
+      promisesToRun.push(SlotsCheck(arr.block[i],req.params.id))
     }
     bookOverTimeSlots.push(promisesToRun)
   
   }))
   
   Promise.all(promisesToRun).then(values => {
-    
-    // Booking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
-    //   let booking_id
-    //   if(!bookingOrder){
-    //     booking_id = "TT000000"
-    //   }else{
-    //     booking_id = bookingOrder.booking_id
-    //   }
-    //   var id = mongoose.Types.ObjectId();
-    //   let promisesToRun = [];
-    //   for(let i=0;i<req.body.length;i++)
-    //   {
-    //     promisesToRun.push(BookSlot(req.body[i],id, booking_id,params,req,res,next))
-    //   } 
-  
-    //   Promise.all(promisesToRun).then(values => {
-    //     values = {...values}
-    //     res.send({status:"success", message:"slot booked", data:values})
-    //     Venue.findById({_id:values[0].venue_id}).then(venue=>{
-    //       // Send SMS
-    //       let booking_id = values[0].booking_id
-    //       let phone = "91"+values[0].phone
-    //       let venue_name = values[0].venue
-    //       let venue_type = SetKeyForSport(req.body[0].venue_type) 
-    //       let venue_area = venue.venue.area
-    //       let date = moment(values[0].booking_date).format("MMMM Do YYYY")
-    //       let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
-    //       let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},values[0].end_time)
-    //       let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
-    //       let directions = "https://www.google.com/maps/dir/"+venue.venue.latLong[0]+","+venue.venue.latLong[1]
-    //       let total_amount = Object.values(values).reduce((total,value)=>{
-    //         return total+value.amount
-    //       },0)
-    //       axios.get(process.env.PHP_SERVER+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount)
-    //       .then(response => {
-    //         console.log(response.data)
-    //       }).catch(error=>{
-    //         console.log(error.response)
-    //       })
+    Booking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
+      if(!bookingOrder){
+        booking_id = "TT000000"
+      }else{
+        booking_id = bookingOrder.booking_id
+      }
+      var id = mongoose.Types.ObjectId();
+      let promisesToRun = [];
+      req.body.map(((arr,index)=>{
+           var numb = booking_id.match(/\d/g);
+              numb = numb.join("");
+              var str = "" + (parseInt(numb, 10) + index)
+              var pad = "TT000000"
+              booking_id = pad.substring(0, pad.length - str.length) + str
+          for(let i=0;i<arr.block.length;i++){
+            promisesToRun.push(BookSlot(arr.block[i],id, booking_id,params,req,res,next))
+          }
+      bookOverTimeSlots.push(promisesToRun)
+      Promise.all(promisesToRun).then(values => {
+        values = {...values}
+        res.send({status:"success", message:"slot booked", data:values})
+        Venue.findById({_id:values[0].venue_id}).then(venue=>{
+          // Send SMS
+          // let booking_id = values[0].booking_id
+          // let phone = "91"+values[0].phone
+          // let venue_name = values[0].venue
+          // let venue_type = SetKeyForSport(req.body[0].venue_type) 
+          // let venue_area = venue.venue.area
+          // let date = moment(values[0].booking_date).format("MMMM Do YYYY")
+          // let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
+          // let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},values[0].end_time)
+          // let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
+          // let directions = "https://www.google.com/maps/dir/"+venue.venue.latLong[0]+","+venue.venue.latLong[1]
+          // let total_amount = Object.values(values).reduce((total,value)=>{
+          //   return total+value.amount
+          // },0)
+          // axios.get(process.env.PHP_SERVER+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount)
+          // .then(response => {
+          //   console.log(response.data)
+          // }).catch(error=>{
+          //   console.log(error.response)
+          // })
           
-    //       //Activity Log
-    //       let activity_log = {
-    //         datetime: new Date(),
-    //         id:req.userId,
-    //         user_type: req.role?req.role:"user",
-    //         activity: 'slot booked',
-    //         name:req.name,
-    //         booking_id:booking_id,
-    //         venue_id:values[0].venue_id,
-    //         message: "Slot "+booking_id+" booked at "+venue_name+" "+datetime+" "+venue_type,
-    //       }
-    //       ActivityLog(activity_log)
+          //Activity Log
+          // let activity_log = {
+          //   datetime: new Date(),
+          //   id:req.userId,
+          //   user_type: req.role?req.role:"user",
+          //   activity: 'slot booked',
+          //   name:req.name,
+          //   booking_id:booking_id,
+          //   venue_id:values[0].venue_id,
+          //   message: "Slot "+booking_id+" booked at "+venue_name+" "+datetime+" "+venue_type,
+          // }
+          // ActivityLog(activity_log)
   
-    //     }).catch(next)
-    //   }).catch(next)
-    // }).catch(next)
-    res.send({status:'success',message:'Slots available',data:values})
+        }).catch(next)
+      }).catch(next)
+  
+  }))
+    }).catch(next)
   }).catch(error=>{
-    res.send({status:"failed", message:"slots not available"})
+    res.send({status:"failed", message:"slots not available",data:error})
   })
 })
 
@@ -1635,16 +1640,42 @@ router.post('/slots_value/:venue_id', verifyToken, (req, res, next) => {
     Booking.find({ venue_id:req.params.venue_id, booking_date:{$gte:new Date(req.body[0].booking_date),$lt:new Date(req.body[req.body.length-1].booking_date).addHours(24,0)},booking_status:{$in:["booked","blocked","completed"]}}).lean().then(booking_history=>{
       let slots_available = SlotsValueAvailable(venue,booking_history,req.body)
       //onsole.log(slots_available)
+
+      let final = {}
+
+      req.body.map((a,e)=>{
+        let availablility = []
+             let price = []
+                let venue_type_index = venue.configuration.types.indexOf(a.venue_type)
+                let find_day = venue.configuration.pricing.filter(value=>value.day===a.day)[0]
+              let bookingHistoryDate =  moment(a.booking_date).format('YYYY-MM-DD')
+                a.rate = find_day.rate
+                for(let time = 0 ; time<=a.timeRepresentation.length-1;time++){
+                                                let find_price = a.rate.filter((price,index)=>{
+                                                let price_time = price.time.replace(/[#:]/g,'');
+                                                let price_start_time = price_time.split("-")[0]
+                                                let price_end_time = price_time.split("-")[1]
+                                                let slot_start_time = a.timeRepresentation[time].split("-")[0]
+                                                let slot_end_time = a.timeRepresentation[time].split("-")[1]
+                                                if(slot_end_time === "0000"){
+                                                    slot_end_time = "2400"
+                                                    }
+                                                  if(price_start_time <= slot_start_time && price_end_time >= slot_end_time){
+                                                    return price
+                                                  }
+                                            else if(index===find_day.rate.length - 1){
+                                              return price
+                                          }
+                                       })
+                                 price.push({[a.timeRepresentation[time]]:find_price[0].pricing[venue_type_index]})
+                                    }
+                                 final[bookingHistoryDate] = price
+
+      })
+      slots_available.finalPrice = final
       res.send({status:"success", message:"available slots fetched", data:slots_available})
-      // for(let time = 0 ; time<=req.body.length-1;time++){
-      //   Object.entries( slots_available.slots_available).forEach(([key, value]) => {
-      //     if(key === moment(req.body[time].booking_date).format('YYYY-MM-DD')){
 
-      //       }else{
-
-      //       }
-      //     });
-      //   }
+      
       }).catch(next)
       
   })

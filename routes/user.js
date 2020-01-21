@@ -2310,18 +2310,28 @@ router.post('/revenue_report_cancel', verifyToken, (req, res, next) => {
 router.post('/revenue_report', verifyToken, (req, res, next) => {
   Venue.findById({_id:req.body.venue_id},{bank:0,access:0}).lean().then(venue=>{
     let venue_id;
+    let cancelledData = [];
+    let cancelledData_bookings = []
     if(venue.secondary_venue){
       venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
     }else{
       venue_id = [venue._id.toString()]
     }
-    Booking.find({booking_status:{$in:["completed"]}, venue_id:{$in:venue_id}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().then(booking_list=>{
+    Booking.find({booking_status:{$in:["cancelled"]},refund_status:false, venue_id:{$in:venue_id},booking_type:"app",booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}},{booking_date:1,booking_id:1,amount:1,multiple_id:1, commission:1,booking_amount:1,coupon_amount:1}).lean().then(booking2=>{
+      cancelledData = booking2
+    }).catch(next)
+    Booking.find({booking_status:{$in:["cancelled"]},refund_status:false, venue_id:{$in:venue_id},booking_type:"app",booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().then(data=>{
+      cancelledData_bookings = data
+    }).catch(next)
+    Booking.find({booking_status:{$in:["completed"]}, venue_id:{$in:venue_id}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().then(key=>{
       
       Booking.find({booking_status:{$in:["completed"]}, venue_id:{$in:venue_id}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}},{booking_date:1,booking_id:1,amount:1,multiple_id:1, commission:1,booking_amount:1,coupon_amount:1}).lean().then(booking=>{
 
         let result = {}
         let bookings = []
-        let data = Object.values(booking).map((value,index)=>{
+        let booking_new = [...booking,...cancelledData]
+        let booking_list =[...key,...cancelledData_bookings]
+        let data = Object.values(booking_new).map((value,index)=>{
           let date = moment(value.booking_date).format("DD-MM-YYYY")
           let bookings_combined
           if(!result[date]){

@@ -147,12 +147,13 @@ router.post('/force_update_by_user', [
 router.post('/force_update_by_user_app', [
   verifyToken,
 ], (req, res, next) => {
+  console.log(req.userId);
       //Check if user exist
-      User.findOne({_id: req.body.userId}).then(user=> {
+      User.findOne({_id: req.userId}).then(user=> {
         if (user) {
               req.body.modified_at = moment();
-              User.findByIdAndUpdate({_id: req.body.userId},{force_update:req.body.force_update,version:req.body.version}).then(user1=>{
-                console.log(user1);
+              User.findByIdAndUpdate({_id: req.userId},{force_update:req.body.force_update,version:req.body.version}).then(user1=>{
+                res.status(201).send({status: "success",});
             })
         } else {
             res.status(422).send({status: "failure", errors: {user:"force update failed"}});

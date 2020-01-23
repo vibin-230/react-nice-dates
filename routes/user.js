@@ -2095,8 +2095,17 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               })
               console.log('hit')
               console.log('a')
-              console.log('---------------',sport_name,total_amount,amount_paid,balance);
-              console.log('===============',team_name)
+              console.log('---------------',name);
+              console.log('---------------',phone);
+              console.log('---------------',event_name);
+              console.log('---------------',event_contact);
+              console.log('---------------',date);
+              console.log('---------------',sport_name);
+              console.log('---------------',total_amount);
+              console.log('---------------',amount_paid);
+              console.log('---------------',game_type);
+              console.log('---------------',balance);
+
               let mailBody = {
                 name:name,
                 phone:phone,

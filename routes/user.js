@@ -2047,7 +2047,6 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               free_event: req.body.free_event
             }
             EventBooking.create(booking_data).then(eventBooking=>{
-              console.log('eventBooking',eventBooking)
               //EventBooking.findOne({'booking_id':eventBooking.booking_id})
               EventBooking.findOne({'booking_id':eventBooking.booking_id}).lean().populate('event_id').then(bookingOrder=>{
                 if(req.body.free_event){
@@ -2071,7 +2070,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                   }).catch(next);
                 }
                 
-              
+                console.log('===============pass')
               // Send SMS
               let booking_id = eventBooking.booking_id
               
@@ -2087,7 +2086,6 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               let amount_paid = eventBooking.booking_amount
               let balance = eventBooking.amount - eventBooking.booking_amount -eventBooking.coupon_amount
               let event_contact = event.event.contact
-              console.log('phone',phone,name,eventBooking,)
               
               axios.get(process.env.PHP_SERVER+'/textlocal/event_booking_manager.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+event_contact)
               .then(response => {
@@ -2096,7 +2094,8 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 console.log(error.response.data)
               })
               
-            
+              console.log('===============',eventBooking.name,eventBooking.phone,eventBooking.team_name,event.event.name,event_contact,event.event.organizer,booking_id,game_type,total_amount-eventBooking.coupon_amount,moment(values[0].booking_date).format("dddd, MMM Do YYYY"))
+              console.log('---------------',sport_name,total_amount,amount_paid,balance);
               let mailBody = {
                 name:eventBooking.name,
                 phone:eventBooking.phone,

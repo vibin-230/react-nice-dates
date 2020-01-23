@@ -2093,7 +2093,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               }).catch(error=>{
                 console.log(error.response.data)
               })
-              
+              console.log('hit')
               console.log('===============',eventBooking.name,eventBooking.phone,eventBooking.team_name,event.event.name,event_contact,event.event.organizer,booking_id,game_type,total_amount-eventBooking.coupon_amount,moment(values[0].booking_date).format("dddd, MMM Do YYYY"))
               console.log('---------------',sport_name,total_amount,amount_paid,balance);
               let mailBody = {

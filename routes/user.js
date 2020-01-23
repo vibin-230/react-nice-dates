@@ -2094,29 +2094,25 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 console.log(error.response.data)
               })
               console.log('hit')
-              console.log('===============',eventBooking.name,eventBooking.phone,eventBooking.team_name,event.event.name,event_contact,event.event.organizer,booking_id,game_type,total_amount-eventBooking.coupon_amount,moment(values[0].booking_date).format("dddd, MMM Do YYYY"))
+              console.log('a')
               console.log('---------------',sport_name,total_amount,amount_paid,balance);
+              console.log('===============',team_name)
               let mailBody = {
-                name:eventBooking.name,
-                phone:eventBooking.phone,
-                team_name:eventBooking.team_name,
-                event_name:event.event.name,
+                name:name,
+                phone:phone,
+                event_name:event_name,
                 event_contact:event_contact,
+                date:date,
+                sport_name:sport_name,
+                total_amount:total_amount,
+                booking_amount:amount_paid,
+                balance:balance,
                 manager_name:event.event.organizer,
                 booking_id:booking_id,
-                 game_type: game_type,
-                 event_discount:0,
-                 final_price:total_amount-eventBooking.coupon_amount,
-                // date:date,
-                 date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),   
-                // venue:values[0].venue,
-                // booking_id:values[0].booking_id,
-                // slot_time:datetime,
-                // quantity:1,
-                sport_name:sport_name,
-                 total_amount:total_amount,
-                 booking_amount:amount_paid,
-                 balance:balance
+                game_type: game_type,
+                event_discount:0,
+                team_name:eventBooking.team_name,
+                final_price:total_amount-eventBooking.coupon_amount,
               }
               console.log('===============',mailBody)
 

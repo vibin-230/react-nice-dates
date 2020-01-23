@@ -252,7 +252,6 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
               let featured = value.featured.filter(featured=>featured.zipcode==zipcode)
              
               let pricing = Object.values(value.configuration.pricing).filter(price=>price.day===findDay())
-              console.log("pricing1",pricing[0].rate)
               let highestPricing = getPrice(pricing[0].rate)
               let price = pricing[0].rate[0].pricing
               let types = pricing[0].rate[0].types

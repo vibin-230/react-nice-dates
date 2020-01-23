@@ -2110,11 +2110,20 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 team_name:eventBooking.team_name,
                 final_price:amountTobePaid,
               }
-              console.log('===============',mailBody)
 
               let to_emails = `${bookingOrder.event_id.event.email}, rajasekar@turftown.in`
               ejs.renderFile('views/event_manager/event_manager.ejs',mailBody).then(html=>{
                 mail("support@turftown.in", to_emails,"Event Booked","test",html,response=>{
+                  if(response){
+                    console.log('success')
+                  }else{
+                    console.log('failed')
+                  }
+                })
+              }).catch(next)
+
+              ejs.renderFile('views/event_manager/event.ejs',mailBody).then(html=>{
+                mail("support@turftown.in", to_emails,"New registeration for "+event_name,"test",html,response=>{
                   if(response){
                     console.log('success')
                   }else{

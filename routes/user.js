@@ -1572,78 +1572,12 @@ router.post('/slots_list/:venue_id', verifyToken, (req, res, next) => {
   // })
   })
 })
-let slots_av1 = [];
-
-
-// router.post('/slots_value/:venue_id', verifyToken, (req, res, next) => {
-//   Venue.findById({_id:req.params.venue_id}).lean().then(venue=>{
-//     let new_availabaility = req.body 
-//     let venue_id;
-//     if(venue.secondary_venue){
-//       venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
-//     }else{
-//       venue_id = [venue._id.toString()]
-//     }
-//      Promise.all(new_availabaility.map((a,e)=>{
-//         const promise = Booking.find({ venue_id:req.params.venue_id, booking_date:{$gte:new Date(a.booking_date),$lt:new Date(a.booking_date).addHours(24,0)},booking_status:{$in:["booked","blocked","completed"]}}).lean().then(booking_history=>{
-//         let slots_available = SlotsAvailable(venue,booking_history)
-//         return slots_available
-//           }).catch(next)
-//          return promise
-//     })
-//     ).then(item =>{
-//       let total =  new_availabaility.map((a,e)=>{
-//         let availablility = []
-//         let price = []
-//         let venue_type_index = venue.configuration.types.indexOf(a.venue_type)
-//         let find_day = venue.configuration.pricing.filter(value=>value.day===a.day)[0]
-//         a.rate = find_day.rate
-//         for (let key in item[e].slots_available){
-//             for(let time = 0 ; time<=a.timeRepresentation.length-1;time++){
-//                     if(key === a.timeRepresentation[time]){
-//                        availablility.push(item[e].slots_available[key])
-//                               let find_price = a.rate.filter((price,index)=>{
-//                               let price_time = price.time.replace(/[#:]/g,'');
-//                               let price_start_time = price_time.split("-")[0]
-//                               let price_end_time = price_time.split("-")[1]
-//                               let slot_start_time = a.timeRepresentation[time].split("-")[0]
-//                               let slot_end_time = a.timeRepresentation[time].split("-")[1]
-//                               if(slot_end_time === "0000"){
-//                                   slot_end_time = "2400"
-//                                   }
-//                                 if(price_start_time <= slot_start_time && price_end_time >= slot_end_time){
-//                                   return price
-//                                 }
-//                           else if(index===find_day.rate.length - 1){
-//                             return price
-//                         }
-//                      })
-//                price.push(find_price[0].pricing[venue_type_index])
-//                     }
-//                   }
-//               } 
-//               a.price = price
-//               a.availablility = availablility
-//               return a
-//             })
-//             res.send({status:"success", message:"available slots fetched", data:total})
-//         })
-
-
-
-//   })
-// })
-
-
 
 router.post('/slots_value/:venue_id', verifyToken, (req, res, next) => {
   Venue.findById({_id:req.params.venue_id}).lean().then(venue=>{
     Booking.find({ venue_id:req.params.venue_id, booking_date:{$gte:new Date(req.body[0].booking_date),$lt:new Date(req.body[req.body.length-1].booking_date).addHours(24,0)},booking_status:{$in:["booked","blocked","completed"]}}).lean().then(booking_history=>{
       let slots_available = SlotsValueAvailable(venue,booking_history,req.body)
-      //onsole.log(slots_available)
-
       let final = {}
-
       req.body.map((a,e)=>{
         let availablility = []
              let price = []
@@ -1675,8 +1609,6 @@ router.post('/slots_value/:venue_id', verifyToken, (req, res, next) => {
       })
       slots_available.finalPrice = final
       res.send({status:"success", message:"available slots fetched", data:slots_available})
-
-      
       }).catch(next)
       
   })
@@ -1721,30 +1653,6 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
   }).catch(next)
 })
 
-
-//Cancelled Booking
-// router.post('/cancelled_booking_history_by_time/:id', verifyToken, (req, res, next) => {
-//   Venue.findById({_id:req.params.id},{bank:0,access:0}).lean().then(venue=>{
-//     let venue_id;
-//     if(venue.secondary_venue){
-//       venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
-//     }else{
-//       venue_id = [venue._id.toString()]
-//     }
-//     Booking.find({booking_status:{$in:["cancelled"]},venue_id:{$in:venue_id}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}}).then(bookings=>{
-//       let booking_ids = []
-//       bookings.filter(booking=>{
-//         if(booking_ids.indexOf(booking.booking_id)=== -1){
-//           booking_ids.push(booking.booking_id)
-//         }
-//       })
-//       Booking.find({booking_id:{$in:booking_ids}}).lean().then(bookings=>{
-//         result = Object.values(combineSlots(bookings))
-//         res.send({status:"success", message:"booking history fetched", data:result})
-//       })
-//       }).catch(next)
-//     }).catch(next)
-//   })
 router.post('/cancelled_booking_history_by_time/:id', verifyToken, (req, res, next) => {
   Venue.findById({_id:req.params.id},{bank:0,access:0}).lean().then(venue=>{
     let venue_id;
@@ -2206,15 +2114,23 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 phone:eventBooking.phone,
                 team_name:eventBooking.team_name,
                 event_name:event.event.name,
+                event_contact:event_contact,
                 manager_name:event.event.organizer,
-                booking_id:booking_id
+                booking_id:booking_id,
+                 game_type: game_type,
+                 event_discount:0,
+                 final_price:total_amount-eventBooking.coupon_amount,
+                 date:date,
                 // date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),   
                 // venue:values[0].venue,
                 // booking_id:values[0].booking_id,
                 // slot_time:datetime,
                 // quantity:1,
-                // total_amount:total_amount,
-                // booking_amount:values[0].booking_amount
+                sport_name:sport_name,
+                 total_amount:total_amount,
+                 booking_amount:amount_paid,
+                 balance:balance
+
               }
 
               let to_emails = `${bookingOrder.event_id.event.email}, rajasekar@turftown.in`

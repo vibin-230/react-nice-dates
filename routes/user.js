@@ -2100,13 +2100,13 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               console.log('---------------',event_contact);
               console.log('---------------',date);
               console.log('---------------',sport_name);
-              console.log('---------------',total_amount);
+              console.log('---------------',eventBooking.total_amount);
               console.log('---------------',amount_paid);
               console.log('---------------',event.event.organizer);
               console.log('---------------',booking_id);
               console.log('---------------',game_type);
               console.log('---------------',eventBooking.team_name);
-              console.log('---------------',total_amount-eventBooking.coupon_amount);
+              console.log('---------------',eventBooking.total_amount-eventBooking.coupon_amount);
 
               let mailBody = {
                 name:name,

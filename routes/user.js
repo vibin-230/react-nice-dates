@@ -2094,22 +2094,6 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               })
               console.log('hit')
               console.log('a')
-              console.log('---------------',name);
-              console.log('---------------',phone);
-              console.log('---------------',event_name);
-              console.log('---------------',event_contact);
-              console.log('---------------',date);
-              console.log('---------------',sport_name);
-              console.log('---------------',req.body.amount);
-              console.log('---------------',amount_paid);
-              console.log('---------------',event.event.organizer);
-              console.log('---------------',booking_id);
-              console.log('---------------',game_type);
-              console.log('---------------',eventBooking.team_name);
-              console.log('---------------',balance);
-              console.log('---------------',event.format.entry_fee);
-
-
               let mailBody = {
                 name:name,
                 phone:phone,
@@ -2122,6 +2106,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 balance:balance,
                 manager_name:event.event.organizer,
                 booking_id:booking_id,
+                coupon_discount:eventBooking.coupon_amount,
                 game_type: game_type,
                 event_discount:0,
                 team_name:eventBooking.team_name,
@@ -2130,16 +2115,15 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               console.log('===============',mailBody)
 
               let to_emails = `${bookingOrder.event_id.event.email}, rajasekar@turftown.in`
-
-              // ejs.renderFile('views/event_manager/event_manager.ejs',mailBody).then(html=>{
-              //   mail("support@turftown.in", to_emails,"Event Booked","test",html,response=>{
-              //     if(response){
-              //       console.log('success')
-              //     }else{
-              //       console.log('failed')
-              //     }
-              //   })
-              // }).catch(next)
+              ejs.renderFile('views/event_manager/event_manager.ejs',mailBody).then(html=>{
+                mail("support@turftown.in", to_emails,"Event Booked","test",html,response=>{
+                  if(response){
+                    console.log('success')
+                  }else{
+                    console.log('failed')
+                  }
+                })
+              }).catch(next)
               //Activity Log
               let activity_log = {
                 datetime: new Date(),
@@ -2549,17 +2533,17 @@ router.post('/test_s3', (req, res, next) => {
 // //Booking History
 router.post('/test_mail', verifyToken, (req, res, next) => {
   // let html = fs.readFileSync('views/mail.ejs',{encoding:'utf-8'});
-  // ejs.renderFile('views/mail.ejs',{name:req.body.name}).then(html=>{
-    let to_emails = `"kishorepadmanaban@gmail.com, kishorepadmanaban.backup@gmail.com"`
-
-    mail("support@turftown.in", to_emails,"test","test","",response=>{
+  console.log(req.body)
+   ejs.renderFile('views/event_manager/event_manager.ejs',req.body).then(html=>{
+    let to_emails = `"akshay@turftown.in"`
+      mail("support@turftown.in", to_emails,"Event Booked","test",html,response=>{
       if(response){
         res.send({status:"success"})
       }else{
         res.send({status:"failed"})
       }
     })
-  // }).catch(next)
+   }).catch(next)
 })
 
 

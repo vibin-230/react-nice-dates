@@ -1578,6 +1578,14 @@ router.post('/payment_tracker_app_bookings', verifyToken, (req, res, next) => {
 //       res.send({status:"success", message:"booking history fetched", data:result})
 //     }).catch(next)
 //   })
+router.post('/booking_history_from_app_event_bookings', verifyToken, (req, res, next) => {
+  EventBooking.find({booking_status:{$in:["booked","completed","cancelled"]}, created_at:{$gte:req.body.fromdate, $lte:req.body.todate},booking_type:"app"}).lean().populate('event_id').then(booking=>{    
+    // console.log("veeee",result)
+    result = [...booking]
+    res.send({status:"success", message:"booking history fetched", data:result})
+    }).catch(next)
+})
+
 router.post('/booking_history_from_app_bookings', verifyToken, (req, res, next) => {
   Booking.find({booking_status:{$in:["booked","completed","cancelled"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}, booking_type:"app"}).lean().populate('venue_data','venue').populate('collected_by','name').populate("cancelled_by","name").then(booking=>{
     result = Object.values(combineSlots(booking))

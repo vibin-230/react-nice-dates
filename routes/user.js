@@ -2102,6 +2102,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 total_amount:event.format.entry_fee,
                 booking_amount:amount_paid,
                 balance:balance,
+                coupon_discount:coupon_discount,
                 manager_name:event.event.organizer,
                 booking_id:booking_id,
                 game_type: game_type,
@@ -2113,15 +2114,15 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
 
               // let to_emails = `${bookingOrder.event_id.event.email}, rajasekar@turftown.in`
 
-              // ejs.renderFile('views/event_manager/event_manager.ejs',mailBody).then(html=>{
-              //   mail("support@turftown.in", to_emails,"Event Booked","test",html,response=>{
-              //     if(response){
-              //       console.log('success')
-              //     }else{
-              //       console.log('failed')
-              //     }
-              //   })
-              // }).catch(next)
+              ejs.renderFile('views/event_manager/event_manager.ejs',mailBody).then(html=>{
+                mail("support@turftown.in", to_emails,"Event Booked","test",html,response=>{
+                  if(response){
+                    console.log('success')
+                  }else{
+                    console.log('failed')
+                  }
+                })
+              }).catch(next)
               //Activity Log
               let activity_log = {
                 datetime: new Date(),

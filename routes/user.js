@@ -2077,13 +2077,13 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               let phone = eventBooking.phone
               let event_name = req.body.event_name
               let sport_name = req.body.sport_name
-              let game_type = eventBooking.game_type
+              let game_type = req.body.game_type
               let date = moment(eventBooking.booking_date).format("MMMM Do YYYY")
               let datetime = date + " " + moment(eventBooking.start_time).format("hh:mma") 
               //Send SMS to Event Manager
               let name = eventBooking.name
               let amount_paid = eventBooking.booking_amount
-              let balance = eventBooking.amount - eventBooking.booking_amount -eventBooking.coupon_amount
+              let balance = req.body.amount - eventBooking.booking_amount -eventBooking.coupon_amount
               let event_contact = event.event.contact
               console.log('===============pass')
               axios.get(process.env.PHP_SERVER+'/textlocal/event_booking_manager.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+event_contact)
@@ -2106,7 +2106,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               console.log('---------------',booking_id);
               console.log('---------------',game_type);
               console.log('---------------',eventBooking.team_name);
-              console.log('---------------',eventBooking.total_amount-eventBooking.coupon_amount);
+              console.log('---------------',balance);
 
               let mailBody = {
                 name:name,
@@ -2123,7 +2123,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 game_type: game_type,
                 event_discount:0,
                 team_name:eventBooking.team_name,
-                final_price:total_amount-eventBooking.coupon_amount,
+                final_price:balance,
               }
               console.log('===============',mailBody)
 

@@ -2095,20 +2095,8 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               }).catch(error=>{
                 console.log(error.response.data)
               })
-              //Send Mail
-              // let mailBody = {
-              //   name:eventBooking.name,
-              //   phone:eventBooking.phone,
-              //   team_name:eventBooking.team_name,
-              //   event_name:eventBooking.event_name,
-              //   // date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),   
-              //   // venue:values[0].venue,
-              //   // booking_id:values[0].booking_id,
-              //   // slot_time:datetime,
-              //   // quantity:1,
-              //   // total_amount:total_amount,
-              //   // booking_amount:values[0].booking_amount
-              // }
+              
+            
               let mailBody = {
                 name:eventBooking.name,
                 phone:eventBooking.phone,
@@ -2130,8 +2118,8 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                  total_amount:total_amount,
                  booking_amount:amount_paid,
                  balance:balance
-
               }
+              console.log('===============',mailBody)
 
               let to_emails = `${bookingOrder.event_id.event.email}, rajasekar@turftown.in`
 

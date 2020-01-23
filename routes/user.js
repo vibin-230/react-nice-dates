@@ -2086,7 +2086,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               let amount_paid = eventBooking.booking_amount
               let balance = eventBooking.amount - eventBooking.booking_amount -eventBooking.coupon_amount
               let event_contact = event.event.contact
-              
+              console.log('===============pass')
               axios.get(process.env.PHP_SERVER+'/textlocal/event_booking_manager.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+event_contact)
               .then(response => {
                 console.log(response.data)

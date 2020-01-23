@@ -2083,17 +2083,15 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               //Send SMS to Event Manager
               let name = eventBooking.name
               let amount_paid = eventBooking.booking_amount
-              let balance = req.body.amount - eventBooking.booking_amount -eventBooking.coupon_amount
+              let balance = req.body.amount - eventBooking.booking_amount-eventBooking.coupon_amount
               let event_contact = event.event.contact
-              console.log('===============pass')
-              axios.get(process.env.PHP_SERVER+'/textlocal/event_booking_manager.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+event_contact)
+              let amountTobePaid = req.body.amount - eventBooking.coupon_amount 
+              axios.get(process.env.PHP_SERVER+'/textlocal/event_booking_manager.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+event_contact,'&sport='+sport_name,'&game_type='+game_type)
               .then(response => {
                 console.log(response.data)
               }).catch(error=>{
                 console.log(error.response.data)
               })
-              console.log('hit')
-              console.log('a')
               let mailBody = {
                 name:name,
                 phone:phone,
@@ -2110,7 +2108,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 game_type: game_type,
                 event_discount:0,
                 team_name:eventBooking.team_name,
-                final_price:balance,
+                final_price:amountTobePaid,
               }
               console.log('===============',mailBody)
 

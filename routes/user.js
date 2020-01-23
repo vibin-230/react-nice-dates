@@ -2077,7 +2077,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               let phone = eventBooking.phone
               let event_name = req.body.event_name
               let sport_name = req.body.sport_name
-              let game_type = req.body.game_type
+              let game_type = event.format.game_type
               let date = moment(eventBooking.booking_date).format("MMMM Do YYYY")
               let datetime = date + " " + moment(eventBooking.start_time).format("hh:mma") 
               //Send SMS to Event Manager
@@ -2100,13 +2100,15 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               console.log('---------------',event_contact);
               console.log('---------------',date);
               console.log('---------------',sport_name);
-              console.log('---------------',eventBooking.total_amount);
+              console.log('---------------',req.body.amount);
               console.log('---------------',amount_paid);
               console.log('---------------',event.event.organizer);
               console.log('---------------',booking_id);
               console.log('---------------',game_type);
               console.log('---------------',eventBooking.team_name);
               console.log('---------------',balance);
+              console.log('---------------',event.format.entry_fee);
+
 
               let mailBody = {
                 name:name,
@@ -2115,7 +2117,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 event_contact:event_contact,
                 date:date,
                 sport_name:sport_name,
-                total_amount:total_amount,
+                total_amount:event.format.entry_fee,
                 booking_amount:amount_paid,
                 balance:balance,
                 manager_name:event.event.organizer,

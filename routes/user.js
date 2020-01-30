@@ -1367,7 +1367,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   let manager_phone = "91"+venue.venue.contact
 
                   //Send SMS
-                  console.log(booking);
+                    console.log(booking);
                   axios.get(process.env.PHP_SERVER+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&manager_phone='+manager_phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
                     console.log(response.data)
                   }).catch(error=>{
@@ -1579,11 +1579,11 @@ router.post('/slots_value/:venue_id', verifyToken, (req, res, next) => {
       let slots_available = SlotsValueAvailable(venue,booking_history,req.body)
       let final = {}
       req.body.map((a,e)=>{
-        let availablility = []
-             let price = []
+                let availablility = []
+                let price = []
                 let venue_type_index = venue.configuration.types.indexOf(a.venue_type)
                 let find_day = venue.configuration.pricing.filter(value=>value.day===a.day)[0]
-              let bookingHistoryDate =  moment(a.booking_date).format('YYYY-MM-DD')
+                let bookingHistoryDate =  moment(a.booking_date).format('YYYY-MM-DD')
                 a.rate = find_day.rate
                 for(let time = 0 ; time<=a.timeRepresentation.length-1;time++){
                                                 let find_price = a.rate.filter((price,index)=>{
@@ -1939,7 +1939,6 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
         axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+eventBooking.transaction_id+'/refund')
         .then(response => {
           console.log('pass',response);
-          
           if(response.data.entity === "refund"){
             EventBooking.findOneAndUpdate({booking_id:req.params.id}, {booking_status: "cancelled",refund_status:true}).then(eventBooking=>{
               res.send({status:"success", message:"Event booking cancelled"})
@@ -2280,7 +2279,6 @@ router.post('/revenue_report', verifyToken, (req, res, next) => {
 
 router.post('/revenue_report_app', verifyToken, (req, res, next) => {
   Booking.find({booking_status:{$in:["completed"]}, booking_type:'app', booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().then(booking_list=>{
-    
     Booking.find({booking_status:{$in:["completed"]},booking_type:'app', booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}},{booking_date:1,booking_id:1,amount:1,multiple_id:1, commission:1,venue_offer:1,turftown_offer:1,venue_id:1}).lean().then(booking=>{
       let result = {}
       let group = booking.reduce((r, a) => {
@@ -2288,8 +2286,6 @@ router.post('/revenue_report_app', verifyToken, (req, res, next) => {
         return r;
       }, {});
       let bookings = []
-      console.log(group)
-      console.log(booking)
       let data = Object.values(group).map((value,index)=>{
         let date = moment(value.booking_date).format("DD-MM-YYYY")
         let venue_id = value.venue_id
@@ -2323,10 +2319,6 @@ router.post('/revenue_report_app', verifyToken, (req, res, next) => {
         results.booking = combineSlots(results.booking)
         return results
       })
-      
-
-
-
       res.send({status:"success", message:"revenue reports fetched", data:result})
     }).catch(next)
   }).catch(next)
@@ -2360,7 +2352,6 @@ router.post('/revenue_report_booked', verifyToken, (req, res, next) => {
       })
       
       result = Object.values(result)
-      
       result.forEach(results=>{
         results.booking = combineSlots(results.booking)
         return results

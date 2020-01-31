@@ -19,6 +19,7 @@ const mail = require('../scripts/mail');
 const sh = require("shorthash");
 const _ = require('lodash');
 const combineSlots = require('../scripts/combineSlots')
+const combineRepeatSlots = require('../scripts/combineRepeatedSlots')
 const upload = require("../scripts/aws-s3")
 const AccessControl = require("../scripts/accessControl")
 const SetKeyForSport = require("../scripts/setKeyForSport")
@@ -26,6 +27,8 @@ const SlotsAvailable = require("../helper/slots_available")
 
 const SlotsValueAvailable = require("../helper/slots_value_available")
 const BookSlot = require("../helper/book_slot")
+const BookRepSlot = require("../helper/book_repeated_slot")
+
 const mkdirp = require('mkdirp');
 const Offers = require('../models/offers');
 
@@ -782,8 +785,8 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
 router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'create'), (req, res, next) => {
   let params = req.params.id
   //Check of Slot Exist
+  console.log(req.body);
   function SlotsCheck(body,id){
-
     return new Promise((resolve,reject)=>{
       Venue.findById({_id:id},{bank:0,access:0}).lean().then(venue=>{
         let venue_id;
@@ -795,7 +798,8 @@ router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'c
         Booking.find({ venue:body.venue, venue_id:{$in:venue_id}, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
         // Booking.find({$and:[{venue:body.venue, venue_id:id, booking_date:{$gte:body.booking_date,$lt:moment(body.booking_date).add(1,"days")}}],booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
         let slots_available = SlotsAvailable(venue,booking_history)
-          if(slots_available.slots_available[body.slot_time][body.venue_type]>0){
+        console.log(slots_available.slots_available[body.slot_time][body.venue_type])
+        if(slots_available.slots_available[body.slot_time][body.venue_type]>0){
             resolve()
           }else{
             reject(body)
@@ -831,13 +835,16 @@ router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'c
               var pad = "TT000000"
               booking_id = pad.substring(0, pad.length - str.length) + str
           for(let i=0;i<arr.block.length;i++){
-            promisesToRun.push(BookSlot(arr.block[i],id, booking_id,params,req,res,next))
+            promisesToRun.push(BookRepSlot(arr.block[i],id, booking_id,params,req,res,next))
           }
       bookOverTimeSlots.push(promisesToRun)
+      
       Promise.all(promisesToRun).then(values => {
         values = {...values}
-        res.send({status:"success", message:"slot booked", data:values})
-        Venue.findById({_id:values[0].venue_id}).then(venue=>{
+        result = Object.values(combineSlots(values))
+         res.send({status:"success", message:"slot booked", data:result})
+      // })
+      Venue.findById({_id:values[0].venue_id}).then(venue=>{
           // Send SMS
           // let booking_id = values[0].booking_id
           // let phone = "91"+values[0].phone
@@ -871,7 +878,6 @@ router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'c
           //   message: "Slot "+booking_id+" booked at "+venue_name+" "+datetime+" "+venue_type,
           // }
           // ActivityLog(activity_log)
-  
         }).catch(next)
       }).catch(next)
   
@@ -1478,6 +1484,41 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
   }).catch(next)
 })
 
+router.post('/cancel_manager_repeat_booking/:id', verifyToken, (req, res, next) => {
+  Venue.findById({_id:req.params.id}).then(venue=>{
+          Booking.updateMany({booking_id:{$in:req.body.booking_id}},{$set:{booking_status:"cancelled", refund_status:false,cancelled_by:req.userId}},{multi:true}).then(booking=>{
+                Booking.find({booking_id:{$in:req.body.booking_id}}).lean().then(booking=>{
+                  result = Object.values(combineRepeatSlots(booking))
+                  res.send({status:"success", message:"booking cancelled",data:result})
+                  // let booking_id = booking[0].booking_id
+                  // let venue_name = booking[0].venue
+                  // let venue_type = SetKeyForSport(booking[0].venue_type)
+                  // let venue_area = booking[0].venue_data.venue.area
+                  // let phone = "91"+booking[0].phone
+                  // let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
+                  // let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
+                  // let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
+                  // let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
+                  // let manager_phone = "91"+venue.venue.contact
+    
+                  //Activity Log
+                  let activity_log = {
+                    datetime: new Date(),
+                    id:req.userId,
+                    user_type: req.role?req.role:"user",
+                    activity: 'slot booking cancelled',
+                    name:req.name,
+                    venue_id:booking[0].venue_id,
+                    booking_id:booking_id,
+                    message: "Slot "+booking_id+" booking cancelled at "+venue_name+" "+datetime+" "+venue_type,
+                  }
+                  ActivityLog(activity_log)
+            }).catch(next);
+      })
+  }).catch(next)
+})
+
+
 
 //Slot Booked
 router.post('/slots_available/:id', verifyToken, (req, res, next) => {
@@ -1733,6 +1774,15 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
       res.send({status:"success", message:"booking history fetched", data:result})
     }).catch(next)
   })
+
+
+  router.post('/booking_history_repeated_bookings/:id', verifyToken, (req, res, next) => {
+    console.log(req.body);
+    Booking.find({booking_status:{$in:["booked","completed"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate},venue_id:req.params.id,start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time},repeat_booking:true}).lean().populate('venue_data','venue').populate('collected_by','name').then(booking=>{
+      result = Object.values(combineRepeatSlots(booking))
+        res.send({status:"success", message:"booking history fetched", data:result})
+      }).catch(next)
+    })
 
 
 

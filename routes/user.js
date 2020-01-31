@@ -1778,7 +1778,7 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
 
   router.post('/booking_history_repeated_bookings/:id', verifyToken, (req, res, next) => {
     console.log(req.body);
-    Booking.find({booking_status:{$in:["booked","completed"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate},venue_id:req.params.id,start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time},repeat_booking:true}).lean().populate('venue_data','venue').populate('collected_by','name').then(booking=>{
+    Booking.find({booking_status:{$in:["booked","completed"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate},venue_id:req.params.id,start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time},repeat_booking:true}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
       result = Object.values(combineRepeatSlots(booking))
         res.send({status:"success", message:"booking history fetched", data:result})
       }).catch(next)

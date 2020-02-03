@@ -1615,6 +1615,7 @@ router.post('/slots_list/:venue_id', verifyToken, (req, res, next) => {
 })
 
 router.post('/slots_value/:venue_id', verifyToken, (req, res, next) => {
+  console.log(req.body,req.params.venue_id)
   Venue.findById({_id:req.params.venue_id}).lean().then(venue=>{
     Booking.find({ venue_id:req.params.venue_id, booking_date:{$gte:new Date(req.body[0].booking_date),$lt:new Date(req.body[req.body.length-1].booking_date).addHours(24,0)},booking_status:{$in:["booked","blocked","completed"]}}).lean().then(booking_history=>{
       let slots_available = SlotsValueAvailable(venue,booking_history,req.body)

@@ -58,6 +58,10 @@ const schema = new Schema({
   refunded: {
     type: Boolean,
     default: false
+  },
+  invoice: {
+    type: Boolean,
+    default: false
   }
 },{ timestamps: { createdAt: 'created_at', updatedAt: 'modified_at' } });
 

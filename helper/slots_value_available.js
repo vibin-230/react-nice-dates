@@ -3,7 +3,6 @@ const moment = require('moment')
 let combinedSlots = [...Slots[0].item, ...Slots[1].item, ...Slots[2].item, ...Slots[3].item];
 
 module.exports =  function slotsValueAvailable(venue,booking_history,body){
-
   if(venue.configuration.convertable){
     let conf = venue.configuration;
     let types = conf.types;
@@ -33,12 +32,10 @@ module.exports =  function slotsValueAvailable(venue,booking_history,body){
         slots_available[requestDate][booking.slot_time]=inventory
         return slots_available
       })
-     // available_inventory = available_inventory[available_inventory.length-1]
       console.log(slots_available);
     })
       venue.slots_available = slots_available
       return venue
-      res.send({status:"success", message:"available slots fetched", data:venue})
     }else{
       let available_slots = {}
       let total_map = body.map((object,index)=>{
@@ -67,12 +64,6 @@ module.exports =  function slotsValueAvailable(venue,booking_history,body){
         let total_map = body.map((requestObject,index)=>{
             let requestDate =   moment(requestObject.booking_date).format('YYYY-MM-DD')
             slots_available[requestDate] = {}  
-            //let available = Object.values(booking_history).map((booking)=> booking.slot_time)
-            // if(available.length > requestObject.timeRepresentation.length){
-            //      array3 = available.filter(function(obj) { return requestObject.timeRepresentation.indexOf(obj) == -1; });
-            // }else{
-            //     array3 = requestObject.timeRepresentation.filter(function(obj) { return available.indexOf(obj) == -1; });
-            // }
           let available_inventory = Object.values(booking_history).map((booking,index) =>{
             let inventory =  Object.assign({}, stock);
         let bookingHistoryDate =  moment(booking.booking_date).format('YYYY-MM-DD')
@@ -92,16 +83,10 @@ module.exports =  function slotsValueAvailable(venue,booking_history,body){
                                                     
                     }
             })
-            // array3.map((a)=>{
-            //     slots_available[requestDate][a] = Object.assign({}, stock);
-            // })
+           
           
 
         }else{
-        //     console.log('hit')
-        //     requestObject.timeRepresentation.map((representation)=>{ 
-        //             slots_available[requestDate][representation] = Object.assign({}, stock);
-        // })
         }
      
        })

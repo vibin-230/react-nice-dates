@@ -728,6 +728,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
         booking_id = "TT000000"
       }else{
         booking_id = bookingOrder.booking_id
+        console.log(booking_id)
       }
       var id = mongoose.Types.ObjectId();
       let promisesToRun = [];
@@ -1642,6 +1643,13 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
         res.send({status:"success", message:"booking history fetched", data:result})
       }).catch(next)
     })
+
+    router.post('/booking_history_by_group_id/:id', verifyToken, (req, res, next) => {
+      Booking.find({booking_status:{$in:["booked","cancelled"]},venue_id:req.params.id,group_id:{$in:req.body.group_id},repeat_booking:true}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
+        result = Object.values(combineRepeatSlots(booking))
+          res.send({status:"success", message:"booking history fetched", data:result})
+        }).catch(next)
+      })
 
 
 

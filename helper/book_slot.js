@@ -51,6 +51,7 @@ module.exports = function BookSlot(body,id,booking_id,params,req,res,next){
               created_by:req.userId,
               booked_by:body.booked_by,
               venue:body.venue,
+              repeat_booking:false,
               area:venue.area,
               venue_id:body.venue_id,
               venue_data:body.venue_id,

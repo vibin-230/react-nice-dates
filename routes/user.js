@@ -1618,10 +1618,15 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
           booking_ids.push(booking.booking_id)
         }
       })
-      Booking.find({booking_id:{$in:booking_ids}}).lean().populate('collected_by','name').then(bookings=>{
+      Booking.find({booking_id:{$in:booking_ids},repeat_booking:false}).lean().populate('collected_by','name').then(bookings=>{
+        Booking.find({booking_id:{$in:booking_ids},repeat_booking:true}).lean().populate('collected_by','name').then(booking=>{
         result = Object.values(combineSlots(bookings))
-        res.send({status:"success", message:"booking history fetched", data:result})
+        result1 = Object.values(combineRepeatSlots(booking))
+         let final =  result.concat(result1)
+         console.log(final)
+        res.send({status:"success", message:"booking history fetched", data:final})
       })
+    }).catch(next)
       }).catch(next)
     }).catch(next)
   })

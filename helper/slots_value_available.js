@@ -20,18 +20,22 @@ module.exports =  function slotsValueAvailable(venue,booking_history,body){
         slots_available[requestDate] = {}  
 
       let available_inventory = Object.values(booking_history).map(booking =>{
-        if(!slots_available[requestDate][booking.slot_time]){
-        inventory = Object.assign({}, stock);
-        }else{
-        inventory = slots_available[requestDate][booking.slot_time]
-        }
-        inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.venue_type])
-        for(let i=0;i<types.length-1; i++){
-        inventory[types[i]] = parseInt(inventory[base_type] / conf.ratio[types[i]])
-        }
-        slots_available[requestDate][booking.slot_time]=inventory
-        return slots_available
+        requestObject.timeRepresentation.map((representation)=>{
+          if(representation === booking.slot_time && requestObject.timeRepresentation.includes(booking.slot_time)){
+              if(!slots_available[requestDate][booking.slot_time]){
+              inventory = Object.assign({}, stock);
+              }else{
+              inventory = slots_available[requestDate][booking.slot_time]
+              }
+              inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.venue_type])
+              for(let i=0;i<types.length-1; i++){
+              inventory[types[i]] = parseInt(inventory[base_type] / conf.ratio[types[i]])
+              }
+              slots_available[requestDate][booking.slot_time]=inventory
+              return slots_available
+            }
       })
+    })
       console.log(slots_available);
     })
       venue.slots_available = slots_available

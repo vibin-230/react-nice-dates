@@ -50,10 +50,12 @@ const schema = new Schema({
   comments:String,
   cash:Number,
   upi:Number,
+  invoice_date:Date,
   academy:Boolean,
   cancelled_by:{ type: Schema.Types.ObjectId, ref: 'admin' },
   membership:Boolean,
   collected_by:{ type: Schema.Types.ObjectId, ref: 'admin' },
+  invoice_by:{ type: Schema.Types.ObjectId, ref: 'admin' },
   refund_status:Boolean,
   refunded: {
     type: Boolean,

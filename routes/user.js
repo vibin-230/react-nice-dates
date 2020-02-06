@@ -525,9 +525,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         let venue_area = venue.venue.area
         let sport_name = values[0].sport_name
         let manager_phone = "91"+venue.venue.contact
-      
         console.log('sport ', sport_name);
-        
         let date = moment(values[0].booking_date).format("MMMM Do YYYY")
         let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
         let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},req.body[0].end_time)
@@ -684,6 +682,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
           let total_amount = Object.values(values).reduce((total,value)=>{
             return total+value.amount
           },0)
+          console.log(booking_id,phone,venue_name,venue_type,date,start_time,end_time,datetime)
           axios.get(process.env.PHP_SERVER+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount)
           .then(response => {
             console.log(response.data)

@@ -829,9 +829,10 @@ router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'c
       var id = mongoose.Types.ObjectId();
       let promisesToRun = [];
       req.body.map(((arr,index)=>{
+        for(let i = 0 ; i<arr.number_of_courts ; i++){
            var numb = booking_id.match(/\d/g);
               numb = numb.join("");
-              var str = "" + (parseInt(numb, 10) + index)
+              var str = "" + (parseInt(numb, 10) + index + i)
               var pad = "TT000000"
               booking_id = pad.substring(0, pad.length - str.length) + str
           for(let i=0;i<arr.block.length;i++){
@@ -880,7 +881,7 @@ router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'c
           // ActivityLog(activity_log)
         }).catch(next)
       }).catch(next)
-  
+    }
   }))
     }).catch(next)
   }).catch(error=>{

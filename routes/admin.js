@@ -36,7 +36,15 @@ const Offers = require('../models/offers');
 const upload = require("../scripts/aws-s3")
 const AccessControl = require("../scripts/accessControl")
 
-
+if (!('multidelete' in Object.prototype)) {
+    Object.defineProperty(Object.prototype, 'multidelete', {
+        value: function () {
+            for (var i = 0; i < arguments.length; i++) {
+                delete this[arguments[i]];
+            }
+        }
+    });
+}
 
 function ActivityLog(id, user_type, activity, message) {
 	let activity_log = {
@@ -241,6 +249,7 @@ AccessControl('venue', 'update'),
 	req.body.modified_at = new Date()
 	Venue.findById({_id:req.params.id}).lean().then(venue=>{
 		// let merged_data = _.merge({},venue,req.body)
+		req.body.multidelete('review','rating')
 		Venue.findByIdAndUpdate({_id:req.params.id},req.body).then(venue=>{
 			Venue.findById({_id:req.params.id}).then(venue=>{
 				res.send({status:"success", message:"venue edited", data:venue})

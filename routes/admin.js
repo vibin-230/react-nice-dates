@@ -250,6 +250,7 @@ AccessControl('venue', 'update'),
 	Venue.findById({_id:req.params.id}).lean().then(venue=>{
 		// let merged_data = _.merge({},venue,req.body)
 		req.body.multidelete('review','rating')
+		console.log('-------------',req.body)
 		Venue.findByIdAndUpdate({_id:req.params.id},req.body).then(venue=>{
 			Venue.findById({_id:req.params.id}).then(venue=>{
 				res.send({status:"success", message:"venue edited", data:venue})

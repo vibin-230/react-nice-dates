@@ -168,16 +168,15 @@ router.post('/get_user', [
   verifyToken,
 ], (req, res, next) => {
       //Check if user exist
-      console.log('get user',req.userId);
       User.findOne({_id: req.userId}).then(user=> {
-      console.log('get user 1',user);
-
+        User.findByIdAndUpdate({_id: req.userId},{version:'26'}).then(user1=>{
         if (user) {
           res.status(201).send({status: "success", message: "user collected",data:user})
         } else {
             res.status(422).send({status: "failure", errors: {user:"force update failed"}});
         }
     }).catch(next);
+  }).catch(next);
 });
 
 

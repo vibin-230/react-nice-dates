@@ -999,11 +999,22 @@ router.post('/booking_timeout/:id', verifyToken, (req, res, next) => {
 })
 
 
-router.post('/update_invoice', verifyToken, (req, res, next) => {
+router.post('/update_invoice/:id', verifyToken, (req, res, next) => {
   Venue.findById({_id:req.params.id}).then(venue=>{
         Booking.updateMany({booking_id:{$in:req.body.booking_id}},{$set:{invoice:true,invoice_by:req.userId,invoice_date:new Date()}},{multi:true}).then(booking=>{
                 Booking.find({booking_id:{$in:req.body.booking_id}}).lean().then(booking=>{
                   res.send({status:"success", message:"invoice updated"})
+            }).catch(next);
+      })
+  }).catch(next)
+})
+
+router.post('/update_invoice_by_group_id/:id', verifyToken, (req, res, next) => {
+  Venue.findById({_id:req.params.id}).then(venue=>{
+        Booking.updateMany({group_id:{$in:req.body.group_id}},{$set:{invoice:true,invoice_by:req.userId,invoice_date:new Date()}},{multi:true}).then(booking=>{
+                Booking.find({group_id:{$in:req.body.group_id}}).lean().then(booking=>{
+                  let result = combineRepeatSlots(booking)
+                  res.send({status:"success", message:"invoice updated",data:result})
             }).catch(next);
       })
   }).catch(next)
@@ -1650,7 +1661,7 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
     }).catch(next)
   })
 
-
+  //all repeated bookings
   router.post('/booking_history_repeated_bookings/:id', verifyToken, (req, res, next) => {
     console.log(req.body);
     Booking.find({booking_status:{$in:["booked","completed","cancelled"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate},venue_id:req.params.id,start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time},repeat_booking:true}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
@@ -1659,12 +1670,48 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
       }).catch(next)
     })
 
+    //check if group id exists, if so filter by group id and check if booking_status is booked or cancelled and invoice is false
+    router.post('/booking_history_past_repeated_bookings/:id', verifyToken, (req, res, next) => {
+      console.log(req.body);
+      Booking.find({booking_status:{$in:["booked","completed"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate},venue_id:req.params.id,start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time},repeat_booking:true}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
+        let grouped = _.mapValues(_.groupBy(booking, 'group_id'),clist => clist.map(booking => _.omit(booking, 'group_id')));
+        Object.entries(grouped).map(([key,booking])=>{ booking.map((b)=>{ if(b.booking_status === 'booked' || b.invoice === false){ delete grouped[key] }})})
+        res.send({status:"success", message:"booking history fetched", data:grouped})
+        }).catch(next)
+      })
+
+
+    //repeated bookings with group id
     router.post('/booking_history_by_group_id/:id', verifyToken, (req, res, next) => {
       Booking.find({booking_status:{$in:["booked","cancelled"]},venue_id:req.params.id,group_id:{$in:req.body.group_id},repeat_booking:true}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
         result = Object.values(combineRepeatSlots(booking))
-          res.send({status:"success", message:"booking history fetched", data:result})
+          res.send({status:"success", message:"booking history fetched", data:result, })
         }).catch(next)
       })
+
+      //invoice generation for past bookings with status completed and date
+      router.post('/invoice_history_by_group_id/:id', verifyToken, (req, res, next) => {
+        Booking.find({booking_status:{$in:["cancelled","completed"]},venue_id:req.params.id,group_id:{$in:req.body.group_id},repeat_booking:true,invoice:true}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
+          result = Object.values(combineRepeatSlots(booking))
+          const sortedActivities = result.slice().sort((a, b) => b.date - a.date)
+          console.log(sortedActivities[0].invoice_date)
+
+            res.send({status:"success", message:"booking history fetched", data:result ,last_invoice_updated:sortedActivities[0].invoice_date})
+          }).catch(next)
+        })
+
+        //get latest invoice date
+        router.post('/invoice_date_by_group_id/:id', verifyToken, (req, res, next) => {
+          Booking.find({booking_status:{$in:["cancelled","completed"]},venue_id:req.params.id,group_id:{$in:req.body.group_id},repeat_booking:true,invoice:true}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
+            result = Object.values(combineRepeatSlots(booking))
+            const sortedActivities = result.slice().sort((a, b) => b.date - a.date)
+              res.send({status:"success", message:"booking history fetched", data:sortedActivities[0].invoice_date})
+            }).catch(next)
+          })
+
+          
+
+
 
 
 

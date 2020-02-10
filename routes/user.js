@@ -1725,7 +1725,7 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
         })
 
         router.post('/invoice_history_by_group_id_by_time/:id', verifyToken, (req, res, next) => {
-          Booking.find({booking_status:{$in:["cancelled","completed"]},venue_id:req.params.id,group_id:{$in:req.body.group_id},repeat_booking:true,invoice:true,booking_date:{$gte:req.body.fromdate, $lte:req.body.todate},start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
+          Booking.find({booking_status:{$in:["cancelled","completed"]},venue_id:req.params.id,group_id:{$in:req.body.group_id},repeat_booking:true,invoice:false,booking_date:{$gte:req.body.fromdate, $lte:req.body.todate},start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
             result = Object.values(combineRepeatSlots(booking)) 
             let status_filter = result.filter((b)=>b.booking_status === 'cancelled')
             let grouped = _.mapValues(_.groupBy(result, 'group_id'), clist => clist.map(result => _.omit(result, 'multiple_id')));

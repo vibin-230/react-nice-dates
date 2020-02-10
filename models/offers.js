@@ -25,7 +25,9 @@ const schema = new Schema({
   offer_type:String,
   venue:[{ type: Schema.Types.ObjectId, ref: 'venue' }],
   event:[{ type: Schema.Types.ObjectId, ref: 'event' }],
-  status:{type:Boolean, default: true}
+  status:{type:Boolean, default: true},
+  custom:{type:Boolean, default: false}
+
 });
 
 //Model

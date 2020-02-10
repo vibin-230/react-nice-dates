@@ -1299,7 +1299,6 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
             console.log(error)
           }).catch(next);
         }else{
-
           Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refund_status:false,cancelled_by:req.body.cancelled_by}},{multi:true}).then(booking=>{
                 Booking.find({booking_id:req.params.id}).lean().then(booking=>{
                   res.send({status:"success", message:"booking cancelled"})
@@ -1612,8 +1611,6 @@ router.post('/booking_history_by_venue', verifyToken, (req, res, next) => {
       result = Object.values(combineSlots(booking))
         let booking_list = []
           result = result.map(booking=>{
-              // console.log(new Date().addHours(4,30))
-              // console.log("booking.end_time",new Date(booking.end_time))
               if(booking.end_time.getTime()>new Date().addHours(4,30).getTime()){
               booking_list.push(booking)
             }
@@ -1644,7 +1641,6 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
         result = Object.values(combineSlots(bookings))
         result1 = Object.values(combineRepeatSlots(booking))
          let final =  result.concat(result1)
-         console.log(final)
         res.send({status:"success", message:"booking history fetched", data:final})
       })
     }).catch(next)
@@ -1665,8 +1661,20 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
   router.post('/booking_history_repeated_bookings/:id', verifyToken, (req, res, next) => {
     console.log(req.body);
     Booking.find({booking_status:{$in:["booked","completed","cancelled"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate},venue_id:req.params.id,start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time},repeat_booking:true}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
-      result = Object.values(combineRepeatSlots(booking))
-        res.send({status:"success", message:"booking history fetched", data:result})
+      result = Object.values(combineRepeatSlots(booking)) 
+      let status_filter = result.filter((b)=>b.booking_status === 'cancelled')
+      let grouped = _.mapValues(_.groupBy(result, 'group_id'), clist => clist.map(result => _.omit(result, 'multiple_id')));
+      let x = {}
+      let finalBookingList = []
+      Object.entries(grouped).map(([i,j])=>{
+          j.every((key)=>{
+              if(key.booking_status !== "cancelled"){
+                  x[i] = j
+                  finalBookingList = [...j,...finalBookingList]
+              }
+          })
+      })
+        res.send({status:"success", message:"booking history fetched", data:finalBookingList})
       }).catch(next)
     })
 
@@ -1685,6 +1693,7 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
     router.post('/booking_history_by_group_id/:id', verifyToken, (req, res, next) => {
       Booking.find({booking_status:{$in:["booked","cancelled"]},venue_id:req.params.id,group_id:{$in:req.body.group_id},repeat_booking:true}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
         result = Object.values(combineRepeatSlots(booking))
+        
           res.send({status:"success", message:"booking history fetched", data:result, })
         }).catch(next)
       })
@@ -1695,10 +1704,28 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
           result = Object.values(combineRepeatSlots(booking))
           const sortedActivities = result.slice().sort((a, b) => b.date - a.date)
           console.log(sortedActivities[0].invoice_date)
-
             res.send({status:"success", message:"booking history fetched", data:result ,last_invoice_updated:sortedActivities[0].invoice_date})
           }).catch(next)
         })
+
+        router.post('/invoice_history_by_group_id_by_time/:id', verifyToken, (req, res, next) => {
+          Booking.find({booking_status:{$in:["cancelled","completed"]},venue_id:req.params.id,group_id:{$in:req.body.group_id},repeat_booking:true,invoice:true,booking_date:{$gte:req.body.fromdate, $lte:req.body.todate},start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time}}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
+            result = Object.values(combineRepeatSlots(booking)) 
+            let status_filter = result.filter((b)=>b.booking_status === 'cancelled')
+            let grouped = _.mapValues(_.groupBy(result, 'group_id'), clist => clist.map(result => _.omit(result, 'multiple_id')));
+            let x = {}
+            let finalBookingList = []
+            Object.entries(grouped).map(([i,j])=>{
+                j.every((key)=>{
+                    if(key.booking_status !== "cancelled"){
+                        x[i] = j
+                        finalBookingList = [...j,...finalBookingList]
+                    }
+                })
+            })
+              res.send({status:"success", message:"booking history fetched", data:finalBookingList })
+            }).catch(next)
+          })
 
         //get latest invoice date
         router.post('/invoice_date_by_group_id/:id', verifyToken, (req, res, next) => {
@@ -1781,30 +1808,6 @@ router.post('/booking_history_from_app_by_venue_completed/:id', verifyToken, (re
     }).catch(next)
 })
 
-
-
-//Booking History_from_app
-
-// router.post('/booking_completed_list_by_venue', verifyToken, (req, res, next) => {
-//   Venue.findById({_id:req.body.venue_id},{bank:0,access:0}).lean().then(venue=>{
-//     let venue_id;
-//     if(venue.secondary_venue){
-//       venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
-//     }else{
-//       venue_id = [venue._id.toString()]
-//     }
-//     console.log('req.body',req.body)
-//     Booking.find({booking_status:{$in:["completed"]}, venue_id:{$in:venue_id}, booking_date:{$gt:req.body.fromdate, $lte:req.body.todate}}).lean().populate('collected_by','name').then(booking=>{
-//       Booking.find({booking_status:{$in:["cancelled"]},refund_status:false,venue_id:{$in:venue_id}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, booking_type:"app"}).then(booking1=>{
-//       result = Object.values(combineSlots(booking))
-//       result1 = Object.values(combineSlots(booking1))
-//       let finalResult = [...result,...result1]
-//       res.send({status:"success", message:"booking history fetched", data:finalResult})
-//       }).catch(next)
-//     }).catch(next)
-//   }).catch(next)
-//   })
-
 router.post('/booking_completed_list_by_venue', verifyToken, (req, res, next) => {
   Venue.findById({_id:req.body.venue_id},{bank:0,access:0}).lean().then(venue=>{
     let venue_id;
@@ -1813,7 +1816,6 @@ router.post('/booking_completed_list_by_venue', verifyToken, (req, res, next) =>
     }else{
       venue_id = [venue._id.toString()]
     }
-    console.log('req.body',req.body)
     Booking.find({booking_status:{$in:["completed"]}, venue_id:{$in:venue_id}, booking_date:{$gt:req.body.fromdate, $lte:req.body.todate}}).lean().populate('collected_by','name').then(booking=>{
       Booking.find({booking_status:{$in:["cancelled"]},refund_status:false,venue_id:{$in:venue_id}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, booking_type:"app"}).lean().populate("cancelled_by" ,"name").then(booking1=>{
       result = Object.values(combineSlots(booking))
@@ -1869,11 +1871,9 @@ router.post('/check_booking', verifyToken, (req, res, next) => {
   EventBooking.findOne({event_id: req.body.event_id, created_by: req.userId,booking_status:'booked'}).then(event=>{
     
     if(event){
-      console.log('hit');
       res.send({status:"success", message:"Already Registered!", data:{event}})
     }else{
       EventBooking.find({event_id:req.body.event_id}).lean().populate('event_id').then(bookingOrders=>{
-        console.log(bookingOrders.length,bookingOrders[0].event_id.format.noofteams);
         if(bookingOrders.length<bookingOrders[0].event_id.format.noofteams){
           res.send({status:"success", message:"no event found"})
         }else{

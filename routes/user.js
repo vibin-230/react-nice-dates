@@ -1540,7 +1540,6 @@ router.post('/slots_value/:venue_id', verifyToken, (req, res, next) => {
 
 //Booking History
 router.post('/booking_history', verifyToken, (req, res, next) => {
-
   let past_date  = moment(req.body.todate).add(1,'month')
   let filter = {
     booking_status:{$in:["booked","completed"]},
@@ -1559,14 +1558,14 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
   let booking_ids = []
   //req.role==="super_admin"?delete filter.created_by:null
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
-    Booking.find(cancel_filter).lean().populate('venue_data','venue').then(cancel_booking=>{
+  Booking.find(cancel_filter).lean().populate('venue_data','venue').then(cancel_booking=>{
     EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
       EventBooking.find(cancel_filter).lean().populate('event_id').then(cancel_event_booking=>{
-      result = Object.values(combineSlots(booking))
-      result1 = Object.values(combineSlots(cancel_booking))
+        result = Object.values(combineSlots(booking))
+         result1 = Object.values(combineSlots(cancel_booking))
       //result = [...result,...eventBooking]
-      result = [...result,...result1,...eventBooking,...cancel_event_booking]
-      let finalResult = result.sort((a, b) => moment(a.start_time).format("YYYYMMDDHHmm") > moment(b.start_time).format("YYYYMMDDHHmm") ? 1 : -1 )
+         result = [...result,...result1,...eventBooking,...cancel_event_booking]
+        let finalResult = result.sort((a, b) => moment(a.start_time).format("YYYYMMDDHHmm") > moment(b.start_time).format("YYYYMMDDHHmm") ? 1 : -1 )
       res.send({status:"success", message:"booking history fetched", data:finalResult})
     }).catch(next)
   }).catch(next)
@@ -1657,7 +1656,7 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
     }).catch(next)
   })
 
-  //all repeated bookings
+  //all repeated bookings (active tab)
   router.post('/booking_history_repeated_bookings/:id', verifyToken, (req, res, next) => {
     console.log(req.body);
     Booking.find({booking_status:{$in:["booked","completed","cancelled"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate},venue_id:req.params.id,start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time},repeat_booking:true}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
@@ -1678,23 +1677,32 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
       }).catch(next)
     })
 
-    //check if group id exists, if so filter by group id and check if booking_status is booked or cancelled and invoice is false
-    router.post('/booking_history_past_repeated_bookings/:id', verifyToken, (req, res, next) => {
-      console.log(req.body);
-      Booking.find({booking_status:{$in:["booked","completed"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate},venue_id:req.params.id,start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time},repeat_booking:true}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
-        let grouped = _.mapValues(_.groupBy(booking, 'group_id'),clist => clist.map(booking => _.omit(booking, 'group_id')));
-        Object.entries(grouped).map(([key,booking])=>{ booking.map((b)=>{ if(b.booking_status === 'booked' || b.invoice === false){ delete grouped[key] }})})
-        res.send({status:"success", message:"booking history fetched", data:grouped})
-        }).catch(next)
-      })
+    // //check if group id exists, if so filter by group id and check if booking_status is booked or cancelled and invoice is false
+    // router.post('/booking_history_past_repeated_bookings/:id', verifyToken, (req, res, next) => {
+    //   Booking.find({booking_status:{$in:["booked","completed"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate},venue_id:req.params.id,start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time},repeat_booking:true}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
+    //     let grouped = _.mapValues(_.groupBy(booking, 'group_id'),clist => clist.map(booking => _.omit(booking, 'group_id')));
+    //     Object.entries(grouped).map(([key,booking])=>{ booking.map((b)=>{ if(b.booking_status === 'booked' || b.invoice === false){ delete grouped[key] }})})
+    //     res.send({status:"success", message:"booking history fetched", data:grouped})
+    //     }).catch(next)
+    //   })
 
 
-    //repeated bookings with group id
+    //repeated bookings with group id (active tab)
     router.post('/booking_history_by_group_id/:id', verifyToken, (req, res, next) => {
       Booking.find({booking_status:{$in:["booked","cancelled"]},venue_id:req.params.id,group_id:{$in:req.body.group_id},repeat_booking:true}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
-        result = Object.values(combineRepeatSlots(booking))
-        
-          res.send({status:"success", message:"booking history fetched", data:result, })
+        result = Object.values(combineRepeatSlots(booking)) 
+      let grouped = _.mapValues(_.groupBy(result, 'group_id'), clist => clist.map(result => _.omit(result, 'multiple_id')));
+      let x = {}
+      let finalBookingList = []
+      Object.entries(grouped).map(([i,j])=>{
+          j.every((key)=>{
+              if(key.booking_status !== "cancelled"){
+                  x[i] = j
+                  finalBookingList = [...j,...finalBookingList]
+              }
+          })
+      })
+          res.send({status:"success", message:"booking history fetched", data:finalBookingList, })
         }).catch(next)
       })
 

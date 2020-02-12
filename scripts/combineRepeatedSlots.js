@@ -35,6 +35,7 @@ const combineSlots=(booking, users, admins)=>{
         //result[value.booking_id].collected_by = collected_by
 
       }else{
+        console.log(value.booking_id)
         result[value.booking_id].created_by = user_array
         //result[value.booking_id].collected_by = collected_by
 

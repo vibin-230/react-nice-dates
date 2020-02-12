@@ -33,16 +33,16 @@ module.exports = function BookSlot(body,id,booking_id,params,req,res,next){
             res.status(409).send({status:"failed", message:"slot already booked"})
           }else{
             // let booking_id;
-            if(bookingOrder){
-              var numb = booking_id.match(/\d/g);
-              numb = numb.join("");
-              var str = "" + (parseInt(numb, 10) + 1)
-              var pad = "TT000000"
-              booking_id = pad.substring(0, pad.length - str.length) + str
-            }else{
-              booking_id = "TT000001";
-            }
-
+            // if(bookingOrder){
+            //   var numb = booking_id.match(/\d/g);
+            //   numb = numb.join("");
+            //   var str = "" + (parseInt(numb, 10) + 1)
+            //   var pad = "TT000000"
+            //   booking_id = pad.substring(0, pad.length - str.length) + str
+            // }else{
+            //   booking_id = "TT000001";
+            // }
+            console.log(booking_id)
             let booking_data = {
               booking_id:booking_id,
               booking_date:body.booking_date,

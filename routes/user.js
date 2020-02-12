@@ -525,9 +525,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         let venue_area = venue.venue.area
         let sport_name = values[0].sport_name
         let manager_phone = "91"+venue.venue.contact
-      
         console.log('sport ', sport_name);
-        
         let date = moment(values[0].booking_date).format("MMMM Do YYYY")
         let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
         let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},req.body[0].end_time)
@@ -684,6 +682,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
           let total_amount = Object.values(values).reduce((total,value)=>{
             return total+value.amount
           },0)
+          console.log(booking_id,phone,venue_name,venue_type,date,start_time,end_time,datetime)
           axios.get(process.env.PHP_SERVER+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount)
           .then(response => {
             console.log(response.data)
@@ -2030,18 +2029,22 @@ router.post('/revenue_report_cancel', verifyToken, (req, res, next) => {
 router.post('/revenue_report', verifyToken, (req, res, next) => {
   Venue.findById({_id:req.body.venue_id},{bank:0,access:0}).lean().then(venue=>{
     let venue_id;
+    let cancelledData = [];
+    let cancelledData_bookings = []
     if(venue.secondary_venue){
       venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
     }else{
       venue_id = [venue._id.toString()]
     }
-    Booking.find({booking_status:{$in:["completed"]}, venue_id:{$in:venue_id}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().then(booking_list=>{
-      
+    Booking.find({booking_status:{$in:["cancelled"]},refund_status:false, venue_id:{$in:venue_id},booking_type:"app",booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().then(data=>{
+      cancelledData_bookings = data
+    Booking.find({booking_status:{$in:["completed"]}, venue_id:{$in:venue_id}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().then(key=>{
       Booking.find({booking_status:{$in:["completed"]}, venue_id:{$in:venue_id}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}},{booking_date:1,booking_id:1,amount:1,multiple_id:1, commission:1,booking_amount:1,coupon_amount:1}).lean().then(booking=>{
-
         let result = {}
         let bookings = []
-        let data = Object.values(booking).map((value,index)=>{
+        let booking_new = [...booking,...cancelledData_bookings]
+        let booking_list =[...key,...cancelledData_bookings]
+        let data = Object.values(booking_new).map((value,index)=>{
           let date = moment(value.booking_date).format("DD-MM-YYYY")
           let bookings_combined
           if(!result[date]){
@@ -2079,6 +2082,7 @@ router.post('/revenue_report', verifyToken, (req, res, next) => {
 
         res.send({status:"success", message:"revenue reports fetched", data:result})
       }).catch(next)
+    }).catch(next)
     }).catch(next)
 }).catch(next)
 })

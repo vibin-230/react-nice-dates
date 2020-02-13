@@ -652,12 +652,12 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         booking_id:values[0].booking_id,
         slot_time:datetime,
         quantity:1,
-        total_amount:result[0].amount,
-        booking_amount:result[0].booking_amount,
+        total_amount:Math.round(result[0].amount),
+        booking_amount:Math.round(result[0].booking_amount),
         directions:directions,
         sport_name:sport_name,
-        venue_discount:result[0].commission,
-        coupon_amount:result[0].coupon_amount,
+        venue_discount:Math.round(result[0].commission),
+        coupon_amount:Math.round(result[0].coupon_amount),
         venue_name:venue.venue.name
         
       }

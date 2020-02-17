@@ -24,14 +24,11 @@ const upload = require("../scripts/aws-s3")
 const AccessControl = require("../scripts/accessControl")
 const SetKeyForSport = require("../scripts/setKeyForSport")
 const SlotsAvailable = require("../helper/slots_available")
-
 const SlotsValueAvailable = require("../helper/slots_value_available")
 const BookSlot = require("../helper/book_slot")
 const BookRepSlot = require("../helper/book_repeated_slot")
-
 const mkdirp = require('mkdirp');
 const Offers = require('../models/offers');
-
 const User = require('../models/user');
 const Event = require('./../models/event')
 const Booking = require('../models/booking');
@@ -58,6 +55,7 @@ Date.prototype.addHours= function(h,m){
 //Create User
 router.post('/create_user', [
   verifyToken,
+
   check('email').exists().isLength({ min: 1}).withMessage('email cannot be empty'),
   check('email').isEmail().withMessage('email is incorrect'),
   check('name').exists().isLength({ min: 1}).withMessage('name cannot be empty'),
@@ -75,7 +73,6 @@ router.post('/create_user', [
     return res.status(422).json({ errors: result});
   }
     //Generate user id
-    console.log(req.body);
     User.findOne({},null,{sort: {$natural:-1}}).then(users=> {
       if(!users){
         req.body.userid = 1;
@@ -595,9 +592,6 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         let venue_area = venue.venue.area
         let sport_name = values[0].sport_name
         let manager_phone = "91"+venue.venue.contact
-      
-        console.log('sport ', sport_name);
-        
         let date = moment(values[0].booking_date).format("MMMM Do YYYY")
         let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
         let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},req.body[0].end_time)
@@ -829,17 +823,12 @@ router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'c
       }
       var id = mongoose.Types.ObjectId();
       let promisesToRun = [];
+      
       req.body.map(((arr,index)=>{
-        for(let i = 0 ; i<arr.number_of_courts ; i++){
-           var numb = booking_id.match(/\d/g);
-              numb = numb.join("");
-              var str = "" + (parseInt(numb, 10) + index + i)
-              var pad = "TT000000"
-              booking_id = pad.substring(0, pad.length - str.length) + str
           for(let i=0;i<arr.block.length;i++){
-            promisesToRun.push(BookRepSlot(arr.block[i],id, booking_id,params,req,res,next))
+            promisesToRun.push(BookRepSlot(arr.block[i],id, booking_id,params,req,res,index,next))
           }
-      bookOverTimeSlots.push(promisesToRun)
+          bookOverTimeSlots.push(promisesToRun)
       
       Promise.all(promisesToRun).then(values => {
         values = {...values}
@@ -882,7 +871,6 @@ router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'c
           // ActivityLog(activity_log)
         }).catch(next)
       }).catch(next)
-    }
   }))
     }).catch(next)
   }).catch(error=>{
@@ -1303,7 +1291,6 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
           Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refund_status:false,cancelled_by:req.body.cancelled_by}},{multi:true}).then(booking=>{
                 Booking.find({booking_id:req.params.id}).lean().then(booking=>{
                   res.send({status:"success", message:"booking cancelled"})
-                  console.log(booking);
                   let booking_id = booking[0].booking_id
                   let venue_name = booking[0].venue
                   let venue_type = SetKeyForSport(booking[0].venue_type)

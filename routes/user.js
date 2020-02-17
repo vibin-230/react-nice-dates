@@ -1623,13 +1623,11 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
           booking_ids.push(booking.booking_id)
         }
       })
-      console.log(booking_ids)
       Booking.find({booking_id:{$in:booking_ids},repeat_booking:false}).lean().populate('collected_by','name').then(bookings=>{
         Booking.find({booking_id:{$in:booking_ids},repeat_booking:true}).lean().populate('collected_by','name').then(booking=>{
           result = Object.values(combineSlots(bookings))
          result1 = Object.values(combineRepeatSlots(booking))
          let final =  result.concat(result1)
-
         res.send({status:"success", message:"booking history fetched", data:final})
       })
     }).catch(next)
@@ -2067,16 +2065,14 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                     res.send({error:error.response});
                   }).catch(next);
                 }
-                
-                console.log('===============pass')
               // Send SMS
               let booking_id = eventBooking.booking_id
-              
               let phone = eventBooking.phone
               let event_name = req.body.event_name
               let sport_name = req.body.sport_name
               let game_type = event.format.game_type
               let date = moment(eventBooking.booking_date).format("MMMM Do YYYY")
+              let event_date = moment(eventBooking.event_booking_date).format("MMMM Do YYYY")
               let datetime = date + " " + moment(eventBooking.start_time).format("hh:mma") 
               //Send SMS to Event Manager
               let name = eventBooking.name
@@ -2095,7 +2091,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 phone:phone,
                 event_name:event_name,
                 event_contact:event_contact,
-                date:date,
+                date:event_date,
                 sport_name:sport_name.toUpperCase(),
                 total_amount:event.format.entry_fee,
                 booking_amount:amount_paid,

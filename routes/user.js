@@ -1576,11 +1576,16 @@ router.post('/cancelled_booking_history_by_time/:id', verifyToken, (req, res, ne
           booking_ids.push(booking.booking_id)
         }
       })
+      Booking.find({booking_id:{$in:booking_ids},repeat_booking:false}).lean().populate('cancelled_by','name').then(booking=>{
       Booking.find({booking_id:{$in:booking_ids}}).lean().populate('cancelled_by','name').then(bookings=>{
+
         result = Object.values(combineSlots(bookings))
-        res.send({status:"success", message:"booking history fetched", data:result})
+        result1 = Object.values(combineRepeatSlots(booking))
+        let final =  result.concat(result1)
+        res.send({status:"success", message:"booking history fetched", data:final})
       })
       }).catch(next)
+    }).catch(next)
     }).catch(next)
   })    
 

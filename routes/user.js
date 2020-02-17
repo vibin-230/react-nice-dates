@@ -2076,7 +2076,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               let sport_name = req.body.sport_name
               let game_type = event.format.game_type
               let date = moment(eventBooking.booking_date).format("MMMM Do YYYY")
-              let event_date = moment(eventBooking.event_booking_date).format("MMMM Do YYYY")
+              let event_date = moment(eventBooking.start_time).format("MMMM Do YYYY")
               let datetime = date + " " + moment(eventBooking.start_time).format("hh:mma") 
               //Send SMS to Event Manager
               let name = eventBooking.name

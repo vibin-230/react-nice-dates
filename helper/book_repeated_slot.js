@@ -3,8 +3,8 @@ const Booking = require('../models/booking');
 
 module.exports = function BookSlot(body,id,booking_id,params,req,res,i,next){
   return new Promise(function(resolve, reject){
-    Venue.findById({_id:params}).then(venue=>{
-      Booking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
+    Venue.findById({_id:req.params.id}).then(venue=>{
+      Booking.find({}, null, {sort: {"booking_id": -1}}).limit(1).then(bookingOrder=>{
         Booking.find({$and:[{venue:body.venue,venue_id:req.params.id, booking_date:body.booking_date, slot_time:body.slot_time}],$or:[{booking_status:"booked",booking_status:"blocked"}]}).then(booking_history=>{
           // console.log(booking_history)
           let conf = venue.configuration;
@@ -34,7 +34,7 @@ module.exports = function BookSlot(body,id,booking_id,params,req,res,i,next){
           }else{
             // let booking_id;
             if(bookingOrder){
-              var numb = bookingOrder.booking_id.match(/\d/g);
+              var numb = bookingOrder[0].booking_id.match(/\d/g);
               numb = numb.join("");
               var str = "" + (parseInt(numb, 10) + i + 1)
               var pad = "TT000000"
@@ -42,9 +42,6 @@ module.exports = function BookSlot(body,id,booking_id,params,req,res,i,next){
             }else{
               booking_id = "TT000001";
             }
-          
-
-            console.log(booking_id)
             let booking_data = {
               booking_id:booking_id,
               booking_date:body.booking_date,

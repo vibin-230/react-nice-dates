@@ -1982,7 +1982,8 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
     let balance = eventBooking.amount - eventBooking.booking_amount
     let event_contact = eventBooking.event_id.event.contact
     let event_email = eventBooking.event_id.event.email
-    let total_teams = eventBooking.event_id.format.noofteams
+    //let total_teams = eventBooking.event_id.format.noofteams
+    console.log(eventBooking.event_id.format);
     axios.get(process.env.PHP_SERVER+'/textlocal/cancel_event.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+event_contact)
     .then(response => {
       console.log(response.data)
@@ -1997,7 +1998,7 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
       booking_id:booking_id,
       phone:phone,
       team_name:eventBooking.team_name,
-      total_team:total_teams,
+      total_team:15,
       count:count,
       status: req.body.refund_status ? `Advance of Rs ${amount_paid} will be refunded within 3 - 4 working days`:`Advance of Rs ${amount_paid} will be charged as cancellation fee`
     }

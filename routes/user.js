@@ -1931,10 +1931,14 @@ router.post('/check_booking', verifyToken, (req, res, next) => {
 
 //Cancel Booking
 router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
+  let count = 0
   EventBooking.findOne({booking_id:req.params.id}).populate('event_id', "event").lean().then(eventBooking=>{
     if(eventBooking.free_event){
       EventBooking.findOneAndUpdate({booking_id:req.params.id}, {booking_status: "cancelled"}).then(eventBooking1=>{
-        res.send({status:"success", message:"Event booking cancelled"})
+        EventBooking.find({booking_id:req.params.id}, {booking_status: "booked"}).then(bookings=>{
+          count = bookings.length
+          res.send({status:"success", message:"Event booking cancelled"})
+      })
       })
     }else{
       if(req.body.refund_status){
@@ -1943,7 +1947,10 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
           console.log('pass',response);
           if(response.data.entity === "refund"){
             EventBooking.findOneAndUpdate({booking_id:req.params.id}, {booking_status: "cancelled",refund_status:true}).then(eventBooking=>{
-              res.send({status:"success", message:"Event booking cancelled"})
+              EventBooking.find({booking_id:req.params.id}, {booking_status: "booked"}).then(bookings=>{
+                count = bookings.length
+                res.send({status:"success", message:"Event booking cancelled"})
+            })
             })
           }
         }).catch(next =>{
@@ -1952,8 +1959,10 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
       }
       else{
         EventBooking.findOneAndUpdate({booking_id:req.params.id}, {booking_status: "cancelled",refund_status:false}).then(eventBooking=>{
-          res.send({status:"success", message:"Event booking cancelled"})
-        })
+          EventBooking.find({booking_id:req.params.id}, {booking_status: "booked"}).then(bookings=>{
+            count = bookings.length
+            res.send({status:"success", message:"Event booking cancelled"})
+        }) })
       }
      
     }
@@ -1972,7 +1981,8 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
     let amount_paid = eventBooking.booking_amount
     let balance = eventBooking.amount - eventBooking.booking_amount
     let event_contact = eventBooking.event_id.event.contact
-    
+    let event_email = eventBooking.event_id.event.email
+    let total_teams = eventBooking.event_id.format.noofteams
     axios.get(process.env.PHP_SERVER+'/textlocal/cancel_event.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+event_contact)
     .then(response => {
       console.log(response.data)
@@ -1983,15 +1993,22 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
     let mailBody = {
       name:name,
       event_name:event_name,
+      organizer:eventBooking.event_id.event.organizer,
       booking_id:booking_id,
+      phone:phone,
       team_name:eventBooking.team_name,
+      total_team:total_teams,
+      count:count,
       status: req.body.refund_status ? `Advance of Rs ${amount_paid} will be refunded within 3 - 4 working days`:`Advance of Rs ${amount_paid} will be charged as cancellation fee`
     }
 
+    let to_emails_manager = `${event_email}, rajasekar@turftown.in`
+
     let to_emails = `${eventBooking.email}, rajasekar@turftown.in`
 
+
     ejs.renderFile('views/event_manager/event_cancel.ejs',mailBody).then(html=>{
-      mail("support@turftown.in", to_emails,"Event Booked","test",html,response=>{
+      mail("support@turftown.in", to_emails,"Event "+booking_id+" has been cancelled","test",html,response=>{
         if(response){
           console.log('success')
         }else{
@@ -1999,6 +2016,17 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
         }
       })
     }).catch(next)
+
+    ejs.renderFile('views/event_manager/event_cancel_manager.ejs',mailBody).then(html=>{
+      mail("support@turftown.in", to_emails_manager,"Event "+booking_id+" has been cancelled for "+event_name,"test",html,response=>{
+        if(response){
+          console.log('success')
+        }else{
+          console.log('failed')
+        }
+      })
+    }).catch(next)
+
   })
 })
 

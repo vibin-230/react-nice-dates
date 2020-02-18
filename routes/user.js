@@ -1983,7 +1983,6 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
     let event_contact = eventBooking.event_id.event.contact
     let event_email = eventBooking.event_id.event.email
     //let total_teams = eventBooking.event_id.format.noofteams
-    console.log(eventBooking.event_id.format);
     axios.get(process.env.PHP_SERVER+'/textlocal/cancel_event.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+event_contact)
     .then(response => {
       console.log(response.data)
@@ -2019,7 +2018,7 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
     }).catch(next)
 
     ejs.renderFile('views/event_manager/event_cancel_manager.ejs',mailBody).then(html=>{
-      mail("support@turftown.in", to_emails_manager,"Event "+booking_id+" has been cancelled for "+event_name,"test",html,response=>{
+      mail("support@turftown.in", to_emails_manager,"Event "+booking_id+" has been cancelled for "+mailBody.event_name,"test",html,response=>{
         if(response){
           console.log('success')
         }else{
@@ -2596,6 +2595,10 @@ router.post('/test_s3', (req, res, next) => {
 router.post('/test_mail', verifyToken, (req, res, next) => {
   // let html = fs.readFileSync('views/mail.ejs',{encoding:'utf-8'});
   console.log(req.body)
+
+  // EventBooking.find({}).populate("event_id").then(booking=>{
+  //   console.log(booking)
+  // })
   let booking_id='TT000121'
   let obj = {
     name:'Kumar',

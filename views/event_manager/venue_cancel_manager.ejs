@@ -1,3 +1,4 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional //EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:v="urn:schemas-microsoft-com:vml">
@@ -168,7 +169,7 @@
 <div style="border-top:0px solid transparent; border-left:0px solid transparent; border-bottom:0px solid transparent; border-right:0px solid transparent; padding-top:5px; padding-bottom:0px; padding-right: 0px; padding-left: 0px;">
 <!--<![endif]-->
 <div align="center" class="img-container center autowidth" style="padding-right: 0px;padding-left: 0px;">
-<!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr style="line-height:0px"><td style="padding-right: 0px;padding-left: 0px;" align="center"><![endif]--><img align="center" alt="Image" border="0" class="center autowidth" src="https://turftown.in/assets/images/venues/1574852379167.png" style="text-decoration: none; -ms-interpolation-mode: bicubic; border: 0; height: auto; width: 100%; max-width: 480px; display: block;" title="Image" width="480"/>
+<!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr style="line-height:0px"><td style="padding-right: 0px;padding-left: 0px;" align="center"><![endif]--><img align="center" alt="Image" border="0" class="center autowidth" src="https://turftown.in/assets/images/venues/1574852379167.png"  style="text-decoration: none; -ms-interpolation-mode: bicubic; border: 0; height: auto; width: 100%; max-width: 480px; display: block;" title="Image" width="480"/>
 <!--[if mso]></td></tr></table><![endif]-->
 </div>
 <!--[if (!mso)&(!IE)]><!-->
@@ -253,7 +254,7 @@
 <!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 10px; padding-left: 15px; padding-top: 10px; padding-bottom: 5px; font-family: Tahoma, Verdana, sans-serif"><![endif]-->
 <div style="color:#052d3d;font-family:'Roboto', Tahoma, Verdana, Segoe, sans-serif;line-height:1.5;padding-top:10px;padding-right:10px;padding-bottom:5px;padding-left:15px;">
 <div style="font-family: 'Roboto', Tahoma, Verdana, Segoe, sans-serif; font-size: 12px; line-height: 1.5; color: #052d3d; mso-line-height-alt: 18px;">
-<p style="line-height: 1.5; text-align: left; font-size: 15px; font-family: Roboto, Tahoma, Verdana, Segoe, sans-serif; word-break: break-word; mso-line-height-alt: 23px; margin: 0;"><span style="font-size: 15px;"><strong><span style="font-size: 15px;">Hi <%= name %>,</span></strong></span></p>
+<p style="line-height: 1.5; text-align: left; font-size: 15px; font-family: Roboto, Tahoma, Verdana, Segoe, sans-serif; word-break: break-word; mso-line-height-alt: 23px; margin: 0;"><span style="font-size: 15px;"><strong><span style="font-size: 15px;">Hi <%= venue_manager_name %>,</span></strong></span></p>
 </div>
 </div>
 <!--[if mso]></td></tr></table><![endif]-->
@@ -280,8 +281,15 @@
 <!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 20px; padding-left: 15px; padding-top: 10px; padding-bottom: 10px; font-family: Tahoma, Verdana, sans-serif"><![endif]-->
 <div style="color:#555555;font-family:'Roboto', Tahoma, Verdana, Segoe, sans-serif;line-height:1.8;padding-top:10px;padding-right:20px;padding-bottom:10px;padding-left:15px;">
 <div style="font-family: 'Roboto', Tahoma, Verdana, Segoe, sans-serif; font-size: 12px; line-height: 1.8; color: #555555; mso-line-height-alt: 22px;">
-<p style="font-size: 14px; line-height: 1.8; word-break: break-word; font-family: Roboto, Tahoma, Verdana, Segoe, sans-serif; mso-line-height-alt: 25px; margin: 0;"><span style="color: #4a4a4a;">Your Turf Town booking scheduled for </span><span style="color: #4a4a4a;"><strong><%= date %> </strong> </span></p>
-<p style="font-size: 14px; line-height: 1.8; word-break: break-word; font-family: Roboto, Tahoma, Verdana, Segoe, sans-serif; mso-line-height-alt: 25px; margin: 0;"><span style="color: #4a4a4a;">from <strong><%= time %></strong> has been cancelled successfully.</span></p>
+<p style="line-height: 1.8; font-family: Roboto, Tahoma, Verdana, Segoe, sans-serif; word-break: break-word; font-size: 14px; mso-line-height-alt: 25px; margin: 0;"><span style="font-size: 14px;">Your Turf Town booking scheduled for </span><span style="font-size: 14px;"><%= date %></span></p>
+<p style="line-height: 1.8; font-family: Roboto, Tahoma, Verdana, Segoe, sans-serif; word-break: break-word; font-size: 14px; mso-line-height-alt: 25px; margin: 0;"><span style="font-size: 14px;">from <%= time %> has been cancelled by the Venue.</span></p>
+</div>
+</div>
+<!--[if mso]></td></tr></table><![endif]-->
+<!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 15px; padding-left: 15px; padding-top: 0px; padding-bottom: 15px; font-family: Tahoma, Verdana, sans-serif"><![endif]-->
+<div style="color:#555555;font-family:'Roboto', Tahoma, Verdana, Segoe, sans-serif;line-height:1.2;padding-top:0px;padding-right:15px;padding-bottom:15px;padding-left:15px;">
+<div style="font-family: 'Roboto', Tahoma, Verdana, Segoe, sans-serif; font-size: 12px; line-height: 1.2; color: #555555; mso-line-height-alt: 14px;">
+<p style="font-size: 14px; line-height: 1.2; word-break: break-word; font-family: Roboto, Tahoma, Verdana, Segoe, sans-serif; mso-line-height-alt: 17px; margin: 0;"><em>Please contact the venue for more details ( +91 <%= phone %> )</em></p>
 </div>
 </div>
 <!--[if mso]></td></tr></table><![endif]-->
@@ -308,7 +316,7 @@
 <!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 0px; padding-left: 15px; padding-top: 5px; padding-bottom: 15px; font-family: Tahoma, Verdana, sans-serif"><![endif]-->
 <div style="color:#555555;font-family:'Roboto', Tahoma, Verdana, Segoe, sans-serif;line-height:1.2;padding-top:5px;padding-right:0px;padding-bottom:15px;padding-left:15px;">
 <div style="font-family: 'Roboto', Tahoma, Verdana, Segoe, sans-serif; font-size: 12px; line-height: 1.2; color: #555555; mso-line-height-alt: 14px;">
-<p style="font-size: 14px; line-height: 1.2; word-break: break-word; font-family: Roboto, Tahoma, Verdana, Segoe, sans-serif; mso-line-height-alt: 17px; margin: 0;">Booking ID:</p>
+<p style="font-size: 14px; line-height: 1.2; word-break: break-word; font-family: Roboto, Tahoma, Verdana, Segoe, sans-serif; mso-line-height-alt: 17px; margin: 0;">Booking ID</p>
 </div>
 </div>
 <!--[if mso]></td></tr></table><![endif]-->
@@ -334,7 +342,7 @@
 <!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 0px; padding-left: 15px; padding-top: 5px; padding-bottom: 15px; font-family: Tahoma, Verdana, sans-serif"><![endif]-->
 <div style="color:#555555;font-family:'Roboto', Tahoma, Verdana, Segoe, sans-serif;line-height:1.2;padding-top:5px;padding-right:0px;padding-bottom:15px;padding-left:15px;">
 <div style="font-family: 'Roboto', Tahoma, Verdana, Segoe, sans-serif; font-size: 12px; line-height: 1.2; color: #555555; mso-line-height-alt: 14px;">
-<p style="font-size: 14px; line-height: 1.2; word-break: break-word; font-family: Roboto, Tahoma, Verdana, Segoe, sans-serif; mso-line-height-alt: 17px; margin: 0;">Venue Name:</p>
+<p style="font-size: 14px; line-height: 1.2; word-break: break-word; font-family: Roboto, Tahoma, Verdana, Segoe, sans-serif; mso-line-height-alt: 17px; margin: 0;">Venue</p>
 </div>
 </div>
 <!--[if mso]></td></tr></table><![endif]-->
@@ -378,12 +386,12 @@
 <!--[if (!mso)&(!IE)]><!-->
 <div style="border-top:0px solid transparent; border-left:0px solid transparent; border-bottom:0px solid transparent; border-right:0px solid transparent; padding-top:0px; padding-bottom:5px; padding-right: 0px; padding-left: 0px;">
 <!--<![endif]-->
-<!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 10px; padding-left: 20px; padding-top: 10px; padding-bottom: 10px; font-family: Tahoma, Verdana, sans-serif"><![endif]-->
-<div style="color:#555555;font-family:Roboto, Tahoma, Verdana, Segoe, sans-serif;line-height:1.2;padding-top:10px;padding-right:10px;padding-bottom:10px;padding-left:20px;">
+<!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 10px; padding-left: 15px; padding-top: 10px; padding-bottom: 10px; font-family: Tahoma, Verdana, sans-serif"><![endif]-->
+<div style="color:#555555;font-family:Roboto, Tahoma, Verdana, Segoe, sans-serif;line-height:1.2;padding-top:10px;padding-right:10px;padding-bottom:10px;padding-left:15px;">
 <div style="font-family: Roboto, Tahoma, Verdana, Segoe, sans-serif; font-size: 12px; line-height: 1.2; color: #555555; mso-line-height-alt: 14px;">
 <p style="font-size: 14px; line-height: 1.2; word-break: break-word; font-family: Roboto, Tahoma, Verdana, Segoe, sans-serif; mso-line-height-alt: 17px; margin: 0;">Status:</p>
-<p style="font-size: 14px; line-height: 1.2; word-break: break-word; font-family: Roboto, Tahoma, Verdana, Segoe, sans-serif; mso-line-height-alt: 17px; margin: 0;"> </p>
-<p style="font-size: 14px; line-height: 1.2; word-break: break-word; font-family: Roboto, Tahoma, Verdana, Segoe, sans-serif; mso-line-height-alt: 17px; margin: 0;"><%= booking_status %></p>
+<p style="font-size: 14px; line-height: 1.2; word-break: break-word; font-family: Roboto, Tahoma, Verdana, Segoe, sans-serif; mso-line-height-alt: 17px; margin: 0;"><span style="font-size: 14px;"> </span></p>
+<p style="font-size: 14px; line-height: 1.2; word-break: break-word; font-family: Roboto, Tahoma, Verdana, Segoe, sans-serif; mso-line-height-alt: 17px; margin: 0;"><span style="font-size: 14px;"><%= booking_status %></span></p>
 </div>
 </div>
 <!--[if mso]></td></tr></table><![endif]-->
@@ -410,7 +418,7 @@
 <table border="0" cellpadding="0" cellspacing="0" class="divider" role="presentation" style="table-layout: fixed; vertical-align: top; border-spacing: 0; border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; min-width: 100%; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;" valign="top" width="100%">
 <tbody>
 <tr style="vertical-align: top;" valign="top">
-<td class="divider_inner" style="word-break: break-word; vertical-align: top; min-width: 100%; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; padding-top: 5px; padding-right: 25px; padding-bottom: 5px; padding-left: 20px;" valign="top">
+<td class="divider_inner" style="word-break: break-word; vertical-align: top; min-width: 100%; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; padding-top: 5px; padding-right: 20px; padding-bottom: 5px; padding-left: 15px;" valign="top">
 <table align="center" border="0" cellpadding="0" cellspacing="0" class="divider_content" height="0" role="presentation" style="table-layout: fixed; vertical-align: top; border-spacing: 0; border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-top: 1px solid #BBBBBB; height: 0px; width: 100%;" valign="top" width="100%">
 <tbody>
 <tr style="vertical-align: top;" valign="top">
@@ -442,8 +450,8 @@
 <!--[if (!mso)&(!IE)]><!-->
 <div style="border-top:0px solid transparent; border-left:0px solid transparent; border-bottom:0px solid transparent; border-right:0px solid transparent; padding-top:15px; padding-bottom:5px; padding-right: 0px; padding-left: 0px;">
 <!--<![endif]-->
-<!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 15px; padding-left: 20px; padding-top: 10px; padding-bottom: 10px; font-family: Arial, sans-serif"><![endif]-->
-<div style="color:#555555;font-family:'Open Sans', Helvetica, Arial, sans-serif;line-height:1.5;padding-top:10px;padding-right:15px;padding-bottom:10px;padding-left:20px;">
+<!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 15px; padding-left: 15px; padding-top: 10px; padding-bottom: 10px; font-family: Arial, sans-serif"><![endif]-->
+<div style="color:#555555;font-family:'Open Sans', Helvetica, Arial, sans-serif;line-height:1.5;padding-top:10px;padding-right:15px;padding-bottom:10px;padding-left:15px;">
 <div style="font-family: 'Open Sans', Helvetica, Arial, sans-serif; font-size: 12px; line-height: 1.5; color: #555555; mso-line-height-alt: 18px;">
 <p style="font-size: 14px; line-height: 1.5; font-family: Open Sans, Helvetica, Arial, sans-serif; word-break: break-word; mso-line-height-alt: 21px; margin: 0;"><span style="color: #4a4a4a; font-size: 14px;">Thank You,</span></p>
 <p style="font-size: 14px; line-height: 1.5; font-family: Open Sans, Helvetica, Arial, sans-serif; word-break: break-word; mso-line-height-alt: 21px; margin: 0;"><span style="color: #4a4a4a; font-size: 14px;">Team Turf Town</span></p>
@@ -529,7 +537,7 @@
 <!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 10px; padding-left: 10px; padding-top: 10px; padding-bottom: 0px; font-family: Arial, sans-serif"><![endif]-->
 <div style="color:#555555;font-family:'Open Sans', Helvetica, Arial, sans-serif;line-height:1.5;padding-top:10px;padding-right:10px;padding-bottom:0px;padding-left:10px;">
 <div style="font-family: 'Open Sans', Helvetica, Arial, sans-serif; font-size: 12px; line-height: 1.5; color: #555555; mso-line-height-alt: 18px;">
-<p style="font-size: 12px; line-height: 1.5; text-align: center; font-family: Open Sans, Helvetica, Arial, sans-serif; word-break: break-word; mso-line-height-alt: 18px; margin: 0;"><span style="color: #ffffff; font-size: 12px;">2019 - TURF TOWN (TM). All rights reserved.</span></p>
+<p style="font-size: 12px; line-height: 1.5; text-align: center; font-family: Open Sans, Helvetica, Arial, sans-serif; word-break: break-word; mso-line-height-alt: 18px; margin: 0;"><span style="color: #ffffff; font-size: 12px;">2019 - TURF TOWNTM. All rights reserved.</span></p>
 <p style="font-size: 12px; line-height: 1.5; text-align: center; font-family: Open Sans, Helvetica, Arial, sans-serif; word-break: break-word; mso-line-height-alt: 18px; margin: 0;"><span style="color: #ffffff; font-size: 12px;"> 17, Lakshmi Street, Kilpauk, Chennai - 600010</span></p>
 </div>
 </div>
@@ -537,7 +545,7 @@
 <!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 10px; padding-left: 10px; padding-top: 0px; padding-bottom: 10px; font-family: Tahoma, Verdana, sans-serif"><![endif]-->
 <div style="color:#4F4F4F;font-family:Roboto, Tahoma, Verdana, Segoe, sans-serif;line-height:1.2;padding-top:0px;padding-right:10px;padding-bottom:10px;padding-left:10px;">
 <div style="font-size: 12px; line-height: 1.2; font-family: Roboto, Tahoma, Verdana, Segoe, sans-serif; color: #4F4F4F; mso-line-height-alt: 14px;">
-<p style="font-size: 14px; line-height: 1.2; text-align: center; font-family: Roboto, Tahoma, Verdana, Segoe, sans-serif; word-break: break-word; mso-line-height-alt: 17px; margin: 0;"><span style="font-size: 14px; color: #ffffff;"><span style="background-color: transparent; font-size: 14px;">Email us @ support@turftown.in</span></span></p>
+<p style="font-size: 14px; line-height: 1.2; text-align: center; font-family: Roboto, Tahoma, Verdana, Segoe, sans-serif; word-break: break-word; mso-line-height-alt: 17px; margin: 0;"><span style="font-size: 14px; color: #ffffff;"><span style="background-color: transparent; font-size: 14px;"> Email us @ support@turftown.in</span></span></p>
 </div>
 </div>
 <!--[if mso]></td></tr></table><![endif]-->

@@ -1073,9 +1073,7 @@ function isEmpty (object){
 router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
   Booking.findOne({booking_id:req.params.id}).then(booking=>{
     Venue.findById({_id:booking.venue_id}).then(venue=>{
-      Admin.findById({_id:req.userId}).then(admin=>{
-      let role = req.role === "venue_staff" || req.role === "venue_manager"
-      let date = new Date().addHours(8,30)
+      Admin.findById({venue:{$in:[booking.venue_id]}}).then(admins=>{
         if(booking.booking_type === "app" && req.body.refund_status){
           axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
@@ -1100,10 +1098,11 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   }).catch(error=>{
                     console.log(error.response)
                   })
-
                   let obj = {
-                    name:req.name,
+                    name:req.username,
+                    venue_manager_name:venue.venue.name,
                     date:date,
+                    phone:venue.venue.contact,
                     time:datetime,
                     booking_id:booking_id,
                     venue_type:venue_type,
@@ -1115,6 +1114,18 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   ejs.renderFile('views/event_manager/venue_cancel.ejs',obj).then(html=>{
                     let to_emails = `${req.username}, rajasekar@turftown.in`
                     mail("support@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
+                      if(response){
+                        res.send({status:"success"})
+                      }else{
+                        res.send({status:"failed"})
+                      }
+                    })
+                  }).catch(next)
+                  let manager_mail = ''
+                   admins.map((admin,index)=>{manager_mail+=(admin.length-1) === index ?admin.email :admin.email + ','})
+                  ejs.renderFile('views/event_manager/venue_cancel_manager.ejs',obj).then(html=>{
+                    //let to_emails = `${req.body.email}, rajasekar@turftown.in`
+                    mail("support@turftown.in", manager_mail,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
                       if(response){
                         res.send({status:"success"})
                       }else{
@@ -1983,7 +1994,7 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
     let event_contact = eventBooking.event_id.event.contact
     let event_email = eventBooking.event_id.event.email
     let event_name1 = eventBooking.event_id.event.name
-    //let total_teams = eventBooking.event_id.format.noofteams
+    let total_teams = eventBooking.event_id.format.noofteams
     axios.get(process.env.PHP_SERVER+'/textlocal/cancel_event.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+event_contact)
     .then(response => {
       console.log(response.data)
@@ -2000,7 +2011,7 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
       team_name:eventBooking.team_name,
       total_team:15,
       count:count,
-      status: req.body.refund_status ? `Advance of Rs ${amount_paid} will be refunded within 3 - 4 working days`:`Advance of Rs ${amount_paid} will be charged as cancellation fee`
+      status: req.body.refund_status ? `Advance of Rs ${amount_paid} will be refunded to the user within 3 - 4 working days`:`Advance of Rs ${amount_paid} will be charged as cancellation fee`
     }
 
     let to_emails_manager = `${event_email}, rajasekar@turftown.in`
@@ -2597,9 +2608,9 @@ router.post('/test_mail', verifyToken, (req, res, next) => {
   // let html = fs.readFileSync('views/mail.ejs',{encoding:'utf-8'});
   console.log(req.body)
 
-  // EventBooking.find({}).populate("event_id").then(booking=>{
-  //   console.log(booking)
-  // })
+  EventBooking.find({}).populate("event_id").then(booking=>{
+    console.log(booking[0].event_id.format.noofteams)
+  })
   let booking_id='TT000121'
   let obj = {
     name:'Kumar',
@@ -2615,7 +2626,7 @@ router.post('/test_mail', verifyToken, (req, res, next) => {
     let to_emails = `"akshay@turftown.in"`
       mail("support@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
       if(response){
-        res.send({status:"success"})
+        res.send({status:"booking"})
       }else{
         res.send({status:"failed"})
       }

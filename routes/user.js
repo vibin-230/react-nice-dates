@@ -1659,12 +1659,15 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
       let x = {}
       let finalBookingList = []
       Object.entries(grouped).map(([i,j])=>{
-          j.every((key)=>{
-              if(key.booking_status !== "cancelled" && key.booking_status !== "completed"){
-                  x[i] = j
-                  finalBookingList = [...j,...finalBookingList]
-              }
-          })
+       const filtered = j.filter((key)=>{
+          if(key.booking_status == "booked"){
+            return key
+          }
+        })
+        if(filtered.length > 0){
+              x[i] = j
+            finalBookingList = [...j,...finalBookingList]
+        }
       })
         res.send({status:"success", message:"booking history fetched", data:finalBookingList})
       }).catch(next)
@@ -1677,11 +1680,21 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
         let grouped = _.mapValues(_.groupBy(booking, 'group_id'),clist => clist.map(booking => _.omit(booking, 'multiple_id')));
         let finalBookingList = []
         Object.entries(grouped).map(([i,j])=>{
-          j.every((key)=>{
-              if(moment().isAfter(key.end_date_range) && key.booking_status === 'completed'){
-                  finalBookingList = [...j,...finalBookingList]
-              }
+          const filtered = j.filter((key)=>{
+            if(key.booking_status == "completed" && moment().isAfter(key.end_date_range) ){
+              return key
+            }
           })
+          if(filtered.length > 0){
+                x[i] = j
+              finalBookingList = [...j,...finalBookingList]
+          }
+
+          // j.every((key)=>{
+          //     if(moment().isAfter(key.end_date_range) && key.booking_status === 'completed'){
+          //         finalBookingList = [...j,...finalBookingList]
+          //     }
+          // })
       })
         res.send({status:"success", message:"booking history fetched", data:finalBookingList})
         }).catch(next)
@@ -1696,14 +1709,16 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
       let x = {}
       let finalBookingList = []
       Object.entries(grouped).map(([i,j])=>{
-
-          j.every((key)=>{
-              if(key.booking_status !== "cancelled"){
-                  x[i] = j
-                  finalBookingList = [...j,...finalBookingList]
-              }
-          })
-      })
+        const filtered = j.filter((key)=>{
+           if(key.booking_status !== "cancelled"){
+             return key
+           }
+         })
+         if(filtered.length > 0){
+               x[i] = j
+             finalBookingList = [...j,...finalBookingList]
+         }
+       })
           res.send({status:"success", message:"booking history fetched", data:finalBookingList, })
         }).catch(next)
       })
@@ -1718,12 +1733,22 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
           let x = {}
           let finalBookingList = []
           Object.entries(grouped).map(([i,j])=>{
-              j.every((key)=>{
-                  if(key.booking_status !== "cancelled"){
-                      x[i] = j
-                      finalBookingList = [...j,...finalBookingList]
-                  }
-              })
+            const filtered = j.filter((key)=>{
+              if(key.booking_status !== "cancelled"){
+                return key
+              }
+            })
+            if(filtered.length > 0){
+                  x[i] = j
+                finalBookingList = [...j,...finalBookingList]
+            }
+
+              // j.every((key)=>{
+              //     if(key.booking_status !== "cancelled"){
+              //         x[i] = j
+              //         finalBookingList = [...j,...finalBookingList]
+              //     }
+              // })
           })
           console.log(finalBookingList,sortedActivities[0].invoice_date);
             res.send({status:"success", message:"booking history fetched", data:finalBookingList ,invoice_date:sortedActivities.length > 0 ? sortedActivities[0].invoice_date : '' })
@@ -1739,12 +1764,22 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
             let x = {}
             let finalBookingList = []
             Object.entries(grouped).map(([i,j])=>{
-                j.every((key)=>{
-                    if(key.booking_status !== "cancelled"){
-                        x[i] = j
-                        finalBookingList = [...j,...finalBookingList]
-                    }
-                })
+
+              const filtered = j.filter((key)=>{
+                if(key.booking_status !== "cancelled"){
+                  return key
+                }
+              })
+              if(filtered.length > 0){
+                    x[i] = j
+                  finalBookingList = [...j,...finalBookingList]
+              }
+                // j.every((key)=>{
+                //     if(key.booking_status !== "cancelled"){
+                //         x[i] = j
+                //         finalBookingList = [...j,...finalBookingList]
+                //     }
+                // })
             })
               res.send({status:"success", message:"booking history fetched", data:finalBookingList ,invoice_date:sortedActivities.length > 0 ? sortedActivities[0].invoice_date : '' })
             }).catch(next)

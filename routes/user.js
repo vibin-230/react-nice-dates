@@ -1230,7 +1230,7 @@ router.post('/booking_history_from_app_event_bookings', verifyToken, (req, res, 
 
 router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
   Booking.findOne({booking_id:req.params.id}).then(booking=>{
-    Venue.findById({_id:booking.venue_id}).then(venue=>{
+    Venue.findById({_id:booking.venue_id}).then(venue=>{  
       Admin.findById({_id:req.userId}).then(admin=>{
       let role = req.role === "venue_staff" || req.role === "venue_manager"
       let date = new Date().addHours(8,30)
@@ -1242,6 +1242,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
             {
               Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true, refund_status:true,cancelled_by:req.body.cancelled_by}},{multi:true}).then(booking=>{
                 Booking.find({booking_id:req.params.id}).lean().populate("venue_data").then(booking=>{
+                  User.findById({_id:booking[0].userId}).then(user=>{
                   res.send({status:"success", message:"booking cancelled"})
                   let booking_id = booking[0].booking_id
                   let venue_name = booking[0].venue
@@ -1251,6 +1252,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
                   let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
                   let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
+                  let time = moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
                   let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
                   let manager_phone = "91"+venue.venue.contact
 
@@ -1262,12 +1264,28 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   })
 
                   //Send Mail
-                  let mailBody = {
-                    name:eventBooking.name,
-                    phone:eventBooking.phone,
-                    team_name:eventBooking.team_name,
-                    event_name:eventBooking.event_name,
+                  let obj = {
+                    name:user.name,
+                    venue_manager_name:venue.venue.name,
+                    date:date,
+                    phone:venue.venue.contact,
+                    time:datetime,
+                    booking_id:booking_id,
+                    venue_type:venue_type,
+                    venue_name:venue_name,
+                    venue_location:venue_area,
+                    booking_status:`Advance of Rs ${booking_amount} will be refunded within 3 - 4 working days.`
                   }
+                  ejs.renderFile('views/event_manager/venue_cancel_by_manager.ejs',obj).then(html=>{
+                    let to_emails = `${user.email}, rajasekar@turftown.in`
+                    mail("support@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
+                      if(response){
+                        res.send({status:"success"})
+                      }else{
+                        res.send({status:"failed"})
+                      }
+                    })
+                  }).catch(next)
 
                   // let to_emails = `${bookingOrder.event_id.event.email}, rajasekar@turftown.in`
 
@@ -1295,6 +1313,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   ActivityLog(activity_log)
                 }).catch(next);
               }).catch(next);
+            }).catch(next)
             }
           }).catch(error => {
             console.log(error)

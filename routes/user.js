@@ -1144,16 +1144,14 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
                   let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
                   let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
-                  let time = moment(start_time).parseZone().utc("-5:30").format("hh:mma") + "-" + moment(end_time).parseZone().utc("-5:30").format("hh:mma")
-                  let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
-    
+                  let datetime = date + " " + moment(start_time).subtract(330,"minutes").format("LT") + "-" + moment(end_time).subtract(330,"minutes").format("LT")
+                  let time =  moment(start_time).subtract(330,"minutes").format("LT") + "-" + moment(end_time).subtract(330,"minutes").format("LT")
                   //Send SMS
                   axios.get(process.env.PHP_SERVER+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
                     console.log(response.data)
                   }).catch(error=>{
                     console.log(error.response)
                   })
-                  console.log(user);
                   let obj = {
                     name:user.name,
                     venue_manager_name:venue.venue.name,
@@ -1167,9 +1165,6 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                     venue_location:venue_area,
                       booking_status:`Advance of Rs ${booking_amount} has been charged as cancellation fee`
                     }
-
-                    console.log(obj);
-                    console.log("userdetails",user.email)
                     ejs.renderFile('views/event_manager/venue_cancel.ejs',obj).then(html=>{
                   let to_emails = `${user.email}, rajasekar@turftown.in`
 
@@ -1184,9 +1179,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
 
                     let manager_mail = ''
                     admins.map((admin,index)=>{manager_mail+=(admin.length-1) === index ?admin.email :admin.email + ','})
-                    console.log(manager_mail);
                     ejs.renderFile('views/event_manager/venue_cancel_manager.ejs',obj).then(html=>{
-                     //let to_emails = `${req.body.email}, rajasekar@turftown.in`
                      mail("support@turftown.in", manager_mail,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
                        if(response){
                          res.send({status:"success"})

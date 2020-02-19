@@ -907,18 +907,19 @@ router.post('/create_ad',
 	verifyToken,
 	AccessControl('ads', 'create'),
 	(req, res, next) => {
-	Ads.find({}).then(ads=>{
-		let check_position = ads.filter(ad=>ad.position===req.body.position && ad.sport_type === req.body.sport_type && ad.page === req.body.page)
-		console.log('position ',check_position.length);
-		if(check_position.length){
-			console.log('check ',check_position);
+	Ads.find({status:true}).then(ads=>{
+		let check_start_date = moment(req.body.start_date).format("YYYY-MM-DD")
+		let check_end_date = moment(req.body.end_date).format("YYYY-MM-DD")
+		let check_position = ads.filter(ad=>ad.position===req.body.position && ad.sport_type === req.body.sport_type && ad.page === req.body.page && (moment(check_start_date).isBetween(moment(ad.start_date).format("YYYY-MM-DD"),moment(ad.end_date).format("YYYY-MM-DD"),null,[]) || moment(check_end_date).isBetween(moment(ad.start_date).format("YYYY-MM-DD"),moment(ad.end_date).format("YYYY-MM-DD"),null,[]) ))
+		if(check_position.length > 0){
 			existing_positions = []
 			check_position.map(ad=>{
-				let x =  'position: '+ad.position.toString()+"already exists in page: "+ad.page + 'in sport: '+ad.sport_type
+				let x =  'position: '+ad.position.toString()+" already exists in  "+ad.page+' in sport '+ad.sport_type
 				existing_positions.push(x)
 			})
 			res.send({status:"failed", message: existing_positions[0], existing_positions})
-		}else{
+		}
+		else{
 			Ads.create(req.body).then(ads=>{
 				Ads.findById({_id:ads.id}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(ads=>{
 					res.send({status:"success", message:"ad created", data:ads})
@@ -936,13 +937,27 @@ router.post('/edit_ad/:id',
 	(req, res, next) => {
 	req.body.modified_at = new Date()
 	req.body.modified_by = req.username
+	Ads.find({status:true}).then(ads=>{
+	let check_start_date = moment(req.body.start_date).format("YYYY-MM-DD")
+	let check_end_date = moment(req.body.end_date).format("YYYY-MM-DD")
+	let check_position = ads.filter(ad=>ad.position===req.body.position && ad.sport_type === req.body.sport_type && ad.page === req.body.page &&  ad._id === req.params.id && (moment(check_start_date).isBetween(moment(ad.start_date).format("YYYY-MM-DD"),moment(ad.end_date).format("YYYY-MM-DD"),null,[]) || moment(check_end_date).isBetween(moment(ad.start_date).format("YYYY-MM-DD"),moment(ad.end_date).format("YYYY-MM-DD"),null,[]) ))
+	if(check_position.length > 0){
+		existing_positions = []
+		check_position.map(ad=>{
+			let x =  'position: '+ad.position.toString()+" already exists in  "+ad.page+' in sport '+ad.sport_type
+			existing_positions.push(x)
+		})
+		res.send({status:"failed", message: existing_positions[0]})
+	}
+	else {
 	Ads.findByIdAndUpdate({_id:req.params.id}, req.body).then(ads=>{
 		Ads.findById({_id:req.params.id}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(ads=>{
-			console.log(' edit ads',ads);
 			res.send({status:"success", message:"ad modified", data:ads})
 			ActivityLog(req.userId, req.role, 'ad modified', req.name+" modified ad ")
 		}).catch(next) 
 	}).catch(next)
+}
+}).catch(next)
 })
 
 //// Delete ad

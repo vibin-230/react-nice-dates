@@ -37,6 +37,9 @@ const Venue = require('../models/venue');
 const Admin = require('../models/admin');
 const Ads = require('../models/ads')
 const rzp_key = require('../scripts/rzp')
+ const indianRupeeComma = (value) => {
+  return value.toLocaleString('EN-IN');
+}
 
 function ActivityLog(activity_log) {
   let user = activity_log.user_type==="user"?User:Admin
@@ -44,14 +47,6 @@ function ActivityLog(activity_log) {
       console.log("activity log updated")
   })
 }
-
-function thousands_separators(num)
-{
-        let num_parts = num.toString().split(".");
-        num_parts[0] = num_parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        return num_parts.join(".");
-}
-
 
 Date.prototype.addHours= function(h,m){
   this.setHours(this.getHours()+h);
@@ -625,7 +620,8 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         // }).catch(error=>{
         //   console.log(error.response.data)
         // })
-       
+
+
 
       //Send Mail
       // let mailBody = {
@@ -643,7 +639,12 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
       //   directions:directions,
       //   sport_name:sport_name,
       // }
-      
+      function thousands_separators(num)
+        {
+    let num_parts = num.toString().split(".");
+    num_parts[0] = num_parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return num_parts.join(".");
+        }
       let mailBody = {
         name:values[0].name,
         date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
@@ -654,12 +655,12 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         booking_id:values[0].booking_id,
         slot_time:datetime,
         quantity:1,
-        total_amount:thousands_separators(Math.round(result[0].amount)),
-        booking_amount:thousands_separators(Math.round(result[0].booking_amount)),
+        total_amount:indianRupeeComma(Math.round(result[0].amount)),
+        booking_amount:indianRupeeComma(Math.round(result[0].booking_amount)),
         directions:directions,
         sport_name:sport_name,
-        venue_discount:thousands_separators(Math.round(result[0].commission)),
-        coupon_amount:thousands_separators(Math.round(result[0].coupon_amount)),
+        venue_discount:indianRupeeComma(Math.round(result[0].commission)),
+        coupon_amount:indianRupeeComma(Math.round(result[0].coupon_amount)),
         venue_name:venue.venue.name
         
       }
@@ -1081,7 +1082,7 @@ function isEmpty (object){
 router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
   Booking.findOne({booking_id:req.params.id}).then(booking=>{
     Venue.findById({_id:booking.venue_id}).then(venue=>{
-      Admin.find({venue:{$in:[booking.venue_id]}}).then(admins=>{
+      Admin.findById({venue:{$in:[booking.venue_id]}}).then(admins=>{
         if(booking.booking_type === "app" && req.body.refund_status){
           axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
@@ -2187,11 +2188,11 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 balance:balance,
                 manager_name:event.event.organizer,
                 booking_id:booking_id,
-                coupon_discount:thousandSeperators(Math.round(eventBooking.coupon_amount)),
+                coupon_discount:eventBooking.coupon_amount,
                 game_type: game_type.toUpperCase(),
                 event_discount:0,
                 team_name:eventBooking.team_name,
-                final_price:Math.round(amountTobePaid),
+                final_price:amountTobePaid,
               }
 
               let to_emails = `${bookingOrder.event_id.event.email}, rajasekar@turftown.in`

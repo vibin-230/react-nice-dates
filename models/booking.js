@@ -18,7 +18,10 @@ const schema = new Schema({
   venue_id:String,
   venue_data: { type: Schema.Types.ObjectId, ref: 'venue' },
   invoice_id: { type: Schema.Types.ObjectId, ref: 'invoice' },
-  repeat_booking:Boolean,
+  repeat_booking: {
+    type: Boolean,
+    default: false
+  },
   no_charge:Boolean,
   group_id:String,
   group_name:String,

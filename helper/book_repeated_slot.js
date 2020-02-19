@@ -1,10 +1,10 @@
 const Venue = require('../models/venue');
 const Booking = require('../models/booking');
 
-module.exports = function BookSlot(body,id,booking_id,params,req,res,next){
+module.exports = function BookSlot(body,id,params,req,res,i,next){
   return new Promise(function(resolve, reject){
-    Venue.findById({_id:params}).then(venue=>{
-      Booking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
+    Venue.findById({_id:req.params.id}).then(venue=>{
+      Booking.find({}).sort({"booking_id" : -1}).collation( { locale: "en_US", numericOrdering: true }).limit(1).then(bookingOrder=>{
         Booking.find({$and:[{venue:body.venue,venue_id:req.params.id, booking_date:body.booking_date, slot_time:body.slot_time}],$or:[{booking_status:"booked",booking_status:"blocked"}]}).then(booking_history=>{
           // console.log(booking_history)
           let conf = venue.configuration;
@@ -32,17 +32,18 @@ module.exports = function BookSlot(body,id,booking_id,params,req,res,next){
             reject()
             res.status(409).send({status:"failed", message:"slot already booked"})
           }else{
-            // let booking_id;
-            // if(bookingOrder){
-            //   var numb = booking_id.match(/\d/g);
-            //   numb = numb.join("");
-            //   var str = "" + (parseInt(numb, 10) + 1)
-            //   var pad = "TT000000"
-            //   booking_id = pad.substring(0, pad.length - str.length) + str
-            // }else{
-            //   booking_id = "TT000001";
-            // }
-            console.log(booking_id)
+            let booking_id 
+              console.log(bookingOrder);
+            if(bookingOrder){
+              var numb = bookingOrder[0].booking_id.match(/\d/g);
+              numb = numb.join("");
+              var str = "" + (parseInt(numb, 10) + i + 1)
+              var pad = "TT000000"
+              booking_id = pad.substring(0, pad.length - str.length) + str
+            }else{
+              booking_id = "TT000001";
+            }
+            console.log(booking_id);
             let booking_data = {
               booking_id:booking_id,
               booking_date:body.booking_date,
@@ -71,9 +72,9 @@ module.exports = function BookSlot(body,id,booking_id,params,req,res,next){
               group_id:body.group_id,
               selected_days:body.selected_days,
               repeat_booking:true,
-                no_charge:body.no_charge,
-                closed:body.closed,
-                payment_option:body.payment_option,
+              no_charge:body.no_charge,
+              closed:body.closed,
+              payment_option:body.payment_option,
               name:body.name,
               email:body.email,
               phone:body.phone,
@@ -89,6 +90,7 @@ module.exports = function BookSlot(body,id,booking_id,params,req,res,next){
             Booking.create(booking_data).then(booking=>{
               resolve(booking)
             }).catch(error=>{
+              console.log('pass')
               console.log(error)
               reject()
             })

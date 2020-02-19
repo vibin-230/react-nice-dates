@@ -1,4 +1,6 @@
 const userTemplates = require('./config/users')
+const mongoose = require('mongoose');
+const User = require('../models/user');
 
 module.exports = function () {
   // mapping of all connected clients
@@ -17,14 +19,16 @@ module.exports = function () {
   }
 
   function getAvailableUsers() {
-    console.log('iht');
-    const usersTaken = new Set(
-      Array.from(clients.values())
-        .filter(c => c.user)
-        .map(c => c.user.name)
-    )
-    return userTemplates
-      .filter(u => !usersTaken.has(u.name))
+
+   const users  = User.find({},{__v:0,token:0,otp:0,activity_log:0}).then(user=>{
+      const usersTaken = new Set(
+        Array.from(user).filter(c => c.user).map(c => c.user.name)
+      )
+      let final = user.filter(u => !usersTaken.has(u.name))
+      return final
+    }).catch()
+    return users
+
   }
 
   function isUserAvailable(userName) {

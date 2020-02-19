@@ -11,6 +11,7 @@ const schema = new Schema({
   start_date:Date,
   end_date:Date,
   status:{type:Boolean, default:true},
+  status_text:String,
   // event_name:String,
   // venue:String,
   // email:String,

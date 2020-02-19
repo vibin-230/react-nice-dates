@@ -98,10 +98,12 @@ module.exports = function (client, clientManager, chatroomManager) {
     return callback(null, chatroomManager.serializeChatrooms())
   }
 
-  function handleGetAvailableUsers(_, callback) {
-    console.log('hit');
-    return callback(null, clientManager.getAvailableUsers())
+  async function handleGetAvailableUsers(_, callback) {
+    let result = await clientManager.getAvailableUsers()
+    return callback(null,result )
   }
+
+
 
   function handleDisconnect() {
     // remove user profile

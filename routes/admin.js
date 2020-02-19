@@ -907,11 +907,9 @@ router.post('/create_ad',
 	verifyToken,
 	AccessControl('ads', 'create'),
 	(req, res, next) => {
-	Ads.find({}).then(ads=>{
-		let check_position = ads.filter(ad=>ad.position===req.body.position && ad.sport_type === req.body.sport_type && ad.page === req.body.page)
-		console.log('position ',check_position.length);
-		if(check_position.length){
-			console.log('check ',check_position);
+	Ads.find({status:true}).then(ads=>{
+		let check_position = ads.filter(ad=>ad.position===req.body.position && ad.sport_type === req.body.sport_type && ad.page === req.body.page )
+		if(check_position.length > 0){
 			existing_positions = []
 			check_position.map(ad=>{
 				let x =  'position: '+ad.position.toString()+"already exists in page: "+ad.page + 'in sport: '+ad.sport_type

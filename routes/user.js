@@ -945,6 +945,30 @@ router.post('/update_invoice_by_group_id/:id', verifyToken, (req, res, next) => 
   }).catch(next)
 })
 
+
+router.post('/test_textlocal', verifyToken, (req, res, next) => {
+  let otp = "5555";
+  let event = 'Sample Event'
+  let date = '12th March 2020'
+  let team_name = 'Cycles FC'
+  let type = '5s'
+  let sport = 'Football'
+  let booking_id = 'TTE001123'
+  let amount = 'Rs.200'
+  let balance = 'Rs.1000'
+  let numbers = "917358496318"
+  let sender = "TRFTWN"
+  let mes = 'You have received a new registration. Event : passs\nDate :12th January 2005\nTeam Name : Hipaass \nType: 5s \nSport: football \nRegisteration ID : TTE00123\nAmount Paid : 100\nBalance to be paid at event : 200\nDo get in touch with the team and communicate further details'
+  let message = "You have received a Turftown event booking \nEvent: "+event+" \nDate: "+date+" \nTeam Name: "+team_name+" \nType: "+type+"\nSport: "+sport+"\nRegisteration ID: "+booking_id+"\nAmount Paid: "+amount+"\nBalance to be paid at the event: "+balance
+  let m = 'This is a test message'
+  //Send SMS
+  axios.get(`https://api.textlocal.in/send/?apikey=${process.env.TEXT_LOCAL_API_KEY}&numbers=${numbers}&sender=${sender}&message=${m}`).then(response => {
+    res.send(response.data)
+  }).catch(error=>{
+    console.log(error)
+  })
+})
+
 function isEmpty (object){
   if(Object.keys(object).length>0){
     return true

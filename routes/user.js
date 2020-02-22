@@ -728,7 +728,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
           let date = moment(values[0].booking_date).format("MMMM Do YYYY")
           let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
           let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},values[0].end_time)
-          let datetime = date + " " + moment(start_time).subtract(330,"minutes").format("LT") + "-" + moment(end_time).subtract(330,"minutes").format("LT")
+          let datetime = date + " " + moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
           let directions = "https://www.google.com/maps/dir/"+venue.venue.latLong[0]+","+venue.venue.latLong[1]
           let total_amount = Object.values(values).reduce((total,value)=>{
             return total+value.amount

@@ -1124,7 +1124,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
                   let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
                   let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
-                  // let datetime = date + " " + moment(start_time).subtract(330,"minutes").format("LT") + "-" + moment(end_time).subtract(330,"minutes").format("LT")
+                  let time = moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
                   let datetime = date + " " + moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
                   let USER_CANCEL_WITH_REFUND = `Your Turf Town booking ${booking_id} scheduled for ${datetime} at ${venue_name}, ${venue_area} (${venue_type}) has been cancelled.\nAdvance of Rs.${booking_amount} will be refunded within 3-4 working days.`//490450
                   let VENUE_CANCEL_WITH_REFUND = `Turf Town booking ${booking_id} scheduled for ${datetime} at ${venue_name}, ${venue_area} (${venue_type}) has been cancelled by the user.\n ${booking[0].name}(${booking[0].phone}) \nAdvance of Rs.${booking_amount} will be refunded to the user within 3-4 working days.`///490570
@@ -1146,7 +1146,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                     venue_manager_name:venue.venue.name,
                     date:date,
                     phone:venue.venue.contact,
-                    time:datetime,
+                    time:time,
                     booking_id:booking_id,
                     venue_type:venue_type,
                     venue_name:venue_name,
@@ -1211,7 +1211,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
                   // let datetime = date + " " + moment(start_time).subtract(330,"minutes").format("LT") + "-" + moment(end_time).subtract(330,"minutes").format("LT")
                   let datetime = date + " " + moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
-                  let time =  moment(start_time).subtract(330,"minutes").format("LT") + "-" + moment(end_time).subtract(330,"minutes").format("LT")
+                  let time =  moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
                   let sender = "TRFTWN"
                   //Send SMS
                   // axios.get(process.env.PHP_SERVER+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
@@ -1321,7 +1321,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   let date = moment(booking[0].booking_date).format("MMM Do YYYY")
                   let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
                   let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
-                  let time = moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
+                  let time = moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
                   let datetime = date + " " + moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
                   let manager_phone = "91"+venue.venue.contact
                   // //Send SMS

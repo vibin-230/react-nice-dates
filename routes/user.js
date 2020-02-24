@@ -1351,6 +1351,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   let sender = "TRFTWN"
                   SendMessage(phone,sender,SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER)
                   //Send Mail
+                  console.log('user----',user);
                   let obj = {
                     name:user.name,
                     venue_manager_name:venue.venue.name,
@@ -1363,6 +1364,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                     venue_location:venue_area,
                     booking_status:`Advance of Rs ${booking_amount} will be refunded within 3 - 4 working days.`
                   }
+                  console.log('Obje-----',obj);
                   ejs.renderFile('views/event_manager/venue_cancel_by_manager.ejs',obj).then(html=>{
                     let to_emails = `${user.email}, rajasekar@turftown.in`
                     mail("support@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{

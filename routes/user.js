@@ -1340,18 +1340,18 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   let time = moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
                   let datetime = date + " " + moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
                   let manager_phone = "91"+venue.venue.contact
-                  // //Send SMS
-                  // axios.get(process.env.PHP_SERVER+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&manager_phone='+manager_phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
-                  //   console.log(response.data)
-                  // }).catch(error=>{
-                  //   console.log(error.response)
-                  // })
-                  // console.log("endRTIMe",end_time)
                   let SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER = `Your Turf town booking ${booking_id} scheduled for ${datetime} at ${venue_name},${" "+venue_area}(${venue_type}) has been cancelled by the venue .\nStatus : Advance of Rs.${booking[0].booking_amount} will be refunded within 3-4 working days.\nPlease contact the venue ${venue.venue.contact} for more information.` //491317
                   let sender = "TRFTWN"
                   SendMessage(phone,sender,SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER)
+                  console.log(user.name)
+                  console.log(venue.venue.name)
+                  console.log(date)
+                  console.log(venue.venue.contact)
+                  console.log(booking_id)
+                  console.log(venue_type)
+                  console.log(venue_name)
+                  console.log(venue_area)  
                   //Send Mail
-                  console.log('user----',user);
                   let obj = {
                     name:user.name,
                     venue_manager_name:venue.venue.name,
@@ -1364,9 +1364,8 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                     venue_location:venue_area,
                     booking_status:`Advance of Rs ${booking_amount} will be refunded within 3 - 4 working days.`
                   }
-                  console.log('Obje-----',obj);
+                  let to_emails = `${user.email}, rajasekar@turftown.in`
                   ejs.renderFile('views/event_manager/venue_cancel_by_manager.ejs',obj).then(html=>{
-                    let to_emails = `${user.email}, rajasekar@turftown.in`
                     mail("support@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
                       if(response){
                         res.send({status:"success"})
@@ -1376,17 +1375,6 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                     })
                   }).catch(next)
 
-                  // let to_emails = `${bookingOrder.event_id.event.email}, rajasekar@turftown.in`
-
-                  // ejs.renderFile('views/event_manager/event_manager.ejs',mailBody).then(html=>{
-                  //   mail("support@turftown.in", to_emails,"Event Booked","test",html,response=>{
-                  //     if(response){
-                  //       console.log('success')
-                  //     }else{
-                  //       console.log('failed')
-                  //     }
-                  //   })
-                  // }).catch(next)
     
                   //Activity Log
                   let activity_log = {
@@ -2782,30 +2770,40 @@ router.post('/test_mail', verifyToken, (req, res, next) => {
   // let html = fs.readFileSync('views/mail.ejs',{encoding:'utf-8'});
   console.log(req.body)
 
-  EventBooking.find({}).populate("event_id").then(booking=>{
-    console.log(booking[0].event_id.format.noofteams)
-  })
   let booking_id='TT000121'
+  let booking_amount = '100'
+  // let obj = {
+  //   name:'Kumar',
+  //   date:moment().format('llll'),
+  //   time:'4:00 PM - 5:00 pm',
+  //   booking_id:booking_id,
+  //   venue_name:'Tiki Taka',
+  //   venue_location:'Kilpauk',
+  //   booking_status:'Advance of Rs 200 will be collected'
+  // }
   let obj = {
     name:'Kumar',
     date:moment().format('llll'),
     time:'4:00 PM - 5:00 pm',
-    booking_id:booking_id,
     venue_name:'Tiki Taka',
     venue_location:'Kilpauk',
-    booking_status:'Advance of Rs 200 will be collected'
+    booking_status:'Advance of Rs 200 will be collected',
+    venue_manager_name:'pass',
+    phone:'7358496318',
+    booking_id:booking_id,
+    venue_type:'5s',
+    booking_status:`Advance of Rs ${booking_amount} will be refunded within 3 - 4 working days.`
   }
-
-   ejs.renderFile('views/event_manager/venue_cancel.ejs',obj).then(html=>{
-    let to_emails = `"akshay@turftown.in"`
-      mail("support@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
+  let to_emails = `rajasekar@turftown.in`
+  ejs.renderFile('views/event_manager/venue_cancel_by_manager.ejs',obj).then(html=>{
+    mail("support@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
       if(response){
-        res.send({status:"booking"})
+        res.send({status:"success"})
       }else{
         res.send({status:"failed"})
       }
     })
-   }).catch(next)
+  }).catch(next)
 })
 
 

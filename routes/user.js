@@ -1360,9 +1360,9 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   ejs.renderFile('views/event_manager/venue_cancel_by_manager.ejs',obj).then(html=>{
                     mail("support@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
                       if(response){
-                        res.send({status:"success"})
+                        //res.send({status:"success"})
                       }else{
-                        res.send({status:"failed"})
+                        //res.send({status:"failed"})
                       }
                     })
                   }).catch(next)
@@ -1448,9 +1448,9 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   ejs.renderFile('views/event_manager/venue_cancel_by_manager.ejs',obj).then(html=>{
                     mail("support@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
                       if(response){
-                        res.send({status:"success"})
+                        //res.send({status:"success"})
                       }else{
-                        res.send({status:"failed"})
+                        //res.send({status:"failed"})
                       }
                     })
                   }).catch(next)

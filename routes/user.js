@@ -36,6 +36,7 @@ const Event = require('./../models/event')
 const Booking = require('../models/booking');
 const EventBooking = require('../models/event_booking');
 const Venue = require('../models/venue');
+const Version = require('../models/version');
 const Admin = require('../models/admin');
 const Ads = require('../models/ads')
 const rzp_key = require('../scripts/rzp')
@@ -629,8 +630,8 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         booking_id:values[0].booking_id,
         slot_time:datetime,
         quantity:1,
-        total_amount:indianRupeeComma(Math.round(result[0].amount)),
-        booking_amount:indianRupeeComma(Math.round(result[0].booking_amount)),
+        total_amount:Math.round(result[0].amount),
+        booking_amount:Math.round(result[0].booking_amount),
         directions:directions,
         sport_name:sport_name,
         venue_discount:indianRupeeComma(Math.round(result[0].commission)),
@@ -764,6 +765,11 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
     res.send({status:"failed", message:"slots not available"})
   })
 })
+
+const SlotsCheck = (body, id) => {
+
+}
+
 
 router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'create'), (req, res, next) => {
   let params = req.params.id
@@ -956,6 +962,18 @@ router.post('/update_invoice_by_group_id/:id', verifyToken, (req, res, next) => 
   }).catch(next)
 })
 
+router.post('/update_version', verifyToken, (req, res, next) => {
+  Version.create({android_version:'26',ios_version:'18'}).then(version=>{
+    res.send({status:"success", message:"Version created",data:version})
+  }).catch(next)
+})
+
+router.post('/get_version', verifyToken, (req, res, next) => {
+  Version.find({}).then(version=>{
+    res.send({status:"success", message:"Version Log",data:version})
+  }).catch(next)
+})
+
 
 router.post('/test_textlocal', verifyToken, (req, res, next) => {
   let otp = "5555";
@@ -1028,7 +1046,6 @@ function isEmpty (object){
 //                   let venue_name = booking[0].venue
 //                   let venue_type = SetKeyForSport(booking[0].venue_type)
 //                   let venue_area = booking[0].venue_data.venue.area
-
 //                   let phone = "91"+booking[0].phone
 //                   let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
 //                   let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
@@ -1096,8 +1113,6 @@ function isEmpty (object){
 //           }).catch(next);
 //         }
 //       })
-      
-    
 //   }).catch(next)
 //   }).catch(next)
 // })

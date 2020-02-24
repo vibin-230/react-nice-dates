@@ -619,7 +619,8 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         // }).catch(error=>{
         //   console.log(error.response.data)
         // })
-       
+       console.log(result[0].amount);
+       console.log(result[0].booking_amount);
       let mailBody = {
         name:values[0].name,
         date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),

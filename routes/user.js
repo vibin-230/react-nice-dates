@@ -34,6 +34,7 @@ const Event = require('./../models/event')
 const Booking = require('../models/booking');
 const EventBooking = require('../models/event_booking');
 const Venue = require('../models/venue');
+const Version = require('../models/version');
 const Admin = require('../models/admin');
 const Ads = require('../models/ads')
 const rzp_key = require('../scripts/rzp')
@@ -754,6 +755,11 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
   })
 })
 
+const SlotsCheck = (body, id) => {
+
+}
+
+
 router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'create'), (req, res, next) => {
   let params = req.params.id
   //Check of Slot Exist
@@ -945,6 +951,18 @@ router.post('/update_invoice_by_group_id/:id', verifyToken, (req, res, next) => 
   }).catch(next)
 })
 
+router.post('/update_version', verifyToken, (req, res, next) => {
+  Version.create({android_version:'26',ios_version:'18'}).then(version=>{
+    res.send({status:"success", message:"Version created",data:version})
+  }).catch(next)
+})
+
+router.post('/get_version', verifyToken, (req, res, next) => {
+  Version.find({}).then(version=>{
+    res.send({status:"success", message:"Version Log",data:version})
+  }).catch(next)
+})
+
 
 router.post('/test_textlocal', verifyToken, (req, res, next) => {
   let otp = "5555";
@@ -956,13 +974,17 @@ router.post('/test_textlocal', verifyToken, (req, res, next) => {
   let booking_id = 'TTE001123'
   let amount = 'Rs.200'
   let balance = 'Rs.1000'
-  let numbers = "917358496318"
+  let numbers = "919941882305"
   let sender = "TRFTWN"
-  let mes = 'You have received a new registration. Event : passs\nDate :12th January 2005\nTeam Name : Hipaass \nType: 5s \nSport: football \nRegisteration ID : TTE00123\nAmount Paid : 100\nBalance to be paid at event : 200\nDo get in touch with the team and communicate further details'
-  let message = "You have received a Turftown event booking \nEvent: "+event+" \nDate: "+date+" \nTeam Name: "+team_name+" \nType: "+type+"\nSport: "+sport+"\nRegisteration ID: "+booking_id+"\nAmount Paid: "+amount+"\nBalance to be paid at the event: "+balance
-  let m = 'This is a test message'
+  let EVENT_BOOKED_MANAGER_SMS_FINAL = 'You have received a new registration for event\nmad\nDate : 21feb\nName : 100\nTeam Name : test\nRegisteration ID : TT100\nSport : Football\nAmount Paid : 100\nBalance to be paid at event : 100\nPlease be there at the event 15 mins prior to the scheduled time'
+  let EVENT_BOOKED_USER_FINAL = 'You have received a new registration for Akshay\nDate : 12thjan2004\nName : Akshay\nTeam Name : Pass\nRegisteration ID : TT003455\nSport : Football\nAmount Paid : 200\nBalance to be paid at event : 200\nPlease be there at the event 15 mins prior to the scheduled time'
+  let m = 'Your TURF TOWN booking has been confirmed.\nBooking Id: TTE00092\nVenue: Passs\nLocation: Pass\nSport: Pass\nType: Pass\nDate and Time: Pass'
+  let z = 'Hey Akshay! Your TURF TOWN booking has been confirmed.\nBooking Id : TT000212\nVenue : Tiki Taka\nLocation : kilpauk\nSport : football\nDate and Time : 12 jan 2005\nPrice : 100\nTT Coupon : 100\nVenue Discount : 100\nAmount Paid : 100\nBalance to be paid : 100'
+  let s = 'You have received a new registeration for Akshay\nLorem Ipsum\nPlease be there at the event 15 mins prior to the scheduled time'
+  let x = "Hey Akshay\nYour Turf Town booking has been confirmed.\nBooking Id : TT000012\nVenue : Tiki Taka Kilpauk\nSport : Football (5s)\nDate and Time : 12th January 2005\npass pass\nAmount Paid : 100\nBalance to be paid : 100"
+
   //Send SMS
-  axios.get(`https://api.textlocal.in/send/?apikey=${process.env.TEXT_LOCAL_API_KEY}&numbers=${numbers}&sender=${sender}&message=${m}`).then(response => {
+  axios.get(`https://api.textlocal.in/send/?apikey=${process.env.TEXT_LOCAL_API_KEY}&numbers=${numbers}&sender=${sender}&message=${EVENT_BOOKED_MANAGER_SMS_FINAL}`).then(response => {
     res.send(response.data)
   }).catch(error=>{
     console.log(error)
@@ -998,7 +1020,6 @@ function isEmpty (object){
 //                   let venue_name = booking[0].venue
 //                   let venue_type = SetKeyForSport(booking[0].venue_type)
 //                   let venue_area = booking[0].venue_data.venue.area
-
 //                   let phone = "91"+booking[0].phone
 //                   let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
 //                   let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
@@ -1066,8 +1087,6 @@ function isEmpty (object){
 //           }).catch(next);
 //         }
 //       })
-      
-    
 //   }).catch(next)
 //   }).catch(next)
 // })

@@ -1343,14 +1343,6 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   let SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER = `Your Turf town booking ${booking_id} scheduled for ${datetime} at ${venue_name},${" "+venue_area}(${venue_type}) has been cancelled by the venue .\nStatus : Advance of Rs.${booking[0].booking_amount} will be refunded within 3-4 working days.\nPlease contact the venue ${venue.venue.contact} for more information.` //491317
                   let sender = "TRFTWN"
                   SendMessage(phone,sender,SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER)
-                  console.log(user.name)
-                  console.log(venue.venue.name)
-                  console.log(date)
-                  console.log(venue.venue.contact)
-                  console.log(booking_id)
-                  console.log(venue_type)
-                  console.log(venue_name)
-                  console.log(venue_area)  
                   //Send Mail
                   let obj = {
                     name:user.name,
@@ -1362,7 +1354,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                     venue_type:venue_type,
                     venue_name:venue_name,
                     venue_location:venue_area,
-                    booking_status:`Advance of Rs ${booking_amount} will be refunded within 3 - 4 working days.`
+                    booking_status:`Advance of Rs ${booking[0].booking_amount} will be refunded within 3 - 4 working days.`
                   }
                   let to_emails = `${user.email}, rajasekar@turftown.in`
                   ejs.renderFile('views/event_manager/venue_cancel_by_manager.ejs',obj).then(html=>{

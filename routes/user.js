@@ -1420,6 +1420,18 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                     let sender = "TRFTWN"
                     SendMessage(phone,sender,SLOT_CANCELLED_BY_VENUE_MANAGER)
                   }
+                  console.log(user)
+                  console.log(user.name)
+                  console.log(venue.venue.name)
+                  console.log(date)
+                  console.log(venue.venue.contact)
+                  console.log(time)
+                  console.log(booking_id)
+                  console.log(venue_type)
+                  console.log(venue_name)
+                  console.log(venue_area)
+                  console.log(booking[0].booking_amount)
+
                   let obj = {
                     name:user.name,
                     venue_manager_name:venue.venue.name,

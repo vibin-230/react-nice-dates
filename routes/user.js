@@ -1305,6 +1305,17 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
 })
 
 
+
+
+router.post('/group_by_event', verifyToken, (req, res, next) => {
+  EventBooking.aggregate([
+    { "$group" : { "_id" : "$event_id", event_bookings: { $push: "$$ROOT" } } }
+  ]).then(booking=>{    
+    res.send({status:"success", message:"booking group by event fetched", data:booking})
+    }).catch(next)
+})
+
+
 router.post('/booking_history_from_app_event_bookings', verifyToken, (req, res, next) => {
   EventBooking.find({booking_status:{$in:["booked","completed","cancelled"]}, created_at:{$gte:req.body.fromdate, $lte:req.body.todate},booking_type:"app"}).lean().populate('event_id').then(booking=>{    
     // console.log("veeee",result)

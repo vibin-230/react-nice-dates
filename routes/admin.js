@@ -457,6 +457,20 @@ router.post('/event',
 	}).catch(next)
 })
 
+router.post('/admin_event',
+	verifyToken,
+	// AccessControl('event', 'read'),
+	(req, res, next) => {
+	Event.find({}).lean().populate('venue').then(event=>{
+		Offers.find({}).then(offers=>{
+				let filteredOffer = Object.values(offers).filter(offer=>offer.event.indexOf(event._id)!== -1)
+				event.offer = filteredOffer
+			res.send({status:"success", message:"events fetched", data:event})
+		}).catch(next)
+	}).catch(next)
+})
+
+
 
 router.post('/add_event',
 	verifyToken,

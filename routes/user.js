@@ -1121,7 +1121,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
   Booking.findOne({booking_id:req.params.id}).then(booking=>{
     User.findById({_id:req.userId}).then(user=>{
       Venue.findById({_id:booking.venue_id}).then(venue=>{
-      Admin.find({venue:{$in:[booking.venue_id]}}).then(admins=>{
+      Admin.find({venue:{$in:[booking.venue_id]}},{activity_log:0}).then(admins=>{
         const phone_numbers = admins.map((key)=>"91"+key.phone)
         if(booking.booking_type === "app" && req.body.refund_status){
           axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
@@ -1157,6 +1157,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   SendMessage(phone,sender,USER_CANCEL_WITH_REFUND)
                   ///venuemanager cancel with refund
                   SendMessage(venue_manager_phone,sender,VENUE_CANCEL_WITH_REFUND)
+
                   let obj = {
                     name:user.name,
                     venue_manager_name:venue.venue.name,
@@ -1255,11 +1256,10 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                     venue_type:venue_type,
                     venue_name:venue_name,
                     venue_location:venue_area,
-                      booking_status:`Advance of Rs ${booking_amount} has been charged as cancellation fee`
+                      booking_status:`Advance of Rs ${booking_amount} has been charged as a cancellation fee to the user`
                     }
                     ejs.renderFile('views/event_manager/venue_cancel.ejs',obj).then(html=>{
-                  let to_emails = `${user.email}, rajasekar@turftown.in`
-
+                     let to_emails = `${user.email}, rajasekar@turftown.in`
                         mail("support@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
                         if(response){
                           res.send({status:"success"})
@@ -1268,12 +1268,11 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                         }
                       })
                     }).catch(next)
-
                     let manager_mail = ''
                     admins.map((admin,index)=>{manager_mail+=(admin.length-1) === index ?admin.email :admin.email + ','})
                     ejs.renderFile('views/event_manager/venue_cancel_manager.ejs',obj).then(html=>{
                      mail("support@turftown.in", manager_mail,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
-                       if(response){
+                      if(response){
                          res.send({status:"success"})
                        }else{
                          res.send({status:"failed"})
@@ -2186,7 +2185,7 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
       team_name:eventBooking.team_name,
       total_team:15,
       count:count,
-      status: req.body.refund_status ? `Advance of Rs ${amount_paid} will be refunded to the user within 3 - 4 working days`:`Advance of Rs ${amount_paid} will be charged as cancellation fee`
+      status: req.body.refund_status ? `Advance of Rs ${amount_paid} will be refunded to the user within 3 - 4 working days`:`Advance of Rs ${amount_paid} will be charged as a cancellation fee to the user`
     }
 
     let to_emails_manager = `${event_email}, rajasekar@turftown.in`

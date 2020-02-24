@@ -635,8 +635,8 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         booking_amount:Math.round(result[0].booking_amount),
         directions:directions,
         sport_name:sport_name,
-        venue_discount:indianRupeeComma(Math.round(result[0].commission)),
-        coupon_amount:indianRupeeComma(Math.round(result[0].coupon_amount)),
+        venue_discount:Math.round(result[0].commission),
+        coupon_amount:Math.round(result[0].coupon_amount),
         venue_name:venue.venue.name
       }
 

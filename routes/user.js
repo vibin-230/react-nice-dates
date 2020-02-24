@@ -1400,6 +1400,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
                   let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
                   // let datetime = date+" "+moment(start_time).subtract(330,"minutes").format("LT")+"-"+moment(end_time).subtract(330,"minutes").format("LT")
+                  let time = moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
                   let datetime = date + " " + moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
                   let manager_phone = "91"+venue.venue.contact
                   let booking_amount = booking[0].booking_amount
@@ -1420,7 +1421,6 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                     let sender = "TRFTWN"
                     SendMessage(phone,sender,SLOT_CANCELLED_BY_VENUE_MANAGER)
                   }
-                  console.log(user)
                   console.log(user.name)
                   console.log(venue.venue.name)
                   console.log(date)

@@ -589,6 +589,8 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
       }).catch(next);
 
     //Send Sms
+    Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
+      console.log("admins",admins)
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
         let booking_id = values[0].booking_id
         let phone = "91"+values[0].phone
@@ -606,13 +608,15 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         let total_amount = Object.values(values).reduce((total,value)=>{
           return total+value.amount
         },0)
+        let phone_numbers =admins.map((admin,index)=>"91"+admin.phone)
+        let manger_numbers = [...phone_numbers,manager_phone]
         let venue_discount_coupon = Math.round(result[0].commission+result[0].coupon_amount) == 0 ? "Venue Discount:0" : result[0].commission == 0 && result[0].coupon_amount !== 0 ? `TT Coupon:${result[0].coupon_amount}` : result[0].commission !== 0 && result[0].coupon_amount == 0 ? `Venue Discount:${result[0].commission}` : `Venue Discount:${result[0].commission}\nTT Coupon:${result[0].coupon_amount}`  
         let balance = Math.round(result[0].amount)-Math.round(result[0].coupon_amount)-Math.round(result[0].booking_amount)-Math.round(result[0].commission)
         let SLOT_BOOKED_USER =`Hey ${values[0].name}! Thank you for using Turf Town!\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${result[0].booking_amount}\nBalance to be paid : ${balance}`
         let SLOT_BOOKED_MANAGER = `You have recieved a TURF TOWN booking from ${values[0].name} ( ${values[0].phone} ) \nBooking Id: ${booking_id}\nVenue: ${venue_name}, ${venue_area}\nSport: ${sport_name}(${venue_type})\nDate and Time: ${datetime}\nPrice: ${result[0].amount}\nAmount Paid: ${result[0].booking_amount}\nVenue Discount: ${result[0].commission}\nTT Coupon: ${result[0].coupon_amount}\nAmount to be collected: ${balance}` //490618
         let sender = "TRFTWN"
         SendMessage(phone,sender,SLOT_BOOKED_USER) // sms to user
-        SendMessage(manager_phone,sender,SLOT_BOOKED_MANAGER) // sms to user 
+        SendMessage(manger_numbers.join(","),sender,SLOT_BOOKED_MANAGER) // sms to user 
         // axios.get(process.env.PHP_SERVER+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&manager_phone='+manager_phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount)
         // .then(response => {
         //   console.log(response.data)
@@ -665,6 +669,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
       }
       ActivityLog(activity_log)
       }).catch(next)
+    }).catch(next)
   })
 })
 
@@ -1121,8 +1126,11 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
   Booking.findOne({booking_id:req.params.id}).then(booking=>{
     User.findById({_id:req.userId}).then(user=>{
       Venue.findById({_id:booking.venue_id}).then(venue=>{
-      Admin.find({venue:{$in:[booking.venue_id]}},{activity_log:0}).then(admins=>{
-        const phone_numbers = admins.map((key)=>"91"+key.phone)
+      Admin.find({venue:{$in:[booking.venue_id]},notify:true},{activity_log:0}).then(admins=>{
+        // const phone_numbers = admins.map((key)=>"91"+key.phone)
+        let phone_numbers =admins.map((admin,index)=>"91"+admin.phone)
+        let venue_phone = "91"+venue.venue.contact
+        let manger_numbers = [...phone_numbers,venue_phone]
         if(booking.booking_type === "app" && req.body.refund_status){
           axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
@@ -1144,7 +1152,6 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   let datetime = date + " " + moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
                   let USER_CANCEL_WITH_REFUND = `Your Turf Town booking ${booking_id} scheduled for ${datetime} at ${venue_name}, ${venue_area} (${venue_type}) has been cancelled.\nAdvance of Rs.${booking_amount} will be refunded within 3-4 working days.`//490450
                   let VENUE_CANCEL_WITH_REFUND = `Turf Town booking ${booking_id} scheduled for ${datetime} at ${venue_name}, ${venue_area} (${venue_type}) has been cancelled by the user.\n ${booking[0].name}(${booking[0].phone}) \nAdvance of Rs.${booking_amount} will be refunded to the user within 3-4 working days.`///490570
-                  let venue_manager_phone = "91"+venue.venue.contact
                   // let venue_manager_phone =phone_numbers.join(",")
                   let sender = "TRFTWN"
                   //Send SMS
@@ -1156,8 +1163,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   ////user cancel with refund
                   SendMessage(phone,sender,USER_CANCEL_WITH_REFUND)
                   ///venuemanager cancel with refund
-                  SendMessage(venue_manager_phone,sender,VENUE_CANCEL_WITH_REFUND)
-
+                  SendMessage(manger_numbers.join(","),sender,VENUE_CANCEL_WITH_REFUND)
                   let obj = {
                     name:user.name,
                     venue_manager_name:venue.venue.name,
@@ -1244,7 +1250,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   ////user cancel with refund
                   SendMessage(phone,sender,USER_CANCEL_WITHOUT_REFUND)
                   ///venuemanager cancel with refund
-                  SendMessage(venue_manager_phone,sender,VENUE_CANCEL_WITHOUT_REFUND)
+                  SendMessage(manger_numbers.join(","),sender,VENUE_CANCEL_WITHOUT_REFUND)
                   let obj = {
                     name:user.name,
                     venue_manager_name:venue.venue.name,

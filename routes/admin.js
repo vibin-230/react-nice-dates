@@ -45,7 +45,19 @@ if (!('multidelete' in Object.prototype)) {
         }
     });
 }
-
+function AdsValidation(ad,req){
+	if(ad._id == req.params.id ){
+		return false
+	}
+	else if(ad._id !== req.params.id){
+		if(moment(req.body.start_date).isBetween(moment(ad.start_date).format("YYYY-MM-DD"),moment(ad.end_date).format("YYYY-MM-DD"),null,[]) || moment(req.body.end_date).isBetween(moment(ad.start_date).format("YYYY-MM-DD"),moment(ad.end_date).format("YYYY-MM-DD"),null,[])){
+			return true
+		}
+		else {
+			return false
+		}
+	}
+}
 function ActivityLog(id, user_type, activity, message) {
 	let activity_log = {
 		datetime: new Date(),
@@ -940,7 +952,7 @@ router.post('/edit_ad/:id',
 	Ads.find({status:true}).then(ads=>{
 	let check_start_date = moment(req.body.start_date).format("YYYY-MM-DD")
 	let check_end_date = moment(req.body.end_date).format("YYYY-MM-DD")
-	let check_position = ads.filter(ad=>ad.position===req.body.position && ad.sport_type === req.body.sport_type && ad.page === req.body.page &&  ad._id === req.params.id && (moment(check_start_date).isBetween(moment(ad.start_date).format("YYYY-MM-DD"),moment(ad.end_date).format("YYYY-MM-DD"),null,[]) || moment(check_end_date).isBetween(moment(ad.start_date).format("YYYY-MM-DD"),moment(ad.end_date).format("YYYY-MM-DD"),null,[]) ))
+	let check_position = ads.filter(ad=>ad.position===req.body.position && ad.sport_type === req.body.sport_type && ad.page === req.body.page && AdsValidation(ad,req) )
 	if(check_position.length > 0){
 		existing_positions = []
 		check_position.map(ad=>{

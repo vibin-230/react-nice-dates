@@ -23,7 +23,7 @@ const combineRepeatSlots = require('../scripts/combineRepeatedSlots')
 const upload = require("../scripts/aws-s3")
 const AccessControl = require("../scripts/accessControl")
 const SetKeyForSport = require("../scripts/setKeyForSport")
-const SetKeyForEvent = require("../scripts/setKeyForSport")
+const SetKeyForEvent = require("../scripts/setKeyForEvent")
 const SlotsAvailable = require("../helper/slots_available")
 const SlotsValueAvailable = require("../helper/slots_value_available")
 const BookSlot = require("../helper/book_slot")
@@ -590,14 +590,13 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
 
     //Send Sms
     Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
-      console.log("admins",admins)
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
         let booking_id = values[0].booking_id
         let phone = "91"+values[0].phone
         let venue_name = values[0].venue
         let venue_type = SetKeyForSport(values[0].venue_type)
         let venue_area = venue.venue.area
-        let sport_name = setKeyForSport(values[0].sport_name)
+        let sport_name = SetKeyForSport(values[0].sport_name)
         let manager_phone ="91"+venue.venue.contact
         let date = moment(values[0].booking_date).format("MMMM Do YYYY")
         let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
@@ -623,8 +622,6 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         // }).catch(error=>{
         //   console.log(error.response.data)
         // })
-       console.log(result[0].amount);
-       console.log(result[0].booking_amount);
       let mailBody = {
         name:values[0].name,
         date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
@@ -731,7 +728,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
           let venue_name = values[0].venue
           let venue_type = SetKeyForSport(req.body[0].venue_type) 
           let venue_area = venue.venue.area
-          let sport_name = setKeyForSport(values[0].sport_name)
+          let sport_name = SetKeyForSport(values[0].sport_name)
           let date = moment(values[0].booking_date).format("MMMM Do YYYY")
           let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
           let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},values[0].end_time)
@@ -1010,7 +1007,8 @@ router.post('/test_textlocal', verifyToken, (req, res, next) => {
   let EVENT_CANCELLED_FOR_MANAGER = `Your Turf town booking for event ${booking_id} for ${venue}scheduled at ${date} has been cancelled.\nStatus : USERCANCELLED` ///490748
   let SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER = `Your Turf town booking ${venue} scheduled for ${date} at ${venue} has been cancelled by the venue .\nStatus : cancelled for purpose\nPlease contact the venue ${numbers} for more information.` //490759
   // let SLOT_CANCELLED_BY_VENUE_MANAGER =  `Your booking ${booking_id} scheduled ${date} at ${venue} has been cancelled. Please contact the venue for more info` ///418833
-  let EVENT_BOOKED_MANAGER = `You have received a new registration for the event.\nEvent Name : EVENT ORGANIZER\nEvent Date : 29thFEb\nUser Name : Nobin\nTeam Name : Hyderabad\nBooking id : TTE100\nSport : FOOTBALL\nTT Coupon : 100\nAmount Paid : 200\nBalance to be paid at the event : 100` //491399
+  // let EVENT_BOOKED_MANAGER = `Event Name : Rookie League\nBalance to be paid at the event : 1000`
+  let EVENT_BOOKED_MANAGER = `You have received a new registration for the event.\n${event}\nDate : ${date}\nName : kumar\nTeam Name : ${team_name}\nSport : ${sport}(${type})\nRegisteration ID : ${booking_id}\nTT Coupon : ${amount}\nAmount Paid : ${balance}${""}\nBalance to be paid at the event : ${balance}`//491373
   // let SLOT_CANCELLED_BY_VENUE_MANAGER =  `Your booking ${booking_id} scheduled ${date} at ${venue},${" "+venue} has been cancelled. Please contact the venue for more info` ///418833
   // let EVENT_BOOKED_USER = `Your Turf Town event booking for MADRAS MUNDITAL has been confirmed.\nDate : ${date}\nTeam Name : ${team_name}\nSport : ${sport}(${type})\nRegisteration ID : ${booking_id}\nAmount Paid : Rs.${amount}${""}\nTT Coupon : 0\nBalance to be paid at event : ${balance}\nPlease contact ${numbers} for more details.`//491330
   //Send SMS
@@ -1420,7 +1418,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   let datetime = date + " " + moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
                   let manager_phone = "91"+venue.venue.contact
                   let booking_amount = booking[0].booking_amount
-                  let sport_name_new =setKeyForSport(booking[0].sport_name)  
+                  let sport_name_new =SetKeyForSport(booking[0].sport_name)  
                   //Send SMS
                   // axios.get(process.env.PHP_SERVER+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&manager_phone='+manager_phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
                   //   console.log(response.data)
@@ -2295,7 +2293,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               let booking_id = eventBooking.booking_id
               let phone = eventBooking.phone
               let event_name = req.body.event_name
-              let sport_name = setKeyForSport(req.body.sport_name)
+              let sport_name = SetKeyForSport(req.body.sport_name)
               let game_type = SetKeyForEvent(event.format.game_type)
               let date = moment(eventBooking.booking_date).format("MMMM Do YYYY")
               let event_date = moment(eventBooking.start_time).format("MMMM Do YYYY")
@@ -2310,9 +2308,11 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               let team_name = eventBooking.team_name
               let Booking_amount = eventBooking.booking_amount
               let EVENT_BOOKED_USER = `Your Turf Town event booking for ${event_name} has been confirmed.\nDate : ${event_date}\nTeam Name : ${team_name}\nSport : ${sport_name}(${game_type})\nRegisteration ID : ${booking_id}\nTT Coupon : ${eventBooking.coupon_amount}\nAmount Paid : ${Booking_amount}${""}\nBalance to be paid at event : ${balance}\nPlease contact ${event_contact} for more details.`//491373
+              let EVENT_BOOKED_MANAGER = `You have received a new registration for the event:\n${event_name}\nDate : ${event_date}\nName : ${name}\nTeam Name : ${team_name}\nSport : ${sport_name}(${game_type})\nRegisteration ID : ${booking_id}\nTT Coupon : ${eventBooking.coupon_amount}\nAmount Paid : ${Booking_amount}${""}\nBalance to be paid at the event : ${balance}`//491373
               // let EVENT_BOOKED_USER = `Your Turf Town event booking for ${event_name} has been confirmed.\nDate : ${event_date}\nTeam Name : ${team_name}\nSport : ${sport_name}(${game_type})\nRegisteration ID : ${booking_id}\nTT Coupon : ${eventBooking.coupon_amount}\nAmount Paid : Rs.${Booking_amount}${""}\nTT Coupon : 0\nBalance to be paid at event : ${balance}\nPlease contact ${event_contact} for more details.`//491373
               // SendMessage(event_manager_phone,sender,EVENT_CANCELLED_FOR_MANAGER_WITH_REFUND) ///manager sms
               SendMessage(phone,sender,EVENT_BOOKED_USER) /// user sms
+              SendMessage(event_contact,sender,EVENT_BOOKED_MANAGER) /// user sms
               // axios.get(process.env.PHP_SERVER+'/textlocal/event_booking_manager.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+event_contact,'&sport='+sport_name,'&game_type='+game_type)
               // .then(response => {
               //   console.log(response.data)

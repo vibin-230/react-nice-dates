@@ -1010,7 +1010,8 @@ router.post('/test_textlocal', verifyToken, (req, res, next) => {
   let EVENT_CANCELLED_FOR_MANAGER = `Your Turf town booking for event ${booking_id} for ${venue}scheduled at ${date} has been cancelled.\nStatus : USERCANCELLED` ///490748
   let SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER = `Your Turf town booking ${venue} scheduled for ${date} at ${venue} has been cancelled by the venue .\nStatus : cancelled for purpose\nPlease contact the venue ${numbers} for more information.` //490759
   // let SLOT_CANCELLED_BY_VENUE_MANAGER =  `Your booking ${booking_id} scheduled ${date} at ${venue} has been cancelled. Please contact the venue for more info` ///418833
-  let EVENT_BOOKED_MANAGER = `You have received a new registration for the event.\nEvent Name : EVENT ORGANIZER\nEvent Date : 29thFEb\nUser Name : Nobin\nTeam Name : Hyderabad\nBooking id : TTE100\nSport : FOOTBALL\nTT Coupon : 100\nAmount Paid : 200\nBalance to be paid at the event : 100` //491399
+  // let EVENT_BOOKED_MANAGER = `Event Name : Rookie League\nBalance to be paid at the event : 1000`
+  let EVENT_BOOKED_MANAGER = `You have received a new registration for the event.\n${event}\nDate : ${date}\nName : kumar\nTeam Name : ${team_name}\nSport : ${sport}(${type})\nRegisteration ID : ${booking_id}\nTT Coupon : ${amount}\nAmount Paid : ${balance}${""}\nBalance to be paid at the event : ${balance}`//491373
   // let SLOT_CANCELLED_BY_VENUE_MANAGER =  `Your booking ${booking_id} scheduled ${date} at ${venue},${" "+venue} has been cancelled. Please contact the venue for more info` ///418833
   // let EVENT_BOOKED_USER = `Your Turf Town event booking for MADRAS MUNDITAL has been confirmed.\nDate : ${date}\nTeam Name : ${team_name}\nSport : ${sport}(${type})\nRegisteration ID : ${booking_id}\nAmount Paid : Rs.${amount}${""}\nTT Coupon : 0\nBalance to be paid at event : ${balance}\nPlease contact ${numbers} for more details.`//491330
   //Send SMS
@@ -2310,9 +2311,11 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               let team_name = eventBooking.team_name
               let Booking_amount = eventBooking.booking_amount
               let EVENT_BOOKED_USER = `Your Turf Town event booking for ${event_name} has been confirmed.\nDate : ${event_date}\nTeam Name : ${team_name}\nSport : ${sport_name}(${game_type})\nRegisteration ID : ${booking_id}\nTT Coupon : ${eventBooking.coupon_amount}\nAmount Paid : ${Booking_amount}${""}\nBalance to be paid at event : ${balance}\nPlease contact ${event_contact} for more details.`//491373
+              let EVENT_BOOKED_MANAGER = `You have received a new registration for the event:\n${event_name}\nDate : ${event_date}\nName : ${name}\nTeam Name : ${team_name}\nSport : ${sport_name}(${game_type})\nRegisteration ID : ${booking_id}\nTT Coupon : ${eventBooking.coupon_amount}\nAmount Paid : ${Booking_amount}${""}\nBalance to be paid at the event : ${balance}`//491373
               // let EVENT_BOOKED_USER = `Your Turf Town event booking for ${event_name} has been confirmed.\nDate : ${event_date}\nTeam Name : ${team_name}\nSport : ${sport_name}(${game_type})\nRegisteration ID : ${booking_id}\nTT Coupon : ${eventBooking.coupon_amount}\nAmount Paid : Rs.${Booking_amount}${""}\nTT Coupon : 0\nBalance to be paid at event : ${balance}\nPlease contact ${event_contact} for more details.`//491373
               // SendMessage(event_manager_phone,sender,EVENT_CANCELLED_FOR_MANAGER_WITH_REFUND) ///manager sms
               SendMessage(phone,sender,EVENT_BOOKED_USER) /// user sms
+              SendMessage(event_contact,sender,EVENT_BOOKED_MANAGER) /// user sms
               // axios.get(process.env.PHP_SERVER+'/textlocal/event_booking_manager.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+event_contact,'&sport='+sport_name,'&game_type='+game_type)
               // .then(response => {
               //   console.log(response.data)

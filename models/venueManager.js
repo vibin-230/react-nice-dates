@@ -9,6 +9,7 @@ const schema = new Schema({
   created_by:String,
   modified_by:String,
   name:String,
+  notify:{type:Boolean, default:false},
   company_name:String,
   address:String,
   phone:String,

@@ -8,12 +8,25 @@ const schema = new Schema({
   booked_by:String,
   modified_by:String,
   booking_date:Date,
+  start_date_range:Date,
+  end_date_range:Date,
   booking_type:String,
   booking_status:String,
   booking_amount:Number,
+  selected_days:Array,
   venue:String,
   venue_id:String,
   venue_data: { type: Schema.Types.ObjectId, ref: 'venue' },
+  invoice_id: { type: Schema.Types.ObjectId, ref: 'invoice' },
+  repeat_booking: {
+    type: Boolean,
+    default: false
+  },
+  no_charge:Boolean,
+  group_id:String,
+  group_name:String,
+  closed:Boolean,
+  payment_option:Boolean,
   sport_name:String,
   venue_type:String,
   amount:Number,
@@ -40,12 +53,18 @@ const schema = new Schema({
   comments:String,
   cash:Number,
   upi:Number,
+  invoice_date:Date,
   academy:Boolean,
   cancelled_by:{ type: Schema.Types.ObjectId, ref: 'admin' },
   membership:Boolean,
   collected_by:{ type: Schema.Types.ObjectId, ref: 'admin' },
+  invoice_by:{ type: Schema.Types.ObjectId, ref: 'admin' },
   refund_status:Boolean,
   refunded: {
+    type: Boolean,
+    default: false
+  },
+  invoice: {
     type: Boolean,
     default: false
   }

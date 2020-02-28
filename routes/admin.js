@@ -842,7 +842,6 @@ router.post('/search',
 			}else{
 				combinedResult = event
 			}			
-			console.log(combinedResult)	
 			res.send({status:"success", message:"venues and events fetched based on search", data:combinedResult})
 		}).catch(next)
 	}).catch(next)
@@ -854,6 +853,21 @@ router.post('/search',
 router.post('/support',
 	verifyToken,
 	AccessControl('support', 'create'),
+	(req, res, next) => {
+		Support.create(req.body).then(support=>{
+			let html = "<h4><b>E-mail: </b>"+req.body.email+"</h4><h4><b>Phone: </b>"+req.body.phone+"</h4>"+"<h4><b>Name: </b>"+req.body.name+"</h4>"+"<h4><b>Venue Name: </b>"+req.body.venue_name+"</h4>"+"<h4><b>Message: </b>"+req.body.message+"</h4>"
+			mail(req.body.email,"support@turftown.in","Support "+req.body.venue_name,req.body.message,html,response=>{
+				if(response){
+					res.send({status:"success", message:"support request raised"})
+				}else{
+					res.send({status:"failed"})
+				}
+				},req.body.name)
+		}).catch(next)
+})
+
+
+router.post('/contact',
 	(req, res, next) => {
 		Support.create(req.body).then(support=>{
 			let html = "<h4><b>E-mail: </b>"+req.body.email+"</h4><h4><b>Phone: </b>"+req.body.phone+"</h4>"+"<h4><b>Name: </b>"+req.body.name+"</h4>"+"<h4><b>Venue Name: </b>"+req.body.venue_name+"</h4>"+"<h4><b>Message: </b>"+req.body.message+"</h4>"

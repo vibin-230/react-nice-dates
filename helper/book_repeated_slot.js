@@ -33,11 +33,10 @@ module.exports = function BookSlot(body,id,params,req,res,i,next){
             res.status(409).send({status:"failed", message:"slot already booked"})
           }else{
             let booking_id 
-              console.log(bookingOrder);
             if(bookingOrder){
               var numb = bookingOrder[0].booking_id.match(/\d/g);
               numb = numb.join("");
-              var str = "" + (parseInt(numb, 10) + i + 1)
+              var str = "" + (parseInt(numb, 10) + i )
               var pad = "TT000000"
               booking_id = pad.substring(0, pad.length - str.length) + str
             }else{

@@ -775,7 +775,6 @@ const SlotsCheck = (body, id) => {
 router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'create'), (req, res, next) => {
   let params = req.params.id
   //Check of Slot Exist
-  console.log(req.params.id);
   function SlotsCheck(body,id){
     return new Promise((resolve,reject)=>{
       Venue.findById({_id:id},{bank:0,access:0}).lean().then(venue=>{
@@ -788,7 +787,6 @@ router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'c
         Booking.find({ venue:body.venue, venue_id:req.params.id, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
         // Booking.find({$and:[{venue:body.venue, venue_id:id, booking_date:{$gte:body.booking_date,$lt:moment(body.booking_date).add(1,"days")}}],booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
         let slots_available = SlotsAvailable(venue,booking_history)
-        console.log(slots_available.slots_available[body.slot_time][body.venue_type])
         if(slots_available.slots_available[body.slot_time][body.venue_type]>0){
             resolve()
           }else{
@@ -814,16 +812,15 @@ router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'c
       let promisesToRun = [];
       req.body.map(((arr,index)=>{
           for(let i=0;i<arr.block.length;i++){
-            promisesToRun.push(BookRepSlot(arr.block[i],id,params,req,res,index,next))
+            promisesToRun.push(BookRepSlot(arr.block[i],id,params,req,res,(index+1),next))
           }
           bookOverTimeSlots.push(promisesToRun)
-      
+        }))
       Promise.all(promisesToRun).then(values => {
         values = {...values}
-        //result = Object.values(combineSlots(values))
+        //result = Object.values(combineRepeatSlots(values))
          res.send({status:"success", message:"slot booked", data:[]})
       }).catch(next)
-  }))
   }).catch(error=>{
     res.send({status:"failed", message:"slots not available",data:error})
   })
@@ -1307,13 +1304,34 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
 
 
 router.post('/group_by_event', verifyToken, (req, res, next) => {
-  EventBooking.aggregate([
-    { "$group" : { "_id" : "$event_id", event_bookings: { $push: "$$ROOT" } } }
-  ]).then(booking=>{    
-    res.send({status:"success", message:"booking group by event fetched", data:booking})
+  Event.find({},{format:0,bank:0,created_by:0,modified_by:0,venue:0}).then(event=>{  
+  EventBooking.find({}).populate('event_id','event').then(booking=>{   
+    let x = {}
+    for(let i = 0 ; i < booking.length; i++){
+      for(let j = 0 ; j < event.length; j++){
+          if(event[j]._id === booking[i].event_id)
+              if(x[event[j]._id]){
+                x[event[j]._id].push(booking[i])
+              }else{
+                x[event[j]._id] = []
+                x[event[j]._id].push(booking[i])
+              }
+      }
+    }
+    res.send({status:"success", message:"booking group by event fetched", data:x})
     }).catch(next)
+      }).catch(next)
 })
+// router.post('/group_by_event', verifyToken, (req, res, next) => {
+//     EventBooking.find({}).populate('event_id','event').then((bookings)=>{
+//       console.log(bookings)
+//      let grouped = _.chain(data).groupBy("event_id.event.name")
+     
+//     }).catch(next)
+//   })
 
+
+  
 
 router.post('/booking_history_from_app_event_bookings', verifyToken, (req, res, next) => {
   EventBooking.find({booking_status:{$in:["booked","completed","cancelled"]}, created_at:{$gte:req.body.fromdate, $lte:req.body.todate},booking_type:"app"}).lean().populate('event_id').then(booking=>{    

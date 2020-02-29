@@ -1798,7 +1798,7 @@ router.post('/upcoming_booking', verifyToken, (req, res, next) => {
           console.log("key2",moment().add(330,"minutes").format("YYYYMMDDHmm"))
           console.log("1",moment(key.booking_date).utc().format("YYYYMMDDHmm") > moment().add(330,"minutes").format("YYYYMMDDHmm"))
           console.log(2 > 3)
-          if(moment(key.booking_date).utc().format("YYYYMMDDHmm") > moment().add(330,"minutes").format("YYYYMMDDHmm")){
+          if(Math.round(moment(key.booking_date).utc().format("YYYYMMDDHmm")) > Math.round(moment().add(330,"minutes").format("YYYYMMDDHmm"))){
             return key
           }
         })

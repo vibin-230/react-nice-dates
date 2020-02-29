@@ -1786,6 +1786,7 @@ router.post('/upcoming_booking', verifyToken, (req, res, next) => {
         let finalResult = result.sort((a, b) => moment(a.start_time).format("YYYYMMDDHHmm") > moment(b.start_time).format("YYYYMMDDHHmm") ? 1 : -1 )
         const data = finalResult.length > 0 && finalResult.filter((key)=>{
           if( !key.hasOwnProperty("event_id") && moment(key.end_time).utc().format("YYYYMMDDHmm") > moment().format("YYYYMMDDHmm")){
+           console.log('key',key); 
             return key
           }
           else if( key.hasOwnProperty("event_id") && moment(key.booking_date).utc().format("YYYYMMDDHmm") > moment().format("YYYYMMDDHmm")){

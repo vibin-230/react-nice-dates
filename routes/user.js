@@ -1788,8 +1788,9 @@ router.post('/upcoming_booking', verifyToken, (req, res, next) => {
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
     EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
         result = Object.values(combineSlots(booking))
-        console.log("Result",result)
         let booking_data =result.filter((key)=>{
+          console.log("time",moment(key.end_time).utc().format("YYYYMMDDHmm"))
+          console.log("key2",moment().utc("+5:30").format("YYYYMMDDHmm"))
           if(key && moment(key.end_time).utc().format("YYYYMMDDHmm") > moment().utc().format("YYYYMMDDHmm")){
             return key
           }
@@ -1799,8 +1800,7 @@ router.post('/upcoming_booking', verifyToken, (req, res, next) => {
             return key
           }
         })
-        console.log("booking",booking_data)
-        console.log('------',event_booking_data)
+        console.log('------',)
         booking_data = [...booking_data,...event_booking_data]
         let finalResult = booking_data.sort((a, b) => moment(a.start_time).format("YYYYMMDDHmm") > moment(b.start_time).format("YYYYMMDDHmm") ? 1 : -1 )
         

@@ -1782,18 +1782,20 @@ router.post('/upcoming_booking', verifyToken, (req, res, next) => {
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
     EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
         result = Object.values(combineSlots(booking))
-         result = [...result,...eventBooking]
-         console.log('key',result); 
-        let finalResult = result.sort((a, b) => moment(a.start_time).format("YYYYMMDDHHmm") > moment(b.start_time).format("YYYYMMDDHHmm") ? 1 : -1 )
-        let data = finalResult.length > 0 && finalResult.map((key)=>{
-          if( !key.hasOwnProperty("event_id") && moment(key.end_time).utc().format("YYYYMMDDHmm") > moment().format("YYYYMMDDHmm")){
-            return key
-          }
-          else if( key.hasOwnProperty("event_id") && moment(key.booking_date).utc().format("YYYYMMDDHmm") > moment().format("YYYYMMDDHmm")){
+        let booking_data = result.length > 0 && result.filter((key)=>{
+          if( moment(key.end_time).utc().format("YYYYMMDDHmm") > moment().format("YYYYMMDDHmm")){
             return key
           }
         })
-        res.send({status:"success", message:"booking history fetched", data:data})
+        let event_booking_data =  eventBooking.map((key)=>{
+          if( moment(key.booking_date).utc().format("YYYYMMDDHmm") > moment().format("YYYYMMDDHmm")){
+            return key
+          }
+        })
+        booking_data = [...booking_data,...event_booking_data]
+        let finalResult = booking_data.sort((a, b) => moment(a.start_time).format("YYYYMMDDHHmm") > moment(b.start_time).format("YYYYMMDDHHmm") ? 1 : -1 )
+        
+        res.send({status:"success", message:"booking history fetched", data:finalResult})
     }).catch(next)
   }).catch(next)
 })

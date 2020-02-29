@@ -1798,7 +1798,8 @@ router.post('/upcoming_booking', verifyToken, (req, res, next) => {
             return key
           }
         }) : []
-        console.log(booking_data,event_booking_data)
+        console.log(booking_data)
+        console.log('------',event_booking_data,eventBooking)
         booking_data = [...booking_data,...event_booking_data]
         let finalResult = booking_data.sort((a, b) => moment(a.start_time).format("YYYYMMDDHHmm") > moment(b.start_time).format("YYYYMMDDHHmm") ? 1 : -1 )
         

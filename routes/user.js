@@ -1792,7 +1792,7 @@ router.post('/upcoming_booking', verifyToken, (req, res, next) => {
     EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
         result = Object.values(combineSlots(booking))
         let booking_data =result.filter((key)=>{
-          if(key && Math.round(moment(key.end_time).utc().format("YYYYMMDDHmm")) > Math.round(moment().add(330,"minutes").format("YYYYMMDDHmm"))){
+          if(key && Math.round(moment(key.end_time).utc().format("YYYYMMDDHHmm")) > Math.round(moment().add(330,"minutes").format("YYYYMMDDHHmm"))){
             return key
           }
         })
@@ -1801,7 +1801,8 @@ router.post('/upcoming_booking', verifyToken, (req, res, next) => {
             return key
           }
         })
-        booking_data = [...booking_data,...event_booking_data]
+        let event = event_booking_data.reverse()
+        booking_data = [...booking_data,...event]
 
 
         let finalResult = booking_data.sort((a, b) => moment(a.start_time).format("YYYYMMDDHmm") > moment(b.start_time).format("YYYYMMDDHmm") ? 1 : -1 )

@@ -1790,13 +1790,13 @@ router.post('/upcoming_booking', verifyToken, (req, res, next) => {
         result = Object.values(combineSlots(booking))
         let booking_data =result.filter((key)=>{
           console.log("time",moment(key.end_time).utc().format("YYYYMMDDHmm"))
-          console.log("key2",moment().utc("+5:30").format("YYYYMMDDHmm"))
-          if(key && moment(key.end_time).utc().format("YYYYMMDDHmm") > moment().utc().format("YYYYMMDDHmm")){
+          console.log("key2",moment().utc().format("YYYYMMDDHmm"))
+          if(key && (moment(key.end_time).utc().format("YYYYMMDDHmm") > moment().utc().format("YYYYMMDDHmm"))){
             return key
           }
         })
         let event_booking_data = eventBooking.filter((key)=>{
-          if(key && moment(key.booking_date).utc().format("YYYYMMDDHmm") > moment().utc().format("YYYYMMDDHmm")){
+          if(key && (moment(key.booking_date).utc().format("YYYYMMDDHmm") > moment().utc().format("YYYYMMDDHmm"))){
             return key
           }
         })

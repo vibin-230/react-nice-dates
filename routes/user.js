@@ -1784,7 +1784,7 @@ router.post('/upcoming_booking', verifyToken, (req, res, next) => {
   let eventFilter = {
     booking_status:{$in:["booked"]},
     created_by:req.userId,
-    event_booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}
+    event_booking_date:{$gte:new Date(), $lte:req.body.todate}
   }
   let booking_ids = []
   //req.role==="super_admin"?delete filter.created_by:null
@@ -1796,14 +1796,15 @@ router.post('/upcoming_booking', verifyToken, (req, res, next) => {
             return key
           }
         })
-        let event_booking_data = eventBooking.filter((key)=>{
-          console.log('bd',moment(key.booking_date).utc().format("YYYYMDDHHmm"))
-          console.log('bdr',moment().format("YYYYMMDDHHmm"))
+        let event_booking_data = eventBooking
+        // .filter((key)=>{
+        //   console.log('bd',moment(key.booking_date).utc().format("YYYYMDDHHmm"))
+        //   console.log('bdr',moment().add(330,"minutes").format("YYYYMMDDHHmm"))
 
-          if(Math.round(moment(key.booking_date).utc().format("YYYYMDDHHmm")) > Math.round(moment().format("YYYYMMDDHHmm"))){
-            return key
-          }
-        })
+        //   if(Math.round(moment(key.booking_date).utc().format("YYYYMDDHHmm")) > Math.round(moment().add(330,"minutes").format("YYYYMMDDHHmm"))){
+        //     return key
+        //   }
+        // })
         let event = event_booking_data.reverse()
         booking_data = [...booking_data,...event]
 

@@ -1311,21 +1311,11 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
 
 
 router.post('/group_by_event', verifyToken, (req, res, next) => {
-  // EventBooking.aggregate([
-  //   { "$group" : { "_id" : "$event_id", event_bookings: { $push: "$$ROOT"}} }
-  // ]).populate("event_id").then(booking=>{    
-  //   res.send({status:"success", message:"booking group by event fetched", data:booking})
-  //   }).catch(next)
-  EventBooking.aggregate([{
-    $unwind: '$Event'
-},{ "$group" : { "_id" : "$event_id", event_bookings: { $push: "$$ROOT"}} }
-])
-.exec(function(err, transactions) {
-  EventBooking.populate(transactions, {path: '_id'}, function(err, populatedTransactions) {
-        res.send({status:"success", message:"booking group by event fetched", data:populatedTransactions})
-
-});
-});
+  EventBooking.aggregate([
+    { "$group" : { "_id" : "$event_id", event_bookings: { $push: "$$ROOT" } } }
+  ]).then(booking=>{    
+    res.send({status:"success", message:"booking group by event fetched", data:booking})
+    }).catch(next)
 })
 
 

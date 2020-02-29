@@ -1799,10 +1799,11 @@ router.post('/upcoming_booking', verifyToken, (req, res, next) => {
         let event_booking_data = eventBooking.filter((key)=>{
           console.log(key)
           if(Math.round(moment(key.event_booking_date).utc().format("YYYYMMDDHmm")) > Math.round(moment().add(330,"minutes").format("YYYYMMDDHmm"))){
+            console.log('passsssssssssssssssssssssssssssssssss')
             return key
           }
         })
-        booking_data = [...booking_data,...event_booking_data]
+        booking_data = [...booking_data,...eventBooking]
         console.log('---------------------',booking_data)
         console.log('---------------------',event_booking_data)
 

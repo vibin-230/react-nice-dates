@@ -1743,7 +1743,7 @@ router.post('/past_bookings', verifyToken, (req, res, next) => {
           if(key && key.booking_status !== "booked"){
             return key
           }
-          else if(key && key.booking_status == "booked" && moment(key.end_time).utc().format("YYYYMMDDHmm") < moment().add(330,"minutes").format("YYYYMMDDHmm")){
+          else if(key && key.booking_status == "booked" && (moment(key.end_time).utc().format("YYYYMMDDHmm") < moment().add(330,"minutes").format("YYYYMMDDHmm"))){
             return key
           }
         })
@@ -1751,7 +1751,7 @@ router.post('/past_bookings', verifyToken, (req, res, next) => {
           if(key && key.booking_status !== "booked"){
             return key
           }
-          else if(key && key.booking_status == "booked" && moment(key.start_time).utc().format("YYYYMMDDHmm") < moment().add(330,"minutes").format("YYYYMMDDHmm")){
+          else if(key && key.booking_status == "booked" && (moment(key.booking_date).utc().format("YYYYMMDDHmm") < moment().add(330,"minutes").format("YYYYMMDDHmm"))){
             return key
           }
         })

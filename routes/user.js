@@ -1716,7 +1716,7 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
 router.post('/past_bookings', verifyToken, (req, res, next) => {
   let past_date  = moment(req.body.todate).add(1,'month')
   let filter = {
-    booking_status:{$in:["booked","completed","cancelled"]},
+    booking_status:{$in:["booked","completed"]},
     created_by:req.userId,
     end_time:{$gte:req.body.fromdate, $lte:req.body.todate}
   }
@@ -1725,7 +1725,7 @@ router.post('/past_bookings', verifyToken, (req, res, next) => {
     created_by:req.userId,
   }
   let eventFilter = {
-    booking_status:{$in:["booked","completed","cancelled"]},
+    booking_status:{$in:["booked","completed"]},
     created_by:req.userId,
     event_booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}
   }

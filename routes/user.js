@@ -1743,7 +1743,7 @@ router.post('/past_bookings', verifyToken, (req, res, next) => {
           if(key && key.booking_status !== "booked"){
             return key
           }
-          else if(key && key.booking_status == "booked" && (moment(key.end_time).utc().format("YYYYMMDDHmm") < moment().add(330,"minutes").format("YYYYMMDDHmm"))){
+          else if(key && key.booking_status == "booked" && Math.round(moment(key.end_time).utc().format("YYYYMMDDHmm")) < Math.round(moment().add(330,"minutes").format("YYYYMMDDHmm"))){
             return key
           }
         })
@@ -1751,7 +1751,7 @@ router.post('/past_bookings', verifyToken, (req, res, next) => {
           if(key && key.booking_status !== "booked"){
             return key
           }
-          else if(key && key.booking_status == "booked" && (moment(key.booking_date).utc().format("YYYYMMDDHmm") < moment().add(330,"minutes").format("YYYYMMDDHmm"))){
+          else if(key && key.booking_status == "booked" && Math.round(moment(key.booking_date).utc().format("YYYYMMDDHmm")) < Math.round(moment().add(330,"minutes").format("YYYYMMDDHmm"))){
             return key
           }
         })
@@ -1789,15 +1789,11 @@ router.post('/upcoming_booking', verifyToken, (req, res, next) => {
     EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
         result = Object.values(combineSlots(booking))
         let booking_data =result.filter((key)=>{
-          if(key && (moment(key.end_time).utc().format("YYYYMMDDHmm") > moment().add(330,"minutes").format("YYYYMMDDHmm"))){
+          if(key && Math.round(moment(key.end_time).utc().format("YYYYMMDDHmm")) > Math.round(moment().add(330,"minutes").format("YYYYMMDDHmm"))){
             return key
           }
         })
         let event_booking_data = eventBooking.filter((key)=>{
-          console.log("time",moment(key.booking_date).utc().format("YYYYMMDDHmm"))
-          console.log("key2",moment().add(330,"minutes").format("YYYYMMDDHmm"))
-          console.log("1",moment(key.booking_date).utc().format("YYYYMMDDHmm") > moment().add(330,"minutes").format("YYYYMMDDHmm"))
-          console.log(2 > 3)
           if(Math.round(moment(key.booking_date).utc().format("YYYYMMDDHmm")) > Math.round(moment().add(330,"minutes").format("YYYYMMDDHmm"))){
             return key
           }

@@ -1739,22 +1739,22 @@ router.post('/past_bookings', verifyToken, (req, res, next) => {
         result1 = Object.values(combineSlots(cancel_booking))
         result = [...result,...result1]
         let event_result =[...eventBooking,...cancel_event_booking]
-        let booking_data = result.filter((key)=>{
+        let booking_data = result && result.length > 0 ? result.filter((key)=>{
           if(key.booking_status !== "booked"){
             return key
           }
           else if(key.booking_status == "booked" && moment(key.end_time).utc().format("YYYYMMDDHmm") < moment().format("YYYYMMDDHmm")){
             return key
           }
-        })
-        let event_booking_data = event_result.filter((key)=>{
+        }) : []
+        let event_booking_data = event_result && event_result.length > 0 ? event_result.filter((key)=>{
           if(key.booking_status !== "booked"){
             return key
           }
           else if(key.booking_status == "booked" && moment(key.start_time).utc().format("YYYYMMDDHmm") < moment().format("YYYYMMDDHmm")){
             return key
           }
-        })
+        }) :[]
          result = [...booking_data,...event_booking_data]
         let finalResult = result.sort((a, b) => moment(a.start_time).format("YYYYMMDDHHmm") > moment(b.start_time).format("YYYYMMDDHHmm") ? 1 : -1 )
         res.send({status:"success", message:"booking history fetched", data:finalResult})
@@ -1788,16 +1788,16 @@ router.post('/upcoming_booking', verifyToken, (req, res, next) => {
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
     EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
         result = Object.values(combineSlots(booking))
-        let booking_data = result.length > 0 && result.filter((key)=>{
+        let booking_data = result && result.length > 0 ? result.filter((key)=>{
           if( moment(key.end_time).utc().format("YYYYMMDDHmm") > moment().format("YYYYMMDDHmm")){
             return key
           }
-        })
-        let event_booking_data =  eventBooking.map((key)=>{
+        }) : []
+        let event_booking_data = eventBooking && eventBooking.length > 0 ? eventBooking.map((key)=>{
           if( moment(key.booking_date).utc().format("YYYYMMDDHmm") > moment().format("YYYYMMDDHmm")){
             return key
           }
-        })
+        }) : []
         booking_data = [...booking_data,...event_booking_data]
         let finalResult = booking_data.sort((a, b) => moment(a.start_time).format("YYYYMMDDHHmm") > moment(b.start_time).format("YYYYMMDDHHmm") ? 1 : -1 )
         

@@ -143,7 +143,7 @@ router.post('/force_update_by_user', [
       User.findOne({_id: req.body.userId}).then(user=> {
         if (user) {
               req.body.modified_at = moment();
-              User.findByIdAndUpdate({_id: req.body.userId},{force_update:req.body.force_update}).then(user1=>{
+              User.findByIdAndUpdate({_id: req.body.userId},{force_update:req.body.force_update},{activity_log:0}).then(user1=>{
                    res.status(201).send({status: "success", message: "user force_updated"})
             })
         } else {
@@ -159,7 +159,7 @@ router.post('/force_update_by_user_app', [
       User.findOne({_id: req.userId}).then(user=> {
         if (user) {
               req.body.modified_at = moment();
-              User.findByIdAndUpdate({_id: req.userId},{force_update:req.body.force_update,version:req.body.version}).then(user1=>{
+              User.findByIdAndUpdate({_id: req.userId},{force_update:req.body.force_update,version:req.body.version},{activity_log:0}).then(user1=>{
                 res.status(201).send({status: "success",});
             })
         } else {
@@ -172,7 +172,7 @@ router.post('/get_user', [
   verifyToken,
 ], (req, res, next) => {
       //Check if user exist
-      User.findOne({_id: req.userId}).then(user=> {
+      User.findOne({_id: req.userId},{activity_log:0}).then(user=> {
         User.findByIdAndUpdate({_id: req.userId},{version:'26'}).then(user1=>{
         if (user) {
           res.status(201).send({status: "success", message: "user collected",data:user})
@@ -209,7 +209,7 @@ router.post('/edit_user', [
               req.body.modified_at = moment();
               User.findByIdAndUpdate({_id: req.userId},req.body).then(user1=>{
                 
-                User.findOne({_id:req.userId},{__v:0,token:0},null).then(user=>{
+                User.findOne({_id:req.userId},{__v:0,token:0},null,{activity_log:0}).then(user=>{
                   console.log('iser',user);
                   let userResponse = {
                     name:user.name,
@@ -611,8 +611,8 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         let manger_numbers = [...phone_numbers,manager_phone]
         let venue_discount_coupon = Math.round(result[0].commission+result[0].coupon_amount) == 0 ? "Venue Discount:0" : result[0].commission == 0 && result[0].coupon_amount !== 0 ? `TT Coupon:${result[0].coupon_amount}` : result[0].commission !== 0 && result[0].coupon_amount == 0 ? `Venue Discount:${result[0].commission}` : `Venue Discount:${result[0].commission}\nTT Coupon:${result[0].coupon_amount}`  
         let balance = Math.round(result[0].amount)-Math.round(result[0].coupon_amount)-Math.round(result[0].booking_amount)-Math.round(result[0].commission)
-        let SLOT_BOOKED_USER =`Hey ${values[0].name}! Thank you for using Turf Town!\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${result[0].booking_amount}\nBalance to be paid : ${balance}`
-        let SLOT_BOOKED_MANAGER = `You have recieved a TURF TOWN booking from ${values[0].name} ( ${values[0].phone} ) \nBooking Id: ${booking_id}\nVenue: ${venue_name}, ${venue_area}\nSport: ${sport_name}(${venue_type})\nDate and Time: ${datetime}\nPrice: ${result[0].amount}\nAmount Paid: ${result[0].booking_amount}\nVenue Discount: ${result[0].commission}\nTT Coupon: ${result[0].coupon_amount}\nAmount to be collected: ${balance}` //490618
+        let SLOT_BOOKED_USER =`Hey ${values[0].name}! Thank you for using Turf Town!\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${Math.round(result[0].booking_amount)}\nBalance to be paid : ${Math.round(balance)}`
+        let SLOT_BOOKED_MANAGER = `You have recieved a TURF TOWN booking from ${values[0].name} ( ${values[0].phone} ) \nBooking Id: ${booking_id}\nVenue: ${venue_name}, ${venue_area}\nSport: ${sport_name}(${venue_type})\nDate and Time: ${datetime}\nPrice: ${Math.round(result[0].amount)}\nAmount Paid: ${Math.round(result[0].booking_amount)}\nVenue Discount: ${Math.round(result[0].commission)}\nTT Coupon: ${Math.round(result[0].coupon_amount)}\nAmount to be collected: ${Math.round(balance)}` //490618
         let sender = "TRFTWN"
         SendMessage(phone,sender,SLOT_BOOKED_USER) // sms to user
         SendMessage(manger_numbers.join(","),sender,SLOT_BOOKED_MANAGER) // sms to user 
@@ -1141,7 +1141,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   let venue_name = booking[0].venue
                   let venue_type = SetKeyForSport(booking[0].venue_type)
                   let venue_area = booking[0].venue_data.venue.area
-                  let booking_amount = booking[0].booking_amount 
+                  let booking_amount = Math.round(booking[0].booking_amount)
                   let phone = "91"+booking[0].phone
                   let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
                   let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
@@ -1226,7 +1226,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   let venue_type = SetKeyForSport(booking[0].venue_type)
                   let venue_area = booking[0].venue_data.venue.area
                   let phone = "91"+booking[0].phone
-                  let booking_amount = booking[0].booking_amount 
+                  let booking_amount = Math.round(booking[0].booking_amount) 
                   let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
                   let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
                   let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
@@ -1311,11 +1311,21 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
 
 
 router.post('/group_by_event', verifyToken, (req, res, next) => {
-  EventBooking.aggregate([
-    { "$group" : { "_id" : "$event_id", event_bookings: { $push: "$$ROOT" } } }
-  ]).then(booking=>{    
-    res.send({status:"success", message:"booking group by event fetched", data:booking})
-    }).catch(next)
+  // EventBooking.aggregate([
+  //   { "$group" : { "_id" : "$event_id", event_bookings: { $push: "$$ROOT"}} }
+  // ]).populate("event_id").then(booking=>{    
+  //   res.send({status:"success", message:"booking group by event fetched", data:booking})
+  //   }).catch(next)
+  EventBooking.aggregate([{
+    $unwind: '$Event'
+},{ "$group" : { "_id" : "$event_id", event_bookings: { $push: "$$ROOT"}} }
+])
+.exec(function(err, transactions) {
+  EventBooking.populate(transactions, {path: '_id'}, function(err, populatedTransactions) {
+        res.send({status:"success", message:"booking group by event fetched", data:populatedTransactions})
+
+});
+});
 })
 
 

@@ -1736,22 +1736,28 @@ router.post('/past_bookings', verifyToken, (req, res, next) => {
     EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
       EventBooking.find(cancel_filter).lean().populate('event_id').then(cancel_event_booking=>{
         result = Object.values(combineSlots(booking))
-         result1 = Object.values(combineSlots(cancel_booking))
-      //result = [...result,...eventBooking]
-         result = [...result,...result1,...eventBooking,...cancel_event_booking]
-        let finalResult = result.sort((a, b) => moment(a.start_time).format("YYYYMMDDHHmm") > moment(b.start_time).format("YYYYMMDDHHmm") ? 1 : -1 )
-        const data = finalResult.length > 0 && finalResult.filter((key)=>{
+        result1 = Object.values(combineSlots(cancel_booking))
+        result = [...result,...result1]
+        let event_result =[...eventBooking,...cancel_event_booking]
+        let booking_data = result.filter((key)=>{
           if(key.booking_status !== "booked"){
             return key
           }
-          else if(key.booking_status == "booked" && !key.hasOwnProperty("event_id") && moment(key.end_time).utc().format("YYYYMMDDHmm") < moment().format("YYYYMMDDHmm")){
-            return key
-          }
-          else if(key.booking_status == "booked" && key.hasOwnProperty("event_id") && moment(key.start_time).utc().format("YYYYMMDDHmm") < moment().format("YYYYMMDDHmm")){
+          else if(key.booking_status == "booked" && moment(key.end_time).utc().format("YYYYMMDDHmm") < moment().format("YYYYMMDDHmm")){
             return key
           }
         })
-        res.send({status:"success", message:"booking history fetched", data:data})
+        let event_booking_data = event_result.filter((key)=>{
+          if(key.booking_status !== "booked"){
+            return key
+          }
+          else if(key.booking_status == "booked" && moment(key.start_time).utc().format("YYYYMMDDHmm") < moment().format("YYYYMMDDHmm")){
+            return key
+          }
+        })
+         result = [...booking_data,...event_booking_data]
+        let finalResult = result.sort((a, b) => moment(a.start_time).format("YYYYMMDDHHmm") > moment(b.start_time).format("YYYYMMDDHHmm") ? 1 : -1 )
+        res.send({status:"success", message:"booking history fetched", data:finalResult})
     }).catch(next)
   }).catch(next)
   }).catch(next)

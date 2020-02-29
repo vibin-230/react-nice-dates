@@ -1796,7 +1796,7 @@ router.post('/upcoming_booking', verifyToken, (req, res, next) => {
         let event_booking_data = eventBooking.filter((key)=>{
           console.log("time",moment(key.booking_date).utc().format("YYYYMMDDHmm"))
           console.log("key2",moment().add(330,"minutes").format("YYYYMMDDHmm"))
-          if(key && (moment(key.booking_date).utc().format("YYYYMMDDHmm") > moment().add(330,"minutes").format("YYYYMMDDHmm"))){
+          if(moment(key.booking_date).utc().format("YYYYMMDDHmm") > moment().add(330,"minutes").format("YYYYMMDDHmm")){
             return key
           }
         })

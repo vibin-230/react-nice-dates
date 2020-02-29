@@ -1743,7 +1743,7 @@ router.post('/past_bookings', verifyToken, (req, res, next) => {
           if(key && key.booking_status !== "booked"){
             return key
           }
-          else if(key && key.booking_status == "booked" && moment(key.end_time).utc().format("YYYYMMDDHmm") < moment().utc().format("YYYYMMDDHmm")){
+          else if(key && key.booking_status == "booked" && moment(key.end_time).utc().format("YYYYMMDDHmm") < moment().add(330,"minutes").format("YYYYMMDDHmm")){
             return key
           }
         })
@@ -1751,7 +1751,7 @@ router.post('/past_bookings', verifyToken, (req, res, next) => {
           if(key && key.booking_status !== "booked"){
             return key
           }
-          else if(key && key.booking_status == "booked" && moment(key.start_time).utc().format("YYYYMMDDHmm") < moment().utc().format("YYYYMMDDHmm")){
+          else if(key && key.booking_status == "booked" && moment(key.start_time).utc().format("YYYYMMDDHmm") < moment().add(330,"minutes").format("YYYYMMDDHmm")){
             return key
           }
         })
@@ -1791,12 +1791,12 @@ router.post('/upcoming_booking', verifyToken, (req, res, next) => {
         let booking_data =result.filter((key)=>{
           console.log("time",moment(key.end_time).utc().format("YYYYMMDDHmm"))
           console.log("key2",moment().add(530,"minutes").format("YYYYMMDDHmm"))
-          if(key && (moment(key.end_time).utc().format("YYYYMMDDHmm") > moment().format("YYYYMMDDHmm"))){
+          if(key && (moment(key.end_time).utc().format("YYYYMMDDHmm") > moment().add(330,"minutes").format("YYYYMMDDHmm"))){
             return key
           }
         })
         let event_booking_data = eventBooking.filter((key)=>{
-          if(key && (moment(key.booking_date).utc().format("YYYYMMDDHmm") > moment().format("YYYYMMDDHmm"))){
+          if(key && (moment(key.booking_date).utc().format("YYYYMMDDHmm") > moment().add(330,"minutes").format("YYYYMMDDHmm"))){
             return key
           }
         })

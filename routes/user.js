@@ -1326,16 +1326,6 @@ router.post('/group_by_event', verifyToken, (req, res, next) => {
     }).catch(next)
       }).catch(next)
 })
-// router.post('/group_by_event', verifyToken, (req, res, next) => {
-//     EventBooking.find({}).populate('event_id','event').then((bookings)=>{
-//       console.log(bookings)
-//      let grouped = _.chain(data).groupBy("event_id.event.name")
-     
-//     }).catch(next)
-//   })
-
-
-  
 
 router.post('/booking_history_from_app_event_bookings', verifyToken, (req, res, next) => {
   EventBooking.find({booking_status:{$in:["booked","completed","cancelled"]}, created_at:{$gte:req.body.fromdate, $lte:req.body.todate},booking_type:"app"}).lean().populate('event_id').then(booking=>{    
@@ -1714,10 +1704,96 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
       //result = [...result,...eventBooking]
          result = [...result,...result1,...eventBooking,...cancel_event_booking]
         let finalResult = result.sort((a, b) => moment(a.start_time).format("YYYYMMDDHHmm") > moment(b.start_time).format("YYYYMMDDHHmm") ? 1 : -1 )
-      res.send({status:"success", message:"booking history fetched", data:finalResult})
+       
+        res.send({status:"success", message:"booking history fetched", data:finalResult})
     }).catch(next)
   }).catch(next)
   }).catch(next)
+  }).catch(next)
+})
+
+
+router.post('/past_bookings', verifyToken, (req, res, next) => {
+  let past_date  = moment(req.body.todate).add(1,'month')
+  let filter = {
+    booking_status:{$in:["booked","completed","cancelled"]},
+    created_by:req.userId,
+    end_time:{$gte:req.body.fromdate, $lte:req.body.todate}
+  }
+  let cancel_filter = {
+    booking_status:{$in:["cancelled"]},
+    created_by:req.userId,
+  }
+  let eventFilter = {
+    booking_status:{$in:["booked","completed","cancelled"]},
+    created_by:req.userId,
+    event_booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}
+  }
+  let booking_ids = []
+  //req.role==="super_admin"?delete filter.created_by:null
+  Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
+  Booking.find(cancel_filter).lean().populate('venue_data','venue').then(cancel_booking=>{
+    EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
+      EventBooking.find(cancel_filter).lean().populate('event_id').then(cancel_event_booking=>{
+        result = Object.values(combineSlots(booking))
+         result1 = Object.values(combineSlots(cancel_booking))
+      //result = [...result,...eventBooking]
+         result = [...result,...result1,...eventBooking,...cancel_event_booking]
+        let finalResult = result.sort((a, b) => moment(a.start_time).format("YYYYMMDDHHmm") > moment(b.start_time).format("YYYYMMDDHHmm") ? 1 : -1 )
+        const data = finalResult.length > 0 && finalResult.filter((key)=>{
+          if(key.booking_status !== "booked"){
+            return key
+          }
+          else if(key.booking_status == "booked" && !key.hasOwnProperty("event_id") && moment(key.end_time).utc().format("YYYYMMDDHmm") < moment().format("YYYYMMDDHmm")){
+            return key
+          }
+          else if(key.booking_status == "booked" && key.hasOwnProperty("event_id") && moment(key.start_time).utc().format("YYYYMMDDHmm") < moment().format("YYYYMMDDHmm")){
+            return key
+          }
+        })
+        res.send({status:"success", message:"booking history fetched", data:data})
+    }).catch(next)
+  }).catch(next)
+  }).catch(next)
+  }).catch(next)
+})
+
+
+
+
+router.post('/upcoming_booking', verifyToken, (req, res, next) => {
+  let past_date  = moment(req.body.todate).add(1,'month')
+  let filter = {
+    booking_status:{$in:["booked"]},
+    created_by:req.userId,
+    end_time:{$gte:req.body.fromdate, $lte:req.body.todate}
+  }
+  let cancel_filter = {
+    booking_status:{$in:["cancelled"]},
+    created_by:req.userId,
+  }
+  let eventFilter = {
+    booking_status:{$in:["booked"]},
+    created_by:req.userId,
+    event_booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}
+  }
+  let booking_ids = []
+  //req.role==="super_admin"?delete filter.created_by:null
+  Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
+    EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
+        result = Object.values(combineSlots(booking))
+         result = [...result,...eventBooking]
+        let finalResult = result.sort((a, b) => moment(a.start_time).format("YYYYMMDDHHmm") > moment(b.start_time).format("YYYYMMDDHHmm") ? 1 : -1 )
+        const data = finalResult.length > 0 && finalResult.filter((key)=>{
+          if( !key.hasOwnProperty("event_id") && moment(key.end_time).utc().format("YYYYMMDDHmm") > moment().format("YYYYMMDDHmm")){
+            return key
+          }
+          else if( key.hasOwnProperty("event_id") && moment(key.booking_date).utc().format("YYYYMMDDHmm") > moment().format("YYYYMMDDHmm")){
+            return key
+          }
+        })
+        res.send({status:"success", message:"booking history fetched", data:data})
+    }).catch(next)
   }).catch(next)
 })
 

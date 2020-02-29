@@ -1748,6 +1748,9 @@ router.post('/past_bookings', verifyToken, (req, res, next) => {
           }
         })
         let event_booking_data = event_result.filter((key)=>{
+          console.log("time",moment(key.booking_date).utc().format("YYYYMMDDHmm"))
+          console.log("2",moment().add(330,"minutes").format("YYYYMMDDHmm"))
+          console.log("keyee",Math.round(moment(key.booking_date).utc().format("YYYYMMDDHmm")) < Math.round(moment().add(330,"minutes").format("YYYYMMDDHmm")))
           if(key && key.booking_status !== "booked"){
             return key
           }

@@ -1797,14 +1797,11 @@ router.post('/upcoming_booking', verifyToken, (req, res, next) => {
           }
         })
         let event_booking_data = eventBooking.filter((key)=>{
-          console.log('booking_date',moment(key.event_booking_date).utc().format("YYYYMMDDHHmm"))
-          console.log('now ',moment().add(330,"minutes").format("YYYYMMDDHHmm"))
           if(Math.round(moment(key.event_booking_date).utc().format("YYYYMDDHHmm")) > Math.round(moment().add(330,"minutes").format("YYYYMMDDHHmm"))){
-            console.log('passsssssssssssssssssssssssssssssssss')
             return key
           }
         })
-        booking_data = [...booking_data,...eventBooking]
+        booking_data = [...booking_data,...event_booking_data]
 
 
         let finalResult = booking_data.sort((a, b) => moment(a.start_time).format("YYYYMMDDHmm") > moment(b.start_time).format("YYYYMMDDHmm") ? 1 : -1 )

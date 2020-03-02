@@ -208,9 +208,8 @@ router.post('/edit_user', [
         if (user) {
               req.body.modified_at = moment();
               User.findByIdAndUpdate({_id: req.userId},req.body).then(user1=>{
-                
-                User.findOne({_id:req.userId},{__v:0,token:0},null,{activity_log:0}).then(user=>{
-                  console.log('iser',user);
+                console.log('iser',user1);
+                User.findOne({_id:req.userId},{__v:0,token:0,activity_log:0},null).then(user=>{
                   let userResponse = {
                     name:user.name,
                     gender:user.gender,
@@ -2195,9 +2194,12 @@ router.post('/check_booking', verifyToken, (req, res, next) => {
     }else{
       EventBooking.find({event_id:req.body.event_id}).lean().populate('event_id').then(bookingOrders=>{
         if(bookingOrders.length<bookingOrders[0].event_id.format.noofteams){
-          res.send({status:"success", message:"no event found"})
+          if(bookingOrders[0].event_id.status){
+            res.send({status:"success", message:"no event found"})
+          }else{
+            res.send({status:"success", message:"no event found"})
+          }
         }else{
-          
           res.send({status:"success", message:"Registerations full!", data:{event}})
         }
       

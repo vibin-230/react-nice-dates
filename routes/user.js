@@ -2777,7 +2777,7 @@ router.post('/invoice_report_booked', verifyToken, (req, res, next) => {
 // 	}).catch(next)
 // })
 router.post('/ads_list',verifyToken,AccessControl('ads', 'read'),(req, res, next) => {
-  Ads.find({$and: [{ start_date: { $lte: new Date(),},}, { end_date: {$gte: new Date(),},},{sport_type: req.body.sport_type},{ page: req.body.page}],}).lean().populate('event').populate('venue').then(ads=>{
+  Ads.find({$and: [{ start_date: { $lte: new Date(),},}, { end_date: {$gte: new Date(),},},{sport_type: req.body.sport_type},{ page: req.body.page}],status:true}).lean().populate('event').populate('venue').then(ads=>{
       Offers.find({}).then(offers=>{
 
    let event_ads = []

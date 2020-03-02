@@ -319,7 +319,7 @@ router.post('/add_venue_manager',
 					name:data.name,
 					link:reset_url
 				}
-				// ejs.renderFile('views/set_password/set_password.ejs',mailBody).then(html=>{
+				// ejs.renderFile('views/set_password/set_password.ejs',mailBody).then(html=>{search
 				// 	mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
 				// 		if(response){
 				// 			let body = {
@@ -853,6 +853,13 @@ router.post('/search',
 		Event.find({"event.name":{ "$regex": req.body.search, "$options": "i" }}).lean().populate('venue').then(event=>{
 			Offers.find({}).then(offers=>{
 			let combinedResult
+			Object.values(event).map((key)=>{
+				Object.values(key.venue).map((value,index)=>{
+					let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
+					value.offers = filteredOffer
+					return value
+				})
+			})
 			if(venue){
 					let list = Object.values(venue).map((value,index)=>{
 					let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)

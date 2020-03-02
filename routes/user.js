@@ -2800,6 +2800,13 @@ router.post('/ads_list',verifyToken,AccessControl('ads', 'read'),(req, res, next
      if(final_event_ds.length > 0){
       final_event_ds.map((event_ad,i)=>{
         Event.find({'_id':event_ad.event[0]._id}).lean().populate('venue').then(event=>{
+          Object.values(event).map((key)=>{
+            Object.values(key.venue).map((value,index)=>{
+              let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
+              value.offers = filteredOffer
+              return value
+            })
+          })
             event_ad.event[0] = event
             event_ads.push(event_ad)
             if( i === final_event_ds.length - 1){

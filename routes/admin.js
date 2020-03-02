@@ -46,17 +46,19 @@ if (!('multidelete' in Object.prototype)) {
     });
 }
 function AdsValidation(ad,req){
+	let x ;
 	if(ad._id == req.params.id ){
-		return false
+		x = false
 	}
 	else if(ad._id !== req.params.id){
 		if(moment(req.body.start_date).isBetween(moment(ad.start_date).format("YYYY-MM-DD"),moment(ad.end_date).format("YYYY-MM-DD"),null,[]) || moment(req.body.end_date).isBetween(moment(ad.start_date).format("YYYY-MM-DD"),moment(ad.end_date).format("YYYY-MM-DD"),null,[])){
-			return true
+			x = true
 		}
 		else {
-			return false
+			x =false
 		}
 	}
+	return x
 }
 function ActivityLog(id, user_type, activity, message) {
 	let activity_log = {
@@ -317,7 +319,7 @@ router.post('/add_venue_manager',
 					name:data.name,
 					link:reset_url
 				}
-				// ejs.renderFile('views/set_password/set_password.ejs',mailBody).then(html=>{
+				// ejs.renderFile('views/set_password/set_password.ejs',mailBody).then(html=>{search
 				// 	mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
 				// 		if(response){
 				// 			let body = {
@@ -444,14 +446,34 @@ router.delete('/delete_venue_staff/:id',
 })
 
 //// Event
+// router.post('/event',
+// 	verifyToken,
+// 	// AccessControl('event', 'read'),
+// 	(req, res, next) => {
+// 	Event.find({status:true}).lean().populate('venue').then(event=>{
+// 		Offers.find({}).then(offers=>{
+// 				let filteredOffer = Object.values(offers).filter(offer=>offer.event.indexOf(event._id)!== -1)
+// 				event.offer = filteredOffer
+// 			res.send({status:"success", message:"events fetched", data:event})
+// 		}).catch(next)
+// 	}).catch(next)
+// })
+
+
+//// Event
 router.post('/event',
 	verifyToken,
 	// AccessControl('event', 'read'),
 	(req, res, next) => {
 	Event.find({status:true}).lean().populate('venue').then(event=>{
 		Offers.find({}).then(offers=>{
-				let filteredOffer = Object.values(offers).filter(offer=>offer.event.indexOf(event._id)!== -1)
-				event.offer = filteredOffer
+			Object.values(event).map((key)=>{
+				Object.values(key.venue).map((value,index)=>{
+					let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
+					value.offers = filteredOffer
+					return value
+				})
+			})
 			res.send({status:"success", message:"events fetched", data:event})
 		}).catch(next)
 	}).catch(next)
@@ -831,6 +853,13 @@ router.post('/search',
 		Event.find({"event.name":{ "$regex": req.body.search, "$options": "i" }}).lean().populate('venue').then(event=>{
 			Offers.find({}).then(offers=>{
 			let combinedResult
+			Object.values(event).map((key)=>{
+				Object.values(key.venue).map((value,index)=>{
+					let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
+					value.offers = filteredOffer
+					return value
+				})
+			})
 			if(venue){
 					let list = Object.values(venue).map((value,index)=>{
 					let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)

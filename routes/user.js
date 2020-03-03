@@ -1679,7 +1679,7 @@ router.post('/slots_value/:venue_id', verifyToken, (req, res, next) => {
 router.post('/booking_history', verifyToken, (req, res, next) => {
   let past_date  = moment(req.body.todate).add(1,'month')
   let filter = {
-    booking_status:{$in:["booked","completed","cancelled"]},
+    booking_status:{$in:["booked","completed"]},
     created_by:req.userId,
     end_time:{$gte:req.body.fromdate, $lte:req.body.todate}
   }
@@ -1688,7 +1688,7 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
     created_by:req.userId,
   }
   let eventFilter = {
-    booking_status:{$in:["booked","completed","cancelled"]},
+    booking_status:{$in:["booked","completed"]},
     created_by:req.userId,
     event_booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}
   }
@@ -2003,7 +2003,7 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
               //     }
               // })
           })
-          console.log(finalBookingList,sortedActivities[0].invoice_date);
+          // console.log(finalBookingList,sortedActivities[0].invoice_date);
             res.send({status:"success", message:"booking history fetched", data:finalBookingList ,invoice_date:sortedActivities.length > 0 ? sortedActivities[0].invoice_date : '' })
           }).catch(next)
         })

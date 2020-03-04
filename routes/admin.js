@@ -190,7 +190,7 @@ router.post('/users',
 	verifyToken,
 	AccessControl('users', 'read'),
 	(req, res, next) => {
-		User.find({},{__v:0,token:0,otp:0}).then(user=>{
+		User.find({},{__v:0,token:0,otp:0,activity_log:0}).then(user=>{
 			res.send({status:"success", message:"users fetched", data:user})
 	}).catch(next)
 })

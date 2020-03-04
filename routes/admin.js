@@ -293,7 +293,7 @@ router.post('/venue_manager',
 	verifyToken,
 	AccessControl('venue_manager', 'read'),
 	(req, res, next) => {
-	Admin.find({role:"venue_manager"}).lean().populate('venue','_id name venue type').then(venue=>{
+	Admin.find({role:"venue_manager"},{activity_log:0}).lean().populate('venue','_id name venue type').then(venue=>{
 		res.send({status:"success", message:"venue managers fetched", data:venue})
 	}).catch(next)
 })

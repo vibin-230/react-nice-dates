@@ -716,7 +716,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
             return total+value.amount
           },0)
           let venue_discount_coupon = result[0].commission == 0 ? "Venue Discount:0" : `Venue Discount:${result[0].commission}`
-          let SLOT_BOOKED_USER =`Hey ${values[0].name}! Thank you for using Turf Town!\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${result[0].booking_amount}\nBalance to be paid : ${total_amount}`
+          let SLOT_BOOKED_USER =`Hey ${values[0].name}! Thank you for using Turf Town!\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${result[0].booking_amount}\nBalance to be paid : ${values[0].amount}`
           let sender = "TRFTWN"
           SendMessage(phone,sender,SLOT_BOOKED_USER)
           // axios.get(process.env.PHP_SERVER+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount)

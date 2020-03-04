@@ -42,7 +42,6 @@ module.exports = function BookSlot(body,id,params,req,res,i,next){
             }else{
               booking_id = "TT000001";
             }
-            console.log(booking_id);
             let booking_data = {
               booking_id:booking_id,
               booking_date:body.booking_date,
@@ -89,7 +88,6 @@ module.exports = function BookSlot(body,id,params,req,res,i,next){
             Booking.create(booking_data).then(booking=>{
               resolve(booking)
             }).catch(error=>{
-              console.log('pass')
               console.log(error)
               reject()
             })

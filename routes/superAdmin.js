@@ -142,7 +142,6 @@ verifySuperAdmin,
 AccessControl('venue', 'create'),
 (req, res, next) => {
     req.body.created_by = req.username
-    console.log(req.body)
     Venue.create(req.body).then(venue=>{
         res.send({status:"success", message:"venue added", data:venue})
     }).catch(next)

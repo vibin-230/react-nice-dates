@@ -369,9 +369,9 @@ router.delete('/delete_venue_manager/:id',
 	verifyToken,
 	AccessControl('venue_manager', 'delete'),
 	(req, res, next) => {
-		Admin.findByIdAndRemove({_id:req.params.id},req.body).then(deletedVenueManager=>{
-			Admin.find({}).then(venueManager=>{
-			res.send({status:"success", message:"venue manager deleted", data:venueManager})
+		Admin.findByIdAndRemove({_id:req.params.id}).then(deletedVenueManager=>{
+			Admin.find({},{activity_log:0}).then(venueManager=>{
+			res.send({status:"success", message:"venue manager deleted", data:[]})
 			ActivityLog(req.userId, req.username, req.role, 'venue manager deleted', req.name+" deleted venue manager "+deletedVenueManager.name)
 		}).catch(next)
 	}).catch(next)

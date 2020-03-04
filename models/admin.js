@@ -17,6 +17,7 @@ const schema = new Schema({
   alt_phone:String,
   gst:String,
   email:String,
+  notify:{type:Boolean, default:true},
   access:String,
   venue:[{ type: Schema.Types.ObjectId, ref: 'venue' }],
   activity_log:Array,

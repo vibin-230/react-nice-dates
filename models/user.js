@@ -16,6 +16,8 @@ const schema = new Schema({
   profile_picture:String,
   access_token:String,
   dob:Date,
+  force_update:Boolean,
+  version:String,
   gender:String,
   login_type:String,
   sports_interest:Array,

@@ -21,6 +21,7 @@ const Venue = require('../models/venue');
 const VenueManager = require('../models/venueManager');
 const SuperAdmin = require('../models/superAdmin');
 const Offer = require('../models/offers');
+const Coupon = require('../models/coupon');
 
 function ActivityLogForUser(id, phone, activity, description) {
   let activity_log = {
@@ -246,8 +247,8 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
   //     res.status(409).send({status:"failed", message: "No venues available at this location"})
   //   }else{
       Venue.find({type:req.body.sport_type, "configuration.types":{$in:[req.body.venue_type]},status:true},{bank:0, offers:0, access:0}).lean().then(venue=>{
-        console.log('pass')
-        Offer.find({}).then(offers=>{
+        Offer.find({status:true}).then(offers=>{
+          Coupon.find({status:true}).then(coupon=>{  
           var list = Object.values(venue).map((value,index)=>{
               let distance = getDistanceFromLatLonInKm(req.body.latLong[0],req.body.latLong[1],value.venue.latLong[0],value.venue.latLong[1])
               let featured = value.featured.filter(featured=>featured.zipcode==zipcode)
@@ -268,7 +269,9 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
               value.displacement = distance
               value.pricing = Math.round(getValue(req.body.venue_type,highestPricing,types))
               let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
+              let filteredCoupon = Object.values(coupon).filter(coupon=>coupon.venue.indexOf(value._id)!== -1)
               value.offers = filteredOffer
+              value.coupon = filteredCoupon
               return value
           })
           list.sort(function(a, b) {
@@ -277,6 +280,7 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
           res.status(201).send(list);
       }).catch(next);
     }).catch(next);
+  }).catch(next)
   //   }
   // }).catch(next);
 });

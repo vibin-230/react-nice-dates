@@ -9,11 +9,14 @@ const app = express();
 const http = require('http');
 const socketIO = require('socket.io');
 const server = http.createServer(app);
-const io = socketIO(server)
 require('dotenv').config();
 const axios = require('axios');
-
-
+const ClientManager = require('./chat/ClientManager')
+const ChatroomManager = require('./chat/ChatroomManager')
+const makeHandlers = require('./chat/handlers')
+const clientManager = ClientManager()
+const chatroomManager = ChatroomManager()
+const io = require('socket.io')(server)
 // set the view engine to ejs
 app.set('view engine', 'ejs');
 
@@ -48,21 +51,42 @@ app.use('/api/user',require('./routes/user'));
 app.use('/api/venue',require('./routes/venue'));
 app.use('/api/admin',require('./routes/admin'));
 
-io.on('connection', (client) => {
-  client.on('subscribeToTimer', (interval) => {
-    console.log('client is subscribing to timer with interval ', interval);
-    let body = {
-      booking_date:new Date(),
-      venue:"Test QA Football",
-      venue_type:"ground"
-    }
-    // axios.post('http://ec2-13-233-94-159.ap-south-1.compute.amazonaws.com/api/user/slots_available/5d41472f6aedb8465eb632bb',body).then(response=>{
-    setInterval(() => {
-        client.emit('timer', "response.data");
-      }, interval);
-    // })
-  });
-});
+io.on('connection', function (client) {
+  const {
+    handleRegister,
+    handleJoin,
+    handleLeave,
+    handleMessage,
+    handleGetChatrooms,
+    handleGetAvailableUsers,
+    handleDisconnect
+  } = makeHandlers(client, clientManager, chatroomManager)
+
+  console.log('client connected...', client.id)
+  clientManager.addClient(client)
+
+  client.on('register', handleRegister)
+
+  client.on('join', handleJoin)
+
+  client.on('leave', handleLeave)
+
+  client.on('message', handleMessage)
+
+  client.on('chatrooms', handleGetChatrooms)
+
+  client.on('availableUsers', handleGetAvailableUsers)
+
+  client.on('disconnect', function () {
+    console.log('client disconnect...', client.id)
+    handleDisconnect()
+  })
+
+  client.on('error', function (err) {
+    console.log('received error from client:', client.id)
+    console.log(err)
+  })
+})
 
 //Error Handling
 app.use(function(err,req,res,next){

@@ -1,12 +1,12 @@
-module.exports = setKeyForSport = (key) =>{
+const setKeyForSport=(key)=>{
   if(key === '5s'){
-    return "5-A-SIDE"
+    return "5's"
   }
   else if(key === '7s'){
-    return "7-A-SIDE"
+    return "7'5"
   }
   else if(key === '9s'){
-    return "9-A-SIDE"
+    return "9'5"
   }
   else if(key === 'net'){
     return 'Nets'
@@ -26,4 +26,18 @@ module.exports = setKeyForSport = (key) =>{
   else if(key === 'ground' || key === 'pitch'){
     return 'Pitch'
   }
+  else if(key == "football"){
+    return "Football"
+  }
+  else if(key == "basketball"){
+    return "Basketball"
+  }
+  else if(key == "badminton"){
+    return "Badminton"
+  }
+  else if(key == "cricket"){
+    return "Cricket"
+  }
 }
+
+module.exports = setKeyForSport

@@ -208,7 +208,6 @@ router.post('/edit_user', [
         if (user) {
               req.body.modified_at = moment();
               User.findByIdAndUpdate({_id: req.userId},req.body).then(user1=>{
-                console.log('iser',user1);
                 User.findOne({_id:req.userId},{__v:0,token:0,activity_log:0},null).then(user=>{
                   let userResponse = {
                     name:user.name,
@@ -216,6 +215,7 @@ router.post('/edit_user', [
                     email:user.email,
                     phone:user.phone,
                     _id:user._id,
+                    status:user.status,
                     last_login:user.last_login,
                     dob:user.dob,
                     modified_at:user.modified_at,

@@ -458,6 +458,18 @@ router.delete('/delete_venue_staff/:id',
 // 	}).catch(next)
 // })
 
+router.post('/check_admin/:id',
+	(req, res, next) => {
+	Admin.findOne({_id:req.params.id},null).then(admin=>{
+		if(admin){
+			res.send({status:"sucess", message:"admin exist"})
+		}
+		else{
+			res.send({status:"failed", message:"admin doesn't exist"})
+		}
+	}).catch(next)
+})
+
 
 //// Event
 router.post('/event',

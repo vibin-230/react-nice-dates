@@ -5,9 +5,15 @@ const sendMail = (from,to,subject,text,html,callback,name) => {
     nodemailer.createTestAccount((err, account) => {
         let transporter = nodemailer.createTransport({
         host: "smtp.gmail.com", port: 465, secure: true, // true for 465, false for other ports
+        //production
+        // auth: {
+        //     user: "support@turftown.in", // generated ethereal user
+        //     pass: "kopsupport8" // generated ethereal password
+        // }
+        //staging
         auth: {
-            user: "support@turftown.in", // generated ethereal user
-            pass: "kopsupport8" // generated ethereal password
+            user: "stagingsupport@turftown.in", // generated ethereal user
+            pass: "bridgesupport8" // generated ethereal password
         }
         });
 

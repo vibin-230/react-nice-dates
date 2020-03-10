@@ -940,8 +940,9 @@ router.post('/booking_timeout/:id', verifyToken, (req, res, next) => {
 
 router.post('/update_invoice/:id', verifyToken, (req, res, next) => {
   Venue.findById({_id:req.params.id}).then(venue=>{
-        Booking.updateMany({booking_id:{$in:req.body.booking_id}},{$set:{invoice:true,invoice_by:req.userId,invoice_date:new Date()}},{multi:true}).then(booking=>{
+        Booking.updateMany({booking_id:{$in:req.body.booking_id}},{$set:{invoice:true,invoice_by:req.userId,invoice_date:new Date(),invoice_start_date:req.body.invoice_start_date,invoice_end_date:req.body.invoice_end_date,invoice_id:req.body.invoice_id}},{multi:true}).then(booking=>{
                 Booking.find({booking_id:{$in:req.body.booking_id}}).lean().then(booking=>{
+                  
                   res.send({status:"success", message:"invoice updated"})
             }).catch(next);
       })
@@ -966,7 +967,8 @@ router.post('/update_version', verifyToken, (req, res, next) => {
 })
 
 router.post('/get_version', verifyToken, (req, res, next) => {
-  Version.find({}).then(version=>{
+  Version.findOne({}).then(version=>{
+    console.log(version)
     res.send({status:"success", message:"Version Log",data:version})
   }).catch(next)
 })
@@ -2623,7 +2625,7 @@ router.post('/revenue_report', verifyToken, (req, res, next) => {
 
 router.post('/revenue_report_app', verifyToken, (req, res, next) => {
   Booking.find({booking_status:{$in:["completed"]}, booking_type:'app', booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().then(booking_list=>{
-    Booking.find({booking_status:{$in:["completed"]},booking_type:'app', booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}},{booking_date:1,booking_id:1,amount:1,multiple_id:1, commission:1,venue_offer:1,turftown_offer:1,venue_id:1}).lean().then(booking=>{
+    Booking.find({booking_status:{$in:["completed"]},booking_type:'app', booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}},{booking_date:1,booking_id:1,amount:1,multiple_id:1, commission:1,venue_id:1}).lean().then(booking=>{
       let result = {}
       let group = booking.reduce((r, a) => {
         r[a.venue_id] = [...r[a.venue_id] || [], a];
@@ -2639,8 +2641,6 @@ router.post('/revenue_report_app', verifyToken, (req, res, next) => {
           result[date].bookings = 1
           result[date].slots_booked = 1
           result[date].commission = value.commission
-          result[date].venue_offer = value.venue_offer
-          result[date].turftown_offer = value.turftown_offer
           bookings_combined = JSON.stringify([...bookings,booking_list[index]])
           bookings_combined = JSON.parse(bookings_combined)
           result[date].booking = bookings_combined
@@ -2650,8 +2650,6 @@ router.post('/revenue_report_app', verifyToken, (req, res, next) => {
           result[date].slots_booked = result[date].slots_booked + 1
           result[date].hours_played = (result[date].slots_booked*30)/60
           result[date].commission = result[date].commission + value.commission
-          result[date].venue_offer = value.venue_offer
-          result[date].turftown_offer = value.turftown_offer
           bookings_combined = JSON.stringify([...result[date].booking,booking_list[index]])
           bookings_combined = JSON.parse(bookings_combined)
           result[date].booking = bookings_combined

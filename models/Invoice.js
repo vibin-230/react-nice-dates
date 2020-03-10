@@ -8,6 +8,8 @@ const schema = new Schema({
   approved_by:String,
   modified_by:String,
   invoice_date:Date,
+  invoice_start_date:Date,
+  invoice_end_date:Date,
   invoice_amount:Number,
   venue:String,
   venue_id:String,

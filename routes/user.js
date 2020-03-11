@@ -208,7 +208,6 @@ router.post('/edit_user', [
         if (user) {
               req.body.modified_at = moment();
               User.findByIdAndUpdate({_id: req.userId},req.body).then(user1=>{
-                console.log('iser',user1);
                 User.findOne({_id:req.userId},{__v:0,token:0,activity_log:0},null).then(user=>{
                   let userResponse = {
                     name:user.name,
@@ -216,6 +215,7 @@ router.post('/edit_user', [
                     email:user.email,
                     phone:user.phone,
                     _id:user._id,
+                    status:user.status,
                     last_login:user.last_login,
                     dob:user.dob,
                     modified_at:user.modified_at,
@@ -942,8 +942,7 @@ router.post('/update_invoice/:id', verifyToken, (req, res, next) => {
   Venue.findById({_id:req.params.id}).then(venue=>{
         Booking.updateMany({booking_id:{$in:req.body.booking_id}},{$set:{invoice:true,invoice_by:req.userId,invoice_date:new Date(),invoice_start_date:req.body.invoice_start_date,invoice_end_date:req.body.invoice_end_date,invoice_id:req.body.invoice_id}},{multi:true}).then(booking=>{
                 Booking.find({booking_id:{$in:req.body.booking_id}}).lean().then(booking=>{
-                  
-                  res.send({status:"success", message:"invoice updated"})
+                  res.send({status:"success", message:"Invoice generated"})
             }).catch(next);
       })
   }).catch(next)
@@ -1956,7 +1955,7 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
 
     //repeated bookings with group id (active tab)
     router.post('/booking_history_by_group_id/:id', verifyToken, (req, res, next) => {
-      Booking.find({booking_status:{$in:["booked","cancelled"]},venue_id:req.params.id,group_id:{$in:req.body.group_id},repeat_booking:true}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
+      Booking.find({booking_status:{$in:["booked","cancelled","completed"]},venue_id:req.params.id,group_id:{$in:req.body.group_id},repeat_booking:true,invoice:false}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
         result = Object.values(combineRepeatSlots(booking)) 
       let grouped = _.mapValues(_.groupBy(result, 'group_id'), clist => clist.map(result => _.omit(result, 'multiple_id')));
       let x = {}
@@ -1980,8 +1979,6 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
       router.post('/invoice_history_by_group_id/:id', verifyToken, (req, res, next) => {
         Booking.find({booking_status:{$in:["cancelled","completed"]},venue_id:req.params.id,group_id:{$in:req.body.group_id},repeat_booking:true,invoice:true}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
           result = Object.values(combineRepeatSlots(booking)) 
-          const sortedActivities =  result ? result.slice().sort((a, b) => b.date - a.date) : []
-          let status_filter = result.filter((b)=>b.booking_status === 'cancelled')
           let grouped = _.mapValues(_.groupBy(result, 'group_id'), clist => clist.map(result => _.omit(result, 'multiple_id')));
           let x = {}
           let finalBookingList = []
@@ -1995,16 +1992,8 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
                   x[i] = j
                 finalBookingList = [...j,...finalBookingList]
             }
-
-              // j.every((key)=>{
-              //     if(key.booking_status !== "cancelled"){
-              //         x[i] = j
-              //         finalBookingList = [...j,...finalBookingList]
-              //     }
-              // })
           })
-          // console.log(finalBookingList,sortedActivities[0].invoice_date);
-            res.send({status:"success", message:"booking history fetched", data:finalBookingList ,invoice_date:sortedActivities.length > 0 ? sortedActivities[0].invoice_date : '' })
+            res.send({status:"success", message:"booking history fetched", data:finalBookingList})
           }).catch(next)
         })
 

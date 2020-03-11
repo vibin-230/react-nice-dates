@@ -1,6 +1,6 @@
 const User = require('../models/user');
 const Admin = require('../models/admin');
-
+const moment = require('moment');
 
 const combineSlots=(booking, users, admins)=>{
     let result = {}
@@ -20,7 +20,6 @@ const combineSlots=(booking, users, admins)=>{
           }
         })
         admins.map(userValue=>{
-          console.log(value.collected_by)
           if((value.collected_by?value.collected_by.toString():"") === userValue._id.toString()){
               collected_by = userValue
             }
@@ -35,7 +34,6 @@ const combineSlots=(booking, users, admins)=>{
         //result[value.booking_id].collected_by = collected_by
 
       }else{
-        console.log(value.booking_id)
         result[value.booking_id].created_by = user_array
         //result[value.booking_id].collected_by = collected_by
 
@@ -50,11 +48,14 @@ const combineSlots=(booking, users, admins)=>{
         }); 
         let start_time = Math.min(...array)
         let end_time = Math.max(...array)
+        
         start_time = start_time.toString().length === 1?"000"+start_time.toString():start_time.toString().length === 2?"00"+start_time.toString():start_time.toString().length === 3?"0"+start_time.toString():start_time
 
         end_time = end_time.toString().length === 1?"000"+end_time.toString():end_time.toString().length === 2?"00"+end_time.toString():end_time.toString().length === 3?"0"+end_time.toString():end_time
-        result[value.booking_id].slot_time = start_time +"-"+ end_time
-
+        let new_start_time = result[value.booking_id].start_time?result[value.booking_id].start_time<value.start_time?result[value.booking_id].start_time:value.start_time:value.start_time
+        let new_end_time =  result[value.booking_id].end_time?result[value.booking_id].end_time>value.end_time?result[value.booking_id].end_time:value.end_time:value.end_time
+        
+        result[value.booking_id].slot_time = moment(new_start_time).utc().format("HHmm") +"-"+ moment(new_end_time).utc().format("HHmm")
         result[value.booking_id].start_time = result[value.booking_id].start_time?result[value.booking_id].start_time<value.start_time?result[value.booking_id].start_time:value.start_time:value.start_time
 
         result[value.booking_id].end_time = result[value.booking_id].end_time?result[value.booking_id].end_time>value.end_time?result[value.booking_id].end_time:value.end_time:value.end_time

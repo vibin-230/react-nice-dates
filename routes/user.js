@@ -774,55 +774,49 @@ const SlotsCheck = (body, id) => {
 router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'create'), (req, res, next) => {
   let params = req.params.id
   //Check of Slot Exist
-  function SlotsCheck(body,id){
-    return new Promise((resolve,reject)=>{
-      Venue.findById({_id:id},{bank:0,access:0}).lean().then(venue=>{
-        let venue_id;
-        if(venue.secondary_venue){
-          venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
-        }else{
-          venue_id = [venue._id.toString()]
-        }
-        Booking.find({ venue:body.venue, venue_id:req.params.id, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
-        // Booking.find({$and:[{venue:body.venue, venue_id:id, booking_date:{$gte:body.booking_date,$lt:moment(body.booking_date).add(1,"days")}}],booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
-        let slots_available = SlotsAvailable(venue,booking_history)
-        if(slots_available.slots_available[body.slot_time][body.venue_type]>0){
-            resolve()
-          }else{
-            reject(body)
-          }
-        }).catch(next)
-      }).catch(next)
-    })
-  }
-
+  // function SlotsCheck(body,id){
+  //   return new Promise((resolve,reject)=>{
+  //     Venue.findById({_id:id},{bank:0,access:0}).lean().then(venue=>{
+  //       let venue_id;
+  //       if(venue.secondary_venue){
+  //         venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
+  //       }else{
+  //         venue_id = [venue._id.toString()]
+  //       }
+  //       Booking.find({ venue:body.venue, venue_id:req.params.id, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
+  //       // Booking.find({$and:[{venue:body.venue, venue_id:id, booking_date:{$gte:body.booking_date,$lt:moment(body.booking_date).add(1,"days")}}],booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
+  //       let slots_available = SlotsAvailable(venue,booking_history)
+  //       if(slots_available.slots_available[body.slot_time][body.venue_type]>0){
+  //           resolve()
+  //         }else{
+  //           reject(body)
+  //         }
+  //       }).catch(next)
+  //     }).catch(next)
+  //   })
+  // }
+  Venue.findById({_id:req.params.id}).then(venue=>{
+  Booking.find({}).sort({"booking_id" : -1}).collation( { locale: "en_US", numericOrdering: true }).limit(1).then(bookingOrder=>{
   let promisesToRun = [];
-  let bookOverTimeSlots = [];
-  req.body.map((arr=>{
-    for(let i=0;i<arr.block.length;i++){
-      promisesToRun.push(SlotsCheck(arr.block[i],req.params.id))
-    }
-    bookOverTimeSlots.push(promisesToRun)
-  
-  }))
-  
-  Promise.all(promisesToRun).then(values => {
-      var id = mongoose.Types.ObjectId();
-      let promisesToRun = [];
+  var id = mongoose.Types.ObjectId();
       req.body.map(((arr,index)=>{
+        let record = []
           for(let i=0;i<arr.block.length;i++){
-            promisesToRun.push(BookRepSlot(arr.block[i],id,params,req,res,(index+1),next))
+            promisesToRun.push(BookRepSlot(arr.block[i],id,params,req,res,(index+1),record,bookingOrder,venue,next))
           }
-          bookOverTimeSlots.push(promisesToRun)
         }))
       Promise.all(promisesToRun).then(values => {
-        values = {...values}
-        //result = Object.values(combineRepeatSlots(values))
-         res.send({status:"success", message:"slot booked", data:[]})
+            Booking.insertMany(values).then(booking=>{
+              res.send({status:"success", message:"slot booked", data:booking})
+            }).catch(error=>{
+              console.log(error)
+              reject()
+            })
+       
       }).catch(next)
-  }).catch(error=>{
-    res.send({status:"failed", message:"slots not available",data:error})
-  })
+}).catch(next)
+}).catch(next)
+
 })
 
 

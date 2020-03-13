@@ -21,7 +21,7 @@ module.exports =  function slotsValueAvailable(venue,booking_history,body){
 
       let available_inventory = Object.values(booking_history).map(booking =>{
         requestObject.timeRepresentation.map((representation)=>{
-          if(representation === booking.slot_time && requestObject.timeRepresentation.includes(booking.slot_time)){
+          if(representation === booking.slot_time && requestObject.timeRepresentation.includes(booking.slot_time) && requestDate === moment(booking.booking_date).format('YYYY-MM-DD')){
               if(!slots_available[requestDate][booking.slot_time]){
               inventory = Object.assign({}, stock);
               }else{
@@ -36,7 +36,6 @@ module.exports =  function slotsValueAvailable(venue,booking_history,body){
             }
       })
     })
-      console.log(slots_available);
     })
       venue.slots_available = slots_available
       return venue

@@ -1924,6 +1924,7 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
       Booking.find({booking_status:{$in:["booked","completed"]}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate},venue_id:req.params.id,start_time:{$gte:req.body.start_time},end_time:{$lte:req.body.end_time},repeat_booking:true}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(bookings=>{
         booking =  Object.values(combineRepeatSlots(bookings)) 
         let grouped = _.mapValues(_.groupBy(booking, 'group_id'),clist => clist.map(booking => _.omit(booking, 'multiple_id')));
+        let x ={}
         let finalBookingList = []
         Object.entries(grouped).map(([i,j])=>{
           const filtered = j.filter((key)=>{

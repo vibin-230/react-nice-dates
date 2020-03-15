@@ -1932,7 +1932,7 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
               return key
             }
           })
-          if(filtered.length > 0){
+          if(filtered.length  == j.length){
                 x[i] = j
               finalBookingList = [...j,...finalBookingList]
           }

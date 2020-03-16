@@ -1905,8 +1905,8 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
       let x = {}
       let finalBookingList = []
       Object.entries(grouped).map(([i,j])=>{
-       const filtered = j.filter((key)=>{
-          if(key.booking_status == "booked"){
+        const filtered = j.filter((key)=>{
+          if( (key.booking_status == "booked" || key.booking_status == "completed")  && !key.invoice){
             return key
           }
         })
@@ -1928,7 +1928,7 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
         let finalBookingList = []
         Object.entries(grouped).map(([i,j])=>{
           const filtered = j.filter((key)=>{
-            if(key.booking_status == "completed" && moment().isAfter(key.end_date_range) ){
+            if(key.booking_status == "completed" && key.invoice && moment().isAfter(key.end_date_range) ){
               return key
             }
           })
@@ -1972,23 +1972,24 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
 
       //invoice generation for past bookings with status completed and date
       router.post('/invoice_history_by_group_id/:id', verifyToken, (req, res, next) => {
-        Booking.find({booking_status:{$in:["cancelled","completed"]},venue_id:req.params.id,group_id:{$in:req.body.group_id},repeat_booking:true,invoice:true}).lean().populate('venue_data','venue').populate('collected_by','name').populate('cancelled_by','name').then(booking=>{
+        Booking.find({booking_status:{$in:["completed","cancelled"]},venue_id:req.params.id,group_id:{$in:req.body.group_id},repeat_booking:true,invoice:true}).lean().populate('venue_data','venue').populate('collected_by','name').populate('cancelled_by','name').then(booking=>{
           result = Object.values(combineRepeatSlots(booking)) 
           let grouped = _.mapValues(_.groupBy(result, 'group_id'), clist => clist.map(result => _.omit(result, 'multiple_id')));
-          let x = {}
-          let finalBookingList = []
-          Object.entries(grouped).map(([i,j])=>{
-            const filtered = j.filter((key)=>{
-              if(key.booking_status !== "cancelled"){
-                return key
-              }
-            })
-            if(filtered.length > 0){
-                  x[i] = j
-                finalBookingList = [...j,...finalBookingList]
-            }
-          })
-            res.send({status:"success", message:"booking history fetched", data:finalBookingList})
+          // // let x = {}
+          // // let finalBookingList = []
+          // // Object.entries(grouped).map(([i,j])=>{
+          // //   const filtered = j.filter((key)=>{
+          // //     if(key.booking_status !== "cancelled"){
+          // //       return key
+          // //     }
+          // //   })
+          // //   if(filtered.length > 0){
+          // //         x[i] = j
+          // //       finalBookingList = [...j,...finalBookingList]
+          // //   }
+          // // })
+          // console.log("dd",booking)
+            res.send({status:"success", message:"booking history fetched", data:result})
           }).catch(next)
         })
 

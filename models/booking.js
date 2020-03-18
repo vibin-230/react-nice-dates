@@ -57,6 +57,7 @@ const schema = new Schema({
   collected_by:{ type: Schema.Types.ObjectId, ref: 'admin' },
   invoice_by:{ type: Schema.Types.ObjectId, ref: 'admin' },
   invoice_id:String,
+  repeat_id:String,
   refund_status:Boolean,
   refunded: {
     type: Boolean,

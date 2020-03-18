@@ -39,6 +39,8 @@ const Venue = require('../models/venue');
 const Version = require('../models/version');
 const Admin = require('../models/admin');
 const Ads = require('../models/ads')
+const Invoice = require('../models/Invoice')
+
 const rzp_key = require('../scripts/rzp')
  const indianRupeeComma = (value) => {
   return value.toLocaleString('EN-IN');
@@ -807,7 +809,19 @@ router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'c
         }))
       Promise.all(promisesToRun).then(values => {
             Booking.insertMany(values).then(booking=>{
-              res.send({status:"success", message:"slot booked", data:booking})
+              Invoice.find({repeat_id: booking[0].repeat_id}).limit(1).then(invoice=> {
+                console.log('hit 1',invoice,req.body[0].total_advance);
+                let bookings = booking.map((b)=>b.booking_id)
+                if (invoice && invoice.length > 0) {
+                      Invoice.findOneAndUpdate({repeat_id: booking[0].repeat_id},{booking_data:bookings,advance:req.body[0].total_advance},{booking_data:0}).then(invoice=>{
+                        res.status(201).send({status: "success",data:invoice});
+                    }).catch(next);
+                } else {
+                  Invoice.create({booking_data:bookings,advance:req.body[0].total_advance,repeat_id: booking[0].repeat_id}).then(invoice=>{
+                    res.send({status:"success", message:"slot booked", data:invoice})
+                  }).catch(next);  
+                }
+            }).catch(next);  
             }).catch(error=>{
               console.log(error)
               reject()
@@ -817,6 +831,20 @@ router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'c
 }).catch(next)
 }).catch(next)
 
+})
+
+
+router.post('/update_invoice/:id', verifyToken, (req, res, next) => {
+  Booking.find({user_id: req.params.id,booking_status:{$in:["completed","booked"]}}).lean().then(coupon=>{
+    let coupons_used = []
+    coupon.filter(booking=>{
+      if(booking.coupons_used !== ""){ 
+        coupons_used.push(booking.coupons_used)
+      }
+    })
+
+    res.send({status:"success", message:"coupons fetched", data:coupons_used})
+  })
 })
 
 

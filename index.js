@@ -36,8 +36,8 @@ app.use(cors());
 app.use(fileUpload());
 
 app.use(bodyParser.json({
-  parameterLimit: 100000,
-  limit: '50mb',
+  parameterLimit: 1000000,
+  limit: '90mb',
   extended: true
 }));
 

@@ -810,14 +810,14 @@ router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'c
       Promise.all(promisesToRun).then(values => {
             Booking.insertMany(values).then(booking=>{
               Invoice.find({repeat_id: booking[0].repeat_id}).limit(1).then(invoice=> {
-                console.log('hit 1',invoice,req.body[0].total_advance);
                 let bookings = booking.map((b)=>b.booking_id)
                 if (invoice && invoice.length > 0) {
-                      Invoice.findOneAndUpdate({repeat_id: booking[0].repeat_id},{booking_data:bookings,advance:req.body[0].total_advance},{booking_data:0}).then(invoice=>{
+                    let total = invoice[0].advance+parseInt(req.body[0].total_advance,10)
+                      Invoice.findOneAndUpdate({repeat_id: booking[0].repeat_id},{booking_data:bookings,advance:total,name:booking[0].name}).then(invoice=>{
                         res.status(201).send({status: "success",data:invoice});
                     }).catch(next);
                 } else {
-                  Invoice.create({booking_data:bookings,advance:req.body[0].total_advance,repeat_id: booking[0].repeat_id}).then(invoice=>{
+                  Invoice.create({booking_data:bookings,advance:req.body[0].total_advance,repeat_id: booking[0].repeat_id,name:booking[0].name}).then(invoice=>{
                     res.send({status:"success", message:"slot booked", data:invoice})
                   }).catch(next);  
                 }
@@ -834,21 +834,50 @@ router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'c
 })
 
 
-// router.post('/update_invoice/:id', verifyToken, (req, res, next) => {
-//   Invoice.find({repeat_id: booking[0].repeat_id}).limit(1).then(invoice=> {
-//     console.log('hit 1',invoice,req.body[0].total_advance);
-//     let bookings = booking.map((b)=>b.booking_id)
-//     if (invoice && invoice.length > 0) {
-//           Invoice.findOneAndUpdate({repeat_id: booking[0].repeat_id},{booking_data:bookings,advance:req.body[0].total_advance},{booking_data:0}).then(invoice=>{
-//             res.status(201).send({status: "success",data:invoice});
-//         }).catch(next);
-//     } else {
-//       Invoice.create({booking_data:bookings,advance:req.body[0].total_advance,repeat_id: booking[0].repeat_id}).then(invoice=>{
-//         res.send({status:"success", message:"slot booked", data:invoice})
-//       }).catch(next);  
-//     }
-// }).catch(next);  
-// })
+router.post('/update_invoice_amount', verifyToken, (req, res, next) => {
+  Invoice.find({repeat_id: req.body.repeat_id},{booking_data:0}).limit(1).then(invoice=> {
+    if (invoice && invoice[0].repeat_id && invoice.length > 0) {
+      let sum  = invoice[0].advance + req.body.total_advance
+        console.log(sum)
+          Invoice.findOneAndUpdate({repeat_id: req.body.repeat_id},{advance:sum}).then(invoice=>{
+            Invoice.findOne({repeat_id: req.body.repeat_id},{booking_data:0}).then(invoice=>{
+            res.status(201).send({status: "success",data:invoice});
+        }).catch(next);
+      }).catch(next);
+
+    } else {
+        res.send({status:"failiure", message:"No invoice id found", data:invoice})
+    }
+}).catch(next);  
+})
+
+router.post('/sub_invoice_amount', verifyToken, (req, res, next) => {
+  Invoice.find({repeat_id: req.body.repeat_id},{booking_data:0}).limit(1).then(invoice=> {
+    if (invoice && invoice[0].repeat_id && invoice.length > 0) {
+      let sum  =  req.body.total_advance
+        console.log(sum)
+          Invoice.findOneAndUpdate({repeat_id: req.body.repeat_id},{advance:sum}).then(invoice=>{
+            Invoice.findOne({repeat_id: req.body.repeat_id},{booking_data:0}).then(invoice=>{
+            res.status(201).send({status: "success",data:invoice});
+        }).catch(next);
+      }).catch(next);
+
+    } else {
+        res.send({status:"failiure", message:"No invoice id found", data:invoice})
+    }
+}).catch(next);  
+})
+
+
+router.post('/get_invoice_advance', verifyToken, (req, res, next) => {
+  Invoice.findOne({repeat_id: req.body.repeat_id},{booking_data:0}).then(invoice=> {
+    if (invoice && invoice.repeat_id) {
+            res.status(201).send({status: "success",data:invoice});
+    } else {
+        res.send({status:"failiure", message:"No invoice id found", data:invoice})
+    }
+}).catch(next);  
+})
 
 
 

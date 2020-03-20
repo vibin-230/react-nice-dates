@@ -812,7 +812,8 @@ router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'c
               Invoice.find({repeat_id: booking[0].repeat_id}).limit(1).then(invoice=> {
                 let bookings = booking.map((b)=>b.booking_id)
                 if (invoice && invoice.length > 0) {
-                    let total = invoice[0].advance+parseInt(req.body[0].total_advance,10)
+                    let advance = req.body[0].total_advance && (req.body[0].total_advance == '0' || req.body[0].total_advance == '') ? req.body[0].total_advance : 0 
+                    let total = invoice[0].advance+parseInt(advance,10)
                       Invoice.findOneAndUpdate({repeat_id: booking[0].repeat_id},{booking_data:bookings,advance:total,name:booking[0].name}).then(invoice=>{
                         res.status(201).send({status: "success",data:invoice});
                     }).catch(next);

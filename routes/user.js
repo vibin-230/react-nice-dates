@@ -857,8 +857,8 @@ router.post('/sub_invoice_amount', verifyToken, (req, res, next) => {
   Invoice.find({repeat_id: req.body.repeat_id},{booking_data:0}).limit(1).then(invoice=> {
     if (invoice && invoice[0].repeat_id && invoice.length > 0) {
       let sum  =  req.body.total_advance
-        console.log(sum)
-          Invoice.findOneAndUpdate({repeat_id: req.body.repeat_id},{advance:sum}).then(invoice=>{
+      let sum1 = req.body.update_advance
+          Invoice.findOneAndUpdate({repeat_id: req.body.repeat_id},{advance:sum,update_advance:sum1}).then(invoice=>{
             Invoice.findOne({repeat_id: req.body.repeat_id},{booking_data:0}).then(invoice=>{
             res.status(201).send({status: "success",data:invoice});
         }).catch(next);

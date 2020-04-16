@@ -4,3 +4,5 @@ ecosystem.config.js
 assets/images
 package-lock.json
 .gitignore
+AuthKey_S4V3AKYZM4.p8
+build/

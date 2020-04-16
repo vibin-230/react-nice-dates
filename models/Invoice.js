@@ -12,6 +12,7 @@ const schema = new Schema({
   advance:Number,
   booking_data:Array,
   payment_type:String,
+  update_advance:Number,
   
  
 },{ timestamps: { createdAt: 'created_at', updatedAt: 'modified_at' } });

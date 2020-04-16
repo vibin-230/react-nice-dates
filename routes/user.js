@@ -971,10 +971,11 @@ router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'c
   Booking.find({}).sort({"booking_id" : -1}).collation( { locale: "en_US", numericOrdering: true }).limit(1).then(bookingOrder=>{
   let promisesToRun = [];
   var id = mongoose.Types.ObjectId();
-      req.body.map(((arr,index)=>{
+      req.body.bookObject.map(((arr,index)=>{
         let record = []
           for(let i=0;i<arr.block.length;i++){
-            promisesToRun.push(BookRepSlot(arr.block[i],id,params,req,res,(index+1),record,bookingOrder,venue,next))
+            let repeat_data = {...arr.block[i],...req.body.repeat_data}
+            promisesToRun.push(BookRepSlot(repeat_data,id,params,req,res,(index+1),record,bookingOrder,venue,next))
           }
         }))
       Promise.all(promisesToRun).then(values => {
@@ -982,13 +983,13 @@ router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'c
               Invoice.find({repeat_id: booking[0].repeat_id}).limit(1).then(invoice=> {
                 let bookings = booking.map((b)=>b.booking_id)
                 if (invoice && invoice.length > 0) {
-                    let advance = req.body[0].total_advance && (req.body[0].total_advance !== '0' || req.body[0].total_advance !== '') ? req.body[0].total_advance : 0 
+                    let advance = req.body.bookObject[0].total_advance && (req.body.bookObject[0].total_advance !== '0' || req.body.bookObject[0].total_advance !== '') ? req.body.bookObject[0].total_advance : 0 
                     let total = invoice[0].advance+parseInt(advance,10)
                       Invoice.findOneAndUpdate({repeat_id: booking[0].repeat_id},{booking_data:bookings,advance:total,name:booking[0].name}).then(invoice=>{
                         res.status(201).send({status: "success",data:invoice});
                     }).catch(next);
                 } else {
-                  Invoice.create({booking_data:bookings,advance:req.body[0].total_advance,repeat_id: booking[0].repeat_id,name:booking[0].name}).then(invoice=>{
+                  Invoice.create({booking_data:bookings,advance:req.body.bookObject[0].total_advance,repeat_id: booking[0].repeat_id,name:booking[0].name}).then(invoice=>{
                     res.send({status:"success", message:"slot booked", data:invoice})
                   }).catch(next);  
                 }
@@ -1026,8 +1027,8 @@ router.post('/sub_invoice_amount', verifyToken, (req, res, next) => {
   Invoice.find({repeat_id: req.body.repeat_id},{booking_data:0}).limit(1).then(invoice=> {
     if (invoice && invoice[0].repeat_id && invoice.length > 0) {
       let sum  =  req.body.total_advance
-        console.log(sum)
-          Invoice.findOneAndUpdate({repeat_id: req.body.repeat_id},{advance:sum}).then(invoice=>{
+      let sum1 = req.body.update_advance
+          Invoice.findOneAndUpdate({repeat_id: req.body.repeat_id},{advance:sum,update_advance:sum1}).then(invoice=>{
             Invoice.findOne({repeat_id: req.body.repeat_id},{booking_data:0}).then(invoice=>{
             res.status(201).send({status: "success",data:invoice});
         }).catch(next);

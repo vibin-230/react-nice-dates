@@ -190,7 +190,7 @@ router.post('/users',
 	verifyToken,
 	AccessControl('users', 'read'),
 	(req, res, next) => {
-		User.find({},{__v:0,token:0,otp:0}).then(user=>{
+		User.find({},{__v:0,token:0,otp:0,activity_log:0}).then(user=>{
 			res.send({status:"success", message:"users fetched", data:user})
 	}).catch(next)
 })
@@ -305,7 +305,7 @@ router.post('/venue_manager',
 	verifyToken,
 	AccessControl('venue_manager', 'read'),
 	(req, res, next) => {
-	Admin.find({role:"venue_manager"}).lean().populate('venue','_id name venue type').then(venue=>{
+	Admin.find({role:"venue_manager"},{activity_log:0}).lean().populate('venue','_id name venue type').then(venue=>{
 		res.send({status:"success", message:"venue managers fetched", data:venue})
 	}).catch(next)
 })
@@ -317,7 +317,6 @@ router.post('/add_venue_manager',
 	(req, res, next) => {
 	req.body.created_by = req.username
 	Admin.findOne({username:req.body.username}).then(venueManager=>{
-		console.log(venueManager);
 		if(venueManager){
 			res.send({status:"failure", message:"Email-id already exist"})
 		}else{
@@ -381,9 +380,9 @@ router.delete('/delete_venue_manager/:id',
 	verifyToken,
 	AccessControl('venue_manager', 'delete'),
 	(req, res, next) => {
-		Admin.findByIdAndRemove({_id:req.params.id},req.body).then(deletedVenueManager=>{
-			Admin.find({}).then(venueManager=>{
-			res.send({status:"success", message:"venue manager deleted", data:venueManager})
+		Admin.findByIdAndRemove({_id:req.params.id}).then(deletedVenueManager=>{
+			Admin.find({},{activity_log:0}).then(venueManager=>{
+			res.send({status:"success", message:"venue manager deleted", data:[]})
 			ActivityLog(req.userId, req.username, req.role, 'venue manager deleted', req.name+" deleted venue manager "+deletedVenueManager.name)
 		}).catch(next)
 	}).catch(next)
@@ -470,6 +469,18 @@ router.delete('/delete_venue_staff/:id',
 // 		}).catch(next)
 // 	}).catch(next)
 // })
+
+router.post('/check_admin/:id',
+	(req, res, next) => {
+	Admin.findOne({_id:req.params.id},null).then(admin=>{
+		if(admin){
+			res.send({status:"sucess", message:"admin exist"})
+		}
+		else{
+			res.send({status:"failed", message:"admin doesn't exist"})
+		}
+	}).catch(next)
+})
 
 
 //// Event
@@ -588,7 +599,6 @@ router.post('/coupon_list_by_venue/:id',
 		}
 		
 	Coupon.find({ $or: [{venue:{$elemMatch:{$eq: req.params.id}}}, {event:{$elemMatch:{$eq:req.params.id}}}]}).then(coupon=>{
-		console.log('coupon_list',coupon)
 		res.status(201).send({status:"success", message:"coupons fetched", data:coupon})
 	}).catch(next)
 })
@@ -1046,7 +1056,6 @@ router.delete('/delete_ad/:id',
 	verifyToken,
 	AccessControl('ads', 'delete'),
 	(req, res, next) => {
-		console.log('request delete api  ',req)
 	Ads.findByIdAndRemove({_id:req.params.id}).then(ads=>{
 		res.send({status:"success", message:"ad deleted"})
 		ActivityLog(req.userId, req.role, 'ad deleted', req.name+" deleted ad ")
@@ -1116,7 +1125,6 @@ router.post('/activity_logs/:id',
 	verifyToken,
 	(req, res, next) => {
 	Admin.find({venue:{$in:[req.params.id]}}).then(admins=>{
-		console.log(admins)
 		let activity_logs = []
 		admins.map(admin=>{
 			let activity = admin.activity_log.filter(value=>{

@@ -51,7 +51,6 @@ const rzp_key = require('../scripts/rzp')
 function ActivityLog(activity_log) {
   let user = activity_log.user_type==="user"?User:Admin
   user.findOneAndUpdate({_id:activity_log.id},{$push:{activity_log:activity_log}}).then(admin=>{
-      console.log("activity log updated")
   })
 }
 
@@ -101,7 +100,6 @@ router.post('/create_user', [
               req.body.created_at = moment();
               User.findByIdAndUpdate({_id: req.userId},req.body).then(user=>{
                 User.findOne({phone:req.body.phone},{__v:0,token:0},null).then(user1=>{
-                  console.log('user',user1);
                 res.status(201).send({status: "success", message: "user created", data:user1})
                 let activity_log = {  
                   datetime: new Date(),
@@ -158,7 +156,6 @@ router.post('/force_update_by_user', [
 router.post('/force_update_by_user_app', [
   verifyToken,
 ], (req, res, next) => {
-  console.log(req.userId);
       //Check if user exist
       User.findOne({_id: req.userId}).then(user=> {
         if (user) {
@@ -226,7 +223,6 @@ router.post('/edit_user', [
                     modified_at:user.modified_at,
                     profile_picture:user.profile_picture  && user.profile_picture === '' ? '' : user.profile_picture
                   }
-                  console.log(userResponse);
                 res.status(201).send({status: "success", message: "user edited", data:userResponse})
                 let activity_log = {
                   datetime: new Date(),
@@ -252,7 +248,6 @@ router.post('/edit_user', [
 router.post('/send_otp',[
   check('phone').isLength({ min: 10, max: 10 }).withMessage('phone number must be 10 digits long'),
 ], (req, res, next) => {
-  console.log("send otp")
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     var result = {};
@@ -269,7 +264,6 @@ router.post('/send_otp',[
   User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
     axios.get(process.env.PHP_SERVER+'/textlocal/otp.php?otp='+otp+'&phone='+phone)
     .then(response => {
-      console.log(response.data)
         if(response.data.status === 'success')
         {
           if(user)
@@ -294,7 +288,6 @@ router.post('/send_otp',[
           }else{
             if(req.body.phone === '8136948537') {
             User.create({phone:req.body.phone,otp:'7484'}).then(user=>{
-              console.log(user)
               res.status(201).send({status:"success",message:"new user",otp:user.otp})
             })
           }
@@ -320,7 +313,6 @@ router.post('/verify_otp', (req, res, next) => {
   User.findOne({phone: req.body.phone}).then(user=> {
     // create a token
     var token;
-    console.log(user)
       if(user.otp===req.body.otp){
           User.findOneAndUpdate({phone: req.body.phone},{token,last_login:moment()}).then(user=>{
             User.findOne({phone: req.body.phone},{__v:0,token:0,activity_log:0},null).then(user=> {
@@ -403,7 +395,6 @@ router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
 
 //Upload profile picture
 router.post('/profile_picture',verifyToken, (req, res, next) => {
-  console.log('hit profile pic')
 if (!req.files)
     return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
     // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
@@ -445,7 +436,6 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
         }else{
           venue_id = [venue._id.toString()]
         }
-        console.log('pass2',body.booking_date,body.slot_time)
         Booking.find({ venue:venue.venue.name, venue_id:{$in:venue_id}, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
           let conf = venue.configuration;
           let types = conf.types;
@@ -455,7 +445,6 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
           for(let i=0;i<types.length; i++){
             inventory[types[i]] = conf[types[i]];
           }
-          console.log(inventory)
           if(venue.configuration.convertable){
             if(booking_history.length>0){
               let available_inventory = Object.values(booking_history).map(booking =>{
@@ -466,11 +455,9 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
               })
             }
             convertable = inventory[body.venue_type]<=0
-            console.log(inventory[body.venue_type],booking_history.length)
           }else{
             convertable = inventory[body.venue_type]<=booking_history.length
           }
-          console.log(convertable);
           if(convertable){
             res.status(409).send({status:"failed", message:"slot already booked"})
           }else{
@@ -514,14 +501,12 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
               upi:body.upi,
               cash:body.cash
             }
-            console.log('booking ',booking);
             Booking.create(booking).then(booking=>{
               resolve(booking)
               setTimeout(() => {
                 Booking.findById({_id:booking._id}).then(booking=>{
                   if(booking.booking_status==="blocked"){
                     Booking.findByIdAndUpdate({_id:booking._id},{booking_status:"timeout"}).then(booking=>{
-                      console.log('cancelled')
                     })
                   }
                 }).catch(next)
@@ -558,7 +543,6 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
       let start_time = Object.values(req.body).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
       let end_time = Object.values(req.body).reduce((total,value)=>{return total>value.end_time?total:value.end_time},req.body[0].end_time)
       let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
-      console.log('pass '+date+' '+start_time+ ' '+end_time)
       User.findById({_id:req.body[0].user_id}).then(user=>{
       //Activity Log
       let activity_log = {
@@ -607,16 +591,12 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
       amount:req.body[0].booking_amount*100
     }
    var result = Object.values(combineSlots([...values]))
-   console.log('razorpay api',process.env.RAZORPAY_API)
-   console.log('transaction api',req.body)
 
     //Capture Payment
     axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
       .then(response => {
-        console.log(response.data)
         if(response.data.status === "captured")
         {
-          console.log(result)
           res.send({status:"success", message:"slot booked",data: result})
         }
       })

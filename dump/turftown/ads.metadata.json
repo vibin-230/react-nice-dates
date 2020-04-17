@@ -1,0 +1,1 @@
+{"options":{},"indexes":[{"v":2,"key":{"_id":1},"name":"_id_","ns":"turftown.ads"},{"v":2,"key":{"latLong":"2dsphere"},"name":"latLong_2dsphere","ns":"turftown.ads","background":true,"2dsphereIndexVersion":3}],"uuid":"0f0e011aedf6452798f0c046dd6dd0d2"}

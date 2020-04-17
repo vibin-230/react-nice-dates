@@ -3,10 +3,10 @@ const setKeyForSport=(key)=>{
     return "5's"
   }
   else if(key === '7s'){
-    return "7'5"
+    return "7's"
   }
   else if(key === '9s'){
-    return "9'5"
+    return "9's"
   }
   else if(key === 'net'){
     return 'Nets'

@@ -86,6 +86,7 @@ module.exports = function BookSlot(body,id,params,req,res,i,record,bookingOrder,
               membership:body.membership,
               comments:body.comments
             }
+
             resolve(booking_data)
             // Booking.create(booking_data).then(booking=>{
             //   resolve(booking)

@@ -19,7 +19,7 @@ module.exports =  function slotsAvailable(venue,booking_history){
         }else{
         inventory = slots_available[booking.slot_time]
         }
-        inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.venue_type])
+        inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.venue_type]* ((booking.courts == null || booking.courts == undefined) ? 1 : booking.courts) ) ////multiplet
         for(let i=0;i<types.length-1; i++){
         inventory[types[i]] = parseInt(inventory[base_type] / conf.ratio[types[i]])
         }
@@ -62,9 +62,9 @@ module.exports =  function slotsAvailable(venue,booking_history){
         inventory =  Object.assign({}, stock);
         if(!slots_available[booking.slot_time]){
           slots_available[booking.slot_time] = inventory
-          slots_available[booking.slot_time][booking.venue_type] = parseInt(inventory[booking.venue_type] - 1)
+          slots_available[booking.slot_time][booking.venue_type] = parseInt(inventory[booking.venue_type] - 1*((booking.courts == null || booking.courts == undefined) ? 1 : booking.courts)) /// mulitply
         }else if(slots_available[booking.slot_time]){
-          slots_available[booking.slot_time][booking.venue_type] = parseInt(slots_available[booking.slot_time][booking.venue_type] - 1)
+          slots_available[booking.slot_time][booking.venue_type] = parseInt(slots_available[booking.slot_time][booking.venue_type] - 1*((booking.courts == null || booking.courts == undefined) ? 1 : booking.courts)) /// mulitply
         }
         return slots_available
       })

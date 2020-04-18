@@ -27,7 +27,8 @@ module.exports =  function slotsValueAvailable(venue,booking_history,body){
               }else{
               inventory = slots_available[requestDate][booking.slot_time]
               }
-              inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.venue_type])
+              console.log("confratio",conf.ratio[booking.venue_type])
+              inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.venue_type]*((booking.courts == null || booking.courts == undefined) ? 1 : booking.courts ) )
               for(let i=0;i<types.length-1; i++){
               inventory[types[i]] = parseInt(inventory[base_type] / conf.ratio[types[i]])
               }
@@ -76,11 +77,10 @@ module.exports =  function slotsValueAvailable(venue,booking_history,body){
                     if(!slots_available[requestDate][booking.slot_time]){
                                     console.log('slot_time hit',booking.slot_time, inventory,requestObject.timeRepresentation)
                                                         slots_available[requestDate][booking.slot_time] = inventory
-                                                        slots_available[requestDate][booking.slot_time][booking.venue_type] =  parseInt(inventory[booking.venue_type] - 1)
+                                                        slots_available[requestDate][booking.slot_time][booking.venue_type] =  parseInt(inventory[booking.venue_type] - 1*((booking.courts == null || booking.courts == undefined) ? 1 : booking.courts ))
                                                     }else{
-
                                                       console.log('slot_time pass',slots_available[requestDate][booking.slot_time])
-                                                        slots_available[requestDate][booking.slot_time][booking.venue_type] = parseInt(slots_available[requestDate][booking.slot_time][booking.venue_type] - 1)
+                                                        slots_available[requestDate][booking.slot_time][booking.venue_type] = parseInt(slots_available[requestDate][booking.slot_time][booking.venue_type] - (1*(booking.courts == null || booking.courts == undefined) ? 1 : booking.courts ))
 
                                                     }
                                                     

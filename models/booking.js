@@ -63,6 +63,10 @@ const schema = new Schema({
     type: Boolean,
     default: false
   },
+  courts: {
+    type:Number,
+    default: 1
+  },
   invoice: {
     type: Boolean,
     default: false

@@ -2874,6 +2874,53 @@ router.post('/revenue_report', verifyToken, (req, res, next) => {
 }).catch(next)
 })
 
+router.post('/revenue_report_months', verifyToken, (req, res, next) => {
+  // Venue.findById({_id:req.body.venue_id},{bank:0,access:0}).lean().then(venue=>{
+  //   let venue_id;
+  //   let cancelledData_bookings = []
+  //   if(venue.secondary_venue){
+  //     venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
+  //   }else{
+  //     venue_id = [venue._id.toString()]
+  //   }
+    // Booking.find({booking_status:{$in:["cancelled"]},refund_status:false, venue_id:{$in:req.body.venue_id},booking_type:"app",booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}},{booking_date:1,amount:1,commission:1,booking_amount:1} ).lean().then(data=>{
+      // cancelledData_bookings = data
+    Booking.find({booking_status:{$in:["completed"]}, venue_id:{$in:req.body.venue_id}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().then(key=>{
+      Booking.find({booking_status:{$in:["completed"]}, venue_id:{$in:req.body.venue_id}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}},{booking_date:1,amount:1,commission:1,booking_amount:1}).lean().then(booking=>{
+        let result = {}
+        let booking_new = [...booking]
+        let data = Object.values(booking_new).map((value,index)=>{
+          let date = moment(value.booking_date).format("DD-MM-YYYY")
+          if(!result[date]){
+            result[date] = value
+            result[date].bookings = 1
+            result[date].slots_booked = 1
+            result[date].hours_played = 0.5
+            // result[date].commission = value.commission
+          }else{
+          
+            let new_amout = result[date].booking_status == "cancelled" ? (result[date].booking_amount)/2 : Math.round(result[date].amount)
+            let value_amount = value.booking_status == "cancelled" ? (value.booking_amount)/2 : Math.round(value.amount)
+            let new_commission = result[date].booking_status == "cancelled" ? 0 : result[date].commission
+            let value_commission = value.booking_status == "cancelled" ? 0 : value.commission
+            result[date].amount = new_amout + value_amount
+            result[date].commission = new_commission + value_commission
+            result[date].slots_booked = result[date].slots_booked + 1
+            result[date].hours_played = (result[date].slots_booked*30)/60
+            console.log("vaa",value)
+            console.log("Resulte",result[date])
+
+          }
+        })
+        
+        result = Object.values(result)
+        res.send({status:"success", message:"revenue reports fetched", data:result})
+      }).catch(next)
+    }).catch(next)
+    // }).catch(next)
+// }).catch(next)
+})
+
 router.post('/revenue_report_app', verifyToken, (req, res, next) => {
   Booking.find({booking_status:{$in:["completed"]}, booking_type:'app', booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().then(booking_list=>{
     Booking.find({booking_status:{$in:["completed"]},booking_type:'app', booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}},{booking_date:1,booking_id:1,amount:1,multiple_id:1, commission:1,venue_id:1}).lean().then(booking=>{

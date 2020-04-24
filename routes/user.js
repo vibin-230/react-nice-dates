@@ -2276,7 +2276,7 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
           Booking.find({booking_status:{$in:["cancelled","completed"]},venue_id:req.params.id,group_id:{$in:req.body.group_id},repeat_booking:true,invoice:true}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
             result = Object.values(combineRepeatSlots(booking))
             const sortedActivities = result.slice().sort((a, b) => b.date - a.date)
-              res.send({status:"success", message:"booking history fetched", data:sortedActivities[0].invoice_date})
+              res.send({status:"success", message:"booking history fetched", data:sortedActivities.length > 0 ? sortedActivities[0].invoice_date : ''})
             }).catch(next)
           })
 

@@ -85,7 +85,8 @@ module.exports = function BookSlot(body,id,params,req,res,i,record,bookingOrder,
               academy:body.academy,
               membership:body.membership,
               comments:body.comments,
-              courts:body.courts
+              courts:body.courts,
+              alternate:body.alternate
             }
 
             resolve(booking_data)

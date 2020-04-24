@@ -1,19 +1,30 @@
 const User = require('../models/user');
-
+const verifyToken = require('../scripts/VerifySocket')
 module.exports = function () {
   // mapping of all connected clients
   const clients = new Map()
 
-  function addClient(client) {
-    clients.set(client.id, { client })
+  async function addClient(client,token) {
+    const user = await verifyToken(token)
+    console.log('asdasdasdasdasdasdasda',user,client.id)
+    //if(user !== 'error')
+    clients.set(user.id.toString(), { client })
+    //User.findByIdAndUpdate({_id: user.id},{status:'online'}).then(user1=>{}).catch()
+
   }
 
   function registerClient(client, user) {
-    clients.set(client.id, { client, user })
+    clients.set(user._id.toString(), { client, user })
   }
 
-  function removeClient(client) {
-    clients.delete(client.id)
+ async function removeClient(client,token) {
+    const user = await verifyToken(token)
+
+    console.log(user)
+    if(user !== 'error')
+    clients.delete(user.id)
+    User.findByIdAndUpdate({_id: user.id},{last_active:new Date(),online_status:'offline'}).then(user1=>{}).catch()
+
   }
 
   function getAvailableUsers(id) {
@@ -27,7 +38,6 @@ module.exports = function () {
           return u
         }
       })
-      let resultsq = user1.filter(({ _id: id1 }) => !a.some(({ user: id2 }) => id2 === id1));
       return results
     }).catch()
     return users_final
@@ -60,6 +70,17 @@ module.exports = function () {
     return (clients.get(clientId) || {}).user
   }
 
+  function getClient(clientId) {
+      //console.log('clients',clients);
+      console.log(clientId);
+      console.log('clients--------------',clients);
+      const x  = clients.get(clientId.toString())
+      console.log('gotclient---------------',x);
+      //io.broadcast.to(x.id).emit('unread','pass')
+      x.client.emit('unread','invites')
+    return (x || {})
+  }
+
   return {
     addClient,
     registerClient,
@@ -67,6 +88,7 @@ module.exports = function () {
     getAvailableUsers,
     isUserAvailable,
     getUserByName,
+    getClient,
     getUserByClientId
   }
 }

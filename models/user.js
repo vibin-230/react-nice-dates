@@ -15,7 +15,7 @@ const schema = new Schema({
   name:String,
   email:String,
   profile_picture:String,
-  access_token:String,
+  os:String,
   dob:Date,
   force_update:Boolean,
   version:String,
@@ -42,6 +42,7 @@ const schema = new Schema({
   
   sports_interest:Array,
   activity_log:Array,
+  online_status:String,
   handle:{type: String, unique: true },
   status:{type:Boolean, default:true}
 });

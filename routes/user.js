@@ -42,7 +42,10 @@ const Version = require('../models/version');
 const Admin = require('../models/admin');
 const Ads = require('../models/ads')
 const Invoice = require('../models/Invoice')
-
+const Message = require('../models/message')
+const notify = require('../scripts/Notify')
+const NotifyArray = require('../scripts/NotifyArray')
+var io = require('socket.io-emitter')("//127.0.0.1:6379")
 const rzp_key = require('../scripts/rzp')
  const indianRupeeComma = (value) => {
   return value.toLocaleString('EN-IN');
@@ -132,6 +135,16 @@ router.post('/force_update_all', [
     })
 });
 
+
+router.post('/mark_read/:id', [
+  verifyToken,
+], (req, res, next) => {
+    Message.updateMany({conversation:req.body.conversation_id,read_by:req.params.id,read_status:false},{ '$set': { "read_status" : true } }).then((user)=>{
+      console.log(user,req.params.id,req.body);  
+      res.status(201).send({status: "success", message: "conversation updated"})
+    })
+});
+
 router.post('/stop_force_update_all', [
   verifyToken,
 ], (req, res, next) => {
@@ -177,9 +190,54 @@ router.post('/get_user', [
 ], (req, res, next) => {
       //Check if user exist
       console.log(req.body);
+        User.findByIdAndUpdate({_id: req.userId},{version:'26',online_status:'online'}).then(user1=>{
+           User.findOne({_id: req.userId},{activity_log:0}).then(user=> {
+          if (user) {
+          res.status(201).send({status: "success", message: "user collected",data:user})
+        } else {
+            res.status(422).send({status: "failure", errors: {user:"force update failed"}});
+        }
+    }).catch(next);
+}).catch(next);
+
+});
+
+
+router.post('/get_chatrooms/:id', [
+  verifyToken,
+], (req, res, next) => {
+      //Check if user existinvites:{$in:[req.params.id]}
+      //Conversation.find({members:{$in:[req.params.id]}}).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(existingConversation=>{
+      Conversation.find({ $or: [ { members: { $in: [req.params.id] } }, { invites: { $in: [req.params.id] } } ] }).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(existingConversation=>{
+        User.findOne({_id: req.params.id},{activity_log:0}).then(user=> {
+          const date = user.last_active ? user.last_active : new Date()
+         Message.aggregate([{ $match: { $and: [ { created_at: { $gt: date }  }, { read_status: false , read_by:user._id } ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"}}}]).then((m)=>{
+          console.log(m);
+         const x =  existingConversation.map((c)=> {
+             m.map((m)=>{ m._id.toString() === c._id.toString() ? c['time'] = m.time.length :  c['time'] = 0})
+             const ids = c.invites.map((ma)=>(ma.toString()))
+             console.log(ids);
+              ids.indexOf(user._id.toString()) !== -1 && ids.length > 0 && c.type === 'game' ? c['invite'] = true :c['invite'] = false
+             return c
+          })
+          res.status(201).send({status: "success", message: "user collected",data:_.orderBy(x, ['last_updated', 'time','created_at'], ['desc', 'desc','desc'])})
+
+        }).catch(next)
+      }).catch(next)
+  }).catch(next)
+
+});
+
+
+router.post('/save_token_device', [
+  verifyToken,
+], (req, res, next) => {
+      //Check if user exist
+      console.log(req.body);
       User.findOne({_id: req.userId},{activity_log:0}).then(user=> {
-        User.findByIdAndUpdate({_id: req.userId},{version:'26',notify:req.body.notify,notification_token:req.body.notification_token}).then(user1=>{
-        if (user) {
+        User.findByIdAndUpdate({_id: req.userId},{device_token:req.body.device_token.token, os:req.body.device_token.os}).then(user1=>{
+          notify(user,`Hey ${user.name} , Welcome to Turftown`)
+          if (user1) {
           res.status(201).send({status: "success", message: "user collected",data:user})
         } else {
             res.status(422).send({status: "failure", errors: {user:"force update failed"}});
@@ -382,13 +440,29 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
 router.post('/host_game',verifyToken, (req, res, next) => {
         Conversation.create({type:'game',members:[req.body.userId],created_by:req.body.userId,name:req.body.game_name,sport_name:req.body.sport_name,subtitle:req.body.subtitle,sport_type:req.body.venue_type,host:[req.body.userId]}).then(convo=>{
           Game.create({status:'hosted',subtitle:req.body.subtitle,share_type:req.body.share_type,limit:req.body.limit,users:[req.body.userId],host:[req.body.userId],name:req.body.game_name,conversation:convo._id,sport_name:req.body.sport_name,type:req.body.venue_type,bookings:req.body.booking}).then(game=>{
-      res.send({status:"success",sub, message:"game_created",data:game})
+           //since he is a host who is accessing this api
+            convo['invite'] = false
+            res.send({status:"success", message:"game_created",data:{game:game,convo:convo}})
     }).catch(next);
   }).catch(next);
 });
 
+
+router.post('/send_invite',verifyToken, (req, res, next) => {
+  Game.findByIdAndUpdate({_id: req.body.game._id},{ $addToSet: { invites: { $each: req.body.ids } } }).then(game=> {
+    Conversation.findByIdAndUpdate({_id: req.body.game.conversation},{ $addToSet: { invites: { $each: req.body.ids } } }).then(conversation=> {
+      User.find({_id: { $in :req.body.ids } },{activity_log:0}).lean().then(user=> {
+        const device_token_list=user.map((e)=>e.device_token)
+        io.emit('unread', 'invitation sent');
+        //res.send({status:"success", message:"invitation sent"})
+          NotifyArray(device_token_list,'You have a received a new game request from '+req.name)
+}).catch(next);
+}).catch(next);
+}).catch(next);
+});
+
 router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
-          Game.findOne({status:'hosted',conversation:req.params.conversation_id}).lean().populate('host','_id name profile_picture phone').populate('users','_id name profile_picture phone').then(game=>{
+          Game.findOne({conversation:req.params.conversation_id}).lean().populate('host','_id name profile_picture phone').populate('users','_id name profile_picture phone').populate('invites','_id name profile_picture phone').then(game=>{
             Venue.findById({_id:game.bookings[0].venue_id}).then(venue =>{
               let game1 = Object.assign({},game)
               game1["venue"] = venue.venue
@@ -744,7 +818,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
         if(response.data.status === "captured")
         {
           console.log(result)
-          res.send({status:"success", message:"slot booked",data: result})
+          
         }
       })
       .catch(error => {
@@ -756,9 +830,11 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
 
     Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
-        Conversation.create({type:'game',members:[req.userId],host:[req.userId],created_by:req.userId,name:req.body[0].game_name,subtitle:values[0].subtitle,sport_name:values[0].sport_name,}).then(convo=>{
-           Game.create({status:'booked',share_type:req.body[0].share_type,limit:req.body[0].limit,users:[req.userId],host:[req.userId],name:req.body[0].game_name,conversation:convo._id,subtitle:values[0].subtitle,sport_name:values[0].sport_name,type:values[0].venue_type,bookings:values }).then(game=>{
-
+        User.findById({_id:req.userId}).then(user=>{
+        Conversation.create({type:'game',subtitle:req.body[0].subtitle,members:[req.userId],host:[req.userId],created_by:req.userId,name:req.body[0].game_name,sport_name:values[0].sport_name,}).then(convo=>{
+           Game.create({status:'booked',share_type:req.body[0].share_type,limit:req.body[0].limit,users:[req.userId],host:[req.userId],name:req.body[0].game_name,conversation:convo._id,subtitle:req.body[0].subtitle,sport_name:values[0].sport_name,type:values[0].venue_type,bookings:values,description:values[0].venue_type }).then(game=>{
+            convo['invite'] = false
+            res.send({status:"success", message:"slot booked",data: {game:game,convo:convo}})
         let booking_id = values[0].booking_id
         let phone = "91"+values[0].phone
         let venue_name = values[0].venue
@@ -782,8 +858,11 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
         let SLOT_BOOKED_USER =`Hey ${values[0].name}! Thank you for using Turf Town!\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${Math.round(result[0].booking_amount)}\nBalance to be paid : ${Math.round(balance)}`
         let SLOT_BOOKED_MANAGER = `You have recieved a TURF TOWN booking from ${values[0].name} ( ${values[0].phone} ) \nBooking Id: ${booking_id}\nVenue: ${venue_name}, ${venue_area}\nSport: ${sport_name}(${venue_type})\nDate and Time: ${datetime}\nPrice: ${Math.round(result[0].amount)}\nAmount Paid: ${Math.round(result[0].booking_amount)}\nVenue Discount: ${Math.round(result[0].commission)}\nTT Coupon: ${Math.round(result[0].coupon_amount)}\nAmount to be collected: ${Math.round(balance)}` //490618
         let sender = "TRFTWN"
-        SendMessage(phone,sender,SLOT_BOOKED_USER) // sms to user
-        SendMessage(manger_numbers.join(","),sender,SLOT_BOOKED_MANAGER) // sms to user 
+        let SLOT_BOOKED_GAME_USER =`Hey ${values[0].name}! Thank you for using Turf Town! Your Game has been created .\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${Math.round(result[0].booking_amount)}\nBalance to be paid : ${Math.round(balance)}`
+
+        // SendMessage(phone,sender,SLOT_BOOKED_USER) // sms to user
+        notify(user,SLOT_BOOKED_GAME_USER)
+        // SendMessage(manger_numbers.join(","),sender,SLOT_BOOKED_MANAGER) // sms to user 
         // axios.get(process.env.PHP_SERVER+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&manager_phone='+manager_phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount)
         // .then(response => {
         //   console.log(response.data)
@@ -836,6 +915,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
       }).catch(next)
     }).catch(next)
   }).catch(next)
+}).catch(next)
 
     }).catch(next)
   })
@@ -1251,96 +1331,6 @@ function isEmpty (object){
 }
 
 
-//Cancel Booking
-// router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
-//   Booking.findOne({booking_id:req.params.id}).then(booking=>{
-//     Venue.findById({_id:booking.venue_id}).then(venue=>{
-//       Admin.findById({_id:req.userId}).then(admin=>{
-//       let role = req.role === "venue_staff" || req.role === "venue_manager"
-//       let date = new Date().addHours(8,30)
-//         if(booking.booking_type === "app" && (booking.start_time > date || role)){
-//           console.log(process.env.RAZORPAY_API,booking.transaction_id);
-//           axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
-//           .then(response => {
-//             if(response.data.entity === "refund")
-//             {
-//               Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true,refund_status:true}},{multi:true}).then(booking=>{
-//                 Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
-//                   res.send({status:"success", message:"booking cancelled"})
-//                   let booking_id = booking[0].booking_id
-//                   let venue_name = booking[0].venue
-//                   let venue_type = SetKeyForSport(booking[0].venue_type)
-//                   let venue_area = booking[0].venue_data.venue.area
-//                   let phone = "91"+booking[0].phone
-//                   let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
-//                   let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
-//                   let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
-//                   let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
-//                   //Send SMS
-//                   axios.get(process.env.PHP_SERVER+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
-//                     console.log(response.data)
-//                   }).catch(error=>{
-//                     console.log(error.response)
-//                   })
-    
-//                   //Activity Log
-//                   let activity_log = {
-//                     datetime: new Date(),
-//                     id:req.userId,
-//                     user_type: req.role?req.role:"user",
-//                     activity: 'slot booking cancelled',
-//                     name:req.name,
-//                     venue_id:booking[0].venue_id,
-//                     booking_id:booking_id,
-//                     message: "Slot "+booking_id+" booking cancelled at "+venue_name+" "+datetime+" "+venue_type,
-//                   }
-//                   ActivityLog(activity_log)
-//                 }).catch(next);
-//               }).catch(next);
-//             }
-//           }).catch(error => {
-//             console.log(error)
-//           }).catch(next);
-//         }else{
-//           Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"},refund_status:false},{multi:true}).then(booking=>{
-//                 Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
-//                   res.send({status:"success", message:"booking cancelled"})
-//                   let booking_id = booking[0].booking_id
-//                   let venue_name = booking[0].venue
-//                   let venue_type = SetKeyForSport(booking[0].venue_type)
-//                   let venue_area = booking[0].venue_data.venue.area
-//                   let phone = "91"+booking[0].phone
-//                   let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
-//                   let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
-//                   let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
-//                   let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
-    
-//                   //Send SMS
-//                   axios.get(process.env.PHP_SERVER+'/textlocal/cancel_slot.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+booking[0].venue_type+'&sport_name='+booking[0].sport_name+'&venue_area='+venue_area).then(response => {
-//                     console.log(response.data)
-//                   }).catch(error=>{
-//                     console.log(error.response)
-//                   })
-    
-//                   //Activity Log
-//                   let activity_log = {
-//                     datetime: new Date(),
-//                     id:req.userId,
-//                     user_type: req.role?req.role:"user",
-//                     activity: 'slot booking cancelled',
-//                     name:req.name,
-//                     venue_id:booking[0].venue_id,
-//                     booking_id:booking_id,
-//                     message: "Slot "+booking_id+" booking cancelled at "+venue_name+" "+datetime+" "+venue_type,
-//                   }
-//                   ActivityLog(activity_log)
-//             }).catch(next);
-//           }).catch(next);
-//         }
-//       })
-//   }).catch(next)
-//   }).catch(next)
-// })
 router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
   Booking.findOne({booking_id:req.params.id}).then(booking=>{
     User.findById({_id:req.userId}).then(user=>{
@@ -1575,8 +1565,8 @@ router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
   }).catch(next)
 })
 
-router.post('/followers/:friend', verifyToken, (req, res, next) => {
-  User.findById({_id:req.params.friend},{activity_log:0}).lean().populate('following','name phone profile_picture').then(user=>{
+router.post('/followers/:id', verifyToken, (req, res, next) => {
+  User.findById({_id:req.params.id},{activity_log:0}).lean().populate('following','name phone profile_picture').then(user=>{
     const folloers = user.following
     res.send({status:"success", message:"followers fetched", data:folloers})
   }).catch(next)

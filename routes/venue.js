@@ -277,7 +277,6 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
           list.sort(function(a, b) {
               return a.displacement - b.displacement;
           });
-          console.log(list);
           res.status(201).send(list);
       }).catch(next);
     }).catch(next);

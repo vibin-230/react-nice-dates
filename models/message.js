@@ -10,6 +10,11 @@ const schema = new Schema({
   image : String,
   video : String,
   name : String,
+  read_status: {
+    type: Boolean,
+    default: false
+  },
+  read_by : { type: Schema.Types.ObjectId, ref: 'user' },
   game : { type: Schema.Types.ObjectId, ref: 'game' },
   type:String,
 });

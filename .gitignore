@@ -4,6 +4,10 @@ ecosystem.config.js
 assets/images
 package-lock.json
 .gitignore
+<<<<<<< HEAD
 build
+=======
+redis-stable/
+>>>>>>> d73b6c5dff41b50578105bde9f1ec61b6fffa474
 AuthKey_S4V3AKYZM4.p8
 build/

@@ -21,6 +21,10 @@ const schema = new Schema({
     type: Boolean,
     default: false
   },
+  alternate:{
+    type:Boolean,
+    default:false
+  },
   no_charge:Boolean,
   group_id:String,
   group_name:String,

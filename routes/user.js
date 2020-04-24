@@ -1131,6 +1131,11 @@ router.post('/get_invoice_advance', verifyToken, (req, res, next) => {
 }).catch(next);  
 })
 
+router.post('/get_invoice_advance_many', verifyToken, (req, res, next) => {
+  Invoice.find({repeat_id: {$in:req.body.repeat_id}},{booking_data:0}).then(invoice=> {
+        res.send({status:"failiure", message:"No invoice", data:invoice})
+}).catch(next);  
+})
 
 
 router.post('/check_coupon/:id', verifyToken, (req, res, next) => {
@@ -2281,7 +2286,7 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
           Booking.find({booking_status:{$in:["cancelled","completed"]},venue_id:req.params.id,group_id:{$in:req.body.group_id},repeat_booking:true,invoice:true}).lean().populate('venue_data','venue').populate('collected_by','name').populate('created_by','name').then(booking=>{
             result = Object.values(combineRepeatSlots(booking))
             const sortedActivities = result.slice().sort((a, b) => b.date - a.date)
-              res.send({status:"success", message:"booking history fetched", data:sortedActivities[0].invoice_date})
+              res.send({status:"success", message:"booking history fetched", data:sortedActivities.length > 0 ? sortedActivities[0].invoice_date : ''})
             }).catch(next)
           })
 
@@ -2862,6 +2867,53 @@ router.post('/revenue_report', verifyToken, (req, res, next) => {
     }).catch(next)
     }).catch(next)
 }).catch(next)
+})
+
+router.post('/revenue_report_months', verifyToken, (req, res, next) => {
+  // Venue.findById({_id:req.body.venue_id},{bank:0,access:0}).lean().then(venue=>{
+  //   let venue_id;
+  //   let cancelledData_bookings = []
+  //   if(venue.secondary_venue){
+  //     venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
+  //   }else{
+  //     venue_id = [venue._id.toString()]
+  //   }
+    // Booking.find({booking_status:{$in:["cancelled"]},refund_status:false, venue_id:{$in:req.body.venue_id},booking_type:"app",booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}},{booking_date:1,amount:1,commission:1,booking_amount:1} ).lean().then(data=>{
+      // cancelledData_bookings = data
+    Booking.find({booking_status:{$in:["completed"]}, venue_id:{$in:req.body.venue_id}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().then(key=>{
+      Booking.find({booking_status:{$in:["completed"]}, venue_id:{$in:req.body.venue_id}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}},{booking_date:1,amount:1,commission:1,booking_amount:1}).lean().then(booking=>{
+        let result = {}
+        let booking_new = [...booking]
+        let data = Object.values(booking_new).map((value,index)=>{
+          let date = moment(value.booking_date).format("DD-MM-YYYY")
+          if(!result[date]){
+            result[date] = value
+            result[date].bookings = 1
+            result[date].slots_booked = 1
+            result[date].hours_played = 0.5
+            // result[date].commission = value.commission
+          }else{
+          
+            let new_amout = result[date].booking_status == "cancelled" ? (result[date].booking_amount)/2 : Math.round(result[date].amount)
+            let value_amount = value.booking_status == "cancelled" ? (value.booking_amount)/2 : Math.round(value.amount)
+            let new_commission = result[date].booking_status == "cancelled" ? 0 : result[date].commission
+            let value_commission = value.booking_status == "cancelled" ? 0 : value.commission
+            result[date].amount = new_amout + value_amount
+            result[date].commission = new_commission + value_commission
+            result[date].slots_booked = result[date].slots_booked + 1
+            result[date].hours_played = (result[date].slots_booked*30)/60
+            console.log("vaa",value)
+            console.log("Resulte",result[date])
+
+          }
+        })
+        
+        result = Object.values(result)
+        res.send({status:"success", message:"revenue reports fetched", data:result})
+      }).catch(next)
+    }).catch(next)
+    // }).catch(next)
+// }).catch(next)
 })
 
 router.post('/revenue_report_app', verifyToken, (req, res, next) => {

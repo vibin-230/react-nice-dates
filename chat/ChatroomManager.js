@@ -4,7 +4,7 @@ const Conversation = require('../models/conversation');
 const Game = require('../models/game');
 const Message = require('../models/message');
 const User = require('../models/user');
-const notify = require('../scripts/notify')
+const notify = require('../scripts/Notify')
 const NotifyArray = require('../scripts/NotifyArray')
 
 

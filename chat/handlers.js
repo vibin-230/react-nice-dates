@@ -6,6 +6,7 @@ function makeHandleEvent(client, clientManager, chatroomManager,io) {
   }
 
    async function ensureValidChatroom(chatroomName) {
+    console.log(chatroomName)
      if(chatroomName.type === 'single')
     return await chatroomManager.getChatroomByName(chatroomName)
     else
@@ -55,6 +56,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
         client.join(chatroom.getId())
 
         // send chat history to client
+        console.log('handle Join',chatroom);
         const x =  await chatroom.getChatHistory(chatroom.getId())
         callback(chatroom.getId(), x)
       })

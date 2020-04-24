@@ -29,7 +29,8 @@ module.exports = function ({ _id, image }) {
 
   async function getChatHistory(id) {
      const m = await Message.find({conversation:id}).lean().populate('author','name _id').then(m=>m)
-    return m
+      console.log('chat his', m)
+     return m
   }
 
 

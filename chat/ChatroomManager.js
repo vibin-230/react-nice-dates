@@ -37,22 +37,23 @@ module.exports = function () {
   
 
   async function getChatroomByName(chatroomName) {
-    const s = await Conversation.find({members:chatroomName.members}).limit(1).lean().then(existingConversation=>{
+    console.log('hit','pass')
+    const s = await Conversation.find({members:chatroomName.members,type:'single'}).limit(1).lean().then(existingConversation=>{
       return (existingConversation); 
       }).catch()
+      console.log(s)
       if(s.length <= 0){
-        const convo = await start({type:'single',members:chatroomName,created_by:chatroomName.members[0],to:chatroomName.members[1]})
+        const convo = await start({type:'single',members:chatroomName.members,created_by:chatroomName.members[0],to:chatroomName.members[1]})
         chatrooms.set(convo._id,Chatroom(convo))
-        console.log('hit',convo);
         return chatrooms.get(convo._id)
       }else{
-        console.log('hit',s[0]);
         chatrooms.set(s[0]._id,Chatroom(s[0]))
         return chatrooms.get(s[0]._id)
       } 
   }
 
   async function getGroupOrGameName(chatroomName) {
+    console.log('pass')
     
       if(chatroomName._id.toString().length <= 0){
         const convo = await start({type:chatroomName.type,members:chatroomName.members,created_by:chatroomName.members[0]})

@@ -2031,6 +2031,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
   let past_date  = moment(req.body.todate).add(1,'month')
   let filter = {
     booking_status:{$in:["booked"]},
+    phone:req.phone
   }
   let cancel_filter = {
     booking_status:{$in:["cancelled"]},

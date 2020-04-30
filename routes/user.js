@@ -137,7 +137,7 @@ router.post('/force_update_all', [
 router.post('/mark_read/:id', [
   verifyToken,
 ], (req, res, next) => {
-    Message.updateMany({conversation:req.body.conversation_id,read_by:req.params.id,read_status:false},{ '$set': { "read_status" : true } }).then((user)=>{
+    Message.updateMany({conversation:req.body.conversation_id,read_by:req.params.id,read_status:false},{ '$set': { "read_status" : true } },{multi:true}).then((user)=>{
       console.log(user,req.params.id,req.body);  
       res.status(201).send({status: "success", message: "conversation updated"})
     })
@@ -205,16 +205,18 @@ router.post('/get_chatrooms/:id', [
 ], (req, res, next) => {
       //Check if user existinvites:{$in:[req.params.id]}
       //Conversation.find({members:{$in:[req.params.id]}}).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(existingConversation=>{
-      Conversation.find({ $or: [ { members: { $in: [req.params.id] } }, { invites: { $in: [req.params.id] } } ] }).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(existingConversation=>{
+      Conversation.find({ $or: [ { members: { $in: [req.params.id] } }] }).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(existingConversation=>{
         User.findOne({_id: req.params.id},{activity_log:0}).then(user=> {
-          const date = user.last_active ? user.last_active : new Date()
-         Message.aggregate([{ $match: { $and: [ { created_at: { $gt: date }  }, { read_status: false , read_by:user._id } ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"}}}]).then((m)=>{
+          const date = user.last_active 
+          console.log(user,moment(date).format('llll'));
+         Message.aggregate([{ $match: { $and: [  { read_status: false , read_by:user._id } ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"}}}]).then((m)=>{
           console.log(m);
          const x =  existingConversation.map((c)=> {
-             m.map((m)=>{ m._id.toString() === c._id.toString() ? c['time'] = m.time.length :  c['time'] = 0})
-             const ids = c.invites.map((ma)=>(ma.toString()))
-             console.log(ids);
-              ids.indexOf(user._id.toString()) !== -1 && ids.length > 0 && c.type === 'game' ? c['invite'] = true :c['invite'] = false
+            c['time'] = 0
+             m.map((m)=>{ 
+               if(m._id.toString() === c._id.toString() ) 
+               c['time'] = m.time.length 
+               })
              return c
           })
           res.status(201).send({status: "success", message: "user collected",data:_.orderBy(x, ['last_updated', 'time','created_at'], ['desc', 'desc','desc'])})
@@ -431,7 +433,7 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
 
 router.post('/host_game',verifyToken, (req, res, next) => {
         Conversation.create({type:'game',members:[req.body.userId],created_by:req.body.userId,name:req.body.game_name,sport_name:req.body.sport_name,subtitle:req.body.subtitle,sport_type:req.body.venue_type,host:[req.body.userId]}).then(convo=>{
-          Game.create({status:'hosted',subtitle:req.body.subtitle,share_type:req.body.share_type,limit:req.body.limit,users:[req.body.userId],host:[req.body.userId],name:req.body.game_name,conversation:convo._id,sport_name:req.body.sport_name,type:req.body.venue_type,bookings:req.body.booking}).then(game=>{
+          Game.create({booking_status:'hosted',subtitle:req.body.subtitle,share_type:req.body.share_type,limit:req.body.limit,users:[req.body.userId],host:[req.body.userId],name:req.body.game_name,conversation:convo._id,sport_name:req.body.sport_name,type:req.body.venue_type,bookings:req.body.booking,booking_date:req.body.booking[0].booking_date,venue:req.body.booking[0].venue_id,start_time:req.body.booking[0].start_time,created_by:req.body.userId,created_type:'user'}).then(game=>{
            //since he is a host who is accessing this api
             convo['invite'] = false
             res.send({status:"success", message:"game_created",data:{game:game,convo:convo}})
@@ -445,8 +447,8 @@ router.post('/send_invite',verifyToken, (req, res, next) => {
     Conversation.findByIdAndUpdate({_id: req.body.game.conversation},{ $addToSet: { invites: { $each: req.body.ids } } }).then(conversation=> {
       User.find({_id: { $in :req.body.ids } },{activity_log:0}).lean().then(user=> {
         const device_token_list=user.map((e)=>e.device_token)
-        io.emit('unread', 'invitation sent');
-        //res.send({status:"success", message:"invitation sent"})
+        //io.emit('unread', 'invitation sent');
+        res.send({status:"success", message:"invitation sent"})
           NotifyArray(device_token_list,'You have a received a new game request from '+req.name)
 }).catch(next);
 }).catch(next);
@@ -465,6 +467,9 @@ router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
             })
     }).catch(next);
 });
+
+
+
 
 
 //Upload profile picture
@@ -768,7 +773,6 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
       Booking.findByIdAndUpdate({_id:body._id},{booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount,coupon_amount:body.coupon_amount,coupons_used:body.coupons_used, multiple_id:id}).lean().then(booking=>{
         Booking.findById({_id:body._id}).lean().populate('venue_data').then(booking=>{
         resolve(booking)
-
       }).catch(next)
     }).catch(next)
     }).catch(error=>{
@@ -812,7 +816,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
         User.findById({_id:req.userId}).then(user=>{
         Conversation.create({type:'game',subtitle:req.body[0].subtitle,members:[req.userId],host:[req.userId],created_by:req.userId,name:req.body[0].game_name,sport_name:values[0].sport_name,}).then(convo=>{
-           Game.create({status:'booked',share_type:req.body[0].share_type,limit:req.body[0].limit,users:[req.userId],host:[req.userId],name:req.body[0].game_name,conversation:convo._id,subtitle:req.body[0].subtitle,sport_name:values[0].sport_name,type:values[0].venue_type,bookings:values,description:values[0].venue_type }).then(game=>{
+           Game.create({booking_status:'booked',share_type:req.body[0].share_type,limit:req.body[0].limit,users:[req.userId],created_by:req.userId,created_type:'user',host:[req.userId],name:req.body[0].game_name,conversation:convo._id,subtitle:req.body[0].subtitle,sport_name:values[0].sport_name,type:values[0].venue_type,bookings:values,description:values[0].venue_type,booking_date:values[0].booking_date,start_time:values[0].start_time,venue:values[0].venue_id, }).then(game=>{
             convo['invite'] = false
             res.send({status:"success", message:"slot booked",data: {game:game,convo:convo}})
         let booking_id = values[0].booking_id
@@ -1265,41 +1269,46 @@ router.post('/get_version', verifyToken, (req, res, next) => {
 
 
 router.post('/test_textlocal', verifyToken, (req, res, next) => {
-  let otp = "5555";
-  let event = 'Sample Event'
-  let date = '12th March 2020'
-  let team_name = 'Cycles FC'
-  let type = '5s'
-  let sport = 'Football'
-  let booking_id = 'TTE001123'
-  let amount = 'Rs.200'
-  let balance = 'Rs.1000'
-  let numbers = "919347603013"
-  let venue = "Whistle"
-  let user = "shankar"
-  let mes = 'You have received a new registration. Event : passs\nDate :12th January 2005\nTeam Name : Hipaass \nType: 5s \nSport: football \nRegisteration ID : TTE00123\nAmount Paid : 100\nBalance to be paid at event : 200\nDo get in touch with the team and communicate further details'
-  let message = "You have received a Turftown event booking \nEvent: "+event+" \nDate: "+date+" \nTeam Name: "+team_name+" \nType: "+type+"\nSport: "+sport+"\nRegisteration ID: "+booking_id+"\nAmount Paid: "+amount+"\nBalance to be paid at the event: "+balance
-  let m = 'This is a test message'
-  let time = "7pm-8pm"
-  let USER_CANCEL_WITHOUT_REFUND1 = `Your Turf Town booking ${booking_id} scheduled for ${date} at ${venue} has been cancelled.\nAs the slot has been cancelled with less than 6 hours to the scheduled time, advance paid of ${amount} will be charged as a cancellation fee.`//490447
-  let USER_CANCEL_WITHOUT_REFUND = `Your Turf Town booking ${booking_id} scheduled for ${date} at ${venue} has been cancelled.\nAs the slot has been cancelled with less than 6 hours to the scheduled time, advance paid of ${amount} will be charged as a cancellation fee.`//490447
-  let USER_CANCEL_WITH_REFUND = `Your Turf Town booking ${booking_id} scheduled for ${date} at ${venue} has been cancelled.\nAdvance of ${amount} will be refunded within 3-4 working days.`//490450
-  let VENUE_CANCEL_WITHOUT_REFUND = `Turf Town booking ${booking_id} scheduled for ${date} at ${venue} has been cancelled by the user.\n ${user} \nAs the slot has been cancelled with less than 6 hours to the scheduled time, advance paid of ${amount} will be charged to the user as a cancellation fee.`//490533
-  let VENUE_CANCEL_WITH_REFUND = `Turf Town booking ${booking_id} scheduled for ${date} at ${venue} has been cancelled by the user.\n ${user} \nAdvance of ${amount} will be refunded to the user within 3-4 working days.`///490570
-  let SLOT_BOOKED_USER ='Hey Akshay! Thank you for using Turf Town!\nBooking Id : TT02222\nVenue : Cricket\nSport : Cricket\nDate and Time : Last Time\nvenue discount:0\nTTCoupon:100\nAmount Paid : 100\nBalance to be paid : 100'
-  let SLOT_BOOKED_MANAGER = `You have recieved a TURF TOWN booking from ${user} ( ${numbers} \nBooking Id: ${booking_id}\nVenue: ${venue}\nSport: ${sport}\nDate and Time: ${date}\nPrice: ${balance}\nAmount Paid: ${amount}\nVenue Discount: ${amount}\nTT Coupon: ${amount}\nAmount to be collected: ${amount}` //490618
-  let EVENT_BOOKED_USER = `Your Turf Town event booking for ${event} has been confirmed.\nDate : ${date}\nTeam Name : ${team_name}\nSport : ${sport}\nRegisteration ID : ${booking_id}\nTT Coupon : 10000\nAmount Paid : ${amount}\nBalance to be paid at event : ${balance}\nPlease contact ${numbers} for more details.`//491373
-  let EVENT_CANCELLED_FOR_USER =`TURF TOWN event booking ${booking_id} for ${event} scheduled at ${date} has been cancelled by ${user}\nStatus : cancelled comepltety` ///490737
-  let EVENT_CANCELLED_FOR_MANAGER = `Your Turf town booking for event ${booking_id} for ${venue}scheduled at ${date} has been cancelled.\nStatus : USERCANCELLED` ///490748
-  let SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER = `Your Turf town booking ${venue} scheduled for ${date} at ${venue} has been cancelled by the venue .\nStatus : cancelled for purpose\nPlease contact the venue ${numbers} for more information.` //490759
-  // let SLOT_CANCELLED_BY_VENUE_MANAGER =  `Your booking ${booking_id} scheduled ${date} at ${venue} has been cancelled. Please contact the venue for more info` ///418833
-  // let EVENT_BOOKED_MANAGER = `Event Name : Rookie League\nBalance to be paid at the event : 1000`
-  let EVENT_BOOKED_MANAGER = `You have received a new registration for the event.\n${event}\nDate : ${date}\nName : kumar\nTeam Name : ${team_name}\nSport : ${sport}(${type})\nRegisteration ID : ${booking_id}\nTT Coupon : ${amount}\nAmount Paid : ${balance}${""}\nBalance to be paid at the event : ${balance}`//491373
-  // let SLOT_CANCELLED_BY_VENUE_MANAGER =  `Your booking ${booking_id} scheduled ${date} at ${venue},${" "+venue} has been cancelled. Please contact the venue for more info` ///418833
-  // let EVENT_BOOKED_USER = `Your Turf Town event booking for MADRAS MUNDITAL has been confirmed.\nDate : ${date}\nTeam Name : ${team_name}\nSport : ${sport}(${type})\nRegisteration ID : ${booking_id}\nAmount Paid : Rs.${amount}${""}\nTT Coupon : 0\nBalance to be paid at event : ${balance}\nPlease contact ${numbers} for more details.`//491330
-  //Send SMS
-  let sender = "TRFTWN"
-  SendMessage(numbers,sender,EVENT_BOOKED_MANAGER)
+  // let otp = "5555";
+  // let event = 'Sample Event'
+  // let date = '12th March 2020'
+  // let team_name = 'Cycles FC'
+  // let type = '5s'
+  // let sport = 'Football'
+  // let booking_id = 'TTE001123'
+  // let amount = 'Rs.200'
+  // let balance = 'Rs.1000'
+  // let numbers = "919347603013"
+  // let venue = "Whistle"
+  // let user = "shankar"
+  // let mes = 'You have received a new registration. Event : passs\nDate :12th January 2005\nTeam Name : Hipaass \nType: 5s \nSport: football \nRegisteration ID : TTE00123\nAmount Paid : 100\nBalance to be paid at event : 200\nDo get in touch with the team and communicate further details'
+  // let message = "You have received a Turftown event booking \nEvent: "+event+" \nDate: "+date+" \nTeam Name: "+team_name+" \nType: "+type+"\nSport: "+sport+"\nRegisteration ID: "+booking_id+"\nAmount Paid: "+amount+"\nBalance to be paid at the event: "+balance
+  // let m = 'This is a test message'
+  // let time = "7pm-8pm"
+  // let USER_CANCEL_WITHOUT_REFUND1 = `Your Turf Town booking ${booking_id} scheduled for ${date} at ${venue} has been cancelled.\nAs the slot has been cancelled with less than 6 hours to the scheduled time, advance paid of ${amount} will be charged as a cancellation fee.`//490447
+  // let USER_CANCEL_WITHOUT_REFUND = `Your Turf Town booking ${booking_id} scheduled for ${date} at ${venue} has been cancelled.\nAs the slot has been cancelled with less than 6 hours to the scheduled time, advance paid of ${amount} will be charged as a cancellation fee.`//490447
+  // let USER_CANCEL_WITH_REFUND = `Your Turf Town booking ${booking_id} scheduled for ${date} at ${venue} has been cancelled.\nAdvance of ${amount} will be refunded within 3-4 working days.`//490450
+  // let VENUE_CANCEL_WITHOUT_REFUND = `Turf Town booking ${booking_id} scheduled for ${date} at ${venue} has been cancelled by the user.\n ${user} \nAs the slot has been cancelled with less than 6 hours to the scheduled time, advance paid of ${amount} will be charged to the user as a cancellation fee.`//490533
+  // let VENUE_CANCEL_WITH_REFUND = `Turf Town booking ${booking_id} scheduled for ${date} at ${venue} has been cancelled by the user.\n ${user} \nAdvance of ${amount} will be refunded to the user within 3-4 working days.`///490570
+  // let SLOT_BOOKED_USER ='Hey Akshay! Thank you for using Turf Town!\nBooking Id : TT02222\nVenue : Cricket\nSport : Cricket\nDate and Time : Last Time\nvenue discount:0\nTTCoupon:100\nAmount Paid : 100\nBalance to be paid : 100'
+  // let SLOT_BOOKED_MANAGER = `You have recieved a TURF TOWN booking from ${user} ( ${numbers} \nBooking Id: ${booking_id}\nVenue: ${venue}\nSport: ${sport}\nDate and Time: ${date}\nPrice: ${balance}\nAmount Paid: ${amount}\nVenue Discount: ${amount}\nTT Coupon: ${amount}\nAmount to be collected: ${amount}` //490618
+  // let EVENT_BOOKED_USER = `Your Turf Town event booking for ${event} has been confirmed.\nDate : ${date}\nTeam Name : ${team_name}\nSport : ${sport}\nRegisteration ID : ${booking_id}\nTT Coupon : 10000\nAmount Paid : ${amount}\nBalance to be paid at event : ${balance}\nPlease contact ${numbers} for more details.`//491373
+  // let EVENT_CANCELLED_FOR_USER =`TURF TOWN event booking ${booking_id} for ${event} scheduled at ${date} has been cancelled by ${user}\nStatus : cancelled comepltety` ///490737
+  // let EVENT_CANCELLED_FOR_MANAGER = `Your Turf town booking for event ${booking_id} for ${venue}scheduled at ${date} has been cancelled.\nStatus : USERCANCELLED` ///490748
+  // let SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER = `Your Turf town booking ${venue} scheduled for ${date} at ${venue} has been cancelled by the venue .\nStatus : cancelled for purpose\nPlease contact the venue ${numbers} for more information.` //490759
+  // // let SLOT_CANCELLED_BY_VENUE_MANAGER =  `Your booking ${booking_id} scheduled ${date} at ${venue} has been cancelled. Please contact the venue for more info` ///418833
+  // // let EVENT_BOOKED_MANAGER = `Event Name : Rookie League\nBalance to be paid at the event : 1000`
+  // let EVENT_BOOKED_MANAGER = `You have received a new registration for the event.\n${event}\nDate : ${date}\nName : kumar\nTeam Name : ${team_name}\nSport : ${sport}(${type})\nRegisteration ID : ${booking_id}\nTT Coupon : ${amount}\nAmount Paid : ${balance}${""}\nBalance to be paid at the event : ${balance}`//491373
+  // // let SLOT_CANCELLED_BY_VENUE_MANAGER =  `Your booking ${booking_id} scheduled ${date} at ${venue},${" "+venue} has been cancelled. Please contact the venue for more info` ///418833
+  // // let EVENT_BOOKED_USER = `Your Turf Town event booking for MADRAS MUNDITAL has been confirmed.\nDate : ${date}\nTeam Name : ${team_name}\nSport : ${sport}(${type})\nRegisteration ID : ${booking_id}\nAmount Paid : Rs.${amount}${""}\nTT Coupon : 0\nBalance to be paid at event : ${balance}\nPlease contact ${numbers} for more details.`//491330
+  // //Send SMS
+  // let sender = "TRFTWN"
+  // SendMessage(numbers,sender,EVENT_BOOKED_MANAGER)
+  User.find({phone:req.body.phone},{activity_log:0}).lean().then((u)=>{
+    console.log(u[0]._id);
+    notify(u[0],'Hit')
+    res.send({status:"success", message:"Version Log",data:u[0]})
+  }).catch(next)
   // axios.get(`https://api.textlocal.in/send/?apikey=${process.env.TEXT_LOCAL_API_KEY}&numbers=${numbers}&sender=${sender}&message=${SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER}`).then(response => {
   //   res.send(response.data)
   // }).catch(error=>{
@@ -1998,6 +2007,48 @@ router.post('/past_bookings', verifyToken, (req, res, next) => {
 })
 
 
+router.post('/bookings_and_games', verifyToken, (req, res, next) => {
+  let past_date  = moment(req.body.todate).add(1,'month')
+  let filter = {
+    booking_status:{$in:["booked"]},
+    created_by:req.userId,
+  }
+  let cancel_filter = {
+    booking_status:{$in:["cancelled"]},
+    created_by:req.userId,
+  }
+  let eventFilter = {
+    booking_status:{$in:["booked"]},
+    created_by:req.userId,
+  }
+  let booking_ids = []
+  //req.role==="super_admin"?delete filter.created_by:null
+  Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
+    EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
+      Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate('conversation').then(game=>{
+        result = Object.values(combineSlots(booking))
+        
+        let event_booking_data = eventBooking
+        let event = event_booking_data.reverse()
+        booking_data = [...result,...event,...game]
+
+        var groupBy = (xs, key) => {
+          return xs.reduce((rv, x) =>{
+            (rv[moment(x[key]).format('l')] = rv[moment(x[key]).format('l')] || []).push(x);
+            return rv;
+          }, {});
+        };
+        
+        let finalResult = booking_data.sort((a, b) => moment(a.start_time).format("YYYYMMDDHmm") > moment(b.start_time).format("YYYYMMDDHmm") ? 1 : -1 )
+        const a = groupBy(finalResult,'start_time')
+        const q =   Object.entries(a).map(([key,value])=>{
+                return {title:key,data:value }
+          })
+        res.send({status:"success", message:"booking history fetched", data:q})
+    }).catch(next)
+  }).catch(next)
+  }).catch(next)
+})
 
 
 router.post('/upcoming_booking', verifyToken, (req, res, next) => {

@@ -6,18 +6,21 @@ function Notify(receiver_user, message) {
     var message = new gcm.Message({
         collapseKey: 'demo',
         priority: 'high',
-        contentAvailable: true,
-        timeToLive: 3,
-        to:receiver_user.device_token,
+        //contentAvailable: true,
+        //timeToLive: 3,
+        //to:receiver_user.device_token,
         //dryRun: true,
         notification: {
           title: `Turftown`,
           icon: "ic_launcher",
-          body: message
+          body: 'This has Passed'
+        },
+        data:{
+          key:'Hi'
         }
       });
       sender.send(message, { registrationTokens: [receiver_user.device_token] }, function (err, response) {
-        if (err) console.error(err);
+        if (err) console.error('err',err.response);
         else console.log(response);
       }); 
 

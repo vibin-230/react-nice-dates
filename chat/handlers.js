@@ -106,7 +106,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
 
 
   async function handleInvites(game,callback){
-    const x = await chatroomManager.sendInvites(game.game._id,game.game.conversation,game.ids)
+    const x = await chatroomManager.sendInvites(game.game._id,game.game.conversation,game.ids,game.user_id)
     x.forEach((clientId)=>{
      const client =  clientManager.getClient(clientId)
     })

@@ -144,8 +144,8 @@ module.exports = function () {
                                  return   User.find({_id: { $in :ids } },{activity_log:0}).lean().then(user=> {
                                    console.log('new_conversations',new_convos);
 
-                                      let messages =  new_convos.map((nc)=>{ return {conversation:nc._id,game:game_id,message:'New Game invitation from '+sender.name,name:sender.name,unread:false,read_by:nc.members[0]._id,author:user_id,type:'game',last_updated:new Date()}}) 
-                                        let messages1 = conversation2.map((nc)=>{ return {conversation:nc._id,game:game_id,message:'New Game invitation from '+sender.name,name:sender.name,unread:false,read_by:nc.members[0]._id,author:user_id,type:'game',last_updated:new Date()}}) 
+                                      let messages =  new_convos.map((nc)=>{ return {conversation:nc._id,game:game_id,message:'New Game invitation from '+sender.name,name:sender.name,unread:false,read_by:nc.members[0],author:user_id,type:'game',last_updated:new Date()}}) 
+                                        let messages1 = conversation2.map((nc)=>{ return {conversation:nc._id,game:game_id,message:'New Game invitation from '+sender.name,name:sender.name,unread:false,read_by:nc.members[0],author:user_id,type:'game',last_updated:new Date()}}) 
                                           let finalMessages = messages.concat(messages1)
                                             return Message.insertMany(finalMessages).then(message1=>{
                                               const cids = message1.map((m)=>m.conversation)

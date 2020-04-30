@@ -13,7 +13,7 @@ function Notify(receiver_user, message) {
         notification: {
           title: `Turftown`,
           icon: "ic_launcher",
-          body: 'This has Passed'
+          body: message
         },
         data:{
           key:'Hi'

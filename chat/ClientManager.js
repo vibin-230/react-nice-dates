@@ -77,7 +77,7 @@ module.exports = function () {
       const x  = clients.get(clientId.toString())
       console.log('gotclient---------------',x);
       //io.broadcast.to(x.id).emit('unread','pass')
-      x.client.emit('unread','invites')
+      x && x.client && x.client.emit('unread','invites')
     return (x || {})
   }
 

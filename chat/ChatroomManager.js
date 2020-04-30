@@ -6,7 +6,7 @@ const Message = require('../models/message');
 const User = require('../models/user');
 const notify = require('../scripts/Notify')
 const NotifyArray = require('../scripts/NotifyArray')
-
+const _ = require('lodash')
 
 module.exports = function () {
   // mapping of all available chatrooms
@@ -21,7 +21,7 @@ module.exports = function () {
   }
 
 
-  const myfunction = async function(obj){
+  const saveConversation = async function(obj){
     const conversation = await Conversation.create(obj).then(convo=>{
       return convo
        }).catch((err)=>{
@@ -30,9 +30,18 @@ module.exports = function () {
        return conversation
   }
 
-   async function start(obj) {
-    const result = await myfunction(obj);
+   async function saveConvo(obj) {
+    const result = await saveConversation(obj);
     return result
+  }
+
+  function getConversationAndSendBotMessage(convo){
+    Conversation.findById({_id:convo._id}).populate('members','_id name device_token').then((conversation1)=>{
+      const messages =  conversation1.members.map((user)=> ({conversation:convo._id,message:`${user.name} has joined ${conversation1.name}`,name:conversation1.members[0].name,author:conversation1.members[0]._id,type:'bot',last_updated:new Date()}))
+      console.log(messages)  
+      saveMessages(messages)
+
+     })
   }
   
 
@@ -43,7 +52,7 @@ module.exports = function () {
       }).catch()
       console.log(s)
       if(s.length <= 0){
-        const convo = await start({type:'single',members:chatroomName.members,created_by:chatroomName.members[0],to:chatroomName.members[1]})
+        const convo = await saveConvo({type:'single',members:chatroomName.members,created_by:chatroomName.members[0],to:chatroomName.members[1]})
         chatrooms.set(convo._id,Chatroom(convo))
         return chatrooms.get(convo._id)
       }else{
@@ -53,12 +62,12 @@ module.exports = function () {
   }
 
   async function getGroupOrGameName(chatroomName) {
-    console.log('pass')
-    
+       console.log('passkdljfs',chatroomName)
       if(chatroomName._id.toString().length <= 0){
-        const convo = await start({type:chatroomName.type,members:chatroomName.members,created_by:chatroomName.members[0]})
+        const convo = await saveConvo({display_picture:chatroomName.image?chatroomName.image:'',type:chatroomName.type,name:chatroomName.name,members:chatroomName.members,created_by:chatroomName.members[0],host:[chatroomName.members[0]]})
         chatrooms.set(convo._id,Chatroom(convo))
-        console.log('hit',convo);
+        console.log('hit new',convo);
+        getConversationAndSendBotMessage(convo)
         return chatrooms.get(convo._id)
       }else{
         console.log('hit',chatroomName);
@@ -83,6 +92,14 @@ module.exports = function () {
       }).catch((e)=>{console.log(e)});
     }
 
+    function saveMessages(message) {
+      Message.insertMany(message).then(message1=>{
+        Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},{last_message:message1[message1.length-1]._id,last_updated:new Date()}).then(conversation=>{
+          console.log('save messages',conversation)
+        }).catch((e)=>{console.log(e)});
+        }).catch((e)=>{console.log(e)});
+      }
+
 
     function notifyOtherUsers(chatroom,message){
       const filter = chatroom.members.filter((member)=> member !== message.author)
@@ -102,17 +119,47 @@ module.exports = function () {
     }
 
 
-   async function sendInvites(game_id,conversation,ids){
+   async function sendInvites(game_id,conversation,ids,user_id){
    const x = await  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: ids } } }).then(game=> {
                 return Conversation.findByIdAndUpdate({_id: conversation},{ $addToSet: { invites: { $each: ids } } }).then(conversation1=> {
-                return Conversation.findById({_id: conversation}).then(conversation2=> {
-                     return   User.find({_id: { $in :ids } },{activity_log:0}).lean().then(user=> {
-                              const device_token_list=user.map((e)=>e.device_token)
-                              NotifyArray(device_token_list,'You have a received a new game request  ')
-                              return user.map((e)=>e._id)
+                  return Game.findById({_id: game_id}).then(game1=> {
+                    const x = ids.map((id)=>{ return { members :{$all:[id,user_id]},type:'single'}})
+                    const members_list = ids.map((id)=>{ return {members :[id,user_id]} })
+                    return Conversation.find({$or:x}).then(conversation2=> {
+                          const conversation_list = conversation2.reduce((z,c)=>{ 
+                                    c.members.forEach((mem)=>{ 
+                                    if(z.indexOf(mem.toString())=== -1)  
+                                      z.push(mem.toString())
+                                    })
+                                    return z
+                          },[])
+                            const list_with_no_convos = ids.map((id)=>{
+                             if(conversation_list.indexOf(id) === -1)
+                                return {members:[id,user_id],type:'single',created_by:user_id}
+                            })
+                            console.log('list with no convos',list_with_no_convos);
+                             console.log('list with convos',conversation_list)
+                             return  Conversation.insertMany(list_with_no_convos).then((new_convos)=>{
+                               return   User.findOne({_id: user_id },{activity_log:0}).lean().then(sender=> {
+                                 return   User.find({_id: { $in :ids } },{activity_log:0}).lean().then(user=> {
+                                   console.log('new_conversations',new_convos);
+                                      let messages =  new_convos.map((nc)=>{ return {conversation:nc._id,game:game_id,message:'New Game invitation from'+sender.name,name:sender.name,author:user_id,type:'game',last_updated:new Date()}}) 
+                                        let messages1 = conversation2.map((nc)=>{ return {conversation:nc._id,game:game_id,message:'New Game invitation from'+sender.name,name:sender.name,author:user_id,type:'game',last_updated:new Date()}}) 
+                                          let finalMessages = messages.concat(messages1)
+                                            return Message.insertMany(finalMessages).then(message1=>{
+                                              const cids = message1.map((m)=>m.conversation)
+                                              return Conversation.updateMany({_id:{ $in: cids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
+                                                const device_token_list=user.map((e)=>e.device_token)
+                                                  NotifyArray(device_token_list,'You have a received a new game request  ')
+                                                    return user.map((e)=>e._id)
               //res.send({status:"success", message:"invitation sent"})
     }).catch((e)=>console.log(e));
+    }).catch((e)=>console.log(e));
+   }).catch((e)=>console.log(e));
+    }).catch((e)=>console.log(e));
      }).catch((e)=>console.log(e));
+    }).catch((e)=>console.log(e));
+    }).catch((e)=>console.log(e));
     }).catch((e)=>console.log(e));
     }).catch((e)=>console.log(e));
     return x
@@ -128,7 +175,7 @@ module.exports = function () {
             //above to update below to show and save message
             return Conversation.findById({_id: game.conversation}).lean().populate('members','_id device_token').then(conversation2=> {
               return User.findById({_id: userId},{activity_log:0,}).lean().then(user=> {
-                  saveMessage({conversation:conversation2._id,message:`${user.name} has joined ${conversation2.name}`,name:user.name,author:user._id,type:'text',}) 
+                  saveMessage({conversation:conversation2._id,message:`${user.name} has joined ${conversation2.name}`,name:user.name,author:user._id,type:'text',last_updated:new Date()}) 
                   console.log('con',conversation2)      
                                  const device_token_list=conversation2.members.map((e)=>e.device_token)
                                  NotifyArray(device_token_list,`${user.name} has joined ${conversation2.name}`)

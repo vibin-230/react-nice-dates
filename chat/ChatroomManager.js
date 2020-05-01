@@ -144,8 +144,8 @@ module.exports = function () {
                                  return   User.find({_id: { $in :ids } },{activity_log:0}).lean().then(user=> {
                                    console.log('new_conversations',new_convos);
 
-                                      let messages =  new_convos.map((nc)=>{ return {conversation:nc._id,game:game_id,message:'New Game invitation from '+sender.name,name:sender.name,unread:false,read_by:nc.members[0],author:user_id,type:'game',last_updated:new Date()}}) 
-                                        let messages1 = conversation2.map((nc)=>{ return {conversation:nc._id,game:game_id,message:'New Game invitation from '+sender.name,name:sender.name,unread:false,read_by:nc.members[0],author:user_id,type:'game',last_updated:new Date()}}) 
+                                      let messages =  new_convos.map((nc)=>{ return {conversation:nc._id,game:game_id,message:'New Game invitation from '+sender.name,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',last_updated:new Date()}}) 
+                                        let messages1 = conversation2.map((nc)=>{ return {conversation:nc._id,game:game_id,message:'New Game invitation from '+sender.name,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',last_updated:new Date()}}) 
                                           let finalMessages = messages.concat(messages1)
                                             return Message.insertMany(finalMessages).then(message1=>{
                                               const cids = message1.map((m)=>m.conversation)
@@ -183,7 +183,7 @@ module.exports = function () {
           return Conversation.findByIdAndUpdate({_id: conversation},{ $addToSet: { invites: { $each: flatten_ids } } }).then(conversation12=> {
             return   User.findOne({_id: user_id },{activity_log:0}).lean().then(sender=> {
               return   User.find({_id: { $in :flatten_ids } },{activity_log:0}).lean().then(user=> {
-                 let finalMessages = conversation1.map((nc)=>{ return {conversation:nc._id,game:game_id,message:'New Game invitation from '+sender.name,name:sender.name,unread:false,read_by:group_ids[0],author:user_id,type:'game',last_updated:new Date()}}) 
+                 let finalMessages = conversation1.map((nc)=>{ return {conversation:nc._id,game:game_id,message:'New Game invitation from '+sender.name,name:sender.name,read_status:false,read_by:group_ids[0],author:user_id,type:'game',last_updated:new Date()}}) 
                  return Message.insertMany(finalMessages).then(message1=>{
                   const cids = message1.map((m)=>m.conversation)
                   return Conversation.updateMany({_id:{ $in: cids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{

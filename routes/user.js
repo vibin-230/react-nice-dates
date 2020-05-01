@@ -137,7 +137,7 @@ router.post('/force_update_all', [
 router.post('/mark_read/:id', [
   verifyToken,
 ], (req, res, next) => {
-    Message.updateMany({conversation:req.body.conversation_id,read_by:req.params.id,read_status:false},{ '$set': { "read_status" : true } },{multi:true}).then((user)=>{
+    Message.updateMany({conversation:req.body.conversation_id,read_status:false},{ '$set': { "read_status" : true } },{multi:true}).then((user)=>{
       console.log(user,req.params.id,req.body);  
       res.status(201).send({status: "success", message: "conversation updated"})
     })
@@ -209,7 +209,7 @@ router.post('/get_chatrooms/:id', [
         User.findOne({_id: req.params.id},{activity_log:0}).then(user=> {
           const date = user.last_active 
           console.log(user,moment(date).format('llll'));
-         Message.aggregate([{ $match: { $and: [  { read_status: false , read_by:user._id } ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"}}}]).then((m)=>{
+         Message.aggregate([{ $match: { $and: [  { conversation: {$in:existingConversation.map((c)=>c._id)} },{created_at:{$gte:user.last_active}},{read_status:false} ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"}}}]).then((m)=>{
           console.log(m);
          const x =  existingConversation.map((c)=> {
             c['time'] = 0
@@ -449,7 +449,7 @@ router.post('/send_invite',verifyToken, (req, res, next) => {
         const device_token_list=user.map((e)=>e.device_token)
         //io.emit('unread', 'invitation sent');
         res.send({status:"success", message:"invitation sent"})
-          NotifyArray(device_token_list,'You have a received a new game request from '+req.name)
+          NotifyArray(device_token_list,'You have a received a new game request from '+req.name,'Turftown Game Request')
 }).catch(next);
 }).catch(next);
 }).catch(next);
@@ -462,6 +462,7 @@ router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
               game1["venue"] = venue.venue
               game1["rating"] = venue.rating
               game1['final'] = _.xor(game1.users,game1.host)
+
               res.send({status:"success", message:"game_fetched",data:game1})
 
             })
@@ -1306,7 +1307,7 @@ router.post('/test_textlocal', verifyToken, (req, res, next) => {
   // SendMessage(numbers,sender,EVENT_BOOKED_MANAGER)
   User.find({phone:req.body.phone},{activity_log:0}).lean().then((u)=>{
     console.log(u[0]._id);
-    notify(u[0],'Hit')
+    notify(u[0],'total')
     res.send({status:"success", message:"Version Log",data:u[0]})
   }).catch(next)
   // axios.get(`https://api.textlocal.in/send/?apikey=${process.env.TEXT_LOCAL_API_KEY}&numbers=${numbers}&sender=${sender}&message=${SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER}`).then(response => {
@@ -1564,6 +1565,36 @@ router.post('/followers/:id', verifyToken, (req, res, next) => {
     const folloers = user.following
     res.send({status:"success", message:"followers fetched", data:folloers})
   }).catch(next)
+})
+
+
+router.post('/convos_and_followers/:id', verifyToken, (req, res, next) => {
+  Conversation.find({ $and: [ { members: { $in: [req.params.id] } },{type:'group'}] }).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(existingConversation=>{
+      User.findById({_id:req.params.id},{activity_log:0}).lean().populate('following','name phone profile_picture').then(user=>{
+           const folloers = user.following.map((f)=>{
+            f['select'] = false
+            return f
+           })
+
+           const convo = existingConversation.map((f)=>{
+            f['select'] = false
+            return f
+           })
+           const data = [
+            {
+              title:'clubs',
+              data:convo
+            }, 
+            {
+             title:'followers',
+             data:folloers
+           }
+           
+          ]
+      res.send({status:"success", message:"followers fetched", data:data})
+  }).catch(next)
+}).catch(next)
+
 })
 
 router.post('/booking_history_from_app_event_bookings', verifyToken, (req, res, next) => {

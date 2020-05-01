@@ -82,19 +82,18 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     if(chatroomName.type === 'single'){
       const clientNumber = io.sockets.adapter.rooms[chatroomName._id].length;
       console.log('client_no',clientNumber)
-      if(io.sockets.adapter.rooms[chatroomName._id].length < 2){
-        chatroomManager.saveMessage(message)
-        chatroomManager.notifyOtherUsers(chatroomName, message)
-        callback()
-      }else{
-       
+      // if(io.sockets.adapter.rooms[chatroomName._id].length < 2){
+      //   chatroomManager.saveMessage(message)
+      //   chatroomManager.notifyAllUsers(chatroomName, message)
+      //   callback()
+      // }else{
         client.to(chatroomName._id).emit('new',message)
         client.to(chatroomName._id).emit('unread',message)
+        chatroomManager.notifyAllUsers(chatroomName, message)
         chatroomManager.saveMessage(message) 
         callback()
-      }
+     // }
     }else{
-      console.log('hit',message)
         client.to(chatroomName._id).emit('new',message)
         client.to(chatroomName._id).emit('unread',message)
         chatroomManager.saveMessage(message) 
@@ -106,10 +105,15 @@ module.exports = function (client, clientManager, chatroomManager,io) {
 
 
   async function handleInvites(game,callback){
-    const x = await chatroomManager.sendInvites(game.game._id,game.game.conversation,game.ids,game.user_id)
-    x.forEach((clientId)=>{
+    
+    let x = game.ids.length > 0 && await chatroomManager.sendInvites(game.game._id,game.game.conversation,game.ids,game.user_id)
+    let y = game.convo_ids.length > 0 && await chatroomManager.sendGroupInvites(game.game._id,game.game.conversation,game.convo_ids,game.user_id)
+      x.forEach((clientId)=>{
      const client =  clientManager.getClient(clientId)
     })
+    y.forEach((clientId)=>{
+      const client =  clientManager.getClient(clientId)
+     })
     callback()
   }
 

@@ -7,6 +7,7 @@ const schema = new Schema({
   created_at: { type : Date , default:moment()},
   modified_at: { type : Date , default:moment()},
   last_login: Date,
+  last_active:Date,
   modified_at: Date,
   phone:String,
   token:String,

@@ -102,7 +102,7 @@ module.exports = function () {
 
 
     function notifyOtherUsers(chatroom,message){
-      const filter = chatroom.members.filter((member)=> member !== message.author)
+      const filter = chatroom.members.filter((member)=> member.toString() !== message.author.toString())
       console.log('filter',filter);
      User.findOne({_id: filter[0]},{activity_log:0}).then(user=> {
         console.log(user)
@@ -114,7 +114,7 @@ module.exports = function () {
       const filter = chatroom.members.filter((member)=> member !== message.author)
       console.log('filter',filter);
        User.find({_id: {$in : filter}},{activity_log:0}).then(user=> {
-       NotifyArray(user.map((u)=>u.device_token),`${message.name} : ${message.message}`)
+       NotifyArray(user.map((u)=>u.device_token),`${message.name} : ${message.message}`,'Turftown Message')
       }).catch((e)=>console.log(e))
     }
 
@@ -151,7 +151,7 @@ module.exports = function () {
                                               const cids = message1.map((m)=>m.conversation)
                                               return Conversation.updateMany({_id:{ $in: cids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
                                                 const device_token_list=user.map((e)=>e.device_token)
-                                                  NotifyArray(device_token_list,'You have a received a new game request  ')
+                                                  NotifyArray(device_token_list,'You have a received a new game request  ','Turftown Game Request')
                                                     return user.map((e)=>e._id)
               //res.send({status:"success", message:"invitation sent"})
     }).catch((e)=>console.log(e));
@@ -167,6 +167,44 @@ module.exports = function () {
     }
 
 
+    async function sendGroupInvites(game_id,conversation,group_ids,user_id){
+    const x = await Conversation.find({_id: {$in : group_ids}}).lean().populate('members','_id name device_token').then(conversation1=> {
+            console.log(conversation1);  
+      const c = conversation1.reduce((acc,l)=>{
+            const x = l.members.map((c)=>c._id)
+            console.log('asd',x);  
+          acc.push(x)
+         return acc
+        },[])
+        console.log('xccx',c);
+        const flatten_ids = _.flatten(c)
+        console.log('xccsdx',flatten_ids);
+        return  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: flatten_ids } } }).then(game=> {
+          return Conversation.findByIdAndUpdate({_id: conversation},{ $addToSet: { invites: { $each: flatten_ids } } }).then(conversation12=> {
+            return   User.findOne({_id: user_id },{activity_log:0}).lean().then(sender=> {
+              return   User.find({_id: { $in :flatten_ids } },{activity_log:0}).lean().then(user=> {
+                 let finalMessages = conversation1.map((nc)=>{ return {conversation:nc._id,game:game_id,message:'New Game invitation from '+sender.name,name:sender.name,unread:false,read_by:group_ids[0],author:user_id,type:'game',last_updated:new Date()}}) 
+                 return Message.insertMany(finalMessages).then(message1=>{
+                  const cids = message1.map((m)=>m.conversation)
+                  return Conversation.updateMany({_id:{ $in: cids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
+                    const device_token_list=user.map((e)=>e.device_token)
+                                                  NotifyArray(device_token_list,'You have a received a new game request  ','Turftown Game Request')
+                                                    return user.map((e)=>e._id)
+                 // const x = await  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: ids } } }).then(game=> {
+      //  }).catch((e)=>console.log(e));
+       }).catch((e)=>console.log(e));
+      }).catch((e)=>console.log(e));
+       }).catch((e)=>console.log(e));
+      }).catch((e)=>console.log(e));
+      }).catch((e)=>console.log(e));
+      }).catch((e)=>console.log(e));
+      }).catch((e)=>console.log(e));
+       return x
+       }
+
+    
+
+
     async function joinGame(game_id,userId){
       console.log(game_id,userId)
       const x = await  Game.findByIdAndUpdate({_id: game_id},{ $pull: { invites: userId } }).then(game=> {
@@ -179,7 +217,7 @@ module.exports = function () {
                   saveMessage({conversation:conversation2._id,message:`${user.name} has joined ${conversation2.name}`,name:user.name,author:user._id,type:'text',last_updated:new Date()}) 
                   console.log('con',conversation2)      
                                  const device_token_list=conversation2.members.map((e)=>e.device_token)
-                                 NotifyArray(device_token_list,`${user.name} has joined ${conversation2.name}`)
+                                 NotifyArray(device_token_list,`${user.name} has joined ${conversation2.name}`,`New Game Joined`)
                                  return conversation2.members.map((e)=>e._id)
                                  
                  //res.send({status:"success", message:"invitation sent"})
@@ -202,6 +240,7 @@ module.exports = function () {
     notifyAllUsers,
     saveMessage,
     sendInvites,
+    sendGroupInvites,
     joinGame
   }
 }

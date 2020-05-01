@@ -108,10 +108,10 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     
     let x = game.ids.length > 0 && await chatroomManager.sendInvites(game.game._id,game.game.conversation,game.ids,game.user_id)
     let y = game.convo_ids.length > 0 && await chatroomManager.sendGroupInvites(game.game._id,game.game.conversation,game.convo_ids,game.user_id,game.game.name)
-      x.forEach((clientId)=>{
+     x.length > 0 && x.forEach((clientId)=>{
      const client =  clientManager.getClient(clientId)
     })
-    y.forEach((clientId)=>{
+    y.length > 0 && y.forEach((clientId)=>{
       const client =  clientManager.getClient(clientId)
      })
     callback()

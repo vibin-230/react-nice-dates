@@ -1587,7 +1587,10 @@ router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
 
 router.post('/followers/:id', verifyToken, (req, res, next) => {
   User.findById({_id:req.params.id},{activity_log:0}).lean().populate('following','name phone profile_picture').then(user=>{
-    const folloers = user.following
+    const folloers = user.following.map((a)=>{
+      a['select'] = false
+      return a
+  })
     res.send({status:"success", message:"followers fetched", data:folloers})
   }).catch(next)
 })

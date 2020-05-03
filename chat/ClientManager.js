@@ -17,10 +17,22 @@ module.exports = function () {
     clients.set(user._id.toString(), { client, user })
   }
 
+
+  function filterClients(clients){
+    let x = []
+    clients.forEach( (value, key, map) => {
+      if(clients.indexOf(value.client.id) === -1)
+      x.push(key)
+      console.log(`${key}: ${value.client.id}`); // cucumber: 500 etc
+    });
+    
+    return x
+  }
+
  async function removeClient(client,token) {
     const user = await verifyToken(token)
 
-    console.log(user)
+    console.log('asasasdadsasdasdassad',user)
     if(user !== 'error')
     clients.delete(user.id)
     User.findByIdAndUpdate({_id: user.id},{last_active:new Date(),online_status:'offline'}).then(user1=>{}).catch()
@@ -89,6 +101,7 @@ module.exports = function () {
     isUserAvailable,
     getUserByName,
     getClient,
+    filterClients,
     getUserByClientId
   }
 }

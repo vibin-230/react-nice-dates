@@ -11,7 +11,7 @@ function Notify(receiver_user, message) {
         //to:receiver_user.device_token,
         //dryRun: true,
         notification: {
-          title: `Turftown`,
+          title: ``,
           icon: "ic_launcher",
           body: message
         },

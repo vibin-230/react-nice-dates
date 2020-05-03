@@ -35,13 +35,17 @@ module.exports = function () {
     return result
   }
 
-  function getConversationAndSendBotMessage(convo){
-    Conversation.findById({_id:convo._id}).populate('members','_id name device_token').then((conversation1)=>{
-      const messages =  conversation1.members.map((user)=> ({conversation:convo._id,message:`${user.name} has joined ${conversation1.name}`,name:conversation1.members[0].name,author:conversation1.members[0]._id,type:'bot',last_updated:new Date()}))
-      console.log(messages)  
-      saveMessages(messages)
-
-     })
+ async function getConversationAndSendBotMessage(convo){
+ const x = await Conversation.findById({_id:convo._id}).populate('members','_id name device_token').then((conversation1)=>{
+      const messages =  conversation1.members.map((user)=> ({conversation:convo._id,message:`${conversation1.members[0].name} has added you `,name:conversation1.members[0].name,author:conversation1.members[0]._id,type:'bot',last_updated:new Date()}))
+            return Message.insertMany(messages).then(message1=>{
+              return Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},{last_message:message1[message1.length-1]._id,last_updated:new Date()}).then(conversation=>{
+                notifyAllUsers(convo,messages[0])
+                return 'pass'
+             }).catch((e)=>{console.log(e)});
+             }).catch((e)=>{console.log(e)});
+             }).catch((e)=>{console.log(e)});
+     return x
   }
   
 
@@ -67,7 +71,8 @@ module.exports = function () {
         const convo = await saveConvo({display_picture:chatroomName.image?chatroomName.image:'',type:chatroomName.type,name:chatroomName.name,members:chatroomName.members,created_by:chatroomName.members[0],host:[chatroomName.members[0]]})
         chatrooms.set(convo._id,Chatroom(convo))
         console.log('hit new',convo);
-        getConversationAndSendBotMessage(convo)
+        const x = await getConversationAndSendBotMessage(convo)
+        
         return chatrooms.get(convo._id)
       }else{
         console.log('hit',chatroomName);
@@ -100,6 +105,11 @@ module.exports = function () {
         }).catch((e)=>{console.log(e)});
       }
 
+     async function saveBotMessages(message) {
+      
+          return x
+        }
+
 
     function notifyOtherUsers(chatroom,message){
       const filter = chatroom.members.filter((member)=> member.toString() !== message.author.toString())
@@ -111,10 +121,16 @@ module.exports = function () {
     }
 
     function notifyAllUsers(chatroom,message){
-      const filter = chatroom.members.filter((member)=> member !== message.author)
-      console.log('filter',filter);
+      const filter = chatroom.members.filter((member)=>{ 
+        const string  = member && member._id ? member._id.toString() : member.toString()
+        if(string !== message.author.toString()){
+          return member
+        }
+      })
+      console.log('filter',filter,message);
        User.find({_id: {$in : filter}},{activity_log:0}).then(user=> {
-       NotifyArray(user.map((u)=>u.device_token),`${message.name} : ${message.message}`,'Turftown Message')
+       const messages1 = chatroom.type === 'single' ?  `${message.name} : ${message.message}`:  `${message.name}  @ ${chatroom.name} : ${message.message}`
+       NotifyArray(user.map((u)=>u.device_token),messages1,'')
       }).catch((e)=>console.log(e))
     }
 

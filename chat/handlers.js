@@ -58,6 +58,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
         // send chat history to client
         console.log('handle Join',chatroom);
         const x =  await chatroom.getChatHistory(chatroom.getId())
+        console.log('messagfe',x)
         callback(chatroom.getId(), x)
       })
       .catch(callback)
@@ -82,19 +83,23 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     if(chatroomName.type === 'single'){
       const clientNumber = io.sockets.adapter.rooms[chatroomName._id].length;
       console.log('client_no',clientNumber)
-      // if(io.sockets.adapter.rooms[chatroomName._id].length < 2){
-      //   chatroomManager.saveMessage(message)
-      //   chatroomManager.notifyAllUsers(chatroomName, message)
-      //   callback()
-      // }else{
+      if(io.sockets.adapter.rooms[chatroomName._id].length < 2){
+        chatroomManager.saveMessage(message)
+        chatroomManager.notifyAllUsers(chatroomName, message)
+        callback()
+      }else{
         client.to(chatroomName._id).emit('new',message)
         client.to(chatroomName._id).emit('unread',message)
-        chatroomManager.notifyAllUsers(chatroomName, message)
+        //chatroomManager.notifyAllUsers(chatroomName, message)
         chatroomManager.saveMessage(message) 
         callback()
-     // }
+     }
     }else{
-        client.to(chatroomName._id).emit('new',message)
+    const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
+    // const clients = Object.keys(clientNumber)
+    // const getUsers = clientManager.filterClients(clients)
+    // console.log('client_no',clientNumber,getUsers)
+    client.to(chatroomName._id).emit('new',message)
         client.to(chatroomName._id).emit('unread',message)
         chatroomManager.saveMessage(message) 
         chatroomManager.notifyAllUsers(chatroomName, message)

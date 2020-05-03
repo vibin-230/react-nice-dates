@@ -434,10 +434,15 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
 router.post('/host_game',verifyToken, (req, res, next) => {
         Conversation.create({type:'game',members:[req.body.userId],created_by:req.body.userId,name:req.body.game_name,sport_name:req.body.sport_name,subtitle:req.body.subtitle,sport_type:req.body.venue_type,host:[req.body.userId]}).then(convo=>{
           Game.create({booking_status:'hosted',subtitle:req.body.subtitle,share_type:req.body.share_type,limit:req.body.limit,users:[req.body.userId],host:[req.body.userId],name:req.body.game_name,conversation:convo._id,sport_name:req.body.sport_name,type:req.body.venue_type,bookings:req.body.booking,booking_date:req.body.booking[0].booking_date,venue:req.body.booking[0].venue_id,start_time:req.body.booking[0].start_time,created_by:req.body.userId,created_type:'user'}).then(game=>{
-           //since he is a host who is accessing this api
+            Message.create({conversation:convo._id,message:`${req.name} has created ${convo.name}`,read_status:false,name:req.name,author:req.body.userId,type:'text',last_updated:new Date()}).then(message1=>{
+              Conversation.findByIdAndUpdate({_id:message1.conversation},{last_message:message1._id,last_updated:new Date()}).then(conversation=>{
+                console.log(conversation)
+            //since he is a host who is accessing this api
             convo['invite'] = false
             res.send({status:"success", message:"game_created",data:{game:game,convo:convo}})
     }).catch(next);
+  }).catch(next);
+   }).catch(next);
   }).catch(next);
 });
 

@@ -206,15 +206,16 @@ router.post('/get_chatrooms/:id', [
       //Check if user existinvites:{$in:[req.params.id]}
       //Conversation.find({members:{$in:[req.params.id]}}).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(existingConversation=>{
       Conversation.find({ $or: [ { members: { $in: [req.params.id] } }] }).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(existingConversation=>{
-        User.findOne({_id: req.params.id},{activity_log:0}).then(user=> {
+        User.findOne({_id: req.params.id},{activity_log:0,followers:0,following:0}).then(user=> {
           const date = user.last_active 
-          console.log(user,moment(date).format('llll'));
-         Message.aggregate([{ $match: { $and: [  { conversation: {$in:existingConversation.map((c)=>c._id)} },{created_at:{$gte:user.last_active}},{read_status:false} ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"}}}]).then((m)=>{
-          console.log(m);
+          const conversation  = req.body.conversation
+          console.log('conveersation',conversation);
+         Message.aggregate([{ $match: { $and: [  { conversation: {$in:existingConversation.map((c)=>c._id)} },{created_at:{$gte:user.last_active}}, ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"},"user" : {"$push" : "$author"}}}]).then((message)=>{
+          console.log(message);
          const x =  existingConversation.map((c)=> {
             c['time'] = 0
-             m.map((m)=>{ 
-               if(m._id.toString() === c._id.toString() ) 
+             message.map((m)=>{ 
+               if(m._id.toString() === c._id.toString() && conversation.indexOf(c._id.toString()) === -1 && m.user[m.user.length-1].toString() !== user._id.toString()) 
                c['time'] = m.time.length 
                })
              return c

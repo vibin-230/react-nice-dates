@@ -6,7 +6,6 @@ function makeHandleEvent(client, clientManager, chatroomManager,io) {
   }
 
    async function ensureValidChatroom(chatroomName) {
-    console.log(chatroomName)
      if(chatroomName.type === 'single')
     return await chatroomManager.getChatroomByName(chatroomName)
     else
@@ -56,9 +55,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
         client.join(chatroom.getId())
 
         // send chat history to client
-        console.log('handle Join',chatroom);
         const x =  await chatroom.getChatHistory(chatroom.getId())
-        console.log('messagfe',x)
         callback(chatroom.getId(), x)
       })
       .catch(callback)
@@ -78,11 +75,9 @@ module.exports = function (client, clientManager, chatroomManager,io) {
       .catch(callback)  
   }
 
-  function handleMessage({ chatroomName, message } = {}, callback) {
-    console.log('asdasdasdasdasd',chatroomName)
+ async function handleMessage({ chatroomName, message } = {}, callback) {
     if(chatroomName.type === 'single'){
       const clientNumber = io.sockets.adapter.rooms[chatroomName._id].length;
-      console.log('client_no',clientNumber)
       if(io.sockets.adapter.rooms[chatroomName._id].length < 2){
         chatroomManager.saveMessage(message)
         chatroomManager.notifyAllUsers(chatroomName, message)
@@ -96,13 +91,11 @@ module.exports = function (client, clientManager, chatroomManager,io) {
      }
     }else{
     const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
-    // const clients = Object.keys(clientNumber)
-    // const getUsers = clientManager.filterClients(clients)
-    // console.log('client_no',clientNumber,getUsers)
-    client.to(chatroomName._id).emit('new',message)
+     const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
+     client.to(chatroomName._id).emit('new',message)
         client.to(chatroomName._id).emit('unread',message)
         chatroomManager.saveMessage(message) 
-        chatroomManager.notifyAllUsers(chatroomName, message)
+        chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
         callback()
     }
     
@@ -124,7 +117,6 @@ module.exports = function (client, clientManager, chatroomManager,io) {
 
 
   async function handleJoinGame(game,callback){
-    console.log(game);
     const x = await chatroomManager.joinGame(game.game_id,game.id)
     x.forEach((clientId)=>{
      const client =  clientManager.getClient(clientId)

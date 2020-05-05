@@ -105,11 +105,6 @@ module.exports = function () {
         }).catch((e)=>{console.log(e)});
       }
 
-     async function saveBotMessages(message) {
-      
-          return x
-        }
-
 
     function notifyOtherUsers(chatroom,message){
       const filter = chatroom.members.filter((member)=> member.toString() !== message.author.toString())
@@ -128,6 +123,20 @@ module.exports = function () {
         }
       })
       console.log('filter',filter,message);
+       User.find({_id: {$in : filter}},{activity_log:0}).then(user=> {
+       const messages1 = chatroom.type === 'single' ?  `${message.name} : ${message.message}`:  `${message.name}  @ ${chatroom.name} : ${message.message}`
+       NotifyArray(user.map((u)=>u.device_token),messages1,'')
+      }).catch((e)=>console.log(e))
+    }
+
+    function notifyAllUsersNotInTheChatroom(chatroom,message,users){
+      const filter = chatroom.members.filter((member)=>{ 
+        const string  = member && member._id ? member._id.toString() : member.toString()
+        if(users.indexOf(string) === -1){
+          return member
+        }
+      })
+      console.log('filter',filter);
        User.find({_id: {$in : filter}},{activity_log:0}).then(user=> {
        const messages1 = chatroom.type === 'single' ?  `${message.name} : ${message.message}`:  `${message.name}  @ ${chatroom.name} : ${message.message}`
        NotifyArray(user.map((u)=>u.device_token),messages1,'')
@@ -260,6 +269,7 @@ module.exports = function () {
     notifyAllUsers,
     saveMessage,
     sendInvites,
+    notifyAllUsersNotInTheChatroom,
     sendGroupInvites,
     joinGame
   }

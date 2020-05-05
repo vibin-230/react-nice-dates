@@ -28,10 +28,7 @@ module.exports = function ({ _id, image }) {
   }
 
   async function getChatHistory(id) {
-     return await Message.find({conversation:id}).lean().populate('author','name _id').populate({
-      path: 'game',
-      populate: { path: 'conversation' }
-    }).then(m=>m)
+     return await Message.find({conversation:id}).lean().populate('author','name _id').populate({ path: 'game',populate: { path: 'conversation' }}).sort({$natural:1}).then(m=>m)
   }
 
 

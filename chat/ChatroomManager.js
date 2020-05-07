@@ -23,10 +23,13 @@ module.exports = function () {
 
   const saveConversation = async function(obj){
     const conversation = await Conversation.create(obj).then(convo=>{
-      return convo
-       }).catch((err)=>{
-         console.log(err.response);
-       })
+     return User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
+       const x = users.map((u)=>{ return ({user_id:u._id,last_active:u.last_active ? u.last_active : new Date()})})
+       return Conversation.findByIdAndUpdate({_id:convo._id},{last_active:x}).then(conversation=>{
+        return convo
+       }).catch((e)=>console.log(e))
+       }).catch((e)=>console.log(e))
+       }).catch((err)=>{ console.log(err)})
        return conversation
   }
 

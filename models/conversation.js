@@ -15,6 +15,7 @@ const schema = new Schema({
   invites:[{type:mongoose.Schema.Types.ObjectId, ref:'user'}],
   host: [{ type: Schema.Types.ObjectId, ref: 'user' }] ,
   sport_name:String,
+  last_active: Array,
   unread:Number,
   members: [{ type: Schema.Types.ObjectId, ref: 'user' }] ,
   type:String,

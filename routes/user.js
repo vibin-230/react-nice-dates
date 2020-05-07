@@ -139,10 +139,22 @@ router.post('/force_update_all', [
 router.post('/mark_read/:id', [
   verifyToken,
 ], (req, res, next) => {
+  console.log('last activity',req.body.conversation_id);
+  Conversation.findById({_id:req.body.conversation_id}).then((convo)=>{  
     Message.updateMany({conversation:req.body.conversation_id,read_status:false},{ '$set': { "read_status" : true } },{multi:true}).then((user)=>{
-      console.log(user,req.params.id,req.body);  
+      console.log('last activity',req.params.id);
+      const a = convo.last_active && convo.last_active.length > 0 ? convo.last_active.map((con)=>{
+            if(con.user_id.toString() === req.params.id.toString()){
+              con['last_active'] = new Date()
+              return con
+            }else
+            return con
+          }) : [{userId:req.params.id,last_active:new Date()}]
+    Conversation.findByIdAndUpdate({_id:req.body.conversation_id},{last_active:a}).then(conversation=>{
       res.status(201).send({status: "success", message: "conversation updated"})
-    })
+    }).catch(next);
+  }).catch(next);
+}).catch(next); 
 });
 
 router.post('/stop_force_update_all', [
@@ -212,14 +224,23 @@ router.post('/get_chatrooms/:id', [
         User.findOne({_id: req.params.id},{activity_log:0,followers:0,following:0}).then(user=> {
           const date = user.last_active 
           const conversation  = req.body.conversation
-          console.log('conveersation',conversation);
+          
+          //console.log('conveersation',conversation);
+          
          Message.aggregate([{ $match: { $and: [  { conversation: {$in:existingConversation.map((c)=>c._id)} },{created_at:{$gte:user.last_active}}, ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"},"user" : {"$push" : "$author"}}}]).then((message)=>{
           console.log(message);
          const x =  existingConversation.map((c)=> {
             c['time'] = 0
+            const filter = c && c.last_active ? c.last_active.filter((c)=> c.user_id.toString() === req.params.id.toString()) : []
              message.map((m)=>{ 
-               if(m._id.toString() === c._id.toString() && conversation.indexOf(c._id.toString()) === -1 && m.user[m.user.length-1].toString() !== user._id.toString()) 
-               c['time'] = m.time.length 
+               if(m._id.toString() === c._id.toString() && conversation.indexOf(c._id.toString()) === -1 && m.user[m.user.length-1].toString() !== user._id.toString()) {
+                const time = m.time.filter((timestamp)=>{ 
+                  if( filter.length > 0 &&  moment(filter[0].last_active).isSameOrBefore(timestamp)) {
+                    return timestamp
+                  }
+                })  
+                c['time'] = time.length 
+               }
                })
              return c
           })
@@ -444,12 +465,15 @@ router.post('/host_game',verifyToken, (req, res, next) => {
         Conversation.create({type:'game',members:[req.body.userId],created_by:req.body.userId,name:req.body.game_name,sport_name:req.body.sport_name,subtitle:req.body.subtitle,sport_type:req.body.venue_type,host:[req.body.userId]}).then(convo=>{
           Game.create({booking_status:'hosted',subtitle:req.body.subtitle,share_type:req.body.share_type,limit:req.body.limit,users:[req.body.userId],host:[req.body.userId],name:req.body.game_name,conversation:convo._id,sport_name:req.body.sport_name,type:req.body.venue_type,bookings:req.body.booking,booking_date:req.body.booking[0].booking_date,venue:req.body.booking[0].venue_id,start_time:req.body.booking[0].start_time,created_by:req.body.userId,created_type:'user'}).then(game=>{
             Message.create({conversation:convo._id,message:`${req.name} has created ${convo.name}`,read_status:false,name:req.name,author:req.body.userId,type:'text',last_updated:new Date()}).then(message1=>{
-              Conversation.findByIdAndUpdate({_id:message1.conversation},{last_message:message1._id,last_updated:new Date()}).then(conversation=>{
+              User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
+                const x = users.map((u)=>{ return ({user_id:u._id,last_active:u.last_active ? u.last_active : new Date()})})
+              Conversation.findByIdAndUpdate({_id:message1.conversation},{last_active:x,last_message:message1._id,last_updated:new Date()}).then(conversation=>{
                 console.log(conversation)
             //since he is a host who is accessing this api
             convo['invite'] = false
             res.send({status:"success", message:"game_created",data:{game:game,convo:convo}})
     }).catch(next);
+  }).catch(next);
   }).catch(next);
    }).catch(next);
   }).catch(next);
@@ -844,7 +868,11 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
         User.findById({_id:req.userId}).then(user=>{
         Conversation.create({type:'game',subtitle:req.body[0].subtitle,members:[req.userId],host:[req.userId],created_by:req.userId,name:req.body[0].game_name,sport_name:values[0].sport_name,}).then(convo=>{
            Game.create({booking_status:'booked',share_type:req.body[0].share_type,limit:req.body[0].limit,users:[req.userId],created_by:req.userId,created_type:'user',host:[req.userId],name:req.body[0].game_name,conversation:convo._id,subtitle:req.body[0].subtitle,sport_name:values[0].sport_name,type:values[0].venue_type,bookings:values,description:values[0].venue_type,booking_date:values[0].booking_date,start_time:values[0].start_time,venue:values[0].venue_id, }).then(game=>{
-            convo['invite'] = false
+            Message.create({conversation:convo._id,message:`${req.name} has created ${convo.name}`,read_status:false,name:req.name,author:req.body.userId,type:'text',last_updated:new Date()}).then(message1=>{
+              User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
+                const x = users.map((u)=>{ return ({user_id:u._id,last_active:u.last_active ? u.last_active : new Date()})})
+              Conversation.findByIdAndUpdate({_id:message1.conversation},{last_active:x,last_message:message1._id,last_updated:new Date()}).then(conversation=>{
+                convo['invite'] = false
             res.send({status:"success", message:"slot booked",data: {game:game,convo:convo}})
         let booking_id = values[0].booking_id
         let phone = "91"+values[0].phone
@@ -925,6 +953,9 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
       ActivityLog(activity_log)
       }).catch(next)
     }).catch(next)
+    }).catch(next)
+  }).catch(next)
+}).catch(next)
   }).catch(next)
 }).catch(next)
 

@@ -32,6 +32,7 @@ const schema = new Schema({
   invites:[{type:mongoose.Schema.Types.ObjectId, ref:'user'}],
   host :[{ type: Schema.Types.ObjectId, ref: 'user' }],
   conversation : { type: Schema.Types.ObjectId, ref: 'conversation' },
+  town:{type:Boolean,default:false},
   bookings:Array,
 });
 

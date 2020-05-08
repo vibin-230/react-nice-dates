@@ -2125,7 +2125,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
 
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{
-            (rv[moment(x[key]).format('MM-DD-YYYY')] = rv[moment(x[key]).format('MM-DD-YYYY')] || []).push(x);
+            (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
             return rv;
           }, {});
         };

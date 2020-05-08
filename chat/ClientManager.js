@@ -8,7 +8,7 @@ module.exports = function () {
     const user = await verifyToken(token)
     //if(user !== 'error')
     clients.set(user.id.toString(), { client })
-    //User.findByIdAndUpdate({_id: user.id},{status:'online'}).then(user1=>{}).catch()
+    User.findByIdAndUpdate({_id: user.id.toString()},{online_status:'online'}).then(user1=>{}).catch()
 
   }
 

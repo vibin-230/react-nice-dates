@@ -1064,6 +1064,15 @@ router.post('/offers_list',
 })
 
 
+router.post('/offers/:id',
+	verifyToken,
+	AccessControl('offers', 'read'),
+	(req, res, next) => {
+	Offers.findById({_id:req.params.id}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(offers=>{
+		res.send({status:"success", message:"offers fetched", data:offers})
+	}).catch(next)
+})
+
 //// Create ad
 router.post('/create_offer',
 	verifyToken,

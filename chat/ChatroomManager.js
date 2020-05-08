@@ -144,8 +144,8 @@ module.exports = function () {
     }
 
 
-   async function sendInvites(game_id,conversation,ids,user_id){
-   const x = await  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: ids } } }).then(game=> {
+   async function sendInvites(game_id,conversation,ids,user_id,town){
+   const x = await  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: ids } } ,$set:{town:town} } ).then(game=> {
                 return Conversation.findByIdAndUpdate({_id: conversation},{ $addToSet: { invites: { $each: ids } } }).then(conversation1=> {
                   return Game.findById({_id: game_id}).then(game1=> {
                     const x = ids.map((id)=>{ return { members :{$all:[id,user_id]},type:'single'}})
@@ -192,7 +192,7 @@ module.exports = function () {
     }
 
 
-    async function sendGroupInvites(game_id,conversation,group_ids,user_id,name){
+    async function sendGroupInvites(game_id,conversation,group_ids,user_id,name,town){
     const x = await Conversation.find({_id: {$in : group_ids}}).lean().populate('members','_id name device_token').then(conversation1=> {
          return  Game.findById({_id: game_id}).then(ac_game=> {
       
@@ -207,7 +207,7 @@ module.exports = function () {
         const flatten_ids = _.flatten(c)
         const game_players = ac_game.users.length > 0 && ac_game.users.map((g)=>g._id.toString())
         const result = flatten_ids.filter(word => word.toString() !== user_id.toString() || game_players.indexOf(word.toString()) === -1);
-        return  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: result } } }).then(game=> {
+        return  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: result } } ,$set:{town:town} } ).then(game=> {
           return Conversation.findByIdAndUpdate({_id: conversation},{ $addToSet: { invites: { $each: result } } }).then(conversation12=> {
             return   User.findOne({_id: user_id },{activity_log:0}).lean().then(sender=> {
               return   User.find({_id: { $in :flatten_ids } },{activity_log:0}).lean().then(user=> {

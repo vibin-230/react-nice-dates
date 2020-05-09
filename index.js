@@ -84,6 +84,7 @@ io.on('connection', function (client) {
   } = makeHandlers(client, clientManager, chatroomManager,io)
 
   const token = client.handshake.query.token;
+  console.log('asdaasdasdasddddddsadasdasdasdasdasdasdasdasdasdasdasdasd',client.id,token);
   clientManager.addClient(client,token)
 
   client.on('register', handleRegister)

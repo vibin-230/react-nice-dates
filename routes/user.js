@@ -222,14 +222,11 @@ router.post('/get_chatrooms/:id', [
           const date = user.last_active 
           const conversation  = req.body.conversation
           
-         Message.aggregate([{ $match: { $and: [  { conversation: {$in:existingConversation.map((c)=>c._id)} },{created_at:{$gte:user.last_active}}, ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"},"user" : {"$push" : "$author"}}}]).then((message)=>{
-          console.log(message);
+         Message.aggregate([{ $match: { $and: [  { conversation: {$in:existingConversation.map((c)=>c._id)} } ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"},"user" : {"$push" : "$author"}}}]).then((message)=>{
          const x =  existingConversation.map((c)=> {
             c['time'] = 0
             const filter = c && c.last_active ? c.last_active.filter((c)=> c && c.user_id && c.user_id.toString() === req.params.id.toString()) : []
-            console.log('hihit',filter); 
             message.length > 0 && message.map((m)=>{
-              console.log('hit','hit',c._id.toString(),'ddddd'); 
                if(m._id.toString() === c._id.toString() && conversation.indexOf(c._id.toString()) === -1 && m.user[m.user.length-1].toString() !== user._id.toString()) {
                 const time = m.time.filter((timestamp)=>{ 
                   if( filter.length > 0 &&  moment(filter[0].last_active).isSameOrBefore(timestamp)) {
@@ -257,7 +254,7 @@ router.post('/save_token_device', [
       console.log(req.body);
       User.findOne({_id: req.userId},{activity_log:0}).then(user=> {
         User.findByIdAndUpdate({_id: req.userId},{device_token:req.body.device_token.token, os:req.body.device_token.os}).then(user1=>{
-          notify(user,`Hey ${user.name} , Welcome to Turftown`)
+          //notify(user,`Hey ${user.name} , Welcome to Turftown`)
           if (user1) {
           res.status(201).send({status: "success", message: "user collected",data:user})
         } else {
@@ -2105,7 +2102,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
 
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{
-            (rv[moment(x[key]).format('MM-DD-YYYY')] = rv[moment(x[key]).format('MM-DD-YYYY')] || []).push(x);
+            (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
             return rv;
           }, {});
         };

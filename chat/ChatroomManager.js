@@ -172,8 +172,8 @@ module.exports = function () {
                                  return   User.find({_id: { $in :ids } },{activity_log:0}).lean().then(user=> {
                                    console.log('new_conversations',new_convos);
 
-                                      let messages =  new_convos.map((nc)=>{ return {conversation:nc._id,game:game_id,message:`New Game (${game1.name}) invitation from ${sender.name}`,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',last_updated:new Date()}}) 
-                                        let messages1 = conversation2.map((nc)=>{ return {conversation:nc._id,game:game_id,message:`New Game (${game1.name}) invitation from ${sender.name}`,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',last_updated:new Date()}}) 
+                                      let messages =  new_convos.map((nc)=>{ return {conversation:nc._id,game:game_id,message:`New Game (${game1.name}) invitation from ${sender.name}`,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
+                                        let messages1 = conversation2.map((nc)=>{ return {conversation:nc._id,game:game_id,message:`New Game (${game1.name}) invitation from ${sender.name}`,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
                                           let finalMessages = messages.concat(messages1)
                                             return Message.insertMany(finalMessages).then(message1=>{
                                               const cids = message1.map((m)=>m.conversation)
@@ -199,14 +199,11 @@ module.exports = function () {
     const x = await Conversation.find({_id: {$in : group_ids}}).lean().populate('members','_id name device_token').then(conversation1=> {
          return  Game.findById({_id: game_id}).then(ac_game=> {
       
-        console.log(conversation1);  
       const c = conversation1.reduce((acc,l)=>{
             const x = l.members.map((c)=>c._id.toString())
-            console.log('asd',x);  
           acc.push(x)
          return acc
         },[])
-        console.log('xccx',c);
         const flatten_ids = _.flatten(c)
         const game_players = ac_game.users.length > 0 && ac_game.users.map((g)=>g._id.toString())
         const result = flatten_ids.filter(word => word.toString() !== user_id.toString() || game_players.indexOf(word.toString()) === -1);
@@ -214,7 +211,7 @@ module.exports = function () {
           return Conversation.findByIdAndUpdate({_id: conversation},{ $addToSet: { invites: { $each: result } } }).then(conversation12=> {
             return   User.findOne({_id: user_id },{activity_log:0}).lean().then(sender=> {
               return   User.find({_id: { $in :flatten_ids } },{activity_log:0}).lean().then(user=> {
-                 let finalMessages = conversation1.map((nc)=>{ return {conversation:nc._id,game:game_id,message:`New Game (${name}) invitation from ${sender.name}`,name:sender.name,read_status:false,read_by:group_ids[0],author:user_id,type:'game',last_updated:new Date()}}) 
+                 let finalMessages = conversation1.map((nc)=>{ return {conversation:nc._id,game:game_id,message:`New Game (${name}) invitation from ${sender.name}`,name:sender.name,read_status:false,read_by:group_ids[0],author:user_id,type:'game',created_at:new Date()}}) 
                  return Message.insertMany(finalMessages).then(message1=>{
                   const cids = message1.map((m)=>m.conversation)
                   return Conversation.updateMany({_id:{ $in: cids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
@@ -246,8 +243,7 @@ module.exports = function () {
             //above to update below to show and save message
             return Conversation.findById({_id: game.conversation}).lean().populate('members','_id device_token').then(conversation2=> {
               return User.findById({_id: userId},{activity_log:0,}).lean().then(user=> {
-                  saveMessage({conversation:conversation2._id,message:`${user.name} has joined ${conversation2.name}`,read_status:false,name:user.name,author:user._id,type:'text',last_updated:new Date()}) 
-                  console.log('con',conversation2)      
+                  saveMessage({conversation:conversation2._id,message:`${user.name} has joined ${conversation2.name}`,read_status:false,name:user.name,author:user._id,type:'text',created_at:new Date()}) 
                                  const device_token_list=conversation2.members.map((e)=>e.device_token)
                                  NotifyArray(device_token_list,`${user.name} has joined ${conversation2.name}`,`New Game Joined`)
                                  return conversation2.members.map((e)=>e._id)

@@ -1626,7 +1626,7 @@ router.post('/followers/:id', verifyToken, (req, res, next) => {
 
 
 router.post('/convos_and_followers/:id', verifyToken, (req, res, next) => {
-  Conversation.find({ $and: [ { members: { $in: [req.params.id] } },{type:'group'}] }).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(existingConversation=>{
+  Conversation.find({ $and: [ { members: { $in: [req.params.id] } },{$or:[{type:'group'},{type:'game'}]}] }).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(existingConversation=>{
       User.findById({_id:req.params.id},{activity_log:0}).lean().populate('following','name phone profile_picture').then(user=>{
            const folloers = user.following.map((f)=>{
             f['select'] = false
@@ -1637,17 +1637,28 @@ router.post('/convos_and_followers/:id', verifyToken, (req, res, next) => {
             f['select'] = false
             return f
            })
+           const games = convo.filter((f)=>{
+             return f.type == "game"
+           })
+           const groups = convo.filter((f)=>{
+            return f.type == "group"
+          })
+           
            const data = [
             {
               title:'clubs',
-              data:convo
+              data:groups
             }, 
             {
              title:'followers',
              data:folloers
-           }
-           
+           },
+           {
+             title:"games",
+             data:games
+          }
           ]
+          console.log("Data",data)
       res.send({status:"success", message:"followers fetched", data:data})
   }).catch(next)
 }).catch(next)

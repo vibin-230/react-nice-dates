@@ -199,14 +199,11 @@ module.exports = function () {
     const x = await Conversation.find({_id: {$in : group_ids}}).lean().populate('members','_id name device_token').then(conversation1=> {
          return  Game.findById({_id: game_id}).then(ac_game=> {
       
-        console.log(conversation1);  
       const c = conversation1.reduce((acc,l)=>{
             const x = l.members.map((c)=>c._id.toString())
-            console.log('asd',x);  
           acc.push(x)
          return acc
         },[])
-        console.log('xccx',c);
         const flatten_ids = _.flatten(c)
         const game_players = ac_game.users.length > 0 && ac_game.users.map((g)=>g._id.toString())
         const result = flatten_ids.filter(word => word.toString() !== user_id.toString() || game_players.indexOf(word.toString()) === -1);
@@ -247,7 +244,6 @@ module.exports = function () {
             return Conversation.findById({_id: game.conversation}).lean().populate('members','_id device_token').then(conversation2=> {
               return User.findById({_id: userId},{activity_log:0,}).lean().then(user=> {
                   saveMessage({conversation:conversation2._id,message:`${user.name} has joined ${conversation2.name}`,read_status:false,name:user.name,author:user._id,type:'text',created_at:new Date()}) 
-                  console.log('con',conversation2)      
                                  const device_token_list=conversation2.members.map((e)=>e.device_token)
                                  NotifyArray(device_token_list,`${user.name} has joined ${conversation2.name}`,`New Game Joined`)
                                  return conversation2.members.map((e)=>e._id)

@@ -20,7 +20,16 @@ module.exports = function () {
     chatrooms.forEach(c => c.removeUser(client))
   }
 
-
+  function groupChatMessage(admin,user){
+    let message;
+    if(admin == user){
+      message = `${admin} created the group`
+    }
+    else{
+      message = `${admin} added ${user}`
+    }
+    return message
+  }
   const saveConversation = async function(obj){
     const conversation = await Conversation.create(obj).then(convo=>{
      return User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
@@ -40,7 +49,7 @@ module.exports = function () {
 
  async function getConversationAndSendBotMessage(convo){
  const x = await Conversation.findById({_id:convo._id}).populate('members','_id name device_token').then((conversation1)=>{
-      const messages =  conversation1.members.map((user)=> ({conversation:convo._id,message:`${conversation1.members[0].name} has added you `,name:conversation1.members[0].name,author:conversation1.members[0]._id,type:'bot',last_updated:new Date()}))
+      const messages =  conversation1.members.map((user)=> ({conversation:convo._id,message:groupChatMessage(conversation1.members[0].name,user.name),name:conversation1.members[0].name,author:conversation1.members[0]._id,type:'bot',last_updated:new Date()}))
             return Message.insertMany(messages).then(message1=>{
               return Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},{last_message:message1[message1.length-1]._id,last_updated:new Date()}).then(conversation=>{
                 notifyAllUsers(convo,messages[0])
@@ -128,7 +137,7 @@ module.exports = function () {
       console.log('filter',filter,message);
        User.find({_id: {$in : filter}},{activity_log:0}).then(user=> {
        const messages1 = chatroom.type === 'single' ?  `${message.name} : ${message.message}`:  `${message.name}  @ ${chatroom.name} : ${message.message}`
-       NotifyArray(user.map((u)=>u.device_token),messages1,'')
+       NotifyArray(user.map((u)=>u.device_token),messages1,"Turf Town")
       }).catch((e)=>console.log(e))
     }
 
@@ -142,7 +151,7 @@ module.exports = function () {
       console.log('filter',filter);
        User.find({_id: {$in : filter}},{activity_log:0}).then(user=> {
        const messages1 = chatroom.type === 'single' ?  `${message.name} : ${message.message}`:  `${message.name}  @ ${chatroom.name} : ${message.message}`
-       NotifyArray(user.map((u)=>u.device_token),messages1,'')
+       NotifyArray(user.map((u)=>u.device_token),messages1,'Turf Town')
       }).catch((e)=>console.log(e))
     }
 

@@ -252,7 +252,7 @@ module.exports = function () {
             //above to update below to show and save message
             return Conversation.findById({_id: game.conversation}).lean().populate('members','_id device_token').then(conversation2=> {
               return User.findById({_id: userId},{activity_log:0,}).lean().then(user=> {
-                  saveMessage({conversation:conversation2._id,message:`${user.name} has joined ${conversation2.name}`,read_status:false,name:user.name,author:user._id,type:'text',created_at:new Date()}) 
+                  saveMessage({conversation:conversation2._id,message:`${user.name} has joined ${conversation2.name}`,read_status:false,name:user.name,author:user._id,type:'bot',created_at:new Date()}) 
                                  const device_token_list=conversation2.members.map((e)=>e.device_token)
                                  NotifyArray(device_token_list,`${user.name} has joined ${conversation2.name}`,`New Game Joined`)
                                  return conversation2.members.map((e)=>e._id)

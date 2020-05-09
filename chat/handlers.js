@@ -47,6 +47,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
   }
 
  async function handleJoin(chatroomName, callback) {
+   console.log('hit as');
     const createEntry = () => ({ event: `establishing connection` })
     handleEvent(chatroomName, createEntry)
       .then(async function (chatroom) {

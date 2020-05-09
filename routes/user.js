@@ -225,7 +225,7 @@ router.post('/get_chatrooms/:id', [
           const date = user.last_active 
           const conversation  = req.body.conversation
           
-         Message.aggregate([{ $match: { $and: [  { conversation: {$in:existingConversation.map((c)=>c._id)} },{created_at:{$gte:user.last_active}}, ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"},"user" : {"$push" : "$author"}}}]).then((message)=>{
+         Message.aggregate([{ $match: { $and: [  { conversation: {$in:existingConversation.map((c)=>c._id)} } ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"},"user" : {"$push" : "$author"}}}]).then((message)=>{
           console.log(message);
          const x =  existingConversation.map((c)=> {
             c['time'] = 0
@@ -260,7 +260,7 @@ router.post('/save_token_device', [
       console.log(req.body);
       User.findOne({_id: req.userId},{activity_log:0}).then(user=> {
         User.findByIdAndUpdate({_id: req.userId},{device_token:req.body.device_token.token, os:req.body.device_token.os}).then(user1=>{
-          notify(user,`Hey ${user.name} , Welcome to Turftown`)
+          //notify(user,`Hey ${user.name} , Welcome to Turftown`)
           if (user1) {
           res.status(201).send({status: "success", message: "user collected",data:user})
         } else {

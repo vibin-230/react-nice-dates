@@ -336,6 +336,7 @@ router.post('/venue_list_for_website', (req, res, next) => {
           list.sort(function(a, b) {
               return b.zCode - a.zCode;
           });
+          console.log(list);
           res.status(201).send(list);
       }).catch(next);
     }).catch(next);

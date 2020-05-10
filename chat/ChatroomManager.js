@@ -250,6 +250,7 @@ module.exports = function () {
         return  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { users: { $each: [userId] } } }).then(game=> {
          return Conversation.findByIdAndUpdate({_id: game.conversation},{ $pull: { invites: userId } }).then(conversation1=> {
           return Conversation.findByIdAndUpdate({_id: game.conversation},{ $addToSet: { members: { $each: [userId] } } }).then(conversation1=> {
+            return Conversation.findByIdAndUpdate({_id: game.conversation},{ $addToSet: { last_active: { $each: [{user_id:userId,last_active:new Date()}] } } }).then(conversation1=> {
             //above to update below to show and save message
             return Conversation.findById({_id: game.conversation}).lean().populate('members','_id device_token').then(conversation2=> {
               return User.findById({_id: userId},{activity_log:0,}).lean().then(user=> {
@@ -261,6 +262,7 @@ module.exports = function () {
                  //res.send({status:"success", message:"invitation sent"})
      
       }).catch((e)=>console.log(e));
+    }).catch((e)=>console.log(e));
       }).catch((e)=>console.log(e));
       }).catch((e)=>console.log(e));
         }).catch((e)=>console.log(e));

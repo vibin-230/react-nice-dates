@@ -1655,7 +1655,7 @@ router.post('/convos_and_followers/:id', verifyToken, (req, res, next) => {
              data:folloers
            },
            {
-             title:"games",
+             title:"game",
              data:games
           }
           ]

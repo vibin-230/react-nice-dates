@@ -52,9 +52,10 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     handleEvent(chatroomName, createEntry)
       .then(async function (chatroom) {
         // add member to chatroom
+        // const y = await chatroomManager.serializeChatrooms()
+        // y.forEach((conversation)=>conversation._id.toString() !== chatroom.getId().toString() && client.leave(conversation._id))
         chatroom.addUser(client)
         client.join(chatroom.getId())
-
         // send chat history to client
         const x =  await chatroom.getChatHistory(chatroom.getId())
         callback(chatroom.getId(), x)
@@ -131,6 +132,15 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     return callback()
   }
 
+  async function handleLeaveChatrooms(obj, callback) {
+    console.log('handle leave chatrooms',obj)
+    const x = await chatroomManager.serializeChatrooms(obj.user_id)
+    x.forEach((conversation)=> client.leave(conversation._id))
+    return callback()
+  }
+
+  
+
   async function handleGetAvailableUsers(_, callback) {
     return callback(null,await clientManager.getAvailableUsers(_) )
   }
@@ -143,5 +153,5 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     chatroomManager.removeClient(client)
   }
 
-  return {handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame}
+  return {handleLeaveChatrooms,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame}
 }

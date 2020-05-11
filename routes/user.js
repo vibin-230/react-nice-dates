@@ -147,7 +147,7 @@ router.post('/mark_read/:id', [
             if(con.user_id.toString() === req.params.id.toString()){
               con['last_active'] = new Date()
               return con
-            }else
+            }else 
             return con
           }) : [{userId:req.params.id,last_active:new Date()}]
     Conversation.findByIdAndUpdate({_id:req.body.conversation_id},{last_active:a}).then(conversation=>{

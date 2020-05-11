@@ -102,7 +102,9 @@ io.on('connection', function (client) {
     console.log('client disconnect...', client.id)
     handleDisconnect(token)
   })
-
+  client.on('disconnect1',function(){
+        handleDisconnect(token)
+  })
   client.on('error', function (err) {
     console.log('received error from client:', client.id)
     console.log(err)

@@ -77,6 +77,7 @@ io.on('connection', function (client) {
     handleLeave,
     handleMessage,
     handleGetChatrooms,
+    handleLeaveChatrooms,
     handleGetAvailableUsers,
     handleDisconnect,
     handleJoinGame,
@@ -93,6 +94,8 @@ io.on('connection', function (client) {
   client.on('message', handleMessage)
 
   client.on('chatrooms', handleGetChatrooms)
+
+  client.on('leave_chatrooms', handleLeaveChatrooms)
 
   client.on('availableUsers', handleGetAvailableUsers)
 

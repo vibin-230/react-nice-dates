@@ -95,7 +95,7 @@ module.exports = function () {
 
  async function serializeChatrooms(id) {
 
-  const s = await Conversation.find({members:{$in:[id]}}).lean().then(existingConversation=>{
+  const s = await Conversation.find({members:{$in:[id]}},{ name: 0, created_at: 0,last_updated:0,invites:0,host:0,last_active:0,members:0,last_message:0 }).lean().then(existingConversation=>{
     return (existingConversation); 
     }).catch()
     return s

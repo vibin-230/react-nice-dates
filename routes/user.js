@@ -145,7 +145,7 @@ router.post('/mark_read/:id', [
             if(con.user_id.toString() === req.params.id.toString()){
               con['last_active'] = new Date()
               return con
-            }else
+            }else 
             return con
           }) : [{userId:req.params.id,last_active:new Date()}]
     Conversation.findByIdAndUpdate({_id:req.body.conversation_id},{last_active:a}).then(conversation=>{
@@ -454,7 +454,7 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
 router.post('/host_game',verifyToken, (req, res, next) => {
         Conversation.create({type:'game',members:[req.body.userId],created_by:req.body.userId,name:req.body.game_name,sport_name:req.body.sport_name,subtitle:req.body.subtitle,sport_type:req.body.venue_type,host:[req.body.userId]}).then(convo=>{
           Game.create({booking_status:'hosted',subtitle:req.body.subtitle,description:req.body.description,share_type:req.body.share_type,limit:req.body.limit,users:[req.body.userId],host:[req.body.userId],name:req.body.game_name,conversation:convo._id,sport_name:req.body.sport_name,type:req.body.venue_type,bookings:req.body.booking,booking_date:req.body.booking[0].booking_date,venue:req.body.booking[0].venue_id,start_time:req.body.booking[0].start_time,created_by:req.body.userId,created_type:'user'}).then(game=>{
-            Message.create({conversation:convo._id,message:`${req.name} created ${convo.name}`,read_status:false,name:req.name,author:req.body.userId,type:'bot',created_at:new Date()}).then(message1=>{
+            Message.create({conversation:convo._id,message:`${req.name} created the game`,read_status:false,name:req.name,author:req.body.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
                 const x = users.map((u)=>{ return ({user_id:u._id,last_active:u.last_active ? u.last_active : new Date()})})
               Conversation.findByIdAndUpdate({_id:message1.conversation},{last_active:x,last_message:message1._id,last_updated:new Date()}).then(conversation=>{
@@ -1579,7 +1579,7 @@ router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
     if(friend.visibility === 'public'){
       let obj = user._id
       let filter = friend && friend.followers.length > 0 && friend.followers.some(u => u.id === req.body.id)
-      console.log('filter',filter);
+      // console.log('filter',filter);
       if(filter){
         res.send({status:'failiure', message:"Request already sent"})
       }else{

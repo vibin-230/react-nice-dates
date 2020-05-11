@@ -38,7 +38,7 @@ module.exports = function () {
     console.log('asasasdadsasdasdassad',user)
     if(user !== 'error')
     clients.delete(user.id)
-    client.disconnect()
+    //client.disconnect()
     User.findByIdAndUpdate({_id: user.id},{last_active:new Date(),online_status:'offline'}).then(user1=>{}).catch()
 
   }

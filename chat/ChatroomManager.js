@@ -120,7 +120,7 @@ module.exports = function () {
 
     function notifyOtherUsers(chatroom,message){
       const filter = chatroom.members.filter((member)=> member.toString() !== message.author.toString())
-      console.log('filter',filter);
+      // console.log('filter',filter);
      User.findOne({_id: filter[0]},{activity_log:0}).then(user=> {
         console.log(user)
        notify(user,`${message.name} : ${message.message}`)
@@ -134,9 +134,9 @@ module.exports = function () {
           return member
         }
       })
-      console.log('filter',filter,message);
+      // console.log('filter',filter,message);
        User.find({_id: {$in : filter}},{activity_log:0}).then(user=> {
-       const messages1 = chatroom.type === 'single' ?  `${message.name} : ${message.message}`:  `${message.name}  @ ${chatroom.name} : ${message.message}`
+       const messages1 = chatroom.type === 'single' ?  `${message.name} : ${message.message}`:  `${message.name} @ ${chatroom.name} : ${message.message}`
        NotifyArray(user.map((u)=>u.device_token),messages1,"Turf Town")
       }).catch((e)=>console.log(e))
     }
@@ -148,9 +148,9 @@ module.exports = function () {
           return member
         }
       })
-      console.log('filter',filter);
+      // console.log('filter',filter);
        User.find({_id: {$in : filter}},{activity_log:0}).then(user=> {
-       const messages1 = chatroom.type === 'single' ?  `${message.name} : ${message.message}`:  `${message.name}  @ ${chatroom.name} : ${message.message}`
+       const messages1 = chatroom.type === 'single' ?  `${message.name} : ${message.message}`:  `${message.name} @ ${chatroom.name} : ${message.message}`
        NotifyArray(user.map((u)=>u.device_token),messages1,'Turf Town')
       }).catch((e)=>console.log(e))
     }

@@ -137,10 +137,11 @@ module.exports = function (client, clientManager, chatroomManager,io) {
 
   function handleDisconnect(token) {
     // remove user profile
+    console.log(":socket disconnected")
     clientManager.removeClient(client,token)
     // remove member from all chatrooms
     chatroomManager.removeClient(client)
   }
 
-  return { handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame}
+  return {handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame}
 }

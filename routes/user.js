@@ -866,7 +866,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
         User.findById({_id:req.userId}).then(user=>{
         Conversation.create({type:'game',subtitle:req.body[0].subtitle,members:[req.userId],host:[req.userId],created_by:req.userId,name:req.body[0].game_name,sport_name:values[0].sport_name,}).then(convo=>{
            Game.create({booking_status:'booked',share_type:req.body[0].share_type,limit:req.body[0].limit,users:[req.userId],created_by:req.userId,created_type:'user',host:[req.userId],name:req.body[0].game_name,conversation:convo._id,subtitle:req.body[0].subtitle,sport_name:values[0].sport_name,type:values[0].venue_type,bookings:values,description:values[0].venue_type,booking_date:values[0].booking_date,start_time:values[0].start_time,venue:values[0].venue_id, }).then(game=>{
-            Message.create({conversation:convo._id,message:`${req.name} created ${convo.name}`,read_status:false,name:req.name,author:req.body.userId,type:'bot',created_at:new Date()}).then(message1=>{
+            Message.create({conversation:convo._id,message:`${req.name} created ${convo.name}`,read_status:false,name:req.name,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
                 const x = users.map((u)=>{ return ({user_id:u._id,last_active:u.last_active ? u.last_active : new Date()})})
               Conversation.findByIdAndUpdate({_id:message1.conversation},{last_active:x,last_message:message1._id,last_updated:new Date()}).then(conversation=>{

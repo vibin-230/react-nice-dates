@@ -172,7 +172,7 @@ module.exports = function () {
                           },[])
                             const list_with_no_convos = ids.map((id)=>{
                              if(conversation_list.indexOf(id) === -1){
-                               return {members:[id,user_id],type:'single',created_by:user_id,last_active:[{user_id:id, last_active : new Date()},{id:user_id, last_active:new Date()}]}
+                               return {members:[id,user_id],type:'single',created_by:user_id,last_active:[{user_id:id, last_active : new Date()},{user_id:user_id, last_active:new Date()}]}
                              }
                             })
                             console.log('list with no convos',list_with_no_convos);

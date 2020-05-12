@@ -149,7 +149,7 @@ router.post('/mark_read/:id', [
               return con
             }else 
             return con
-          }) : [{userId:req.params.id,last_active:new Date()}]
+          }) : [{user_id:req.params.id,last_active:new Date()}]
       console.log('last act update',a)    
 
     Conversation.findByIdAndUpdate({_id:req.body.conversation_id},{last_active:a}).then(conversation=>{

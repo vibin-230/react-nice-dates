@@ -79,6 +79,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
 
  async function handleMessage({ chatroomName, message } = {}, callback) {
     if(chatroomName.type === 'single'){
+      console.log(io.sockets.adapter.rooms[chatroomName._id])
       const clientNumber = io.sockets.adapter.rooms[chatroomName._id].length;
       if(io.sockets.adapter.rooms[chatroomName._id].length < 2){
         chatroomManager.saveMessage(message)

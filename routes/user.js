@@ -134,6 +134,23 @@ router.post('/force_update_all', [
 });
 
 
+router.post('/delete_conversation_empty/:id', [verifyToken,], (req, res, next) => {
+  Conversation.findById({_id:req.body.conversation_id}).then((convo)=>{ 
+    Message.find({conversation:req.body.conversation_id}).then((user)=>{
+      if(user.length === 0){
+        Conversation.findByIdAndRemove({_id:req.body.conversation_id}).then(conversation=> {
+          console.log("conver",conversation)
+          res.send({status:"success", message:"conversation deleted"})
+      }).catch(next);
+      }
+      else {
+        res.status(201).send({status: "success", message: "conversation updated"})
+      }
+  }).catch(next);
+}).catch(next); 
+});
+
+
 router.post('/mark_read/:id', [
   verifyToken,
 ], (req, res, next) => {

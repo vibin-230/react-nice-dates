@@ -142,12 +142,14 @@ module.exports = function () {
     }
 
     function notifyAllUsersNotInTheChatroom(chatroom,message,users){
+      console.log('chatroom manager =>>>>>',users),chatroom;
       const filter = chatroom.members.filter((member)=>{ 
         const string  = member && member._id ? member._id.toString() : member.toString()
         if(users.indexOf(string) === -1){
           return member
         }
       })
+
       // console.log('filter',filter);
        User.find({_id: {$in : filter}},{activity_log:0}).then(user=> {
        const messages1 = chatroom.type === 'single' ?  `${message.name} : ${message.message}`:  `${message.name} @ ${chatroom.name} : ${message.message}`

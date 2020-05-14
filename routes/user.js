@@ -155,7 +155,8 @@ router.post('/mark_read/:id', [
   verifyToken,
 ], (req, res, next) => {
   console.log('last activity',req.body.conversation_id);
-  Conversation.findById({_id:req.body.conversation_id}).then((convo)=>{  
+  Conversation.findById({_id:req.body.conversation_id}).then((convo)=>{
+      
     Message.updateMany({conversation:req.body.conversation_id,read_status:false},{ '$set': { "read_status" : true } },{multi:true}).then((user)=>{
       console.log('last activity',convo.last_active);
       const a = convo.last_active && convo.last_active.length > 0 ? convo.last_active.map((con)=>{

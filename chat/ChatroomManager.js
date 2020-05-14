@@ -49,7 +49,7 @@ module.exports = function () {
 
  async function getConversationAndSendBotMessage(convo){
  const x = await Conversation.findById({_id:convo._id}).populate('members','_id name device_token').then((conversation1)=>{
-      const messages =  conversation1.members.map((user)=> ({conversation:convo._id,message:groupChatMessage(conversation1.members[0].name,user.name),name:conversation1.members[0].name,author:conversation1.members[0]._id,type:'bot',last_updated:new Date()}))
+      const messages =  conversation1.members.map((user)=> ({conversation:convo._id,message:groupChatMessage(conversation1.members[0].name,user.name),name:conversation1.members[0].name,author:conversation1.members[0]._id,type:'bot',created_at:new Date()}))
             return Message.insertMany(messages).then(message1=>{
               return Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},{last_message:message1[message1.length-1]._id,last_updated:new Date()}).then(conversation=>{
                 notifyAllUsers(convo,messages[0])

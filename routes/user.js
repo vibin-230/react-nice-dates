@@ -249,7 +249,6 @@ router.post('/get_chatrooms/:id', [
          const x =  existingConversation.map((c)=> {
             c['time'] = 0
             const filter = c && c.last_active ? c.last_active.filter((c)=> c && c.user_id && c.user_id.toString() === req.params.id.toString()) : []
-            console.log('filter',filter);
             message.length > 0 && message.map((m)=>{
                if(m._id.toString() === c._id.toString() && conversation.indexOf(c._id.toString()) === -1 && m.user[m.user.length-1].toString() !== user._id.toString()) {
                 const time = m.time.filter((timestamp)=>{ 

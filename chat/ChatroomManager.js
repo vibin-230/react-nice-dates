@@ -145,8 +145,8 @@ module.exports = function () {
       console.log('chatroom members =>>>>>',chatroom.members,users.length)
       const filter = chatroom.members.filter((member)=>{ 
         const string  = member && member._id ? member._id.toString() : member.toString()
-        console.log('string', string);
-        if(users.includes(string)){
+        console.log('string', string,'\t status',users.includes(string));
+        if(!users.includes(string) ){
           return member
         }
       })

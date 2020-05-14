@@ -95,6 +95,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     }else{
     const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
      const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
+     console.log('active users in the chat while sending messsage',activeUsers,'\n acitve users length',activeUsers.length)
      client.to(chatroomName._id).emit('new',message)
         client.to(chatroomName._id).emit('unread',message)
         chatroomManager.saveMessage(message) 

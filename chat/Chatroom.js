@@ -28,7 +28,6 @@ module.exports = function ({ _id, image }) {
   }
 
   async function getChatHistory(id,token) {
-    console.log('getchat his',id,token)
     const user = await verifyToken(token) 
     console.log('user his',user)
     const x = await Conversation.findById({_id:id}).lean().then((conversation)=>{

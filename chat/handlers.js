@@ -57,10 +57,12 @@ module.exports = function (client, clientManager, chatroomManager,io) {
         chatroom.addUser(client)
         client.join(chatroom.getId())
         console.log('chatroom ',chatroom);
-        console.log('\nuser ',user);
+        const token = client.handshake.query.token;
+
+        console.log('\token ',token);
 
         // send chat history to client
-        const x =  await chatroom.getChatHistory(chatroom.getId())
+        const x =  await chatroom.getChatHistory(chatroom.getId(),client.handshake.query.token)
         callback(chatroom.getId(), x)
       })
       .catch(callback)

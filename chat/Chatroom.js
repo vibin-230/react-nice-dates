@@ -1,5 +1,5 @@
 const Message = require('../models/message');
-
+const verifyToken = require('../scripts/VerifySocket')
 const members = new Map()
 module.exports = function ({ _id, image }) {
   let chatHistory = []
@@ -27,8 +27,18 @@ module.exports = function ({ _id, image }) {
     chatHistory = chatHistory.concat(entry)
   }
 
-  async function getChatHistory(id) {
-     return await Message.find({conversation:id}).lean().populate('author','name _id').populate({ path: 'game',populate: { path: 'conversation' }}).sort({$natural:1}).then(m=>m)
+  async function getChatHistory(id,token) {
+    //const user = await verifyToken(token) 
+
+    const x = await Conversation.findById({_id:id}).lean().then((conversation)=>{
+                  return verifyToken(token).then((user)=>{
+                    console.log('get Chat history',user,conversation)
+                    return Message.find({conversation:id}).lean().populate('author','name _id').populate({ path: 'game',populate: { path: 'conversation' }}).sort({$natural:1}).then(m=>{
+                      
+    })
+    }).catch(err => console.log(err))
+    }).catch(err => console.log(err))
+    return x
   }
 
 

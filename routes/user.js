@@ -476,7 +476,8 @@ router.post('/host_game',verifyToken, (req, res, next) => {
             Message.create({conversation:convo._id,message:`${req.name} created the game`,read_status:false,name:req.name,author:req.body.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
                 const x = users.map((u)=>{ return ({user_id:u._id,last_active:u.last_active ? u.last_active : new Date()})})
-              Conversation.findByIdAndUpdate({_id:message1.conversation},{last_active:x,last_message:message1._id,last_updated:new Date()}).then(conversation=>{
+                const y = users.map((u)=>{ return ({user_id:u._id,join_date:u.join_date ? u.join_date : new Date()})})
+                Conversation.findByIdAndUpdate({_id:message1.conversation},{last_active:x,join_date:y,last_message:message1._id,last_updated:new Date()}).then(conversation=>{
                 console.log(conversation)
             //since he is a host who is accessing this api
             convo['invite'] = false
@@ -868,7 +869,8 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
             Message.create({conversation:convo._id,message:`${req.name} created the game`,read_status:false,name:req.name,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
                 const x = users.map((u)=>{ return ({user_id:u._id,last_active:u.last_active ? u.last_active : new Date()})})
-              Conversation.findByIdAndUpdate({_id:message1.conversation},{last_active:x,last_message:message1._id,last_updated:new Date()}).then(conversation=>{
+                const y = users.map((u)=>{ return ({user_id:u._id,join_date:u.join_date ? u.join_date : new Date()})})
+                Conversation.findByIdAndUpdate({_id:message1.conversation},{last_active:x,join_date:y,last_message:message1._id,last_updated:new Date()}).then(conversation=>{
                 convo['invite'] = false
             res.send({status:"success", message:"slot booked",data: {game:game,convo:convo}})
         let booking_id = values[0].booking_id

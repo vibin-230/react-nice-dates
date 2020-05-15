@@ -34,7 +34,7 @@ module.exports = function () {
     const conversation = await Conversation.create(obj).then(convo=>{
      return User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
        const x = users.map((u)=>{ return ({user_id:u._id,last_active:u.last_active ? u.last_active : new Date()})})
-       const y = users.map((u)=>{ return ({user_id:u._id,join_date:u.join_date ? u.join_date : new Date()})})
+       const y = users.map((u)=>{ return ({user_id:u._id,join_date:new Date()})})
        return Conversation.findByIdAndUpdate({_id:convo._id},{last_active:x,join_date:y}).then(conversation=>{
         return convo
        }).catch((e)=>console.log(e))
@@ -243,35 +243,69 @@ module.exports = function () {
        }
 
     
+  async function joinGame(game_id, userId) {
+    const x = await Game.findById({ _id: game_id }).lean().then(game1 => {
+      return Conversation.findById({ _id: game1.conversation }).lean().then(conversation1 => {
+        const conversation = Object.assign({}, conversation1)
+        const game = Object.assign({}, game1)
+        game.invites = game.invites.filter((key) => key.toString() !== userId.toString())
+        game.users = game.users.some((key) => key.toString() == userId.toString()) ? game.users : game.users.concat(userId)
+        conversation.invites = conversation.invites.filter((key) => key.toString() !== userId.toString())
+        conversation.invites = conversation.invites.filter((key) => key.toString() !== userId.toString())
+        conversation.members = conversation.members.some((key) => key.toString() == userId.toString()) ? conversation.members : conversation.members.concat(userId)
+        conversation.last_active = conversation.last_active.some((key) => key.user_id.toString() == userId.toString()) ? conversation.last_active : conversation.last_active.concat({ "user_id": userId, last_active: new Date() })
+        conversation.join_date = conversation.join_date.some((key) => key.user_id.toString() == userId.toString()) ? conversation.join_date : conversation.join_date.concat({ "user_id": userId, join_date: new Date() })
+        return Game.findByIdAndUpdate({ _id: game_id }, { $set: game }).then(game2 => {
+          return Conversation.findByIdAndUpdate({ _id: game1.conversation }, { $set: conversation }).then(conversation2 => {
+            return Conversation.findById({ _id: game.conversation }).lean().populate('members', '_id device_token').then(conversation2 => {
+              return User.findById({ _id: userId }, { activity_log: 0, }).lean().then(user => {
+                saveMessage({ conversation: conversation2._id, message: `${user.name} has joined the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() })
+                const device_token_list = conversation2.members.map((e) => e.device_token)
+                NotifyArray(device_token_list, `${user.name} has joined the game`, `New Game Joined`)
+                return conversation2.members.map((e) => e._id)
+
+                //res.send({status:"success", message:"invitation sent"})
+
+              }).catch((e) => console.log(e));
+            }).catch((e) => console.log(e));
+          }).catch(error => console.log(error))
+        }).catch(error => console.log(error))
+      }).catch(error => console.log(error))
+    }).catch(error => console.log(error))
+    return x
+  }
+    // async function joinConversation1
 
 
-    async function joinGame(game_id,userId){
-      console.log(game_id,userId)
-      const x = await  Game.findByIdAndUpdate({_id: game_id},{ $pull: { invites: userId } }).then(game=> {
-        return  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { users: { $each: [userId] } } }).then(game=> {
-         return Conversation.findByIdAndUpdate({_id: game.conversation},{ $pull: { invites: userId } }).then(conversation1=> {
-          return Conversation.findByIdAndUpdate({_id: game.conversation},{ $addToSet: { members: { $each: [userId] } } }).then(conversation1=> {
-            return Conversation.findByIdAndUpdate({_id: game.conversation},{ $addToSet: { join_date: { $each: [{user_id:userId,join_date:new Date()}] } } },{ $addToSet: { last_active: { $each: [{user_id:userId,last_active:new Date()}] } } }).then(conversation1=> {
-              console.log("convera",conversation1)
-            //above to update below to show and save message
-            return Conversation.findById({_id: game.conversation}).lean().populate('members','_id device_token').then(conversation2=> {
-              return User.findById({_id: userId},{activity_log:0,}).lean().then(user=> {
-                  saveMessage({conversation:conversation2._id,message:`${user.name} has joined the game`,read_status:false,name:user.name,author:user._id,type:'bot',created_at:new Date()}) 
-                                 const device_token_list=conversation2.members.map((e)=>e.device_token)
-                                 NotifyArray(device_token_list,`${user.name} has joined the game`,`New Game Joined`)
-                                 return conversation2.members.map((e)=>e._id)
+    // async function joinGame(game_id,userId){
+    //   console.log(game_id,userId)
+    //   const x = await Game.findByIdAndUpdate({_id: game_id},{ $pull: { invites: userId } }).then(game=> {
+    //     return  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { users: { $each: [userId] } } }).then(game=> {
+    //      return Conversation.findByIdAndUpdate({_id: game.conversation},{ $pull: { invites: userId } }).then(conversation1=> {
+    //       return Conversation.findByIdAndUpdate({_id: game.conversation},{ $addToSet: { members: { $each: [userId] } } }).then(conversation1=> {
+    //         return Conversation.findByIdAndUpdate({_id: game.conversation} ,{ $addToSet: { last_active: { $each: [{user_id:userId,last_active:new Date()}] } } }).then(conversation1=> {
+    //           return Conversation.findByIdAndUpdate({_id: game.conversation} ,{ $addToSet: { join_date: { $each: [{user_id:userId,join_date:new Date()}] } } }).then(conversation1=> {
+    //           console.log("convera",conversation1)
+    //         //above to update below to show and save message
+    //         return Conversation.findById({_id: game.conversation}).lean().populate('members','_id device_token').then(conversation2=> {
+    //           return User.findById({_id: userId},{activity_log:0,}).lean().then(user=> {
+    //               saveMessage({conversation:conversation2._id,message:`${user.name} has joined the game`,read_status:false,name:user.name,author:user._id,type:'bot',created_at:new Date()}) 
+    //                              const device_token_list=conversation2.members.map((e)=>e.device_token)
+    //                              NotifyArray(device_token_list,`${user.name} has joined the game`,`New Game Joined`)
+    //                              return conversation2.members.map((e)=>e._id)
                                  
-                 //res.send({status:"success", message:"invitation sent"})
+    //              //res.send({status:"success", message:"invitation sent"})
      
-      }).catch((e)=>console.log(e));
-    }).catch((e)=>console.log(e));
-      }).catch((e)=>console.log(e));
-      }).catch((e)=>console.log(e));
-        }).catch((e)=>console.log(e));
-       }).catch((e)=>console.log(e));
-       }).catch((e)=>console.log(e));
-       return x
-       }
+    //   }).catch((e)=>console.log(e));
+    // }).catch((e)=>console.log(e));
+    //   }).catch((e)=>console.log(e));
+    //   }).catch((e)=>console.log(e));
+    //     }).catch((e)=>console.log(e));
+    //    }).catch((e)=>console.log(e));
+    //    }).catch((e)=>console.log(e));
+    //   }).catch((e)=>console.log(e));
+    //    return x
+    //    }
 
   return {
     removeClient,

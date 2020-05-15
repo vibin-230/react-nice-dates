@@ -32,7 +32,7 @@ module.exports = function ({ _id, image }) {
   async function getChatHistory(id,token) {
     const user = await verifyToken(token) 
       const x = await Message.find({conversation:id}).lean().populate('author','name _id').populate({ path: 'game',populate: { path: 'conversation' }}).sort({$natural:1}).then(m=>{
-                  return Conversation.findById({_id:id}).lean().then(()=>{
+                  return Conversation.findById({_id:id}).lean().then((conversation)=>{
                       console.log('asasdasdasdasd',m.length,conversation)
                         return m      
 

@@ -1,4 +1,6 @@
 const Message = require('../models/message');
+const Conversation = require('../models/conversation');
+
 const verifyToken = require('../scripts/VerifySocket')
 const members = new Map()
 module.exports = function ({ _id, image }) {
@@ -30,8 +32,13 @@ module.exports = function ({ _id, image }) {
   async function getChatHistory(id,token) {
     const user = await verifyToken(token) 
       const x = await Message.find({conversation:id}).lean().populate('author','name _id').populate({ path: 'game',populate: { path: 'conversation' }}).sort({$natural:1}).then(m=>{
-            console.log('asasdasdasdasd',m.length)      
-      })
+                  return Conversation.findById({_id:id}).lean().then(()=>{
+                      console.log('asasdasdasdasd',m.length,conversation)
+                        return m      
+
+                    })   
+                  })
+                
     return x
   }
 

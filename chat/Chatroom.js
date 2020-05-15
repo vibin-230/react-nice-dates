@@ -36,8 +36,8 @@ module.exports = function ({ _id, image }) {
                       console.log('asasdasdasdasd',m.length,conversation)
                         return m      
 
-                    })   
-                  })
+                    }).catch((e)=>console.log(e))   
+                  }).catch((e)=>console.log(e))  
                 
     return x
   }

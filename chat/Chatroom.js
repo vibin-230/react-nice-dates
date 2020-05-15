@@ -31,7 +31,7 @@ module.exports = function ({ _id, image }) {
     const user = await verifyToken(token) 
       const x = await Message.find({conversation:id}).lean().populate('author','name _id').populate({ path: 'game',populate: { path: 'conversation' }}).sort({$natural:1}).then(m=>{
             console.log('asasdasdasdasd',m.length)      
-      }).catch(err => console.log(err))
+      })
     return x
   }
 

@@ -25,7 +25,7 @@ function makeHandleEvent(client, clientManager, chatroomManager,io) {
         // append event to chat history
          const entry = { user, ...createEntry() }
          chatroom.addEntry(entry)
-          return { chatroom, user }
+          return chatroom
       })
   }
 
@@ -50,19 +50,13 @@ module.exports = function (client, clientManager, chatroomManager,io) {
    console.log('hit as');
     const createEntry = () => ({ event: `establishing connection` })
     handleEvent(chatroomName, createEntry)
-      .then(async function ({ chatroom, user }) {
-        // add member to chatroom
-        // const y = await chatroomManager.serializeChatrooms()
-        // y.forEach((conversation)=>conversation._id.toString() !== chatroom.getId().toString() && client.leave(conversation._id))
+      .then(async function (chatroom) {
         chatroom.addUser(client)
         client.join(chatroom.getId())
         console.log('chatroom ',chatroom);
         const token = client.handshake.query.token;
-
         console.log('\token ',token);
-
-        // send chat history to client
-        const x =  await chatroom.getChatHistory(chatroom.getId(),client.handshake.query.token)
+        const x =  await chatroom.getChatHistory(chatroom.getId(),token)
         callback(chatroom.getId(), x)
       })
       .catch(callback)
@@ -74,7 +68,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     const createEntry = () => ({ event: `left ` })
 
     handleEvent(chatroomName, createEntry)
-      .then(function ({ chatroom, user }) {
+      .then(function (chatroom) {
         // remove member from chatroom
         chatroom.removeUser(client.id)
         callback(null)

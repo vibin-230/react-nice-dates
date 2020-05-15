@@ -19,6 +19,7 @@ const schema = new Schema({
   unread:Number,
   members: [{ type: Schema.Types.ObjectId, ref: 'user' }] ,
   type:String,
+  join_date:Array
 });
 
 //Model

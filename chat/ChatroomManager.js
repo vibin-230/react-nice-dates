@@ -34,7 +34,8 @@ module.exports = function () {
     const conversation = await Conversation.create(obj).then(convo=>{
      return User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
        const x = users.map((u)=>{ return ({user_id:u._id,last_active:u.last_active ? u.last_active : new Date()})})
-       return Conversation.findByIdAndUpdate({_id:convo._id},{last_active:x}).then(conversation=>{
+       const y = users.map((u)=>{ return ({user_id:u._id,join_date:u.join_date ? u.join_date : new Date()})})
+       return Conversation.findByIdAndUpdate({_id:convo._id},{last_active:x,join_date:y}).then(conversation=>{
         return convo
        }).catch((e)=>console.log(e))
        }).catch((e)=>console.log(e))
@@ -250,7 +251,8 @@ module.exports = function () {
         return  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { users: { $each: [userId] } } }).then(game=> {
          return Conversation.findByIdAndUpdate({_id: game.conversation},{ $pull: { invites: userId } }).then(conversation1=> {
           return Conversation.findByIdAndUpdate({_id: game.conversation},{ $addToSet: { members: { $each: [userId] } } }).then(conversation1=> {
-            return Conversation.findByIdAndUpdate({_id: game.conversation},{ $addToSet: { last_active: { $each: [{user_id:userId,last_active:new Date()}] } } }).then(conversation1=> {
+            return Conversation.findByIdAndUpdate({_id: game.conversation},{ $addToSet: { join_date: { $each: [{user_id:userId,join_date:new Date()}] } } },{ $addToSet: { last_active: { $each: [{user_id:userId,last_active:new Date()}] } } }).then(conversation1=> {
+              console.log("convera",conversation1)
             //above to update below to show and save message
             return Conversation.findById({_id: game.conversation}).lean().populate('members','_id device_token').then(conversation2=> {
               return User.findById({_id: userId},{activity_log:0,}).lean().then(user=> {

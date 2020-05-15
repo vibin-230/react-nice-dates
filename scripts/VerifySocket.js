@@ -6,7 +6,7 @@ async function verifyToken(token) {
   const a = await jwt.verify(token, config.secret, function(err, decoded) {
     if (err)
     return 'error'
-    console.log(decoded)
+    console.log('got decodeed',decoded)
     return decoded
   });
   return a

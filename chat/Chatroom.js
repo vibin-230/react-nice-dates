@@ -29,16 +29,18 @@ module.exports = function ({ _id, image }) {
     chatHistory = chatHistory.concat(entry)
   }
 
-  async function getChatHistory(id,token) {
-    const user = await verifyToken(token) 
-      const x = await Message.find({conversation:id}).lean().populate('author','name _id').populate({ path: 'game',populate: { path: 'conversation' }}).sort({$natural:1}).then(m=>{
-                  return Conversation.findById({_id:id}).lean().then(()=>{
-                      console.log('asasdasdasdasd',m.length,conversation)
-                        return m      
+  async function getChatHistory(id, token) {
+    const user = await verifyToken(token)
+    const x = await Conversation.findById({ _id: id }).lean().then((conversation) => {
+      console.log('asasdasdasdasd', m.length, conversation)
+      let date = conversation.join_date.length > 0 ? conversation.join_date.filter((jd) => jd.user_id.toString() === user.id.toString()) : []
+      console.log('DASD',date)
+      return Message.find({ conversation: id, created_at: { $gte: date[0].join_date } }).lean().populate('author', 'name _id').populate({ path: 'game', populate: { path: 'conversation' } }).sort({ $natural: 1 }).then(m => {
+        return m
 
-                    }).catch((e)=>console.log(e))   
-                  }).catch((e)=>console.log(e))  
-                
+      }).catch((e) => console.log(e))
+    }).catch((e) => console.log(e))
+
     return x
   }
 

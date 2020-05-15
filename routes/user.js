@@ -471,14 +471,13 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
 
 
 router.post('/host_game',verifyToken, (req, res, next) => {
-        Conversation.create({type:'game',members:[req.body.userId],created_by:req.body.userId,name:req.body.game_name,sport_name:req.body.sport_name,subtitle:req.body.subtitle,sport_type:req.body.venue_type,host:[req.body.userId]}).then(convo=>{
+        Conversation.create({type:'game',members:[req.body.userId],created_by:req.body.userId,name:req.body.game_name,sport_name:req.body.sport_name,subtitle:req.body.subtitle,sport_type:req.body.venue_type,host:[req.body.userId],last_active:[],join_date:[{user_id:req.body.userId,join_date:new Date()}]}).then(convo=>{
           Game.create({booking_status:'hosted',subtitle:req.body.subtitle,description:req.body.description,share_type:req.body.share_type,limit:req.body.limit,users:[req.body.userId],host:[req.body.userId],name:req.body.game_name,conversation:convo._id,sport_name:req.body.sport_name,type:req.body.venue_type,bookings:req.body.booking,booking_date:req.body.booking[0].booking_date,venue:req.body.booking[0].venue_id,start_time:req.body.booking[0].start_time,created_by:req.body.userId,created_type:'user'}).then(game=>{
             Message.create({conversation:convo._id,message:`${req.name} created the game`,read_status:false,name:req.name,author:req.body.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
                 const x = users.map((u)=>{ return ({user_id:u._id,last_active:u.last_active ? u.last_active : new Date()})})
                 const y = users.map((u)=>{ return ({user_id:u._id,join_date:new Date()})})
                 Conversation.findByIdAndUpdate({_id:message1.conversation},{last_active:x,join_date:y,last_message:message1._id,last_updated:new Date()}).then(conversation=>{
-                console.log(conversation)
             //since he is a host who is accessing this api
             convo['invite'] = false
             res.send({status:"success", message:"game_created",data:{game:game,convo:convo}})
@@ -864,7 +863,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
     Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
         User.findById({_id:req.userId}).then(user=>{
-        Conversation.create({type:'game',subtitle:req.body[0].subtitle,members:[req.userId],host:[req.userId],created_by:req.userId,name:req.body[0].game_name,sport_name:values[0].sport_name,}).then(convo=>{
+        Conversation.create({type:'game',subtitle:req.body[0].subtitle,members:[req.userId],host:[req.userId],created_by:req.userId,name:req.body[0].game_name,sport_name:values[0].sport_name,join_date:[{user_id:req.body.userId,join_date:new Date()}]}).then(convo=>{
            Game.create({booking_status:'booked',share_type:req.body[0].share_type,limit:req.body[0].limit,users:[req.userId],created_by:req.userId,created_type:'user',host:[req.userId],name:req.body[0].game_name,conversation:convo._id,subtitle:req.body[0].subtitle,sport_name:values[0].sport_name,type:values[0].venue_type,bookings:values,description:values[0].venue_type,booking_date:values[0].booking_date,start_time:values[0].start_time,venue:values[0].venue_id, }).then(game=>{
             Message.create({conversation:convo._id,message:`${req.name} created the game`,read_status:false,name:req.name,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {

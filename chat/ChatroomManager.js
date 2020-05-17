@@ -263,7 +263,8 @@ module.exports = function () {
             return Conversation.findById({ _id: game.conversation }).lean().populate('members', '_id device_token').then(conversation2 => {
               return User.findById({ _id: userId }, { activity_log: 0, }).lean().then(user => {
                 saveMessage({ conversation: conversation2._id, message: `${user.name} has joined the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() })
-                const device_token_list = conversation2.members.map((e) => e.device_token)
+                const token_list  = conversation2.members.filter((key) => key._id.toString() !== userId.toString())
+                const device_token_list = token_list.map((e) => e.device_token)
                 NotifyArray(device_token_list, `${user.name} has joined the game`, `New Game Joined`)
                 return conversation2.members.map((e) => e._id)
 

@@ -271,7 +271,8 @@ router.post('/get_town_games/', [
 ], (req, res, next) => {
   User.findById({_id: req.userId},{}).lean().then(user=> {
     console.log(req.body);
-      Game.find({ created_by: { $in: user.following } ,town:true, host:{ $in: user.following }}).lean().populate('conversation').populate('host','_id name profile_picture phone').populate('users','_id name profile_picture phone').populate('invites','_id name profile_picture phone').then(existingConversation=>{
+    const filter = req.body.sport === 'all' ? { created_by: { $in: user.following } ,town:true, host:{ $in: user.following }} :{ created_by: { $in: user.following } ,town:true,sport_name:req.body.sport, host:{ $in: user.following }}
+      Game.find(filter).lean().populate('conversation').populate('host','_id name profile_picture phone').populate('users','_id name profile_picture phone').populate('invites','_id name profile_picture phone').then(existingConversation=>{
         console.log('existing conversation',existingConversation);  
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{

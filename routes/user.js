@@ -273,10 +273,9 @@ router.post('/get_town_games/', [
   verifyToken,
 ], (req, res, next) => {
   User.findById({_id: req.userId},{}).lean().then(user=> {
-      const filter = req.body.sport !== 'all' ? { created_by: { $in: user.following } ,town:true,sport_type:req.body.sport, host:{ $in: user.following }} : { created_by: { $in: user.following } ,town:true, host:{ $in: user.following }}
-      console.log(filter);
-      Game.find().lean(filter).populate('conversation').populate('host','_id name profile_picture phone').populate('users','_id name profile_picture phone').populate('invites','_id name profile_picture phone').then(existingConversation=>{
-        console.log('existing conversation',existingConversation.length);  
+    console.log(req.body);
+      Game.find({ created_by: { $in: user.following } ,town:true, host:{ $in: user.following }}).lean().populate('conversation').populate('host','_id name profile_picture phone').populate('users','_id name profile_picture phone').populate('invites','_id name profile_picture phone').then(existingConversation=>{
+        console.log('existing conversation',existingConversation);  
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{
             (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);

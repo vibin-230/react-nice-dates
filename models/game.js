@@ -16,6 +16,7 @@ const schema = new Schema({
     default: ''
   },
   name:String,
+  town_date:Date,
   booking_date: { type : Date , default:new Date()},
   start_time:Date,
   booking_status:String,

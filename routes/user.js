@@ -236,20 +236,17 @@ router.post('/get_user_details', [
 ], (req, res, next) => {
       //Check if user exist
       console.log(req.body);
-        User.find({status:true}).lean().then(user1=>{
-           User.findOne({_id: req.userId},{activity_log:0}).then(user=> {
+        User.find({$and:[{ "email": { $exists: true, $ne: null }}]}).lean().then(user1=>{
+          User.findOne({_id: req.userId},{activity_log:0}).then(user=> {
           if (user) {
             let followers = user.followers.concat(user.following)
             let user_id = user1.map((key)=>key._id)
-            console.log("followers",followers)
-            console.log("user_id",user_id)
             // followers.some((key)=>key.toString() !== item.toString())
             let suggestions = user_id.filter(item=>{
               if(followers.indexOf(item) == -1){
                 return item
               }
             })
-            console.log("=",suggestions) 
             User.find({_id:{ $in: suggestions}},{activity_log:0,requests:0,sent_requests:0,sports_interest:0,conversation:0,online_status:0,last_active:0,last_login:0,device_token:0,otp:0,token:0,version:0,followers:0,following:0,os:0,visibility:0,force_update:0,login_type:0}).lean().then(user=>{
               res.status(201).send({status: "success", message: "user collected",data:user})
           })
@@ -265,7 +262,7 @@ router.post('/get_user_details', [
 router.post('/get_following/:id', [
   verifyToken,
 ], (req, res, next) => {
-  User.find({_id:req.params.id},{activity_log:0}).lean().then(user1 => {
+  User.find({_id:req.params.id},{activity_log:0}).populate("followers","name _id").lean().then(user1 => {
     res.status(201).send({status: "success", message: "user collected",data:user1})
   }).catch(next);
 });
@@ -2192,7 +2189,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         
         let event_booking_data = eventBooking
         let event = event_booking_data.reverse()
-        booking_data = [...result,...event,...game]
+        booking_data = [...game]
 
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{

@@ -871,6 +871,7 @@ router.post('/search',
 	verifyToken,
 	AccessControl('venue', 'read'),
 	(req, res, next) => {
+	User.find({$and:[{ "email": { $exists: true, $ne: null }},{ $or: [{"name":{ "$regex": req.body.search, "$options": "i" }}, {"phone":{ "$regex": req.body.search, "$options": "i" }}]}]},{__v:0,token:0,otp:0,activity_log:0}).then(user=>{
 	Venue.find({"venue.name":{ "$regex": req.body.search, "$options": "i" }}).then(venue=>{
 		Event.find({"event.name":{ "$regex": req.body.search, "$options": "i" }}).lean().populate('venue').then(event=>{
 			Offers.find({}).then(offers=>{
@@ -892,11 +893,14 @@ router.post('/search',
 				combinedResult = list.concat(event);
 			}else{
 				combinedResult = event
-			}			
-			res.send({status:"success", message:"venues and events fetched based on search", data:combinedResult})
+			}
+			let finalResult = [...combinedResult,...user]
+			res.send({status:"success", message:"venues and events fetched based on search", data:finalResult})
 		}).catch(next)
 	}).catch(next)
 }).catch(next);
+}).catch(next)
+
 })
 
 

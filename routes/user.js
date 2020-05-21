@@ -241,6 +241,16 @@ router.post('/get_user_details', [
       console.log(req.body);
         User.find({$and:[{ "email": { $exists: true, $ne: null }}]}).lean().then(user1=>{
           User.findOne({_id: req.userId},{activity_log:0}).then(user=> {
+            Venue.find({}).then(venues=>{
+              user_reviews = []
+              venues.map(venue => {
+                venue.rating.map(rating => {
+                  if (rating.user_id === req.userId) {
+                    rating.venue = venue.venue
+                    user_reviews.push(rating)
+                  }
+                })
+            })
           if (user) {
             let followers = user.followers.concat(user.following)
             let user_id = user1.map((key)=>key._id)
@@ -251,13 +261,14 @@ router.post('/get_user_details', [
               }
             })
             User.find({_id:{ $in: suggestions}},{activity_log:0,requests:0,sent_requests:0,sports_interest:0,conversation:0,online_status:0,last_active:0,last_login:0,device_token:0,otp:0,token:0,version:0,followers:0,following:0,os:0,visibility:0,force_update:0,login_type:0}).lean().then(user=>{
-              res.status(201).send({status: "success", message: "user collected",data:user})
+              res.status(201).send({status: "success", message: "user collected",data:[{suggestions:user,my_review:user_reviews}]})
           })
         }
         else {
             res.status(422).send({status: "failure", errors: {user:"force update failed"}});
         }
     }).catch(next);
+}).catch(next);
 }).catch(next);
 });
 
@@ -1680,15 +1691,23 @@ router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
       let filter = friend && friend.followers.length > 0 && friend.followers.some(u => u.id === req.body.id)
       // console.log('filter',filter);
       if(filter){
-        res.send({status:'failiure', message:"Request already sent"})
+        res.send({status:'failiure', message:"following"})
       }else{
         User.findByIdAndUpdate({_id:req.params.friend},{$push:{followers:obj}}).then(user=>{  
           User.findByIdAndUpdate({_id:req.body.id},{$push:{following:friend._id}}).then(user=>{  
-        res.send({status:'success', message:"Request sent"})
+        res.send({status:'success', message:"followed"})
 
         }).catch(next)
       }).catch(next)
       }
+    }
+    else {
+      User.findByIdAndUpdate({_id:req.params.friend},{$push:{requests:obj}}).then(user=>{  
+        User.findByIdAndUpdate({_id:req.body.id},{$push:{sent_requests:friend._id}}).then(user=>{  
+      res.send({status:'success', message:"Request"})
+
+      }).catch(next)
+    }).catch(next)
     }
   }).catch(next)
   }).catch(next)

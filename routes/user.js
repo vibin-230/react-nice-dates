@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
+const app = express()
 const moment = require('moment');
 const momentTZ = require('moment-timezone');
 const path = require('path');
@@ -20,7 +21,9 @@ const sh = require("shorthash");
 const _ = require('lodash');
 const combineSlots = require('../scripts/combineSlots')
 const combineRepeatSlots = require('../scripts/combineRepeatedSlots')
-const upload = require("../scripts/aws-s3")
+const upload = require("../scripts/upload")
+const aws = require('aws-sdk')
+const multerS3 = require('multer-s3');
 const AccessControl = require("../scripts/accessControl")
 const SetKeyForSport = require("../scripts/setKeyForSport")
 const SetKeyForEvent = require("../scripts/setKeyForEvent")
@@ -45,8 +48,30 @@ const Invoice = require('../models/Invoice')
 const Message = require('../models/message')
 const notify = require('../scripts/Notify')
 const NotifyArray = require('../scripts/NotifyArray')
+const multer = require('multer')
+
 var io = require('socket.io-emitter')("//127.0.0.1:6379")
 const rzp_key = require('../scripts/rzp')
+
+aws.config.update({
+  accessKeyId: 'AKIAJTNVE3VYJTMNMZXA',
+  secretAccessKey: '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',
+  region: process.env.REGION
+});
+const s3 = new aws.S3();
+
+var upload1 = multer({
+  storage: multerS3({
+      s3: s3,
+      bucket: 'turftown',
+      key: function (req, file, cb) {
+          console.log(file);
+          cb(null, file.originalname); //use Date.now() for unique file keys
+      }
+  })
+});
+
+
  const indianRupeeComma = (value) => {
   return value.toLocaleString('EN-IN');
 }
@@ -1695,7 +1720,7 @@ router.post('/group_by_event', verifyToken, (req, res, next) => {
     }).catch(next)
       }).catch(next)
 })
-
+ 
 //when user clicks follow 
 router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
   User.findById({_id:req.params.friend},{activity_log:0}).lean().then(friend=>{
@@ -3409,14 +3434,19 @@ router.post('/test_sms', (req, res, next) => {
   let venue_type = "kdjflsjf"
   let venue_area = "kdjflsjf"
   let sport_name = "lkdjfsljf"
-  let balance = 500
-  let amount_paid = 500
+  let key = '9SkVgIrzjl+PoiOZ5AVMDSHxkQzuS+qt4gYG8BS+'
+  let access = 'AKIAJCWCKO7WP7A6PPYQ'
+  const bucket_name = 'turftown'
+  
+ 
   //Send SMS
-  axios.get(process.env.PHP_SERVER+'/textlocal/cancel_event.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+event_name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+manager_phone).then(response => {
-    console.log(response.data)
-  }).catch(error=>{
-    console.log(error)
-  })
+  // axios.get(process.env.PHP_SERVER+'/textlocal/cancel_event.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+event_name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+manager_phone).then(response => {
+  //   console.log(response.data)
+  // }).catch(error=>{
+  //   console.log(error)
+  // })
+
+
 })
 
 router.post('/test_php', (req, res, next) => {
@@ -3430,29 +3460,15 @@ router.post('/test_php', (req, res, next) => {
 })
 
 
-
-router.post('/test_s3', (req, res, next) => {
-  if (!req.files)
-    return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
-    // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
-    let File = req.files.image;
-    let filename = req.files.image.name;
-    //filename = path.pathname(filename)
-    let name = path.parse(filename).name
-    let ext = path.parse(filename).ext
-    ext = ext.toLowerCase()
-    filename = "image" + ext
-    // Use the mv() method to place the file somewhere on your server
-    File.mv("assets/"+filename, function(err) {
-        if (err) {
-        return res.status(500).send(err);
-        } else {
-          folder = "folder"
-          message = "profile picture uploaded successfully"
-          upload(filename, folder, message, res)
-        }
-    })
-})
+  router
+  .post('/test_s3', upload1.array('image',1), function (req, res, next) {
+     
+    console.log('hir')
+    res.send({data:'pass'})
+      
+      //upload(req,res,pathLocation,File,filename)
+    }
+  );
 // //Booking History
 router.post('/test_mail', verifyToken, (req, res, next) => {
   // let html = fs.readFileSync('views/mail.ejs',{encoding:'utf-8'});

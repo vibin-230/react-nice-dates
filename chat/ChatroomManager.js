@@ -278,6 +278,61 @@ module.exports = function () {
     }).catch(error => console.log(error))
     return x
   }
+
+  async function leaveChatroom(game1) {
+    const x = await Game.findById({ _id: game1.game_id }).lean().populate('conversation').then(game => {
+      const conversation = Object.assign({},game.conversation)
+      console.log('\nmembers :',conversation.members);
+      console.log('\nusers :',game.users);
+      console.log('\nuser :',game1.user_id);
+ 
+         game.users = game.users.filter((m)=> m.toString() !== game1.user_id.toString())
+          conversation.members = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())
+          conversation.host = conversation.host.filter((m)=> m.toString() !== game1.user_id.toString())
+          console.log('\nmembers :',conversation.members);
+          console.log('\nusers :',game.users);
+          return Game.findByIdAndUpdate({ _id: game1.game_id }, { $set: game }).then(game2 => {
+             return Conversation.findByIdAndUpdate({ _id: game1.convo_id }, { $set: conversation }).then(conversation2 => {
+              return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token').then(conversation2 => {
+                return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
+                saveMessage({ conversation: conversation2._id, message: `${user.name} has left the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() })
+                const token_list  = conversation2.members.filter((key) => key._id.toString() !== game1.user_id.toString())
+                const device_token_list = token_list.map((e) => e.device_token)
+                NotifyArray(device_token_list, `${user.name} has left the game`, `Game Left`)
+                console.log('\conversation :',conversation2);
+                return conversation2.members.map((e) => e._id)
+       }).catch(error => console.log(error))
+  }).catch(error => console.log(error))
+}).catch(error => console.log(error))
+  }).catch(error => console.log(error))
+}).catch(error => console.log(error))
+    return x
+  }
+
+  async function leaveChatroomGroup(game1) {
+    const x = await Conversation.findById({ _id: game1.convo_id }).lean().then(conversation => {
+      const conversation = Object.assign({},conversation)
+      console.log('\nmembers :',conversation.members);
+          conversation.members = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())
+          conversation.host = conversation.host.filter((m)=> m.toString() !== game1.user_id.toString())
+          console.log('\nmembers :',conversation.members);
+             return Conversation.findByIdAndUpdate({ _id: game1.convo_id }, { $set: conversation }).then(conversation2 => {
+              return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token').then(conversation2 => {
+                return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
+                saveMessage({ conversation: conversation2._id, message: `${user.name} has left the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() })
+                const token_list  = conversation2.members.filter((key) => key._id.toString() !== game1.user_id.toString())
+                const device_token_list = token_list.map((e) => e.device_token)
+                NotifyArray(device_token_list, `${user.name} has left the game`, `Game Left`)
+                console.log('\conversation :',conversation2);
+                return conversation2.members.map((e) => e._id)
+       }).catch(error => console.log(error))
+}).catch(error => console.log(error))
+  }).catch(error => console.log(error))
+}).catch(error => console.log(error))
+    return x
+  }
+
+
     // async function joinConversation1
 
 
@@ -315,7 +370,9 @@ module.exports = function () {
     removeClient,
     getChatroomByName,
     getGroupOrGameName,
+    leaveChatroom,
     serializeChatrooms,
+    leaveChatroomGroup,
     notifyOtherUsers,
     notifyAllUsers,
     saveMessage,

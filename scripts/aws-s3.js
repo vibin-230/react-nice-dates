@@ -15,6 +15,7 @@ const upload = (filename,folder,message,res) =>{
     //configuring parameters
     var params = {
     Bucket: 'turftown',
+    ACL: 'public-read',
     Body : fs.createReadStream(filePath),
     Key : folder+"/"+Date.now()+"_"+path.basename(filePath)
     };

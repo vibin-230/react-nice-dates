@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
+const app = express()
 const moment = require('moment');
 const momentTZ = require('moment-timezone');
 const path = require('path');
@@ -20,7 +21,9 @@ const sh = require("shorthash");
 const _ = require('lodash');
 const combineSlots = require('../scripts/combineSlots')
 const combineRepeatSlots = require('../scripts/combineRepeatedSlots')
-const upload = require("../scripts/aws-s3")
+const upload = require("../scripts/upload")
+const aws = require('aws-sdk')
+const multerS3 = require('multer-s3');
 const AccessControl = require("../scripts/accessControl")
 const SetKeyForSport = require("../scripts/setKeyForSport")
 const SetKeyForEvent = require("../scripts/setKeyForEvent")
@@ -45,8 +48,30 @@ const Invoice = require('../models/Invoice')
 const Message = require('../models/message')
 const notify = require('../scripts/Notify')
 const NotifyArray = require('../scripts/NotifyArray')
+const multer = require('multer')
+
 var io = require('socket.io-emitter')("//127.0.0.1:6379")
 const rzp_key = require('../scripts/rzp')
+
+aws.config.update({
+  accessKeyId: 'AKIAJTNVE3VYJTMNMZXA',
+  secretAccessKey: '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',
+  region: process.env.REGION
+});
+const s3 = new aws.S3();
+
+var upload1 = multer({
+  storage: multerS3({
+      s3: s3,
+      bucket: 'turftown',
+      key: function (req, file, cb) {
+          console.log(file);
+          cb(null, file.originalname); //use Date.now() for unique file keys
+      }
+  })
+});
+
+
  const indianRupeeComma = (value) => {
   return value.toLocaleString('EN-IN');
 }
@@ -588,6 +613,19 @@ router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
 });
 
 
+router.post('/get_group_info',verifyToken, (req, res, next) => {
+  Conversation.findById({_id:req.body.conversation_id}).then((convo)=>{ 
+    User.find({_id:convo.created_by}).select('name -_id').then(user=>{
+    Message.find({$and:[{ "game": { $exists: true, $ne: null }},{conversation:req.body.conversation_id}]}).distinct("game").then((games)=>{
+     Game.find({_id:{ $in: games}}).lean().then(gameinfo=>{
+      let data =[{name:user,game:gameinfo}]
+      res.send({status:"sucess",message:"activity fetched",data:data})  
+     })
+  }).catch(next);
+}).catch(next); 
+}).catch(next)
+});
+
 
 
 
@@ -934,8 +972,8 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
     Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
         User.findById({_id:req.userId}).then(user=>{
-        Conversation.create({type:'game',subtitle:req.body[0].subtitle,members:[req.userId],host:[req.userId],created_by:req.userId,name:req.body[0].game_name,sport_name:values[0].sport_name,join_date:[{user_id:req.body.userId,join_date:new Date()}]}).then(convo=>{
-           Game.create({booking_status:'booked',share_type:req.body[0].share_type,limit:req.body[0].limit,users:[req.userId],created_by:req.userId,created_type:'user',host:[req.userId],name:req.body[0].game_name,conversation:convo._id,subtitle:req.body[0].subtitle,sport_name:values[0].sport_name,type:values[0].venue_type,bookings:values,description:values[0].venue_type,booking_date:values[0].booking_date,start_time:values[0].start_time,venue:values[0].venue_id, }).then(game=>{
+        Conversation.create({type:'game',subtitle:req.body[0].subtitle,members:[req.userId],host:[req.userId],created_by:req.userId,name:req.body[0].game_name,sport_name:values[0].sport_name,join_date:[{user_id:req.userId,join_date:new Date()}]}).then(convo=>{
+           Game.create({booking_status:'booked',share_type:req.body[0].share_type,limit:req.body[0].limit,users:[req.userId],created_by:req.userId,created_type:'user',host:[req.userId],name:req.body[0].game_name,conversation:convo._id,subtitle:req.body[0].subtitle,sport_name:values[0].sport_name,type:values[0].venue_type,bookings:values,description:req.body[0].description,booking_date:values[0].booking_date,start_time:values[0].start_time,venue:values[0].venue_id, }).then(game=>{
             Message.create({conversation:convo._id,message:`${req.name} created the game`,read_status:false,name:req.name,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
                 const x = users.map((u)=>{ return ({user_id:u._id,last_active:u.last_active ? u.last_active : new Date()})})
@@ -1660,7 +1698,7 @@ router.post('/group_by_event', verifyToken, (req, res, next) => {
     }).catch(next)
       }).catch(next)
 })
-
+ 
 //when user clicks follow 
 router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
   User.findById({_id:req.params.friend},{activity_log:0}).lean().then(friend=>{
@@ -3374,14 +3412,19 @@ router.post('/test_sms', (req, res, next) => {
   let venue_type = "kdjflsjf"
   let venue_area = "kdjflsjf"
   let sport_name = "lkdjfsljf"
-  let balance = 500
-  let amount_paid = 500
+  let key = '9SkVgIrzjl+PoiOZ5AVMDSHxkQzuS+qt4gYG8BS+'
+  let access = 'AKIAJCWCKO7WP7A6PPYQ'
+  const bucket_name = 'turftown'
+  
+ 
   //Send SMS
-  axios.get(process.env.PHP_SERVER+'/textlocal/cancel_event.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+event_name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+manager_phone).then(response => {
-    console.log(response.data)
-  }).catch(error=>{
-    console.log(error)
-  })
+  // axios.get(process.env.PHP_SERVER+'/textlocal/cancel_event.php?booking_id='+booking_id+'&phone='+phone+'&event_name='+event_name+'&date='+datetime+'&name='+event_name+'&amount_paid='+amount_paid+'&balance='+balance+'&manager_phone='+manager_phone).then(response => {
+  //   console.log(response.data)
+  // }).catch(error=>{
+  //   console.log(error)
+  // })
+
+
 })
 
 router.post('/test_php', (req, res, next) => {
@@ -3395,29 +3438,15 @@ router.post('/test_php', (req, res, next) => {
 })
 
 
-
-router.post('/test_s3', (req, res, next) => {
-  if (!req.files)
-    return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
-    // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
-    let File = req.files.image;
-    let filename = req.files.image.name;
-    //filename = path.pathname(filename)
-    let name = path.parse(filename).name
-    let ext = path.parse(filename).ext
-    ext = ext.toLowerCase()
-    filename = "image" + ext
-    // Use the mv() method to place the file somewhere on your server
-    File.mv("assets/"+filename, function(err) {
-        if (err) {
-        return res.status(500).send(err);
-        } else {
-          folder = "folder"
-          message = "profile picture uploaded successfully"
-          upload(filename, folder, message, res)
-        }
-    })
-})
+  router
+  .post('/test_s3', upload1.array('image',1), function (req, res, next) {
+     
+    console.log('hir')
+    res.send({data:'pass'})
+      
+      //upload(req,res,pathLocation,File,filename)
+    }
+  );
 // //Booking History
 router.post('/test_mail', verifyToken, (req, res, next) => {
   // let html = fs.readFileSync('views/mail.ejs',{encoding:'utf-8'});

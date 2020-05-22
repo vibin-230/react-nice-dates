@@ -64,16 +64,25 @@ module.exports = function (client, clientManager, chatroomManager,io) {
 
 
 
-  function handleLeave(chatroomName, callback) {
+  async function handleLeave(chatroomName, callback) {
     const createEntry = () => ({ event: `left ` })
 
-    handleEvent(chatroomName, createEntry)
-      .then(function (chatroom) {
-        // remove member from chatroom
-        chatroom.removeUser(client.id)
-        callback(null)
-      })
-      .catch(callback)  
+    // handleEvent(chatroomName, createEntry)
+    //   .then(function (chatroom) {
+    //     // remove member from chatroom
+    //     chatroom.removeUser(client.id)
+    //     callback(null)
+    //   })
+    //   .catch(callback)  
+    console.log('chatroom',chatroomName);
+    client.leave(chatroomName.convo_id)
+    const x  = await chatroomManager.leaveChatroom(chatroomName)
+    console.log(x);
+    x.forEach((clientId)=>{
+      const client =  clientManager.getClient(clientId)
+     })
+    callback()
+
   }
 
  async function handleMessage({ chatroomName, message } = {}, callback) {

@@ -3443,12 +3443,14 @@ router.post('/test_php', (req, res, next) => {
 
 
   router
-  .post('/test_s3',async function (req, res, next) {
-    console.log(__dirname,req.files) 
+  .post('/test_s3',multer_upload.single('image'),async function (req, res, next) {
+    if (!req.files)
+    return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
+
+    console.log(__dirname,req.files,req.body) 
     const x = await upload(req.files.image,'game')
     console.log('hir',x)
     res.send({data:x.Location,message:'image uploaded'})
-      
       //upload(req,res,pathLocation,File,filename)
     }
   );

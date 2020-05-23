@@ -49,27 +49,9 @@ const Message = require('../models/message')
 const notify = require('../scripts/Notify')
 const NotifyArray = require('../scripts/NotifyArray')
 const multer = require('multer')
-
+var multer_upload = multer({ dest: 'uploads/' })
 var io = require('socket.io-emitter')("//127.0.0.1:6379")
 const rzp_key = require('../scripts/rzp')
-
-aws.config.update({
-  accessKeyId: 'AKIAJTNVE3VYJTMNMZXA',
-  secretAccessKey: '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',
-  region: process.env.REGION
-});
-const s3 = new aws.S3();
-
-var upload1 = multer({
-  storage: multerS3({
-      s3: s3,
-      bucket: 'turftown',
-      key: function (req, file, cb) {
-          console.log(file);
-          cb(null, file.originalname); //use Date.now() for unique file keys
-      }
-  })
-});
 
 
  const indianRupeeComma = (value) => {
@@ -3461,10 +3443,11 @@ router.post('/test_php', (req, res, next) => {
 
 
   router
-  .post('/test_s3', function (req, res, next) {
-     upload()
-    console.log('hir')
-    res.send({data:'pass'})
+  .post('/test_s3',async function (req, res, next) {
+    console.log(__dirname,req.files) 
+    const x = await upload(req.files.image,'game')
+    console.log('hir',x)
+    res.send({data:x.Location,message:'image uploaded'})
       
       //upload(req,res,pathLocation,File,filename)
     }

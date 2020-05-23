@@ -21,7 +21,7 @@ const sh = require("shorthash");
 const _ = require('lodash');
 const combineSlots = require('../scripts/combineSlots')
 const combineRepeatSlots = require('../scripts/combineRepeatedSlots')
-const upload = require("../scripts/upload")
+const upload = require("../scripts/aws-s3")
 const aws = require('aws-sdk')
 const multerS3 = require('multer-s3');
 const AccessControl = require("../scripts/accessControl")
@@ -3461,8 +3461,8 @@ router.post('/test_php', (req, res, next) => {
 
 
   router
-  .post('/test_s3', upload1.array('image',1), function (req, res, next) {
-     
+  .post('/test_s3', function (req, res, next) {
+     upload()
     console.log('hir')
     res.send({data:'pass'})
       

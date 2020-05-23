@@ -33,7 +33,8 @@ module.exports = function ({ _id, image }) {
     const user = await verifyToken(token)
     const x = await Conversation.findById({ _id: id }).lean().then((conversation) => {
       let date = conversation.join_date.length > 0 ? conversation.join_date.filter((jd) => jd.user_id.toString() === user.id.toString()) : []
-      return Message.find({ conversation: id, created_at: { $gte: date[0].join_date } }).lean().populate('author', 'name _id').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({ $natural: 1 }).then(m => {
+      const filter  = date && date.length > 0 ? { conversation: id, created_at: { $gte: date[0].join_date } } : { conversation: id}
+      return Message.find(filter).lean().populate('author', 'name _id').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({ $natural: 1 }).then(m => {
       console.log('m',m.length)
         return m
       }).catch((e) => console.log(e))

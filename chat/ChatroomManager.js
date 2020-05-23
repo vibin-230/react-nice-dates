@@ -311,7 +311,6 @@ module.exports = function () {
 
   async function leaveChatroomGroup(game1) {
     const x = await Conversation.findById({ _id: game1.convo_id }).lean().then(conversation => {
-      const conversation = Object.assign({},conversation)
       console.log('\nmembers :',conversation.members);
           conversation.members = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())
           conversation.host = conversation.host.filter((m)=> m.toString() !== game1.user_id.toString())

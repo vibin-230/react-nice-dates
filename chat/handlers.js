@@ -76,7 +76,13 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     //   .catch(callback)  
     console.log('chatroom',chatroomName);
     client.leave(chatroomName.convo_id)
-    const x  = await chatroomManager.leaveChatroom(chatroomName)
+    let x
+    if(chatroomName.type === 'group'){
+       x  = await chatroomManager.leaveChatroomGroup(chatroomName)
+
+    }else{
+      x  = await chatroomManager.leaveChatroom(chatroomName)
+    }
     console.log(x);
     x.forEach((clientId)=>{
       const client =  clientManager.getClient(clientId)

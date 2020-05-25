@@ -81,7 +81,8 @@ io.on('connection', function (client) {
     handleGetAvailableUsers,
     handleDisconnect,
     handleJoinGame,
-    handleInvites
+    handleInvites,
+    handleTyping
   } = makeHandlers(client, clientManager, chatroomManager,io)
 
   const token = client.handshake.query.token;
@@ -101,6 +102,7 @@ io.on('connection', function (client) {
 
   client.on('invite', handleInvites)
 
+  client.on('typing', handleTyping)
   client.on('disconnect', function () {
     console.log('client disconnect...', client.id)
     handleDisconnect(token)

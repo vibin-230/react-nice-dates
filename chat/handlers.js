@@ -169,5 +169,10 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     chatroomManager.removeClient(client)
   }
 
-  return {handleLeaveChatrooms,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame}
+  async function handleTyping({ chatroomName, message } = {}, callback) {
+    client.to(chatroomName._id).emit('typing',message)
+    return callback()
+  }
+
+  return {handleLeaveChatrooms,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping}
 }

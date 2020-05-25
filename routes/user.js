@@ -21,7 +21,7 @@ const sh = require("shorthash");
 const _ = require('lodash');
 const combineSlots = require('../scripts/combineSlots')
 const combineRepeatSlots = require('../scripts/combineRepeatedSlots')
-const upload = require("../scripts/upload")
+const upload = require("../scripts/aws-s3")
 const aws = require('aws-sdk')
 const multerS3 = require('multer-s3');
 const AccessControl = require("../scripts/accessControl")
@@ -49,27 +49,9 @@ const Message = require('../models/message')
 const notify = require('../scripts/Notify')
 const NotifyArray = require('../scripts/NotifyArray')
 const multer = require('multer')
-
+var multer_upload = multer({ dest: 'uploads/' })
 var io = require('socket.io-emitter')("//127.0.0.1:6379")
 const rzp_key = require('../scripts/rzp')
-
-aws.config.update({
-  accessKeyId: 'AKIAJTNVE3VYJTMNMZXA',
-  secretAccessKey: '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',
-  region: process.env.REGION
-});
-const s3 = new aws.S3();
-
-var upload1 = multer({
-  storage: multerS3({
-      s3: s3,
-      bucket: 'turftown',
-      key: function (req, file, cb) {
-          console.log(file);
-          cb(null, file.originalname); //use Date.now() for unique file keys
-      }
-  })
-});
 
 
  const indianRupeeComma = (value) => {
@@ -308,7 +290,7 @@ router.post('/get_chatrooms/:id', [
 ], (req, res, next) => {
       //Check if user existinvites:{$in:[req.params.id]}
       //Conversation.find({members:{$in:[req.params.id]}}).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(existingConversation=>{
-      Conversation.find({ $or: [ { members: { $in: [req.params.id] } }] }).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(existingConversation=>{
+      Conversation.find({ $or: [ { members: { $in: [req.params.id] } }] }).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status ').populate('last_message').then(existingConversation=>{
         User.findOne({_id: req.params.id},{activity_log:0,followers:0,following:0}).then(user=> {
           const date = user.last_active 
           const conversation  = req.body.conversation
@@ -568,8 +550,8 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
 
 
 router.post('/host_game',verifyToken, (req, res, next) => {
-        Conversation.create({type:'game',members:[req.body.userId],created_by:req.body.userId,name:req.body.game_name,sport_name:req.body.sport_name,subtitle:req.body.subtitle,sport_type:req.body.venue_type,host:[req.body.userId],last_active:[],join_date:[{user_id:req.body.userId,join_date:new Date()}]}).then(convo=>{
-          Game.create({booking_status:'hosted',subtitle:req.body.subtitle,description:req.body.description,share_type:req.body.share_type,limit:req.body.limit,users:[req.body.userId],host:[req.body.userId],name:req.body.game_name,conversation:convo._id,sport_name:req.body.sport_name,type:req.body.venue_type,bookings:req.body.booking,booking_date:req.body.booking[0].booking_date,venue:req.body.booking[0].venue_id,start_time:req.body.booking[0].start_time,created_by:req.body.userId,created_type:'user'}).then(game=>{
+        Conversation.create({type:'game',display_picture:req.body.image,members:[req.body.userId],created_by:req.body.userId,name:req.body.game_name,sport_name:req.body.sport_name,subtitle:req.body.subtitle,sport_type:req.body.venue_type,host:[req.body.userId],last_active:[],join_date:[{user_id:req.body.userId,join_date:new Date()}]}).then(convo=>{
+          Game.create({booking_status:'hosted',image:req.body.image,subtitle:req.body.subtitle,description:req.body.description,share_type:req.body.share_type,limit:req.body.limit,users:[req.body.userId],host:[req.body.userId],name:req.body.game_name,conversation:convo._id,sport_name:req.body.sport_name,type:req.body.venue_type,bookings:req.body.booking,booking_date:req.body.booking[0].booking_date,venue:req.body.booking[0].venue_id,start_time:req.body.booking[0].start_time,created_by:req.body.userId,created_type:'user'}).then(game=>{
             Message.create({conversation:convo._id,message:`${req.name} created the game`,read_status:false,name:req.name,author:req.body.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
                 const x = users.map((u)=>{ return ({user_id:u._id,last_active:u.last_active ? u.last_active : new Date()})})
@@ -617,8 +599,10 @@ router.post('/get_group_info',verifyToken, (req, res, next) => {
   Conversation.findById({_id:req.body.conversation_id}).then((convo)=>{ 
     User.find({_id:convo.created_by}).select('name -_id').then(user=>{
     Message.find({$and:[{ "game": { $exists: true, $ne: null }},{conversation:req.body.conversation_id}]}).distinct("game").then((games)=>{
-     Game.find({_id:{ $in: games}}).lean().then(gameinfo=>{
-      let data =[{name:user,game:gameinfo}]
+     Game.find({_id:{ $in: games}}).populate('conversation').lean().then(gameinfo=>{
+      let activities = gameinfo.map((key)=>key.sport_name)
+      let uninque_activity = [...new Set(activities)]
+      let data =[{name:user,game:gameinfo,activities:uninque_activity}]
       res.send({status:"sucess",message:"activity fetched",data:data})  
      })
   }).catch(next);
@@ -972,8 +956,8 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
     Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
         User.findById({_id:req.userId}).then(user=>{
-        Conversation.create({type:'game',subtitle:req.body[0].subtitle,members:[req.userId],host:[req.userId],created_by:req.userId,name:req.body[0].game_name,sport_name:values[0].sport_name,join_date:[{user_id:req.userId,join_date:new Date()}]}).then(convo=>{
-           Game.create({booking_status:'booked',share_type:req.body[0].share_type,limit:req.body[0].limit,users:[req.userId],created_by:req.userId,created_type:'user',host:[req.userId],name:req.body[0].game_name,conversation:convo._id,subtitle:req.body[0].subtitle,sport_name:values[0].sport_name,type:values[0].venue_type,bookings:values,description:req.body[0].description,booking_date:values[0].booking_date,start_time:values[0].start_time,venue:values[0].venue_id, }).then(game=>{
+        Conversation.create({type:'game',display_picture:req.body[0].image,subtitle:req.body[0].subtitle,members:[req.userId],host:[req.userId],created_by:req.userId,name:req.body[0].game_name,sport_name:values[0].sport_name,join_date:[{user_id:req.userId,join_date:new Date()}]}).then(convo=>{
+           Game.create({booking_status:'booked',image:req.body[0].image,share_type:req.body[0].share_type,limit:req.body[0].limit,users:[req.userId],created_by:req.userId,created_type:'user',host:[req.userId],name:req.body[0].game_name,conversation:convo._id,subtitle:req.body[0].subtitle,sport_name:values[0].sport_name,type:values[0].venue_type,bookings:values,description:req.body[0].description,booking_date:values[0].booking_date,start_time:values[0].start_time,venue:values[0].venue_id, }).then(game=>{
             Message.create({conversation:convo._id,message:`${req.name} created the game`,read_status:false,name:req.name,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
                 const x = users.map((u)=>{ return ({user_id:u._id,last_active:u.last_active ? u.last_active : new Date()})})
@@ -3359,6 +3343,21 @@ router.post('/ads_list',verifyToken,AccessControl('ads', 'read'),(req, res, next
   }).catch(next);
 
 })
+
+
+
+router
+  .post('/upload_game_image/:string',multer_upload.single('image'),async function (req, res, next) {
+    if (!req.files)
+    return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
+
+    const x = await upload(req.files.image,req.params.string)
+    console.log('hir',x)
+    res.send({data:x.Location,message:'image uploaded'})
+      //upload(req,res,pathLocation,File,filename)
+    }
+  );
+
 // router.post('/ads_list',verifyToken,AccessControl('ads', 'read'),(req, res, next) => {
 //   Ads.find({$and: [{ start_date: { $lte: new Date(),},}, { end_date: {$gte: new Date(),},},{sport_type: req.body.sport_type},{ page: req.body.page}],}).lean().populate('event').populate('venue').then(ads=>{
 //       Offers.find({}).then(offers=>{
@@ -3439,11 +3438,14 @@ router.post('/test_php', (req, res, next) => {
 
 
   router
-  .post('/test_s3', upload1.array('image',1), function (req, res, next) {
-     
-    console.log('hir')
-    res.send({data:'pass'})
-      
+  .post('/test_s3',multer_upload.single('image'),async function (req, res, next) {
+    if (!req.files)
+    return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
+
+    console.log(__dirname,req.files,req.body) 
+    const x = await upload(req.files.image,'game')
+    console.log('hir',x)
+    res.send({data:x.Location,message:'image uploaded'})
       //upload(req,res,pathLocation,File,filename)
     }
   );

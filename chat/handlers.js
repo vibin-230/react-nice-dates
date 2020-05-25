@@ -170,6 +170,8 @@ module.exports = function (client, clientManager, chatroomManager,io) {
   }
 
   async function handleTyping({ chatroomName, message } = {}, callback) {
+    const clientNumber = io.sockets.adapter.rooms[chatroomName._id].length;
+    console.log("eeeee",clientNumber)
     client.to(chatroomName._id).emit('typing',message)
     return callback()
   }

@@ -7,7 +7,7 @@ const schema = new Schema({
   conversation : { type: Schema.Types.ObjectId, ref: 'conversation' },
   author : { type: Schema.Types.ObjectId, ref: 'user' },
   message: String,
-  image : String,
+  image : Array,
   video : String,
   name : String,
   read_status: {

@@ -129,6 +129,7 @@ app.get('*', function (req, res) {
 });
 
 console.log(process.env.DOMAIN)
+console.log(__dirname)
 console.log(process.env.DB_CONN)
 //Port listen
 server.listen( process.env.PORT || 3040, function(){

@@ -22,6 +22,7 @@ const _ = require('lodash');
 const combineSlots = require('../scripts/combineSlots')
 const combineRepeatSlots = require('../scripts/combineRepeatedSlots')
 const upload = require("../scripts/aws-s3")
+const uploadMultiple = require('../scripts/aws-s3-multiple')
 const aws = require('aws-sdk')
 const multerS3 = require('multer-s3');
 const AccessControl = require("../scripts/accessControl")
@@ -3366,6 +3367,18 @@ router
 
     const x = await upload(req.files.image,req.params.string)
     console.log('hir',x)
+    res.send({data:x.Location,message:'image uploaded'})
+      //upload(req,res,pathLocation,File,filename)
+    }
+  );
+
+  router
+  .post('/upload_multiple/:string',multer_upload.array('image'),async function (req, res, next) {
+    if (!req.files)
+    return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
+
+    console.log('hir',req.files.image)
+    const x = await uploadMultiple(req.files.image,req.params.string)
     res.send({data:x.Location,message:'image uploaded'})
       //upload(req,res,pathLocation,File,filename)
     }

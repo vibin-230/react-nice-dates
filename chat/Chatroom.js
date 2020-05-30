@@ -7,7 +7,6 @@ module.exports = function ({ _id, image }) {
   let chatHistory = []
 
    function broadcastMessage(message) {
-     console.log('broadcast',members,members.size,message);
     
      if(members.size>0){
        const x = {conversation:message.chat,message:message.message,type:'text',author:message.user._id,name:message.user.name}
@@ -35,7 +34,6 @@ module.exports = function ({ _id, image }) {
       let date = conversation.join_date.length > 0 ? conversation.join_date.filter((jd) => jd.user_id.toString() === user.id.toString()) : []
       const filter  = date && date.length > 0 ? { conversation: id, created_at: { $gte: date[0].join_date } } : { conversation: id}
       return Message.find(filter).lean().populate('author', 'name _id').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({ $natural: 1 }).then(m => {
-      console.log('m',m.length)
         return m
       }).catch((e) => console.log(e))
     }).catch((e) => console.log(e))

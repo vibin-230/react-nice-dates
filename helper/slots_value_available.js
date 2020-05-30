@@ -14,7 +14,6 @@ module.exports =  function slotsValueAvailable(venue,booking_history,body){
       stock[types[i]] = conf[types[i]];
     }
     if(booking_history.length>0){
-      console.log('hit');
       let total_map = body.map((requestObject,index)=>{
         let requestDate =   moment(requestObject.booking_date).format('YYYY-MM-DD')
         slots_available[requestDate] = {}  

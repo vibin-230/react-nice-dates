@@ -25,7 +25,6 @@ module.exports = function () {
     //      console.log('adadadadadadad',key);
     // });
   const a = Array.from(clients.keys()).filter(value => {
-    console.log(clients1.indexOf(clients.get(value).client.id))
       if(clients1.indexOf(clients.get(value).client.id) !== -1){
         return value
       }})
@@ -35,7 +34,6 @@ module.exports = function () {
  async function removeClient(client,token) {
     const user = await verifyToken(token)
 
-    console.log('asasasdadsasdasdassad',user)
     if(user !== 'error')
     clients.delete(user.id)
     //client.disconnect()

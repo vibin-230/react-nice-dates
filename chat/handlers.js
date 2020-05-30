@@ -47,15 +47,12 @@ module.exports = function (client, clientManager, chatroomManager,io) {
   }
 
  async function handleJoin(chatroomName, callback) {
-   console.log('hit as');
     const createEntry = () => ({ event: `establishing connection` })
     handleEvent(chatroomName, createEntry)
       .then(async function (chatroom) {
         chatroom.addUser(client)
         client.join(chatroom.getId())
-        console.log('chatroom ',chatroom);
         const token = client.handshake.query.token;
-        console.log('\token ',token);
         const x =  await chatroom.getChatHistory(chatroom.getId(),token)
         callback(chatroom.getId(), x)
       })
@@ -74,7 +71,6 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     //     callback(null)
     //   })
     //   .catch(callback)  
-    console.log('chatroom',chatroomName);
     client.leave(chatroomName.convo_id)
     let x
     if(chatroomName.type === 'group'){
@@ -83,7 +79,6 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     }else{
       x  = await chatroomManager.leaveChatroom(chatroomName)
     }
-    console.log(x);
     x.forEach((clientId)=>{
       const client =  clientManager.getClient(clientId)
      })
@@ -93,7 +88,6 @@ module.exports = function (client, clientManager, chatroomManager,io) {
 
  async function handleMessage({ chatroomName, message } = {}, callback) {
     if(chatroomName.type === 'single'){
-      console.log(io.sockets.adapter.rooms[chatroomName._id])
       const clientNumber = io.sockets.adapter.rooms[chatroomName._id].length;
       if(io.sockets.adapter.rooms[chatroomName._id].length < 2){
         chatroomManager.saveMessage(message)
@@ -109,7 +103,6 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     }else{
     const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
      const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
-     console.log('active users in the chat while sending messsage',activeUsers,'\n acitve users length',activeUsers.length)
      client.to(chatroomName._id).emit('new',message)
         client.to(chatroomName._id).emit('unread',message)
         chatroomManager.saveMessage(message) 
@@ -149,7 +142,6 @@ module.exports = function (client, clientManager, chatroomManager,io) {
   }
 
   async function handleLeaveChatrooms(obj, callback) {
-    console.log('handle leave chatrooms',obj)
     const x = await chatroomManager.serializeChatrooms(obj.user_id)
     x.forEach((conversation)=> client.leave(conversation._id))
     return callback()
@@ -163,7 +155,6 @@ module.exports = function (client, clientManager, chatroomManager,io) {
 
   function handleDisconnect(token) {
     // remove user profile
-    console.log(":socket disconnected")
     clientManager.removeClient(client,token)
     // remove member from all chatrooms
     chatroomManager.removeClient(client)
@@ -171,7 +162,6 @@ module.exports = function (client, clientManager, chatroomManager,io) {
 
   async function handleTyping({ chatroomName, message } = {}, callback) {
     const clientNumber = io.sockets.adapter.rooms[chatroomName._id].length;
-    console.log("eeeee",clientNumber)
     client.to(chatroomName._id).emit('typing',message)
     return callback()
   }

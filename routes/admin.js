@@ -588,7 +588,6 @@ router.post('/coupon_list_by_venue/:id',
 		}
 		
 	Coupon.find({ $or: [{venue:{$elemMatch:{$eq: req.params.id}}}, {event:{$elemMatch:{$eq:req.params.id}}}]}).then(coupon=>{
-		console.log('coupon_list',coupon)
 		res.status(201).send({status:"success", message:"coupons fetched", data:coupon})
 	}).catch(next)
 })

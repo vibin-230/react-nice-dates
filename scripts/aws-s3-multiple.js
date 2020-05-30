@@ -1,6 +1,7 @@
 const aws = require('aws-sdk')
 const fs = require('fs');
 const path = require('path');
+const sharp = require("sharp")
 // Enter copied or downloaded access ID and secret key here
 const ID = '';
 const SECRET = '';
@@ -35,13 +36,12 @@ const createBucket = () =>{
 }
 
  async function upload(req,folderName){
-  console.log(__dirname,req)
-  const semiTransparentRedPng = await sharp(req.data)
-  .resize(200, 200, {
-    fit: sharp.fit.inside,
-    withoutEnlargement: true
-  })
-    .toBuffer();
+  // const semiTransparentRedPng = await sharp(req.data)
+  // .resize(200, 200, {
+  //   fit: sharp.fit.inside,
+  //   withoutEnlargement: true
+  // })
+  //   .toBuffer();
   const uploadBulk = req.map((r)=>{
     const params = {
         Bucket: "turftown",
@@ -51,14 +51,33 @@ const createBucket = () =>{
       return params
   })
   
- const y = await s3.upload(uploadBulk, async function(err, data) {
-    if (err) console.log(err, err.stack);
-    else {
-      console.log('File Uploaded Successfully', data)
-      return data
-    };
-});
-const z = await y.promise()
+  const responses = await Promise.all( 
+    req.map(async (r) =>{
+      // if(err) console.log("err",err)
+      const params = {
+        Bucket: "turftown",
+        Key: folderName+'/tt-'+Date.now()+'.png', // File name you want to save as in S3
+        Body: r.data
+      };
+     const y = await s3.upload(params, async function(err, data) {
+        if (err){
+            console.log("error",err, err.stack);
+          } 
+          else {
+            console.log('File Uploaded Successfully', data)
+            return data
+          };
+      });
+      const z = await y.promise()
+      return z
+    })
+  // }
+  )
+
+
+
+ 
+const z = await responses 
 return z
 }
 

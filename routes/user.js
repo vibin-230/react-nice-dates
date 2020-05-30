@@ -615,7 +615,6 @@ router.post('/get_group_info',verifyToken, (req, res, next) => {
 
 //Upload profile picture
 router.post('/profile_picture',verifyToken, (req, res, next) => {
-  console.log('hit profile pic')
 if (!req.files)
     return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
     // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
@@ -2239,7 +2238,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
   //req.role==="super_admin"?delete filter.created_by:null
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
     EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
-      Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
+      Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate("host","name _id").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
         result = Object.values(combineSlots(booking))
         
         let event_booking_data = eventBooking
@@ -3366,20 +3365,18 @@ router
     return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
 
     const x = await upload(req.files.image,req.params.string)
-    console.log('hir',x)
     res.send({data:x.Location,message:'image uploaded'})
       //upload(req,res,pathLocation,File,filename)
     }
   );
 
   router
-  .post('/upload_multiple/:string',multer_upload.array('image'),async function (req, res, next) {
+  .post('/upload_multiple/:string',multer_upload.single("image"),async function (req, res, next) {
     if (!req.files)
     return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
 
-    console.log('hir',req.files.image)
     const x = await uploadMultiple(req.files.image,req.params.string)
-    res.send({data:x.Location,message:'image uploaded'})
+    res.send({data:x.map((key)=>key.Location),message:'image uploaded'})
       //upload(req,res,pathLocation,File,filename)
     }
   );

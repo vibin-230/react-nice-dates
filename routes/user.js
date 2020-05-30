@@ -2265,6 +2265,31 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
 })
 
 
+router.post('/games_list', verifyToken, (req, res, next) => {
+      Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
+        const x = game.map((a)=>{
+          a['status'] = false
+          return a
+        })
+        booking_data = [...x]
+
+        var groupBy = (xs, key) => {
+          return xs.reduce((rv, x) =>{
+            (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
+            return rv;
+          }, {});
+        };
+        
+        let finalResult = booking_data.sort((a, b) => moment(a.start_time).format("YYYYMMDDHmm") > moment(b.start_time).format("YYYYMMDDHmm") ? 1 : -1 )
+        const a = groupBy(finalResult,'start_time')
+        const q =   Object.entries(a).map(([key,value])=>{
+                return {title:key,data:value }
+          })
+        res.send({status:"success", message:"booking history fetched", data:q})
+    }).catch(next)
+})
+
+
 router.post('/upcoming_booking', verifyToken, (req, res, next) => {
   let past_date  = moment(req.body.todate).add(1,'month')
   let filter = {

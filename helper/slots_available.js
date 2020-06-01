@@ -1,7 +1,23 @@
 const Slots = require('../sample/slots');
 let combinedSlots = [...Slots[0].item, ...Slots[1].item, ...Slots[2].item, ...Slots[3].item];
 
+function availableTime(starttime,endTime){
+  let hours = []
+  for(let hour = starttime; hour < endTime; hour+=0.5) {
+      let a = hour - hour % 1 
+      let y = ""
+      if(hour % 1 !== 0 ){
+           y = a > 10 ? `0${a}30-0${a+1}00` : `0${a}30-0${a+1}00`
+      }
+      else { 
+           y = a > 10 ? `0${a}00-0${a}30` : `0${a}00-0${a}30`    
+  }
+}
+return hours
+}
+
 module.exports =  function slotsAvailable(venue,booking_history){
+  let x =  availableTime(venue.start_time,venue.end_time)
   if(venue.configuration.convertable){
     let conf = venue.configuration;
     let types = conf.types;
@@ -34,6 +50,14 @@ module.exports =  function slotsAvailable(venue,booking_history){
         if(available_inventory[value.timeRepresentation]){
           available_slots[value.timeRepresentation] = available_inventory[value.timeRepresentation]
         }else{
+          for(let i=0;i<types.length; i++){
+            if(x.indexOf(value.timeRepresentation) !== -1){
+            stock[types[i]] = 0;
+            }
+            else {
+              stock[types[i]] = conf[types[i]];
+            }
+          }
           available_slots[value.timeRepresentation] = Object.assign({}, stock);
         }
       })
@@ -43,6 +67,15 @@ module.exports =  function slotsAvailable(venue,booking_history){
     }else{
       let available_slots = {}
       combinedSlots.map(value=>{
+        for(let i=0;i<types.length; i++){
+          if(x.indexOf(value.timeRepresentation) !== -1){
+          stock[types[i]] = 0;
+          }
+          else {
+            stock[types[i]] = conf[types[i]];
+          }
+        }
+
           available_slots[value.timeRepresentation] = Object.assign({}, stock);
       })
       venue.slots_available = available_slots
@@ -75,6 +108,15 @@ module.exports =  function slotsAvailable(venue,booking_history){
         if(available_inventory[value.timeRepresentation]){
           available_slots[value.timeRepresentation] = available_inventory[value.timeRepresentation]
         }else{
+          for(let i=0;i<types.length; i++){
+            if(x.indexOf(value.timeRepresentation) !== -1){
+            stock[types[i]] = 0;
+            }
+            else {
+              stock[types[i]] = conf[types[i]];
+            }
+          }
+
           available_slots[value.timeRepresentation] = Object.assign({}, stock);
         }
       })
@@ -84,6 +126,14 @@ module.exports =  function slotsAvailable(venue,booking_history){
     }else{
       let available_slots = {}
       combinedSlots.map(value=>{
+        for(let i=0;i<types.length; i++){
+          if(x.indexOf(value.timeRepresentation) !== -1){
+          stock[types[i]] = 0;
+          }
+          else {
+            stock[types[i]] = conf[types[i]];
+          }
+        }
           available_slots[value.timeRepresentation] = Object.assign({}, stock);
       })
       venue.slots_available = available_slots

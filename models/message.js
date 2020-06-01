@@ -7,7 +7,7 @@ const schema = new Schema({
   conversation : { type: Schema.Types.ObjectId, ref: 'conversation' },
   author : { type: Schema.Types.ObjectId, ref: 'user' },
   message: String,
-  image : String,
+  image : Array,
   video : String,
   name : String,
   read_status: {
@@ -15,7 +15,8 @@ const schema = new Schema({
     default: false
   },
   read_by : { type: Schema.Types.ObjectId, ref: 'user' },
-  game : { type: Schema.Types.ObjectId, ref: 'game' },
+  game : [{ type: Schema.Types.ObjectId, ref: 'game' }],
+  users_share : [{ type: Schema.Types.ObjectId, ref: 'game' }],
   type:String,
 });
 

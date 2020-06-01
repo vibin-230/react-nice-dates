@@ -7,6 +7,7 @@ const SECRET = '';
 
 // The name of the bucket that you have created
 const BUCKET_NAME = 'test-bucket';
+const sharp = require('sharp');
 
 
 const s3 = new aws.S3({
@@ -36,11 +37,20 @@ const createBucket = () =>{
 
  async function upload(req,folderName){
   console.log(__dirname,req)
-  const params = {
-    Bucket: "turftown",
-    Key: '/'+folderName+'/tt-'+Date.now()+'.png', // File name you want to save as in S3
-    Body: req.data
-  };
+  
+  const semiTransparentRedPng = await sharp(req.data)
+  .resize(200, 200, {
+    fit: sharp.fit.inside,
+    withoutEnlargement: true
+  })
+    .toBuffer();
+
+    const params = {
+      Bucket: "turftown",
+      Key: folderName+'/tt-'+Date.now()+'.png', // File name you want to save as in S3
+      Body: semiTransparentRedPng
+    };  
+
  const y = await s3.upload(params, async function(err, data) {
     if (err) console.log(err, err.stack);
     else {

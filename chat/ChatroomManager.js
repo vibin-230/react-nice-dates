@@ -356,6 +356,7 @@ module.exports = function () {
     notifyOtherUsers,
     notifyAllUsers,
     saveMessage,
+    saveMessages,
     sendInvites,
     notifyAllUsersNotInTheChatroom,
     sendGroupInvites,

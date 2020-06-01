@@ -79,6 +79,7 @@ io.on('connection', function (client) {
     handleGetChatrooms,
     handleLeaveChatrooms,
     handleGetAvailableUsers,
+    handleMessageGames,
     handleDisconnect,
     handleJoinGame,
     handleInvites,
@@ -93,6 +94,7 @@ io.on('connection', function (client) {
   client.on('leave', handleLeave)
 
   client.on('message', handleMessage)
+  client.on('games_message', handleMessageGames)
 
   client.on('chatrooms', handleGetChatrooms)
 
@@ -101,7 +103,6 @@ io.on('connection', function (client) {
   client.on('availableUsers', handleGetAvailableUsers)
 
   client.on('invite', handleInvites)
-
   client.on('typing', handleTyping)
   client.on('disconnect', function () {
     console.log('client disconnect...', client.id)

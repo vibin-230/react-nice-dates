@@ -12,6 +12,7 @@ function availableTime(starttime,endTime){
       else { 
            y = a > 10 ? `0${a}00-0${a}30` : `0${a}00-0${a}30`    
   }
+  hours.push(y)
 }
 return hours
 }

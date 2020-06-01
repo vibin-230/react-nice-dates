@@ -7,11 +7,12 @@ function availableTime(starttime,endTime){
       let a = hour - hour % 1 
       let y = ""
       if(hour % 1 !== 0 ){
-           y = a > 10 ? `0${a}30-0${a+1}00` : `0${a}30-0${a+1}00`
+           y = a > 10 ? `${a}30-${a+1 == 24 ? "00" : a+1}00` : a == 10 ? `${a}30-${a+1}00` : `0${a}30-${a+1== 10 ? "" : "0"}${a+1}00`
       }
       else { 
-           y = a > 10 ? `0${a}00-0${a}30` : `0${a}00-0${a}30`    
+           y = a > 10 ? `${a}00-${a}30` : a == 10 ? `${a}00-${a}30` :  `0${a}00-0${a}30`    
   }
+  hours.push(y)
 }
 return hours
 }
@@ -51,7 +52,7 @@ module.exports =  function slotsAvailable(venue,booking_history){
           available_slots[value.timeRepresentation] = available_inventory[value.timeRepresentation]
         }else{
           for(let i=0;i<types.length; i++){
-            if(x.indexOf(value.timeRepresentation) !== -1){
+            if(x.indexOf(value.timeRepresentation) == -1){
             stock[types[i]] = 0;
             }
             else {
@@ -68,7 +69,7 @@ module.exports =  function slotsAvailable(venue,booking_history){
       let available_slots = {}
       combinedSlots.map(value=>{
         for(let i=0;i<types.length; i++){
-          if(x.indexOf(value.timeRepresentation) !== -1){
+          if(x.indexOf(value.timeRepresentation) == -1){
           stock[types[i]] = 0;
           }
           else {
@@ -109,7 +110,7 @@ module.exports =  function slotsAvailable(venue,booking_history){
           available_slots[value.timeRepresentation] = available_inventory[value.timeRepresentation]
         }else{
           for(let i=0;i<types.length; i++){
-            if(x.indexOf(value.timeRepresentation) !== -1){
+            if(x.indexOf(value.timeRepresentation) == -1){
             stock[types[i]] = 0;
             }
             else {
@@ -127,7 +128,7 @@ module.exports =  function slotsAvailable(venue,booking_history){
       let available_slots = {}
       combinedSlots.map(value=>{
         for(let i=0;i<types.length; i++){
-          if(x.indexOf(value.timeRepresentation) !== -1){
+          if(x.indexOf(value.timeRepresentation) == -1){
           stock[types[i]] = 0;
           }
           else {

@@ -31,7 +31,9 @@ const schema = new Schema({
   primary_venue: {
     default: true,
     type:Boolean
-  }
+  },
+  start_time:{type:Double,default:0},
+  end_time:{type:Double,default:24}
 });
 
 //Model

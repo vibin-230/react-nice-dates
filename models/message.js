@@ -16,7 +16,7 @@ const schema = new Schema({
   },
   read_by : { type: Schema.Types.ObjectId, ref: 'user' },
   game : { type: Schema.Types.ObjectId, ref: 'game' },
-  users_share : [{ type: Schema.Types.ObjectId, ref: 'game' }],
+  user : { type: Schema.Types.ObjectId, ref: 'user' },
   type:String,
 });
 

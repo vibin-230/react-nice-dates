@@ -83,7 +83,8 @@ io.on('connection', function (client) {
     handleDisconnect,
     handleJoinGame,
     handleInvites,
-    handleTyping
+    handleTyping,
+    handleUpdateImage
   } = makeHandlers(client, clientManager, chatroomManager,io)
 
   const token = client.handshake.query.token;
@@ -95,6 +96,7 @@ io.on('connection', function (client) {
 
   client.on('message', handleMessage)
   client.on('games_message', handleMessageGames)
+  client.on('update_messages', handleUpdateImage)
 
   client.on('chatrooms', handleGetChatrooms)
 

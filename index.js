@@ -94,7 +94,7 @@ io.on('connection', function (client) {
   client.on('leave', handleLeave)
 
   client.on('message', handleMessage)
-  client.on('message', handleMessageGames)
+  client.on('games_message', handleMessageGames)
 
   client.on('chatrooms', handleGetChatrooms)
 

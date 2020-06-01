@@ -7,7 +7,6 @@ function availableTime(starttime,endTime){
       let a = hour - hour % 1 
       let y = ""
       if(hour % 1 !== 0 ){
-        console.log("A",a)
            y = a > 10 ? `${a}30-${a+1 == 24 ? "00" : a+1}00` : a == 10 ? `${a}30-${a+1}00` : `0${a}30-${a+1== 10 ? "" : "0"}${a+1}00`
       }
       else { 
@@ -20,7 +19,6 @@ return hours
 
 module.exports =  function slotsAvailable(venue,booking_history){
   let x =  availableTime(venue.start_time,venue.end_time)
-  console.log("X",x)
   if(venue.configuration.convertable){
     let conf = venue.configuration;
     let types = conf.types;

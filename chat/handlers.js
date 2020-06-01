@@ -86,6 +86,21 @@ module.exports = function (client, clientManager, chatroomManager,io) {
 
   }
 
+  
+
+  async function handleMessageGames({ chatroomName, message } = {}, callback) {
+        console.log('hit',chatroomName,message);
+        const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
+        const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
+        client.to(chatroomName._id).emit('new',message)
+        client.to(chatroomName._id).emit('unread',message)
+        console.log('hit 2');
+        chatroomManager.saveMessages(message) 
+        chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
+        callback()
+    
+  }
+
  async function handleMessage({ chatroomName, message } = {}, callback) {
     if(chatroomName.type === 'single'){
       const clientNumber = io.sockets.adapter.rooms[chatroomName._id].length;
@@ -166,5 +181,5 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     return callback()
   }
 
-  return {handleLeaveChatrooms,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping}
+  return {handleLeaveChatrooms,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames}
 }

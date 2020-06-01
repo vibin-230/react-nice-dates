@@ -51,7 +51,7 @@ module.exports =  function slotsAvailable(venue,booking_history){
           available_slots[value.timeRepresentation] = available_inventory[value.timeRepresentation]
         }else{
           for(let i=0;i<types.length; i++){
-            if(x.indexOf(value.timeRepresentation) !== -1){
+            if(x.indexOf(value.timeRepresentation) == -1){
             stock[types[i]] = 0;
             }
             else {
@@ -68,7 +68,7 @@ module.exports =  function slotsAvailable(venue,booking_history){
       let available_slots = {}
       combinedSlots.map(value=>{
         for(let i=0;i<types.length; i++){
-          if(x.indexOf(value.timeRepresentation) !== -1){
+          if(x.indexOf(value.timeRepresentation) == -1){
           stock[types[i]] = 0;
           }
           else {
@@ -109,7 +109,7 @@ module.exports =  function slotsAvailable(venue,booking_history){
           available_slots[value.timeRepresentation] = available_inventory[value.timeRepresentation]
         }else{
           for(let i=0;i<types.length; i++){
-            if(x.indexOf(value.timeRepresentation) !== -1){
+            if(x.indexOf(value.timeRepresentation) == -1){
             stock[types[i]] = 0;
             }
             else {
@@ -127,7 +127,7 @@ module.exports =  function slotsAvailable(venue,booking_history){
       let available_slots = {}
       combinedSlots.map(value=>{
         for(let i=0;i<types.length; i++){
-          if(x.indexOf(value.timeRepresentation) !== -1){
+          if(x.indexOf(value.timeRepresentation) == -1){
           stock[types[i]] = 0;
           }
           else {

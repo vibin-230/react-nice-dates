@@ -3399,9 +3399,11 @@ router
   .post('/upload_multiple/:string',multer_upload.single("image"),async function (req, res, next) {
     if (!req.files)
     return res.status(400).send({status:"failure", errors:{file:'No files were uploaded.'}});
+    console.log(Array.isArray(req.files.image))
 
-    const x = await uploadMultiple(req.files.image,req.params.string)
-    res.send({data:x.map((key)=>key.Location),message:'image uploaded'})
+    const x =  Array.isArray(req.files.image) ? await uploadMultiple(req.files.image,req.params.string) : await upload(req.files.image,req.params.string)
+    const data = Array.isArray(req.files.image) ? x.map((key)=>key.Location) : x.Location
+    res.send({data:data,message:'image uploaded'})
       //upload(req,res,pathLocation,File,filename)
     }
   );

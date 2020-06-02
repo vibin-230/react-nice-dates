@@ -111,7 +111,7 @@ module.exports = function () {
         Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},{last_message:message1[message1.length-1]._id,last_updated:new Date()}).then(conversation=>{
         }).catch((e)=>{console.log(e)});
         }).catch((e)=>{console.log(e)});
-      }
+    }
 
 
     function notifyOtherUsers(chatroom,message){
@@ -151,6 +151,12 @@ module.exports = function () {
       }).catch((e)=>console.log(e))
     }
 
+    function updateImage(message){
+      Message.insertMany(message).then(message1=>{
+        Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},{last_message:message1[message1.length-1]._id,last_updated:new Date(),display_picture:message.image}).then(conversation=>{
+        }).catch((e)=>{console.log(e)});
+        }).catch((e)=>{console.log(e)});
+    }
 
    async function sendInvites(game_id,conversation,ids,user_id,town){
    const x = await  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: ids } } ,$set:{town:town,town_date:new Date()} } ).then(game=> {
@@ -360,6 +366,7 @@ module.exports = function () {
     sendInvites,
     notifyAllUsersNotInTheChatroom,
     sendGroupInvites,
-    joinGame
+    joinGame,
+    updateImage
   }
 }

@@ -92,10 +92,10 @@ module.exports = function (client, clientManager, chatroomManager,io) {
         console.log('hit',chatroomName,message);
         const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
         const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
-        client.to(chatroomName._id).emit('new',message)
-        client.to(chatroomName._id).emit('unread',message)
-        console.log('hit 2');
-        chatroomManager.saveMessages(message) 
+        const x = await chatroomManager.saveMessagesAndPopulate(message) 
+        console.log('hit 2',x);
+        client.to(chatroomName._id).emit('new',x)
+        client.to(chatroomName._id).emit('unread',x)
         chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
         callback()
     

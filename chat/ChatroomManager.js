@@ -146,7 +146,7 @@ module.exports = function () {
       })
 
        User.find({_id: {$in : filter}},{activity_log:0}).then(user=> {
-       const messages1 = chatroom.type === 'single' ?  `${message.name} : ${message.message.length <=0 && message.type === 'game' ?'game':message.message.length <=0 && message.type === 'image'?"image":message.message}`:  `${message.name} @ ${chatroom.name} : ${message.message.length <=0 && message.type === 'game' ?'game':message.message.length <=0 && message.type === 'image'?"image":message.message}`
+       const messages1 = chatroom.type === 'single' ?  `${message.name} : ${message.message}`:  `${message.name} @ ${chatroom.name} : ${message.message}`
        NotifyArray(user.map((u)=>u.device_token),messages1,'Turf Town')
       }).catch((e)=>console.log(e))
     }

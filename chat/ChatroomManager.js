@@ -113,6 +113,21 @@ module.exports = function () {
         }).catch((e)=>{console.log(e)});
     }
 
+    async function saveMessagesAndPopulate(message) {
+
+     const x = await Message.insertMany(message).then(message1=>{
+                   return Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},{last_message:message1[message1.length-1]._id,last_updated:new Date()}).then(conversation=>{
+                      const message_ids = message1.map(m=>m._id)
+                      return Message.find({_id: {$in : message_ids}}).lean().populate('author', 'name _id').populate('user', 'name _id profile_picture phone').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({ $natural: 1 }).then(m => {
+                        return m
+        }).catch((e)=>{console.log(e)});
+      }).catch((e)=>{console.log(e)});
+        }).catch((e)=>{console.log(e)});
+
+        return x
+
+    }
+
 
     function notifyOtherUsers(chatroom,message){
       const filter = chatroom.members.filter((member)=> member.toString() !== message.author.toString())
@@ -364,6 +379,7 @@ module.exports = function () {
     saveMessage,
     saveMessages,
     sendInvites,
+    saveMessagesAndPopulate,
     notifyAllUsersNotInTheChatroom,
     sendGroupInvites,
     joinGame,

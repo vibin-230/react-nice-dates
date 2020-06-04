@@ -34,7 +34,7 @@ module.exports = function ({ _id, image }) {
       let date = conversation.join_date.length > 0 ? conversation.join_date.filter((jd) => jd.user_id.toString() === user.id.toString()) : []
       const filter  = date && date.length > 0 ? { conversation: id, created_at: { $gte: date[0].join_date } } : { conversation: id}
       return Message.find(filter).lean().populate('author', 'name _id').populate('user', 'name _id profile_picture phone').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({_id:-1}).limit(10).then(m => {
-        return m.reverse()
+        return m
       }).catch((e) => console.log(e))
     }).catch((e) => console.log(e))
 

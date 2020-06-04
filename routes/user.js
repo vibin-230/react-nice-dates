@@ -185,6 +185,16 @@ router.post('/mark_read/:id', [
 }).catch(next); 
 });
 
+
+router.post('/show_more_messages/:id', [
+  verifyToken,
+], (req, res, next) => {
+  console.log('last activity',req.body.message);
+    Message.find({conversation:req.params.id,created_at: { $lt: req.body.message.created_at }}).lean().populate('author', 'name _id').populate('user', 'name _id profile_picture phone').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({_id:-1}).limit(10).then(m => {
+      res.status(201).send({status: "success", message: "Conversation messages success",data:m})
+    }).catch(next); 
+});
+
 router.post('/stop_force_update_all', [
   verifyToken,
 ], (req, res, next) => {

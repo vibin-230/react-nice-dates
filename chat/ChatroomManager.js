@@ -314,6 +314,30 @@ module.exports = function () {
     return x
   }
 
+  async function leaveChatroomWithConversationId(game1) {
+    const x = await Conversation.findById({ _id: game1.convo_id }).lean().then(conversation => {
+      conversation.members = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())
+      conversation.host = conversation.host.filter((m)=> m.toString() !== game1.user_id.toString())
+      return Game.findOne({ conversation: game1.convo_id }, { $set: conversation }).then(game => {
+        game.users = game.users.filter((m)=> m.toString() !== game1.user_id.toString())
+        return Game.findByIdAndUpdate({ _id: game1.convo_id }, { $set: game }).then(conversation2 => {
+         return Conversation.findByIdAndUpdate({ _id: game1.convo_id }, { $set: conversation }).then(conversation2 => {
+          return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token').then(conversation2 => {
+            return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
+            saveMessage({ conversation: conversation2._id, message: `${user.name} has left the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() })
+            const token_list  = conversation2.members.filter((key) => key._id.toString() !== game1.user_id.toString())
+            const device_token_list = token_list.map((e) => e.device_token)
+            NotifyArray(device_token_list, `${user.name} has left the game`, `Game Left`)
+            return conversation2.members.map((e) => e._id)
+   }).catch(error => console.log(error))
+}).catch(error => console.log(error))
+}).catch(error => console.log(error))
+}).catch(error => console.log(error))
+}).catch(error => console.log(error))
+}).catch(error => console.log(error))
+return x
+  }
+
   async function leaveChatroomGroup(game1) {
     const x = await Conversation.findById({ _id: game1.convo_id }).lean().then(conversation => {
           conversation.members = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())
@@ -379,6 +403,7 @@ module.exports = function () {
     saveMessage,
     saveMessages,
     sendInvites,
+    leaveChatroomWithConversationId,
     saveMessagesAndPopulate,
     notifyAllUsersNotInTheChatroom,
     sendGroupInvites,

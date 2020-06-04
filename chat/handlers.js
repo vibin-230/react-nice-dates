@@ -76,7 +76,13 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     if(chatroomName.type === 'group'){
        x  = await chatroomManager.leaveChatroomGroup(chatroomName)
 
-    }else{
+    }
+     else if(chatroomName.type === 'game_without_game_id'){
+      x  = await chatroomManager.leaveChatroomWithConversationId(chatroomName)
+
+   }
+    
+    else{
       x  = await chatroomManager.leaveChatroom(chatroomName)
     }
     x.forEach((clientId)=>{
@@ -130,6 +136,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     }else{
     const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
      const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
+     console.log(object);
      client.to(chatroomName._id).emit('new',message)
         client.to(chatroomName._id).emit('unread',message)
         chatroomManager.saveMessage(message) 

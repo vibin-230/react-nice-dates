@@ -136,8 +136,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     }else{
     const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
      const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
-     console.log(object);
-     client.to(chatroomName._id).emit('new',message)
+       client.to(chatroomName._id).emit('new',message)
         client.to(chatroomName._id).emit('unread',message)
         chatroomManager.saveMessage(message) 
         chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)

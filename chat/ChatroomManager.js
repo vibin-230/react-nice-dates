@@ -320,7 +320,7 @@ module.exports = function () {
       conversation.host = conversation.host.filter((m)=> m.toString() !== game1.user_id.toString())
       return Game.findOne({ conversation: game1.convo_id }, { $set: conversation }).then(game => {
         game.users = game.users.filter((m)=> m.toString() !== game1.user_id.toString())
-        return Game.findByIdAndUpdate({ _id: game1.convo_id }, { $set: game }).then(conversation2 => {
+        return Game.findOneAndUpdate({ conversation: game1.convo_id }, { $set: game }).then(conversation2 => {
          return Conversation.findByIdAndUpdate({ _id: game1.convo_id }, { $set: conversation }).then(conversation2 => {
           return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token').then(conversation2 => {
             return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {

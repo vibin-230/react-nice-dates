@@ -113,6 +113,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     client.to(chatroomName._id).emit('new',message)
     client.to(chatroomName._id).emit('unread',message)
     chatroomManager.updateImage(message)
+    console.log('hit in handle update image');
     // chatroomManager.saveMessages(message) 
     chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
     callback()
@@ -194,7 +195,6 @@ module.exports = function (client, clientManager, chatroomManager,io) {
   }
 
   async function handleTyping({ chatroomName, message } = {}, callback) {
-    const clientNumber = io.sockets.adapter.rooms[chatroomName._id].length;
     client.to(chatroomName._id).emit('typing',message)
     return callback()
   }

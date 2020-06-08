@@ -147,7 +147,7 @@ module.exports = function () {
       })
       // console.log('filter',filter,message);
        User.find({_id: {$in : filter}},{activity_log:0}).then(user=> {
-        const s = message.image.length > 1 ?'s':''
+        const s = message && message.image && message.image.length > 1 ?'s':''
         const messages = message.type === 'image' ? `${message.image.length} image${s} has been shared`: `${message.message}`
           const messages1 = chatroom.type === 'single' ?  `${message.name} : ${messages}`:  `${message.name} @ ${chatroom.name} : ${messages}`
        NotifyArray(user.map((u)=>u.device_token),messages1,"Turf Town")

@@ -164,14 +164,14 @@ module.exports = function () {
       })
 
        User.find({_id: {$in : filter}},{activity_log:0}).then(user=> {
-        console.log('hit user');
+        console.log('hit user',message);
         if(Array.isArray(message)){
           const s = message.length > 1 ?'s':''
           const messages = message[0].type === 'image' ? `${message.length} image${s}` : message[0].type === 'game' ? `${message.length} game${s} has been shared`:`${message.length} profile${s} has been shared`
           const messages1 = chatroom.type === 'single' ?  `${message[0].name} : ${messages}`:  `${message[0].name} @ ${chatroom.name} : ${messages}`
           NotifyArray(user.map((u)=>u.device_token),messages1,'Turf Town')
         }else{
-          const s = message.image.length > 1 ?'s':''
+          const s = message && message.image && message.image.length > 1 ?'s':''
           console.log('hit user');
           console.log(message);
           const messages = message.type === 'image' ? `${message.image.length} image${s} has been shared`: `${message.message}`

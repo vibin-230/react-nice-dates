@@ -299,7 +299,7 @@ router.post('/get_chatrooms/:id', [
         User.findOne({_id: req.params.id},{activity_log:0,followers:0,following:0}).then(user=> {
           const date = user.last_active 
           const conversation  = req.body.conversation
-          
+          console.log(existingConversation)
          Message.aggregate([{ $match: { $and: [  { conversation: {$in:existingConversation.map((c)=>c._id)} },{read_status:false} ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"},"user" : {"$push" : "$author"}}}]).then((message)=>{
          const x =  existingConversation.map((c)=> {
             c['time'] = 0
@@ -2245,15 +2245,19 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
     created_by:req.userId,
   }
   let booking_ids = []
+
   //req.role==="super_admin"?delete filter.created_by:null
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
     EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
       Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate("host","name _id").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
         result = Object.values(combineSlots(booking))
+        const open_games = game.filter((g)=>{
+         return g.share_type === 'open' || (g.share_type === 'closed' && g.host.some(key=>key._id.toString() === req.userId.toString()))
+        })
         
         let event_booking_data = eventBooking
         let event = event_booking_data.reverse()
-        booking_data = [...game]
+        booking_data = req.body.type && req.body.type === 'host' ?[...open_games]:[...game]
 
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{

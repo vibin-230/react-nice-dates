@@ -449,6 +449,7 @@ router.post('/send_otp',[
     axios.get(process.env.PHP_SERVER+'/textlocal/otp.php?otp='+otp+'&phone='+phone)
     .then(response => {
       console.log(response.data)
+      console.log("send otp")
         if(response.data.status === 'success')
         {
           if(user)

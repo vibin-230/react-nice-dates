@@ -255,6 +255,7 @@ router.post('/send_otp',[
 
   let phone = 91+req.body.phone;
   let otp   = Math.floor(999 + Math.random() * 9000);
+  console.log('pass hit ')
   User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
     axios.get(process.env.PHP_SERVER+'/textlocal/otp.php?otp='+otp+'&phone='+phone)
     .then(response => {

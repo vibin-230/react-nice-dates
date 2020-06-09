@@ -6,15 +6,26 @@ function makeHandleEvent(client, clientManager, chatroomManager,io) {
   }
 
    async function ensureValidChatroom(chatroomName) {
-     if(chatroomName.type === 'single')
-    return await chatroomManager.getChatroomByName(chatroomName)
-    else
-    return await chatroomManager.getGroupOrGameName(chatroomName)
+     console.log('hot',chatroomName);
+     if(chatroomName.type === 'single'){
+
+       const x = await chatroomManager.getChatroomByName(chatroomName)
+       console.log('total',x)
+       return x
+     }
+    else{
+      console.log('hit');
+      const x = await chatroomManager.getGroupOrGameName(chatroomName)
+      console.log('total',x)
+      return  x
+    }
+   
   }
 
   async function ensureValidChatroomAndUserSelected(chatroomName) {
     const chatroom = await ensureValidChatroom(chatroomName)
     const user = await ensureUserSelected(client.id)
+    console.log('chatroom',chatroom,user);
     return Promise.resolve({chatroom,user})
     
   }
@@ -54,7 +65,8 @@ module.exports = function (client, clientManager, chatroomManager,io) {
         client.join(chatroom.getId())
         const token = client.handshake.query.token;
         const x =  await chatroom.getChatHistory(chatroom.getId(),token)
-        callback(chatroom.getId(), x)
+        const y = await chatroomManager.checkIfUserExited({_id:chatroom.getId()})
+        callback(chatroom.getId(),x,y)
       })
       .catch(callback)
   }
@@ -124,12 +136,19 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     if(chatroomName.type === 'single'){
       const clientNumber = io.sockets.adapter.rooms[chatroomName._id].length;
       if(io.sockets.adapter.rooms[chatroomName._id].length < 2){
+        console.log('handlers',chatroomName)
+        if(chatroomName && chatroomName.exit){
+          chatroomManager.registerExitedUser(chatroomName,message)
+        }
         chatroomManager.saveMessage(message)
         chatroomManager.notifyAllUsers(chatroomName, message)
         callback()
       }else{
         client.to(chatroomName._id).emit('new',message)
         client.to(chatroomName._id).emit('unread',message)
+        if(chatroomName && chatroomName.exit){
+          chatroomManager.registerExitedUser(chatroomName,message)
+        }
         //chatroomManager.notifyAllUsers(chatroomName, message)
         chatroomManager.saveMessage(message) 
         callback()

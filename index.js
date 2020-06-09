@@ -17,7 +17,10 @@ const makeHandlers = require('./chat/handlers')
 const clientManager = ClientManager()
 const chatroomManager = ChatroomManager()
 const redis = require("redis").createClient;
-const io = require('socket.io')(server)
+const io = require('socket.io')(server,{
+  pingTimeout:60000,
+  pingInterval:30000,
+})
 const port = 6379;
 const host = '127.0.0.1';
 const  adapter = require('socket.io-redis');
@@ -88,6 +91,7 @@ io.on('connection', function (client) {
   } = makeHandlers(client, clientManager, chatroomManager,io)
 
   const token = client.handshake.query.token;
+  console.log(token);
   clientManager.addClient(client,token)
   client.on('register', handleRegister)
   client.on('join', handleJoin)
@@ -111,6 +115,7 @@ io.on('connection', function (client) {
     handleDisconnect(token)
   })
   client.on('disconnect1',function(){
+
         handleDisconnect(token)
   })
   client.on('error', function (err) {

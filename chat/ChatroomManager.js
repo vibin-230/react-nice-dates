@@ -60,13 +60,42 @@ module.exports = function () {
              }).catch((e)=>{console.log(e)});
      return x
   }
+
+
+  async function checkIfUserExited(chatroomName){
+    const filter  = chatroomName && chatroomName._id ? {_id:chatroomName._id,type:'single'} :{members:chatroomName.members,type:'single'}
+    console.log('filter ',filter);
+    const s = await Conversation.find(filter).limit(1).lean().then(ec=>{
+      console.log(ec[0]);
+      if(ec && ec.length > 0){
+        const existingConversation = ec[0]
+        console.log('existing conversation 1',existingConversation.exit_list);
+        const exit_user_id = existingConversation && existingConversation.exit_list && existingConversation.exit_list.length > 0 ? existingConversation.exit_list[existingConversation.exit_list.length-1].user_id : []
+        console.log('existing conversation 2',exit_user_id);
+        if( exit_user_id.length>0 && existingConversation.exit_list && existingConversation.exit_list.length>0 && existingConversation.members.some((m)=>m.toString() === exit_user_id.toString())){
+          existingConversation.members =  existingConversation.members.concat(exit_user_id)
+          existingConversation['exit'] = true
+          console.log('existing conversation 4',exit_user_id);
+        }else{
+          existingConversation['exit'] = false
+          console.log('existing conversation 3',exit_user_id);
+        }
+        console.log('existing conversation 3',existingConversation);
+        return ([existingConversation]); 
+      }else{
+        let x = []
+        return x
+      }
+     
+      }).catch()
+      return s
+     // return []
+  }
   
 
   async function getChatroomByName(chatroomName) {
-    const s = await Conversation.find({members:chatroomName.members,type:'single'}).limit(1).lean().then(existingConversation=>{
-      return (existingConversation); 
-      }).catch()
-      console.log(s)
+      const s = await checkIfUserExited(chatroomName)
+      console.log('s',s);
       if(s.length <= 0){
         const convo = await saveConvo({type:'single',members:chatroomName.members,created_by:chatroomName.members[0],to:chatroomName.members[1]})
         chatrooms.set(convo._id,Chatroom(convo))
@@ -105,6 +134,26 @@ module.exports = function () {
       }).catch((e)=>{console.log(e)});
       }).catch((e)=>{console.log(e)});
     }
+
+    function registerExitedUser(conversation,message) {
+      console.log('register Exited user',conversation)
+        conversation.join_date = conversation.join_date.map((c)=>{
+          console.log(conversation.exit_list[0].user_id);
+          if(conversation.exit_list.some((a)=>a.user_id.toString() === c.user_id.toString())){
+            c['join_date'] = message.created_at
+            return c
+          }else{
+            return c
+          }
+        })
+
+        Conversation.findByIdAndUpdate({_id:conversation._id},conversation).then(conversation=>{
+          console.log(conversation)
+
+        }).catch((e)=>{console.log(e)});
+      }
+
+    
 
     function saveMessages(message) {
       Message.insertMany(message).then(message1=>{
@@ -167,7 +216,7 @@ module.exports = function () {
         console.log('hit user',message);
         if(Array.isArray(message)){
           const s = message.length > 1 ?'s':''
-          const messages = message[0].type === 'image' ? `${message.length} image${s}` : message[0].type === 'game' ? `${message.length} game${s} has been shared`:`${message.length} profile${s} has been shared`
+          const messages = message[0].type === 'image' ? `${message.length} image${s}` : message[0].type === 'game' ? `${message.length} game${s} has been shared`:`${message.length} townie${s} has been shared`
           const messages1 = chatroom.type === 'single' ?  `${message[0].name} : ${messages}`:  `${message[0].name} @ ${chatroom.name} : ${messages}`
           NotifyArray(user.map((u)=>u.device_token),messages1,'Turf Town')
         }else{
@@ -311,6 +360,7 @@ module.exports = function () {
          game.users = game.users.filter((m)=> m.toString() !== game1.user_id.toString())
           conversation.members = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())
           conversation.host = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString()).length > 0 ? conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())[0] : []
+         conversation && conversation.exit_list ? conversation.exit_list.concat({user_id:game1.user_id,timeStamp:new Date()}) : conversation['exit_list'] = [{user_id:game1.user_id,timeStamp:new Date()}]
           return Game.findByIdAndUpdate({ _id: game1.game_id }, { $set: game }).then(game2 => {
              return Conversation.findByIdAndUpdate({ _id: game1.convo_id }, { $set: conversation }).then(conversation2 => {
               return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token').then(conversation2 => {
@@ -333,6 +383,8 @@ module.exports = function () {
     const x = await Conversation.findById({ _id: game1.convo_id }).lean().then(conversation => {
       conversation.members = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())
       conversation.host = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString()).length > 0 ? conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())[0] : []
+      conversation && conversation.exit_list ? conversation.exit_list.concat({user_id:game1.user_id,timeStamp:new Date()}) : conversation['exit_list'] = [{user_id:game1.user_id,timeStamp:new Date()}]
+
       return Game.findOne({ conversation: game1.convo_id }).then(game => {
         game.users = game.users.filter((m)=> m.toString() !== game1.user_id.toString())
         return Game.findOneAndUpdate({ conversation: game1.convo_id }, { $set: game }).then(conversation2 => {
@@ -357,10 +409,11 @@ return x
     const x = await Conversation.findById({ _id: game1.convo_id }).lean().then(conversation => {
           conversation.members = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())
           conversation.host = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString()).length > 0 ? conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())[0] : []
-             return Conversation.findByIdAndUpdate({ _id: game1.convo_id }, { $set: conversation }).then(conversation2 => {
+          conversation && conversation.exit_list ? conversation.exit_list.concat({user_id:game1.user_id,timeStamp:new Date()}) : conversation['exit_list'] = [{user_id:game1.user_id,timeStamp:new Date()}]
+          return Conversation.findByIdAndUpdate({ _id: game1.convo_id }, { $set: conversation }).then(conversation2 => {
               return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token').then(conversation2 => {
                 return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
-                saveMessage({ conversation: conversation2._id, message: `${user.name} has left the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() })
+                conversation2.type !== 'single' && saveMessage({ conversation: conversation2._id, message: `${user.name} has left the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() })
                 const token_list  = conversation2.members.filter((key) => key._id.toString() !== game1.user_id.toString())
                 const device_token_list = token_list.map((e) => e.device_token)
                 //NotifyArray(device_token_list, `${user.name} has left the game`, `Game Left`)
@@ -411,10 +464,12 @@ return x
     getChatroomByName,
     getGroupOrGameName,
     leaveChatroom,
+    checkIfUserExited,
     serializeChatrooms,
     leaveChatroomGroup,
     notifyOtherUsers,
     notifyAllUsers,
+    registerExitedUser,
     saveMessage,
     saveMessages,
     sendInvites,

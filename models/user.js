@@ -26,12 +26,12 @@ const schema = new Schema({
   followers:[{type:mongoose.Schema.Types.ObjectId, ref:'user'}],
   following:[{type:mongoose.Schema.Types.ObjectId, ref:'user'}],
   requests:[{
-    user:{type:mongoose.Schema.Types.ObjectId, ref:'User'},
+    user:{type:mongoose.Schema.Types.ObjectId, ref:'user'},
     username:{type:String,default:''},
     timeStamp: { type : Date , default:moment()},
   }],
   sent_requests:[{
-    user:{type:mongoose.Schema.Types.ObjectId, ref:'User'},
+    user:{type:mongoose.Schema.Types.ObjectId, ref:'user'},
     username:{type:String,default:''},
     timeStamp: { type : Date , default:moment()},
   }],

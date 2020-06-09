@@ -295,13 +295,23 @@ router.post('/get_chatrooms/:id', [
 ], (req, res, next) => {
       //Check if user existinvites:{$in:[req.params.id]}
       //Conversation.find({members:{$in:[req.params.id]}}).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(existingConversation=>{
-      Conversation.find({ $or: [ { members: { $in: [req.params.id] } }] }).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status ').populate('last_message').then(existingConversation=>{
-        User.findOne({_id: req.params.id},{activity_log:0,followers:0,following:0}).then(user=> {
+      Conversation.find({ $or: [ { members: { $in: [req.params.id] } }] }).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status ').populate('exit_list.user_id','name _id profile_picture last_active online_status status ').populate('last_message').then(existingConversation=>{
+       const exit_convo_list = existingConversation.filter((e)=> e.type === 'single' && e.exit_list && e.exit_list.length > 0 )
+       
+       console.log('exit list',exit_convo_list); 
+       User.findOne({_id: req.params.id},{activity_log:0,followers:0,following:0}).then(user=> {
           const date = user.last_active 
           const conversation  = req.body.conversation
          Message.aggregate([{ $match: { $and: [  { conversation: {$in:existingConversation.map((c)=>c._id)} },{read_status:false} ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"},"user" : {"$push" : "$author"}}}]).then((message)=>{
          const x =  existingConversation.map((c)=> {
             c['time'] = 0
+            c['exit'] = false
+            if(exit_convo_list && exit_convo_list.length > 0 && c.exit_list && c.exit_list.length > 0){
+              const x =  exit_convo_list.filter((e)=> e.exit_list && c.exit_list.length>0 && e._id.toString() === c._id.toString())
+             const user  =  x.length > 0 ? x[0].exit_list[x[0].exit_list.length -1 ] : []
+             c.members =  user ? c.members.concat(user.user_id) : c.members
+             c['exit'] = true
+            }
             const filter = c && c.last_active ? c.last_active.filter((c)=> c && c.user_id && c.user_id.toString() === req.params.id.toString()) : []
             message.length > 0 && message.map((m)=>{
                if(m._id.toString() === c._id.toString() && conversation.indexOf(c._id.toString()) === -1 && m.user[m.user.length-1].toString() !== user._id.toString() ) { 

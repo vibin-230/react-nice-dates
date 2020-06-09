@@ -19,6 +19,11 @@ const schema = new Schema({
   unread:Number,
   members: [{ type: Schema.Types.ObjectId, ref: 'user' }] ,
   type:String,
+  exit_list:[{
+    user_id:{type:mongoose.Schema.Types.ObjectId, ref:'user'},
+    //username:{type:String,default:''},
+    timeStamp: { type : Date , default:new Date()},
+  }],
   join_date:Array
 });
 

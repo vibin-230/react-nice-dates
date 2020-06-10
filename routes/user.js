@@ -302,6 +302,7 @@ router.post('/get_chatrooms/:id', [
        User.findOne({_id: req.params.id},{activity_log:0,followers:0,following:0}).then(user=> {
           const date = user.last_active 
           const conversation  = req.body.conversation
+          console.log(existingConversation)
          Message.aggregate([{ $match: { $and: [  { conversation: {$in:existingConversation.map((c)=>c._id)} },{read_status:false} ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"},"user" : {"$push" : "$author"}}}]).then((message)=>{
          const x =  existingConversation.map((c)=> {
             c['time'] = 0

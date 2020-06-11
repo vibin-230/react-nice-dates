@@ -261,14 +261,14 @@ module.exports = function () {
                                return   User.findOne({_id: user_id },{activity_log:0}).lean().then(sender=> {
                                  return   User.find({_id: { $in :ids } },{activity_log:0}).lean().then(user=> {
 
-                                      let messages =  new_convos.map((nc)=>{ return {conversation:nc._id,game:game_id,message:`New Game (${game1.name}) invitation from ${sender.name}`,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
-                                        let messages1 = conversation2.map((nc)=>{ return {conversation:nc._id,game:game_id,message:`New Game (${game1.name}) invitation from ${sender.name}`,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
+                                      let messages =  new_convos.map((nc)=>{ return {conversation:nc._id,game:game_id,message:`Game (${game1.name}) invite`,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
+                                        let messages1 = conversation2.map((nc)=>{ return {conversation:nc._id,game:game_id,message:`Game (${game1.name}) invite`,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
                                           let finalMessages = messages.concat(messages1)
                                             return Message.insertMany(finalMessages).then(message1=>{
                                               const cids = message1.map((m)=>m.conversation)
                                               return Conversation.updateMany({_id:{ $in: cids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
                                                 const device_token_list=user.map((e)=>e.device_token)
-                                                  NotifyArray(device_token_list,`New Game (${game1.name}) invitation from ${sender.name}`,'Turftown Game Request')
+                                                  NotifyArray(device_token_list,`New Game (${game1.name}) from ${sender.name}`,'Turftown Game Request')
                                                     return user.map((e)=>e._id)
               //res.send({status:"success", message:"invitation sent"})
     }).catch((e)=>console.log(e));

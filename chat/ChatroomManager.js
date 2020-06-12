@@ -238,6 +238,16 @@ module.exports = function () {
         }).catch((e)=>{console.log(e)});
     }
 
+  function updateGroup(message,members){
+      Message.insertMany(message).then(message1=>{    
+        Conversation.findById({_id:message.conversation}).then(conversation=>{
+          conversation.members = conversation.members.length > 0 ?  conversation.members.concat(members) : members
+        Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},conversation ).then(conversation=>{
+        }).catch((e)=>{console.log(e)});
+        }).catch((e)=>{console.log(e)});
+      }).catch((e)=>{console.log(e)});
+    }
+
    async function sendInvites(game_id,conversation,ids,user_id,town){
    const x = await  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: ids } } ,$set:{town:town,town_date:new Date()} } ).then(game=> {
                 return Conversation.findByIdAndUpdate({_id: conversation},{ $addToSet: { invites: { $each: ids } } }).then(conversation1=> {
@@ -478,6 +488,7 @@ return x
     notifyAllUsersNotInTheChatroom,
     sendGroupInvites,
     joinGame,
-    updateImage
+    updateImage,
+    updateGroup
   }
 }

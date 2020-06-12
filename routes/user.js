@@ -295,12 +295,12 @@ router.post('/get_chatrooms/:id', [
       Conversation.find({ $or: [ { members: { $in: [req.params.id] } }] }).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status ').populate('exit_list.user_id','name _id profile_picture last_active online_status status ').populate('last_message').then(existingConversation=>{
        const exit_convo_list = existingConversation.filter((e)=> e.type === 'single' && e.exit_list && e.exit_list.length > 0 )
        
-       console.log('exit list',exit_convo_list); 
        User.findOne({_id: req.params.id},{activity_log:0,followers:0,following:0}).then(user=> {
           const date = user.last_active 
           const conversation  = req.body.conversation
-         Message.aggregate([{ $match: { $and: [  { conversation: {$in:existingConversation.map((c)=>c._id)} },{read_status:false} ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"},"user" : {"$push" : "$author"}}}]).then((message)=>{
-         const x =  existingConversation.map((c)=> {
+         Message.aggregate([{ $match: { $and: [  { conversation: {$in:existingConversation.map((c)=>c._id)} } ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"},"user" : {"$push" : "$author"}}}]).then((message)=>{
+          console.log('message',message);
+          const x =  existingConversation.map((c)=> {
             c['time'] = 0
             c['exit'] = false
             if(exit_convo_list && exit_convo_list.length > 0 && c.exit_list && c.exit_list.length > 0){
@@ -313,15 +313,18 @@ router.post('/get_chatrooms/:id', [
             message.length > 0 && message.map((m)=>{
                if(m._id.toString() === c._id.toString() && conversation.indexOf(c._id.toString()) === -1 && m.user[m.user.length-1].toString() !== user._id.toString() ) { 
                 const time = m.time.filter((timestamp)=>{ 
+                  console.log(filter[0],'asdasdasdasd');
                   if( filter.length > 0 &&  moment(filter[0].last_active).isSameOrBefore(timestamp)) {
                     return timestamp
                   }
                 })  
+              
                 c['time'] = time.length 
                }
                })
              return c
           })
+       // console.log(x);
           res.status(201).send({status: "success", message: "user collected",data:_.orderBy(x, ['last_updated', 'time','created_at'], ['desc', 'desc','desc'])})
 
         }).catch(next)
@@ -335,8 +338,10 @@ router.post('/get_town_games/', [
 ], (req, res, next) => {
   User.findById({_id: req.userId},{}).lean().then(user=> {
     console.log(req.body);
-    const filter = req.body.sport === 'all' ? { created_by: { $in: user.following } ,town:true, host:{ $in: user.following },start_time:{$gte:req.body.date}} :{ created_by: { $in: user.following } ,town:true,sport_name:req.body.sport, host:{ $in: user.following }, start_time:{$gte:new Date()}}
-      Game.find(filter).lean().populate('conversation').populate('host','_id name profile_picture phone').populate('users','_id name profile_picture phone').populate('invites','_id name profile_picture phone').then(existingConversation=>{
+    let following = user.following
+        following = following.concat(req.userId)
+    const filter = req.body.sport === 'all' ? { created_by: { $in: following } ,town:true, host:{ $in: following },start_time:{$gte:req.body.date}} :{ created_by: { $in: following } ,town:true,sport_name:req.body.sport, host:{ $in: following }, start_time:{$gte:new Date()}}
+    Game.find(filter).lean().populate('conversation').populate('host','_id name profile_picture phone').populate('users','_id name profile_picture phone').populate('invites','_id name profile_picture phone').then(existingConversation=>{
         console.log('existing conversation',existingConversation);  
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{

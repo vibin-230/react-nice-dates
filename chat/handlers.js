@@ -132,6 +132,19 @@ module.exports = function (client, clientManager, chatroomManager,io) {
 
 }
 
+async function handleUpdateGroup({ chatroomName, message,members } = {}, callback) {
+  const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
+  const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
+  client.to(chatroomName._id).emit('new',message)
+  client.to(chatroomName._id).emit('unread',message)
+  chatroomManager.updateGroup(message,members)
+  // chatroomManager.saveMessages(message) 
+  chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
+
+  callback()
+
+}
+
  async function handleMessage({ chatroomName, message } = {}, callback) {
     if(chatroomName.type === 'single'){
       const clientNumber = io.sockets.adapter.rooms[chatroomName._id].length;
@@ -218,5 +231,5 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     return callback()
   }
 
-  return {handleLeaveChatrooms,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames}
+  return {handleLeaveChatrooms,handleUpdateGroup,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames}
 }

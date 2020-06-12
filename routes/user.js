@@ -299,7 +299,7 @@ router.post('/get_chatrooms/:id', [
           const date = user.last_active 
           const conversation  = req.body.conversation
          Message.aggregate([{ $match: { $and: [  { conversation: {$in:existingConversation.map((c)=>c._id)} } ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"},"user" : {"$push" : "$author"}}}]).then((message)=>{
-          console.log('message',message);
+          console.log(message);
           const x =  existingConversation.map((c)=> {
             c['time'] = 0
             c['exit'] = false
@@ -311,10 +311,11 @@ router.post('/get_chatrooms/:id', [
             }
             const filter = c && c.last_active ? c.last_active.filter((c)=> c && c.user_id && c.user_id.toString() === req.params.id.toString()) : []
             message.length > 0 && message.map((m)=>{
-               if(m._id.toString() === c._id.toString() && conversation.indexOf(c._id.toString()) === -1 && m.user[m.user.length-1].toString() !== user._id.toString() ) { 
-                const time = m.time.filter((timestamp)=>{ 
-                  console.log(filter[0],'asdasdasdasd');
-                  if( filter.length > 0 &&  moment(filter[0].last_active).isSameOrBefore(timestamp)) {
+               if(m._id.toString() === c._id.toString() && conversation.indexOf(c._id.toString()) === -1  ) { 
+                const time = m.time.filter((timestamp,index)=>{ 
+                  
+
+                  if( filter.length > 0 &&  moment(filter[0].last_active).isSameOrBefore(timestamp) && m.user[index].toString() !== req.params.id.toString()) {
                     return timestamp
                   }
                 })  

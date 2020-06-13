@@ -369,7 +369,7 @@ router.post('/save_token_device', [
       //Check if user exist
       console.log(req.body);
       User.findOne({_id: req.userId},{activity_log:0}).then(user=> {
-        User.findByIdAndUpdate({_id: req.userId},{device_token:req.body.device_token.token, os:req.body.device_token.os}).then(user1=>{
+        User.findByIdAndUpdate({_id: req.userId},{device_token:req.body.device_token, os:req.body.os}).then(user1=>{
           //notify(user,`Hey ${user.name} , Welcome to Turftown`)
           if (user1) {
           res.status(201).send({status: "success", message: "user collected",data:user})

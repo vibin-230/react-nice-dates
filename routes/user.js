@@ -624,15 +624,17 @@ router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
 router.post('/get_group_info',verifyToken, (req, res, next) => {
   Conversation.findById({_id:req.body.conversation_id}).then((convo)=>{ 
     User.find({_id:convo.created_by}).select('name -_id').then(user=>{
+      Message.find({$and:[{ "image": { $exists: true, $ne: null }},{conversation:req.body.conversation_id},{type:"image"} ]}).distinct("image").then((image)=>{
     Message.find({$and:[{ "game": { $exists: true, $ne: null }},{conversation:req.body.conversation_id}]}).distinct("game").then((games)=>{
      Game.find({_id:{ $in: games}}).populate('conversation').lean().then(gameinfo=>{
       let activities = gameinfo.map((key)=>key.sport_name)
       let uninque_activity = [...new Set(activities)]
-      let data =[{name:user,game:gameinfo,activities:uninque_activity}]
+      let data =[{name:user,game:gameinfo,activities:uninque_activity,image:image}]
       res.send({status:"sucess",message:"activity fetched",data:data})  
      })
   }).catch(next);
 }).catch(next); 
+}).catch(next)
 }).catch(next)
 });
 

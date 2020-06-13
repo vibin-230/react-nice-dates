@@ -238,17 +238,34 @@ module.exports = function () {
         }).catch((e)=>{console.log(e)});
     }
 
-  function updateGroup(message,members){
-      Message.insertMany(message).then(message1=>{    
-        Conversation.findById({_id:message.conversation}).then(conversation=>{
-          conversation.members = conversation.members.length > 0 ?  conversation.members.concat(members) : members
-        Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},conversation ).then(conversation=>{
-        }).catch((e)=>{console.log(e)});
-        }).catch((e)=>{console.log(e)});
-      }).catch((e)=>{console.log(e)});
+    async function makeTownTrue(game_id,town){
+      console.log(game_id,town);
+     const x = await  Game.findByIdAndUpdate({_id:game_id},{town:town}).then(game=>{
+      console.log('pass',game_id,town);
+
+      return game
+    }).catch((e)=>{console.log(e)});
+    return x
     }
 
-   async function sendInvites(game_id,conversation,ids,user_id,town){
+    
+
+ async function updateGroup(message,members){
+   const x = await  Message.insertMany(message).then(message1=>{    
+      return  Conversation.findById({_id:message.conversation}).then(conversation=>{
+          conversation.members = conversation.members.length > 0 ?  conversation.members.concat(members) : members
+          return Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},conversation ).then(conversation=>{
+            return Conversation.findById({_id:message1[message1.length-1].conversation}).populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(conversation=>{
+              return {conversation:conversation,message:message1}
+            }).catch((e)=>{console.log(e)});
+      }).catch((e)=>{console.log(e)});
+
+        }).catch((e)=>{console.log(e)});
+      }).catch((e)=>{console.log(e)});
+      return x
+    }
+
+   async function sendInvites(game_id,conversation,ids,user_id,town,client){
    const x = await  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: ids } } ,$set:{town:town,town_date:new Date()} } ).then(game=> {
                 return Conversation.findByIdAndUpdate({_id: conversation},{ $addToSet: { invites: { $each: ids } } }).then(conversation1=> {
                   return Game.findById({_id: game_id}).then(game1=> {
@@ -272,13 +289,18 @@ module.exports = function () {
                                  return   User.find({_id: { $in :ids } },{activity_log:0}).lean().then(user=> {
 
                                       let messages =  new_convos.map((nc)=>{ return {conversation:nc._id,game:game_id,message:`Game (${game1.name}) invite`,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
-                                        let messages1 = conversation2.map((nc)=>{ return {conversation:nc._id,game:game_id,message:`Game (${game1.name}) invite`,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
+                                        let messages1 = conversation2.forEach((nc)=>{ 
+                                          console.log(nc._id);
+                                            client.to(nc._id.toString()).emit('new',{conversation:nc._id,game:game_id,message:`Game (${game1.name}) invite`,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()})
+                                          return {conversation:nc._id,game:game_id,message:`Game (${game1.name}) invite`,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
                                           let finalMessages = messages.concat(messages1)
                                             return Message.insertMany(finalMessages).then(message1=>{
+                                              
                                               const cids = message1.map((m)=>m.conversation)
+
                                               return Conversation.updateMany({_id:{ $in: cids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
                                                 const device_token_list=user.map((e)=>e.device_token)
-                                                  NotifyArray(device_token_list,`New Game (${game1.name}) from ${sender.name}`,'Turftown Game Request')
+                                                  NotifyArray(device_token_list,`Game (${game1.name}) from ${sender.name}`,'Turftown Game Request')
                                                     return user.map((e)=>e._id)
               //res.send({status:"success", message:"invitation sent"})
     }).catch((e)=>console.log(e));
@@ -294,7 +316,7 @@ module.exports = function () {
     }
 
 
-    async function sendGroupInvites(game_id,conversation,group_ids,user_id,name,town){
+    async function sendGroupInvites(game_id,conversation,group_ids,user_id,name,town,client){
     const x = await Conversation.find({_id: {$in : group_ids}}).lean().populate('members','_id name device_token').then(conversation1=> {
          return  Game.findById({_id: game_id}).then(ac_game=> {
       
@@ -310,12 +332,12 @@ module.exports = function () {
           return Conversation.findByIdAndUpdate({_id: conversation},{ $addToSet: { invites: { $each: result } } }).then(conversation12=> {
             return   User.findOne({_id: user_id },{activity_log:0}).lean().then(sender=> {
               return   User.find({_id: { $in :result } },{activity_log:0}).lean().then(user=> {
-                 let finalMessages = conversation1.map((nc)=>{ return {conversation:nc._id,game:game_id,message:`New Game (${name}) invitation from ${sender.name}`,name:sender.name,read_status:false,read_by:group_ids[0],author:user_id,type:'game',created_at:new Date()}}) 
+                 let finalMessages = conversation1.map((nc)=>{ return {conversation:nc._id,game:game_id,message:` Game (${name}) from ${sender.name}`,name:sender.name,read_status:false,read_by:group_ids[0],author:user_id,type:'game',created_at:new Date()}}) 
                  return Message.insertMany(finalMessages).then(message1=>{
                   const cids = message1.map((m)=>m.conversation)
                   return Conversation.updateMany({_id:{ $in: cids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
                     const device_token_list=user.map((e)=>e.device_token)
-                                                  NotifyArray(device_token_list,`New Game (${name}) invitation from ${sender.name}`,'Turftown Game Request')
+                                                  NotifyArray(device_token_list,`Game (${name}) from ${sender.name}`,'Turftown Game Request')
                                                     return user.map((e)=>e._id)
                  // const x = await  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: ids } } }).then(game=> {
       //  }).catch((e)=>console.log(e));
@@ -483,6 +505,7 @@ return x
     saveMessage,
     saveMessages,
     sendInvites,
+    makeTownTrue,
     leaveChatroomWithConversationId,
     saveMessagesAndPopulate,
     notifyAllUsersNotInTheChatroom,

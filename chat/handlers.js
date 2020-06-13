@@ -137,11 +137,11 @@ async function handleUpdateGroup({ chatroomName, message,members } = {}, callbac
   const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
   client.to(chatroomName._id).emit('new',message)
   client.to(chatroomName._id).emit('unread',message)
-  chatroomManager.updateGroup(message,members)
+  const x  = await chatroomManager.updateGroup(message,members)
   // chatroomManager.saveMessages(message) 
   chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
 
-  callback()
+  callback(x)
 
 }
 
@@ -181,15 +181,23 @@ async function handleUpdateGroup({ chatroomName, message,members } = {}, callbac
 
   async function handleInvites(game,callback){
     
-    let x = game.ids.length > 0 && await chatroomManager.sendInvites(game.game._id,game.game.conversation,game.ids,game.user_id,game.town)
-    let y = game.convo_ids.length > 0 && await chatroomManager.sendGroupInvites(game.game._id,game.game.conversation,game.convo_ids,game.user_id,game.game.name,game.town)
-     x.length > 0 && x.forEach((clientId)=>{
-     const client =  clientManager.getClient(clientId)
-    })
-    y.length > 0 && y.forEach((clientId)=>{
-      const client =  clientManager.getClient(clientId)
-     })
-    callback()
+    if(game.ids.length > 0  || game.convo_ids.length > 0){
+      let x = game.ids.length > 0 && await chatroomManager.sendInvites(game.game._id,game.game.conversation,game.ids,game.user_id,game.town,client)
+      let y = game.convo_ids.length > 0 && await chatroomManager.sendGroupInvites(game.game._id,game.game.conversation,game.convo_ids,game.user_id,game.game.name,game.town,client)
+      x.length > 0 && x.forEach((clientId)=>{
+        const client =  clientManager.getClient(clientId)
+       })
+       y.length > 0 && y.forEach((clientId)=>{
+         const client =  clientManager.getClient(clientId)
+        })
+        callback()
+    } else{
+      console.log('hit ')
+      const z = await chatroomManager.makeTownTrue(game.game_id,game.town)
+      callback(z)
+    }
+   
+   
   }
 
 

@@ -944,8 +944,8 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         let SLOT_BOOKED_USER =`Hey ${values[0].name}! Thank you for using Turf Town!\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${Math.round(result[0].booking_amount)}\nBalance to be paid : ${Math.round(balance)}`
         let SLOT_BOOKED_MANAGER = `You have recieved a TURF TOWN booking from ${values[0].name} ( ${values[0].phone} ) \nBooking Id: ${booking_id}\nVenue: ${venue_name}, ${venue_area}\nSport: ${sport_name}(${venue_type})\nDate and Time: ${datetime}\nPrice: ${Math.round(result[0].amount)}\nAmount Paid: ${Math.round(result[0].booking_amount)}\nVenue Discount: ${Math.round(result[0].commission)}\nTT Coupon: ${Math.round(result[0].coupon_amount)}\nAmount to be collected: ${Math.round(balance)}` //490618
         let sender = "TRFTWN"
-        SendMessage(phone,sender,SLOT_BOOKED_USER) // sms to user
-        SendMessage(manger_numbers.join(","),sender,SLOT_BOOKED_MANAGER) // sms to user 
+        // SendMessage(phone,sender,SLOT_BOOKED_USER) // sms to user
+        // SendMessage(manger_numbers.join(","),sender,SLOT_BOOKED_MANAGER) // sms to user 
         // axios.get(process.env.PHP_SERVER+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&manager_phone='+manager_phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount)
         // .then(response => {
         //   console.log(response.data)
@@ -971,17 +971,17 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         venue_name:venue.venue.name
       }
 
-      let to_mail = `${values[0].email}, rajasekar@turftown.in,support@turftown.in`
-      // console.log(mailBody)
-      ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
-        mail("support@turftown.in", to_mail,"Venue Booked","test",html,response=>{
-          if(response){
-            console.log('success')
-          }else{
-            console.log('failed')
-          }
-        })
-      })
+      // let to_mail = `${values[0].email}, rajasekar@turftown.in,support@turftown.in`
+      // // console.log(mailBody)
+      // ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
+      //   mail("support@turftown.in", to_mail,"Venue Booked","test",html,response=>{
+      //     if(response){
+      //       console.log('success')
+      //     }else{
+      //       console.log('failed')
+      //     }
+      //   })
+      // })
       
       //Activity Log
       let activity_log = {

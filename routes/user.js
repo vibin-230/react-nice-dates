@@ -466,21 +466,13 @@ router.post('/send_otp',[
           {
             if(user.email)
             {
-              if(req.body.phone === '8136948537') {
-                User.findOneAndUpdate({phone: req.body.phone},{otp:'7484'}).then(user=> {
-                  User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
-                  res.status(201).send({status:"success",message:"new user",otp:user.otp})
+              User.findOneAndUpdate({phone: req.body.phone},{otp:req.body.phone === '8136948537' ? '7484':otp}).then(user=> {
+                User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
+                  res.status(201).send({status:"success",message:"existing user",otp:otp,data:user})
                 })
               })
-              }else{
-                User.findOneAndUpdate({phone: req.body.phone},{otp:otp}).then(user=> {
-                  User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
-                    res.status(201).send({status:"success",message:"existing user",otp:otp,data:user})
-                  })
-                })
-              }
             }else{
-              User.findOneAndUpdate({phone: req.body.phone},{otp:otp}).then(user=> {
+              User.findOneAndUpdate({phone: req.body.phone},{otp:req.body.phone === '8136948537' ? '7484':otp}).then(user=> {
                 User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
                   res.status(201).send({status:"success",message:"existing user",otp:otp,data:user})
                 })
@@ -610,7 +602,7 @@ router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
           Game.findOne({conversation:req.params.conversation_id}).lean().populate('host','_id name profile_picture phone').populate('users','_id name profile_picture phone').populate('invites','_id name profile_picture phone').then(game=>{
             Venue.findById({_id:game.bookings[0].venue_id}).then(venue =>{
               let game1 = Object.assign({},game)
-              //console.log('pass',game1);
+              console.log('pass',game1);
               game1["venue"] = venue.venue
               game1["rating"] = venue.rating
               game1['final'] = _.xor(game1.users,game1.host)

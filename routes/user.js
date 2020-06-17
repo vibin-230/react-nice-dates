@@ -297,12 +297,11 @@ router.post('/get_chatrooms/:id', [
       //Conversation.find({members:{$in:[req.params.id]}}).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(existingConversation=>{
       Conversation.find({ $or: [ { members: { $in: [req.params.id] } }] }).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status ').populate('exit_list.user_id','name _id profile_picture last_active online_status status ').populate('last_message').then(existingConversation=>{
        const exit_convo_list = existingConversation.filter((e)=> e.type === 'single' && e.exit_list && e.exit_list.length > 0 )
-       
+       //console.log(exit_convo_list)
        User.findOne({_id: req.params.id},{activity_log:0,followers:0,following:0}).then(user=> {
           const date = user.last_active 
           const conversation  = req.body.conversation
          Message.aggregate([{ $match: { $and: [  { conversation: {$in:existingConversation.map((c)=>c._id)} } ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"},"user" : {"$push" : "$author"}}}]).then((message)=>{
-          console.log(message);
           const x =  existingConversation.map((c)=> {
             c['time'] = 0
             c['exit'] = false
@@ -758,11 +757,11 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
                 Booking.findById({_id:booking._id}).then(booking=>{
                   if(booking.booking_status==="blocked"){
                     Booking.findByIdAndUpdate({_id:booking._id},{booking_status:"timeout"}).then(booking=>{
-                      console.log('cancelled')
+                      console.log('cancelled',booking_id)
                     })
                   }
                 }).catch(next)
-              }, 135000);
+              }, 60000);
             }).catch(error=>{
               reject()
             })
@@ -813,6 +812,78 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
   })
   })
 })
+
+
+router.post('/host_block_slot/:id', verifyToken, (req, res, next) => {
+  function BlockSlot(body,id,booking_id){
+    return new Promise(function(resolve, reject){
+      Venue.findById({_id:req.params.id}).then(venue=>{
+        let venue_id;
+        if(venue.secondary_venue){
+          venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
+        }else{
+          venue_id = [venue._id.toString()]
+        }
+        console.log('pass2',body.booking_date,body.slot_time,body.venue_type)
+        Booking.find({ venue:venue.venue.name, venue_id:{$in:venue_id}, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
+          let conf = venue.configuration;
+          let types = conf.types;
+          let base_type = conf.base_type;
+          let inventory = {};
+          let convertable;
+          for(let i=0;i<types.length; i++){
+            inventory[types[i]] = conf[types[i]];
+          }
+          if(venue.configuration.convertable){
+            if(booking_history.length>0){
+              let available_inventory = Object.values(booking_history).map(booking =>{
+                inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.venue_type])
+                for(let i=0;i<types.length-1; i++){
+                inventory[types[i]] = parseInt(inventory[base_type] / conf.ratio[types[i]])
+                }
+              })
+            }
+            convertable = inventory[body.venue_type]<=0
+            console.log('as',convertable)
+            console.log(inventory[body.venue_type],booking_history.length)
+          }else{
+            convertable = inventory[body.venue_type]<=booking_history.length
+            console.log('con',convertable,booking_history,)
+          }
+          console.log(convertable);
+          if(convertable){
+            res.status(409).send({status:"failed", message:"slot already booked"})
+          }else{
+            console.log('booking ',body);
+              resolve(body)
+
+              setTimeout(() => {
+                Booking.findById({_id:body.booking_id}).then(booking=>{
+                  if(booking.booking_status==="blocked"){
+                    Booking.findByIdAndUpdate({_id:booking._id},{booking_status:"timeout"}).then(booking=>{
+                      console.log('cancelled')
+                    })
+                  }
+                }).catch(next)
+              }, 135000);
+            
+          }
+        }).catch(next)
+      }).catch(next)
+    }).catch(next)
+  }
+  let promisesToRun = [];
+    for(let i=0;i<req.body.length;i++)
+    {
+      promisesToRun.push(BlockSlot(req.body[i],req.body[i]._id, req.body[i].booking_id))
+    }
+    Promise.all(promisesToRun).then(values => {
+      Booking.updateMany({booking_id:values[0].booking_id},{$set:{booking_status:"blocked"}}).then(booking=>{
+      res.send({status:"success", message:"slot blocked", data:values})
+    }).catch(next)
+
+  })
+  })
 
 
 

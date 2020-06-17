@@ -12,7 +12,7 @@ function makeHandleEvent(client, clientManager, chatroomManager,io) {
        return x
      }
     else{
-      const x = await chatroomManager.getGroupOrGameName(chatroomName)
+      const x = await chatroomManager.getGroupOrGameName(chatroomName,client)
       return  x
     }
    
@@ -89,6 +89,10 @@ module.exports = function (client, clientManager, chatroomManager,io) {
       x  = await chatroomManager.leaveChatroomWithConversationId(chatroomName)
 
    }
+   else if(chatroomName.type === 'kick_player'){
+    x  = await chatroomManager.kickPlayer(chatroomName)
+
+ }
     else{
       x  = await chatroomManager.leaveChatroom(chatroomName)
     }

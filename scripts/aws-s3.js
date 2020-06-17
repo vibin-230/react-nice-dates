@@ -38,17 +38,17 @@ const createBucket = () =>{
  async function upload(req,folderName){
   console.log(__dirname,req)
   
-  const semiTransparentRedPng = await sharp(req.data)
-  .resize(200, 200, {
-    fit: sharp.fit.inside,
-    withoutEnlargement: true
-  })
-    .toBuffer();
+  // const semiTransparentRedPng = await sharp(req.data)
+  // .resize(200, 200, {
+  //   fit: sharp.fit.inside,
+  //   withoutEnlargement: true
+  // })
+  //   .toBuffer();
 
     const params = {
       Bucket: "turftown",
       Key: folderName+'/tt-'+Date.now()+'.png', // File name you want to save as in S3
-      Body: semiTransparentRedPng
+      Body: req.data
     };  
 
  const y = await s3.upload(params, async function(err, data) {

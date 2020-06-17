@@ -83,6 +83,7 @@ io.on('connection', function (client) {
     handleLeaveChatrooms,
     handleGetAvailableUsers,
     handleMessageGames,
+    handleSlotAvailability,
     handleDisconnect,
     handleJoinGame,
     handleInvites,
@@ -111,6 +112,7 @@ io.on('connection', function (client) {
 
   client.on('invite', handleInvites)
   client.on('typing', handleTyping)
+  client.on('slots_available',handleSlotAvailability)
   client.on('disconnect', function () {
     console.log('client disconnect...', client.id)
     handleDisconnect(token)

@@ -6,17 +6,13 @@ function makeHandleEvent(client, clientManager, chatroomManager,io) {
   }
 
    async function ensureValidChatroom(chatroomName) {
-     console.log('hot',chatroomName);
      if(chatroomName.type === 'single'){
 
        const x = await chatroomManager.getChatroomByName(chatroomName)
-       console.log('total',x)
        return x
      }
     else{
-      console.log('hit');
       const x = await chatroomManager.getGroupOrGameName(chatroomName)
-      console.log('total',x)
       return  x
     }
    
@@ -25,7 +21,6 @@ function makeHandleEvent(client, clientManager, chatroomManager,io) {
   async function ensureValidChatroomAndUserSelected(chatroomName) {
     const chatroom = await ensureValidChatroom(chatroomName)
     const user = await ensureUserSelected(client.id)
-    console.log('chatroom',chatroom,user);
     return Promise.resolve({chatroom,user})
     
   }
@@ -84,6 +79,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     //   })
     //   .catch(callback)  
     client.leave(chatroomName.convo_id)
+    client.to(chatroomName.convo_id).emit('unread',{})
     let x
     if(chatroomName.type === 'group'){
        x  = await chatroomManager.leaveChatroomGroup(chatroomName)
@@ -93,7 +89,6 @@ module.exports = function (client, clientManager, chatroomManager,io) {
       x  = await chatroomManager.leaveChatroomWithConversationId(chatroomName)
 
    }
-    
     else{
       x  = await chatroomManager.leaveChatroom(chatroomName)
     }
@@ -107,11 +102,9 @@ module.exports = function (client, clientManager, chatroomManager,io) {
   
 
   async function handleMessageGames({ chatroomName, message } = {}, callback) {
-        console.log('hit',chatroomName,message);
         const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
         const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
         const x = await chatroomManager.saveMessagesAndPopulate(message) 
-        console.log('hit 2',x);
         client.to(chatroomName._id).emit('new',x)
         client.to(chatroomName._id).emit('unread',x)
         chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
@@ -125,10 +118,21 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     client.to(chatroomName._id).emit('new',message)
     client.to(chatroomName._id).emit('unread',message)
     chatroomManager.updateImage(message)
-    console.log('hit in handle update image');
     // chatroomManager.saveMessages(message) 
     chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
     callback()
+
+}
+
+async function handleSlotAvailability({ game, booking } = {}, callback) {
+  const clientNumber = io.sockets.adapter.rooms[game.conversation];
+  const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
+  // client.to(chatroomName._id).emit('new',message)
+  // client.to(chatroomName._id).emit('unread',message)
+  chatroomManager.handleSlotAvailability(game,booking)
+  // chatroomManager.saveMessages(message) 
+  chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
+  callback()
 
 }
 
@@ -149,19 +153,17 @@ async function handleUpdateGroup({ chatroomName, message,members } = {}, callbac
     if(chatroomName.type === 'single'){
       const clientNumber = io.sockets.adapter.rooms[chatroomName._id].length;
       if(io.sockets.adapter.rooms[chatroomName._id].length < 2){
-        console.log('handlers',chatroomName)
         if(chatroomName && chatroomName.exit){
           chatroomManager.registerExitedUser(chatroomName,message)
         }
         chatroomManager.saveMessage(message)
         chatroomManager.notifyAllUsers(chatroomName, message)
+        
         callback()
       }else{
+         const x = await chatroomName && chatroomName.exit && chatroomManager.registerExitedUser(chatroomName,message)
         client.to(chatroomName._id).emit('new',message)
         client.to(chatroomName._id).emit('unread',message)
-        if(chatroomName && chatroomName.exit){
-          chatroomManager.registerExitedUser(chatroomName,message)
-        }
         //chatroomManager.notifyAllUsers(chatroomName, message)
         chatroomManager.saveMessage(message) 
         callback()
@@ -184,6 +186,7 @@ async function handleUpdateGroup({ chatroomName, message,members } = {}, callbac
     if(game.ids.length > 0  || game.convo_ids.length > 0){
       let x = game.ids.length > 0 && await chatroomManager.sendInvites(game.game._id,game.game.conversation,game.ids,game.user_id,game.town,client)
       let y = game.convo_ids.length > 0 && await chatroomManager.sendGroupInvites(game.game._id,game.game.conversation,game.convo_ids,game.user_id,game.game.name,game.town,client)
+    
       x.length > 0 && x.forEach((clientId)=>{
         const client =  clientManager.getClient(clientId)
        })
@@ -192,7 +195,6 @@ async function handleUpdateGroup({ chatroomName, message,members } = {}, callbac
         })
         callback()
     } else{
-      console.log('hit ')
       const z = await chatroomManager.makeTownTrue(game.game_id,game.town)
       callback(z)
     }
@@ -239,5 +241,5 @@ async function handleUpdateGroup({ chatroomName, message,members } = {}, callbac
     return callback()
   }
 
-  return {handleLeaveChatrooms,handleUpdateGroup,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames}
+  return {handleSlotAvailability,handleLeaveChatrooms,handleUpdateGroup,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames}
 }

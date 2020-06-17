@@ -468,13 +468,13 @@ router.post('/send_otp',[
             {
               User.findOneAndUpdate({phone: req.body.phone},{otp:req.body.phone === '8136948537' ? '7484':otp}).then(user=> {
                 User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
-                  res.status(201).send({status:"success",message:"existing user",otp:otp,data:user})
+                  res.status(201).send({status:"success",message:"existing user",otp:req.body.phone === '8136948537' ? '7484':otp,data:user})
                 })
               })
             }else{
               User.findOneAndUpdate({phone: req.body.phone},{otp:req.body.phone === '8136948537' ? '7484':otp}).then(user=> {
                 User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
-                  res.status(201).send({status:"success",message:"existing user",otp:otp,data:user})
+                  res.status(201).send({status:"success",message:"existing user",otp:req.body.phone === '8136948537' ? '7484':otp,data:user})
                 })
               })
               // User.create({phone:req.body.phone,otp:otp}).then(user=>{
@@ -484,7 +484,7 @@ router.post('/send_otp',[
           }else{
             if(req.body.phone === '8136948537') {
             User.create({phone:req.body.phone,otp:req.body.phone === '8136948537' ? '7484':otp}).then(user=>{
-              res.status(201).send({status:"success",message:"new user",otp:user.otp})
+              res.status(201).send({status:"success",message:"new user",otp:req.body.phone === '8136948537' ? '7484':user.otp})
             })
           }
             else{

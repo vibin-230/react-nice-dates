@@ -91,6 +91,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
    }
    else if(chatroomName.type === 'kick_player'){
     x  = await chatroomManager.kickPlayer(chatroomName)
+    client.to(chatroomName.convo_id).emit('unread',{})
 
  }
     else{

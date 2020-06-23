@@ -4,6 +4,8 @@ const Conversation = require('../models/conversation');
 const Game = require('../models/game');
 const Message = require('../models/message');
 const User = require('../models/user');
+const Venue = require('../models/venue');
+const Booking  = require('./../models/booking')
 const notify = require('../scripts/Notify')
 const SlotsAvailable = require("../helper/slots_available")
 const NotifyArray = require('../scripts/NotifyArray')
@@ -495,22 +497,132 @@ module.exports = function () {
     return x
   }
 
-
-  async function handleSlotAvailability(game,booking1){
-    let booking = booking1[0]
-    const x = await Game.findByIdAndUpdate({ _id: game.game_id, },{ $set: {bookings:booking1} }).lean().then(game => {
-     return  Booking.find({  venue_id:booking.venue_id, booking_date:booking.booking_date, slot_time:booking.slot_time,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
-        return Venue.findById({_id:booking.venue_id},{bank:0,access:0}).lean().then(venue=>{
+  function SlotsCheck(body,id){
+    return new Promise((resolve,reject)=>{
+      Venue.findById({_id:id},{bank:0,access:0}).lean().then(venue=>{
+        let venue_id;
+        if(venue.secondary_venue){
+          venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
+        }else{
+          venue_id = [venue._id.toString()]
+        }
+        Booking.find({ venue:body.venue, venue_id:{$in:venue_id}, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
+        // Booking.find({$and:[{venue:body.venue, venue_id:id, booking_date:{$gte:body.booking_date,$lt:moment(body.booking_date).add(1,"days")}}],booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
           let slots_available = SlotsAvailable(venue,booking_history)
           if(slots_available.slots_available[body.slot_time][body.venue_type]>0){
-          return 'slot avaialable'
+            reject()
           }else{
-           // return Game.find({}).lean().
+            console.log('slot time selected',body.slot_time);
+            resolve(body.booking_id)
           }
-    }).catch(error => console.log(error))
-  }).catch(error => console.log(error))
-  }).catch(error => console.log(error))
+        }).catch(error => console.log(error))
+      }).catch(error => console.log(error))
+    })
+  }
 
+  function SlotsCheckReverse(body,id){
+    return new Promise((resolve,reject)=>{
+      Venue.findById({_id:id},{bank:0,access:0}).lean().then(venue=>{
+        let venue_id;
+        if(venue.secondary_venue){
+          venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
+        }else{
+          venue_id = [venue._id.toString()]
+        }
+        Booking.find({ venue:body.venue, venue_id:{$in:venue_id}, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
+        // Booking.find({$and:[{venue:body.venue, venue_id:id, booking_date:{$gte:body.booking_date,$lt:moment(body.booking_date).add(1,"days")}}],booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
+          let slots_available = SlotsAvailable(venue,booking_history)
+          if(slots_available.slots_available[body.slot_time][body.venue_type]>0){
+            resolve(body.booking_id)
+          }else{
+            console.log('slot time selected',body.slot_time);
+            reject()
+          }
+        }).catch(error => console.log(error))
+      }).catch(error => console.log(error))
+    })
+  }
+
+
+  async function handleSlotAvailabilityWithCancellation(booking1,client){
+    let booking = booking1[0]
+    const slot_time = { $in: booking1.map((b)=>b.slot_time) }
+    const x =  await  Booking.find({  venue_id:booking.venue_id, booking_date:booking.booking_date,slot_time:slot_time,booking_status:{$in:["blocked","booked","completed"]}}).lean().then(booking_history=>{
+      let promisesToRun = [];
+          for(let i=0;i<booking_history.length;i++){
+                promisesToRun.push(SlotsCheckReverse(booking_history[i],booking.venue_id))
+              }
+             return Promise.all(promisesToRun).then((values) => {
+               return Game.updateMany({"bookings.booking_date":booking.booking_date,"bookings.booking_status":'blocked',"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time },{$set:{status:true,status_description:''}}).lean().then(game1=>{
+                 return Game.find({"bookings.booking_date":booking.booking_date,"bookings.booking_status":'blocked',"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time }).lean().populate('conversation').then(game=>{
+                  console.log('game',game);
+                  let messages =  game.map((nc)=>{ return {conversation:nc.conversation._id,game:nc._id,message:`Hey ! Game ${nc.name} is available again . Please book your slot to confirm the game`,name:'bot',read_status:false,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot',created_at:new Date()}}) 
+                  const members = _.flatten(game.map((g)=>g.conversation.members))
+                  return   User.find({_id: { $in :members } },{activity_log:0}).lean().then(user=> {
+                  return Message.insertMany(messages).then(message1=>{
+                    const message_ids = message1.map((m)=>m._id)
+                    return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id').populate('user', 'name _id profile_picture phone').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
+                    const cids = m.map((entry)=>{
+                      const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id :entry.conversation
+                      Conversation.findByIdAndUpdate({_id:id},{$set:{last_message:entry._id, last_updated:new Date()}}).then((m)=>console.log('pass'))
+                      client.to(id).emit('new',entry)
+                      return id
+                    })
+                      const device_token_list=user.map((e)=>e.device_token)
+                                                    NotifyArray(device_token_list,'Hey ! Game is available again . Please book your slot to confirm the game','Turftown Game Availability')
+                                                      return user.map((e)=>e._id)
+                   }).catch((e)=>console.log(e));
+                }).catch(error => console.log(error))
+              }).catch(error => console.log(error))
+            }).catch(error => console.log(error))
+              }).catch(error => console.log(error))
+            }).catch(error=>{
+              console.log('hit error',error);
+              return 'available'
+              //res.send({status:"failed", message:"slots not available"})
+            })
+          }).catch(error => console.log(error))
+  }
+
+
+  async function handleSlotAvailability(booking1,client){
+    let booking = booking1[0]
+    const slot_time = { $in: booking1.map((b)=>b.slot_time) }
+    const x =  await  Booking.find({  venue_id:booking.venue_id, booking_date:booking.booking_date,slot_time:slot_time,booking_status:{$in:["blocked","booked","completed"]}}).lean().then(booking_history=>{
+      let promisesToRun = [];
+          for(let i=0;i<booking_history.length;i++){
+                promisesToRun.push(SlotsCheck(booking_history[i],booking.venue_id))
+              }
+             return Promise.all(promisesToRun).then((values) => {
+               return Game.updateMany({"bookings.booking_date":booking.booking_date,"bookings.booking_status":'blocked',"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time },{$set:{status:false,status_description:'Sorry ! Slot has been booked by some other user'}}).lean().then(game1=>{
+                 return Game.find({"bookings.booking_date":booking.booking_date,"bookings.booking_status":'blocked',"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time }).lean().populate('conversation').then(game=>{
+                  console.log('game',game);
+                  let messages =  game.map((nc)=>{ return {conversation:nc.conversation._id,game:nc._id,message:`Sorry ! Game ${nc.name} has been cancelled becuase the slot has been booked by some other user.Please choose another slot to host your game`,name:'bot',read_status:false,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot',created_at:new Date()}}) 
+                  const members = _.flatten(game.map((g)=>g.conversation.members))
+                  return   User.find({_id: { $in :members } },{activity_log:0}).lean().then(user=> {
+                  return Message.insertMany(messages).then(message1=>{
+                    const message_ids = message1.map((m)=>m._id)
+                    return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id').populate('user', 'name _id profile_picture phone').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
+                    const cids = m.map((entry)=>{
+                      const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id :entry.conversation
+                      Conversation.findByIdAndUpdate({_id:id},{$set:{last_message:entry._id, last_updated:new Date()}}).then((m)=>console.log('pass'))
+                      client.to(id).emit('new',entry)
+                      return id
+                    })
+                      const device_token_list=user.map((e)=>e.device_token)
+                                                    NotifyArray(device_token_list,'Sorry ! Game has been cancelled becuase the slot has been booked by some other user.Please choose another slot to host your game','Turftown Game Cancellation')
+                                                      return user.map((e)=>e._id)
+                   }).catch((e)=>console.log(e));
+                }).catch(error => console.log(error))
+              }).catch(error => console.log(error))
+            }).catch(error => console.log(error))
+              }).catch(error => console.log(error))
+            }).catch(error=>{
+              console.log('hit error',error);
+              return 'available'
+              //res.send({status:"failed", message:"slots not available"})
+            })
+          }).catch(error => console.log(error))
   }
 
   async function leaveChatroomWithConversationId(game1) {
@@ -626,6 +738,7 @@ return x
     sendInvites,
     kickPlayer,
     makeTownTrue,
+    handleSlotAvailabilityWithCancellation,
     handleSlotAvailability,
     leaveChatroomWithConversationId,
     saveMessagesAndPopulate,

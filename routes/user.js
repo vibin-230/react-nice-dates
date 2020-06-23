@@ -369,7 +369,10 @@ router.post('/save_token_device', [
       console.log(req.body);
       User.findOne({_id: req.userId},{activity_log:0}).then(user=> {
         User.findByIdAndUpdate({_id: req.userId},{device_token:req.body.device_token, os:req.body.os}).then(user1=>{
-          //notify(user,`Hey ${user.name} , Welcome to Turftown`)
+          notify(user,`<i style=' background: url("/cat.png");
+          height: 20px;
+          width: 20px;
+          display: block;'></span> ${user.name} , \uD83D Welcome to Turftown :-)`)
           if (user1) {
           res.status(201).send({status: "success", message: "user collected",data:user})
         } else {
@@ -1027,9 +1030,10 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
     var data = {
       amount:req.body[0].booking_amount*100
     }
-   var result = Object.values(combineSlots([...values]))
+
+
    console.log('razorpay api',process.env.RAZORPAY_API)
-   console.log('transaction api',req.body)
+   console.log('transaction api',values)
 
     //Capture Payment
     axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
@@ -1077,6 +1081,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
         },0)
         let phone_numbers =admins.map((admin,index)=>"91"+admin.phone)
         let manger_numbers = [...phone_numbers,manager_phone]
+         var result = Object.values(combineSlots([...values]))
         let venue_discount_coupon = Math.round(result[0].commission+result[0].coupon_amount) == 0 ? "Venue Discount:0" : result[0].commission == 0 && result[0].coupon_amount !== 0 ? `TT Coupon:${result[0].coupon_amount}` : result[0].commission !== 0 && result[0].coupon_amount == 0 ? `Venue Discount:${result[0].commission}` : `Venue Discount:${result[0].commission}\nTT Coupon:${result[0].coupon_amount}`  
         let balance = Math.round(result[0].amount)-Math.round(result[0].coupon_amount)-Math.round(result[0].booking_amount)-Math.round(result[0].commission)
         let SLOT_BOOKED_USER =`Hey ${values[0].name}! Thank you for using Turf Town!\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${Math.round(result[0].booking_amount)}\nBalance to be paid : ${Math.round(balance)}`
@@ -1093,49 +1098,49 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
         // }).catch(error=>{
         //   console.log(error.response.data)
         // })
-      let mailBody = {
-        name:values[0].name,
-        date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
-        day:moment(values[0].booking_date).format("Do"),
-        venue:values[0].venue,
-        area:venue_area,
-        venue_type:values[0].venue_type,
-        booking_id:values[0].booking_id,
-        slot_time:datetime,
-        quantity:1,
-        total_amount:Math.round(result[0].amount),
-        booking_amount:Math.round(result[0].booking_amount),
-        directions:directions,
-        sport_name:sport_name,
-        venue_discount:Math.round(result[0].commission),
-        coupon_amount:Math.round(result[0].coupon_amount),
-        venue_name:venue.venue.name
-      }
+      // let mailBody = {
+      //   name:values[0].name,
+      //   date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
+      //   day:moment(values[0].booking_date).format("Do"),
+      //   venue:values[0].venue,
+      //   area:venue_area,
+      //   venue_type:values[0].venue_type,
+      //   booking_id:values[0].booking_id,
+      //   slot_time:datetime,
+      //   quantity:1,
+      //   total_amount:Math.round(result[0].amount),
+      //   booking_amount:Math.round(result[0].booking_amount),
+      //   directions:directions,
+      //   sport_name:sport_name,
+      //   venue_discount:Math.round(result[0].commission),
+      //   coupon_amount:Math.round(result[0].coupon_amount),
+      //   venue_name:venue.venue.name
+      // }
 
-      let to_mail = `${values[0].email}, rajasekar@turftown.in,support@turftown.in`
+      // let to_mail = `${values[0].email}, rajasekar@turftown.in,support@turftown.in`
       // console.log(mailBody)
-      ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
-        mail("support@turftown.in", to_mail,"Venue Booked","test",html,response=>{
-          if(response){
-            console.log('success')
-          }else{
-            console.log('failed')
-          }
-        })
-      })
+      // ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
+      //   mail("support@turftown.in", to_mail,"Venue Booked","test",html,response=>{
+      //     if(response){
+      //       console.log('success')
+      //     }else{
+      //       console.log('failed')
+      //     }
+      //   })
+      // })
       
       //Activity Log
-      let activity_log = {
-        datetime: new Date(),
-        id:req.userId,
-        user_type: req.role?req.role:"user",
-        activity: 'slot booked',
-        name:req.name,
-        booking_id:booking_id,
-        venue_id:values[0].venue_id,
-        message: "Slot "+booking_id+" booked at "+venue_name+" "+datetime+" "+venue_type,
-      }
-      ActivityLog(activity_log)
+      // let activity_log = {
+      //   datetime: new Date(),
+      //   id:req.userId,
+      //   user_type: req.role?req.role:"user",
+      //   activity: 'slot booked',
+      //   name:req.name,
+      //   booking_id:booking_id,
+      //   venue_id:values[0].venue_id,
+      //   message: "Slot "+booking_id+" booked at "+venue_name+" "+datetime+" "+venue_type,
+      // }
+      // ActivityLog(activity_log)
       }).catch(next)
     }).catch(next)
     }).catch(next)
@@ -1469,9 +1474,15 @@ router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
 //Booking completed
 router.post('/booking_timeout/:id', verifyToken, (req, res, next) => {
   Booking.find({booking_id:req.params.id}).then(booking=>{
-    Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"timeout"}}).then(booking=>{
-      res.send({status:"success", message:"booking timedout"})
-    })
+    if(booking[0].booking_status === 'blocked'){
+      Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"timeout"}}).then(booking=>{
+        res.send({status:"success", message:"booking timedout"})
+      })
+    }
+    else{
+      res.send({status:"success", message:"no booking"})
+
+    }
   })
 })
 

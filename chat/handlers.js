@@ -129,14 +129,26 @@ module.exports = function (client, clientManager, chatroomManager,io) {
 
 }
 
-async function handleSlotAvailability({ game, booking } = {}, callback) {
-  const clientNumber = io.sockets.adapter.rooms[game.conversation];
-  const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
+async function handleSlotAvailability({ booking } = {}, callback) {
+  // const clientNumber = io.sockets.adapter.rooms[game.conversation];
+  // const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
   // client.to(chatroomName._id).emit('new',message)
   // client.to(chatroomName._id).emit('unread',message)
-  chatroomManager.handleSlotAvailability(game,booking)
+  chatroomManager.handleSlotAvailability(booking,client)
   // chatroomManager.saveMessages(message) 
-  chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
+  //chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
+  callback()
+
+}
+
+async function handleSlotAvailabilityDueToCancellation({ booking } = {}, callback) {
+  // const clientNumber = io.sockets.adapter.rooms[game.conversation];
+  // const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
+  // client.to(chatroomName._id).emit('new',message)
+  // client.to(chatroomName._id).emit('unread',message)
+  chatroomManager.handleSlotAvailabilityWithCancellation(booking,client)
+  // chatroomManager.saveMessages(message) 
+  //chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
   callback()
 
 }
@@ -246,5 +258,5 @@ async function handleUpdateGroup({ chatroomName, message,members } = {}, callbac
     return callback()
   }
 
-  return {handleSlotAvailability,handleLeaveChatrooms,handleUpdateGroup,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames}
+  return {handleSlotAvailabilityDueToCancellation,handleSlotAvailability,handleLeaveChatrooms,handleUpdateGroup,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames}
 }

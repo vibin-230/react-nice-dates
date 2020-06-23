@@ -7,6 +7,8 @@ const schema = new Schema({
   created_type:String,
   created_at: { type : Date , default:new Date()},
   type:String,
+  status: { type : Boolean , default:true},
+  status_description: String,
   share_count: {
     type: Number,
     default: 0

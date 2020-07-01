@@ -153,6 +153,20 @@ async function handleSlotAvailabilityDueToCancellation({ booking } = {}, callbac
 
 }
 
+
+async function handleUpdateParams({ chatroomName, message,params } = {}, callback) {
+  const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
+  const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
+  client.to(chatroomName._id).emit('new',message)
+  client.to(chatroomName._id).emit('unread',message)
+  const x  = await chatroomManager.updateParams(message,params)
+  // chatroomManager.saveMessages(message) 
+  chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
+  callback(x)
+
+}
+
+
 async function handleUpdateGroup({ chatroomName, message,members } = {}, callback) {
   const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
   const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
@@ -258,5 +272,5 @@ async function handleUpdateGroup({ chatroomName, message,members } = {}, callbac
     return callback()
   }
 
-  return {handleSlotAvailabilityDueToCancellation,handleSlotAvailability,handleLeaveChatrooms,handleUpdateGroup,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames}
+  return {handleSlotAvailabilityDueToCancellation,handleSlotAvailability,handleLeaveChatrooms,handleUpdateGroup,handleUpdateParams,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames}
 }

@@ -281,6 +281,20 @@ module.exports = function () {
         }).catch((e)=>{console.log(e)});
     }
 
+    async function updateParams(message,params){
+      let object_key = Object.keys(params)[0]
+      let value = Object.values(params)[0]
+     const x = Message.insertMany(message).then(message1=>{
+        return Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},{last_message:message1[message1.length-1]._id,last_updated:new Date(),[object_key]:value}).then(conversation=>{
+          return Conversation.findById({_id:message1[message1.length-1].conversation}).populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(conversation=>{
+            return {conversation:conversation,message:message1}
+          }).catch((e)=>{console.log(e)});
+        }).catch((e)=>{console.log(e)});
+        }).catch((e)=>{console.log(e)});
+        return x
+    }
+
+    
     async function makeTownTrue(game_id,town){
       console.log(game_id,town);
      const x = await  Game.findByIdAndUpdate({_id:game_id},{town:town}).then(game=>{
@@ -746,6 +760,7 @@ return x
     sendGroupInvites,
     joinGame,
     updateImage,
-    updateGroup
+    updateGroup,
+    updateParams
   }
 }

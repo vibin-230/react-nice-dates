@@ -224,7 +224,7 @@ router.post('/force_update_by_user_app', [
         if (user) {
               req.body.modified_at = moment();
               User.findByIdAndUpdate({_id: req.userId},{force_update:req.body.force_update,version:req.body.version},{activity_log:0}).then(user1=>{
-                res.status(201).send({status: "success",});
+                res.status(201).send({status: "success"});
             })
         } else {
             res.status(422).send({status: "failure", errors: {user:"force update failed"}});
@@ -369,7 +369,6 @@ router.post('/sync_contacts', [
         res.status(201).send({status: "success", message: "common users collected",data:user})
   }).catch(next)
 }).catch(next)
-
 
 });
 
@@ -523,6 +522,11 @@ router.post('/send_otp',[
 
 
 
+router.post('/remove_temp_user', (req, res, next) => {
+      User.findOneAndDelete({phone:req.body.phone,temporary:true}).then(u=>console.log('user deleted'))
+});
+
+
 router.post('/send_new_otp', (req, res, next) => {
   
   let phone = 91+req.body.user.phone;
@@ -553,7 +557,7 @@ router.post('/verify_otp', (req, res, next) => {
     var token;
     console.log(user);
       if(user.otp===req.body.otp){
-          User.findOneAndUpdate({phone: req.body.phone},{token,last_login:moment()}).then(user=>{
+          User.findOneAndUpdate({phone: req.body.phone},{last_login:moment()}).then(user=>{
             User.findOne({phone: req.body.phone},{__v:0,token:0,activity_log:0},null).then(user=> {
             if(user.password || user.email){
               token = jwt.sign({ id: user._id, phone:user.phone, role:"user", name:user.name }, config.secret);
@@ -1761,10 +1765,21 @@ router.post('/update_invoice/:id', verifyToken, (req, res, next) => {
 })
 
 router.post('/checkUserName', (req, res, next) => {
-	User.find({"handle":{ "$regex": req.body.user_name, "$options": "i" }}).then(user=>{
+	User.find({"handle":req.body.user_name}).then(user=>{
+    console.log(req.body.user_name.match(/^[ A-Za-z0-9_@./#&+-]*$/),req.body.user_name);
         if(user && user.length > 0){
           res.send({status:"success", message:"username exists",data:{error:true,error_description:`The username ${req.body.user_name} is not available.`}})
-        }else
+        }
+        else if(!req.body.user_name.match(/^[ A-Za-z0-9_@.]*$/)){
+          res.send({status:"success", message:"username exists",data:{error:true,error_description:`Invalid Username`}})
+        }
+        else if(req.body.user_name.match(/^[0-9_@.]*$/)){
+          res.send({status:"success", message:"username exists",data:{error:true,error_description:`Invalid Username`}})
+        }
+        else if(!req.body.user_name.match(/^\S*$/)){
+          res.send({status:"success", message:"username exists",data:{error:true,error_description:`Invalid Username`}})
+        }
+        else
         res.send({status:"success", message:"username doesnt exist",data:{error:false,error_description:''}})
 
   }).catch(next)

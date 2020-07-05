@@ -333,12 +333,43 @@ router.post('/get_chatrooms/:id', [
 
 });
 
-router.post('/sync_contacts', [
+router.post('/get_town_games/', [
   verifyToken,
 ], (req, res, next) => {
   User.findById({_id: req.userId},{}).lean().then(user=> {
     console.log(req.body);
+    let following = user.following
+        following = following.concat(req.userId)
+    const filter = req.body.sport === 'all' ? { created_by: { $in: following } ,town:true, host:{ $in: following },start_time:{$gte:req.body.date}} :{ created_by: { $in: following } ,town:true,sport_name:req.body.sport, host:{ $in: following }, start_time:{$gte:new Date()}}
+    Game.find(filter).lean().populate('conversation').populate('host','_id name profile_picture phone').populate('users','_id name profile_picture phone').populate('invites','_id name profile_picture phone').then(existingConversation=>{
+        console.log('existing conversation',existingConversation);  
+        var groupBy = (xs, key) => {
+          return xs.reduce((rv, x) =>{
+            (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
+            return rv;
+          }, {});
+        };
+        let finalResult = existingConversation.sort((a, b) => moment(a.start_time).format("YYYYMMDDHmm") > moment(b.start_time).format("YYYYMMDDHmm") ? 1 : -1 )
+        const a = groupBy(finalResult,'start_time')
+        const q =   Object.entries(a).map(([key,value])=>{
+                return {title:key,data:value }
+          })
+        res.status(201).send({status: "success", message: "town games collected",data:q})
+
+      }).catch(next)
   }).catch(next)
+
+});
+
+router.post('/sync_contacts', [
+  verifyToken,
+], (req, res, next) => {
+  User.findById({_id: req.userId},{}).lean().then(user=> {
+      User.find({phone: { $in :req.body } },{activity_log:0}).lean().then(user=> {
+        res.status(201).send({status: "success", message: "common users collected",data:user})
+  }).catch(next)
+}).catch(next)
+
 
 });
 

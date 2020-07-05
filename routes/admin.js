@@ -110,6 +110,51 @@ router.post('/create_super_admin',
 	}).catch(next)
 })
 
+router.post('/savePassword',
+	check('password').exists().isLength({ min: 6}).withMessage('password length should be minimum 6 letters'),
+	(req, res, next) => {
+	const errors = validationResult(req);
+	if (!errors.isEmpty()) {
+		var result = {};
+		var errorsList = errors.array();
+		for(var i = 0; i < errorsList.length; i++)
+		{
+			result[errorsList[i].param] = errorsList[i].msg;
+		}
+		return res.status(422).json({ errors: result});
+	}
+	
+	User.findOne({handle:req.body.user.handle}).then(user1=>{
+		if(!user1){
+			res.send({status:"failure", message:"No user set."})
+		}else{
+			console.log(req.body,user1)
+			if(req.body.user.otp === user1.otp)
+			{
+			let user = req.body.user
+			bcrypt.hash(req.body.password, saltRounds).then(function(hash) {
+			//req.body.role = "user";
+			user['password'] = hash;
+			user['temporary'] = false
+			user['followers'] = []
+			user['following'] = []
+			user['requests'] = []
+			user['sent_requests'] = []
+			user['_id'] = user1._id
+			user['token'] =  jwt.sign({ id: user1._id, phone:user1.phone, role:"user", name:user1.handle }, config.secret);
+			User.findOneAndUpdate({phone:user.phone},user).then(u=>{
+				User.findOne({phone:u.phone}).then(user=>{
+				res.send({status:"success", message:"user added",data:user})
+			}).catch(next)
+	}).catch(next)
+		})
+		}else{
+		return res.status(422).json({ errors: 'invalid otp'});
+		}
+	}
+	}).catch(next)
+})
+
 router.post('/admin_login',
 	(req, res, next) => {
 	Admin.findOne({username:req.body.username},{reset_password_hash:0,reset_password_expiry:0,activity_log:0},null).then(admin=>{
@@ -136,6 +181,43 @@ router.post('/admin_login',
 			res.send({status:"failed", message:"admin doesn't exist"})
 		}
 	}).catch(next)
+})
+
+
+router.post('/login', (req, res, next) => {
+	console.log('hit',req.body)
+User.findOne({ $or: [ { handle: req.body.username }, { phone: req.body.username } ] },{reset_password_hash:0,reset_password_expiry:0,activity_log:0}).then(user=>{
+	console.log(user);
+	if(user){
+		if(user.password){
+			if(user.status){
+				bcrypt.compare(req.body.password, user.password).then(function(response) {
+					if(response){
+						var token = jwt.sign({ id: user._id, name:user.handle, role:user.role, name:user.name}, config.secret);
+						user.password = undefined
+						user.token = token
+						res.send({status:"success", message:"login success",data:user})
+						// ActivityLog(admin._id, admin.role, 'login', admin.username +" logged-in successfully")
+					}else{
+						res.send({status:"failed", message:"Invalid username or password"})
+					}
+				})
+			}else{
+				
+				res.send({status:"failed", message:"Invalid username or password"})
+			//	res.send({status:"failed", message:"Invalid Email id"})
+			}
+		}else{
+			res.send({status:"failed", message:"Invalid username or password"})
+
+		//	res.send({status:"failed", message:"Invalid user"})
+		}
+	}else{
+		res.send({status:"failed", message:"Invalid username or password"})
+
+		//res.send({status:"failed", message:"admin doesn't exist"})
+	}
+}).catch(next)
 })
 
 

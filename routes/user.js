@@ -333,30 +333,11 @@ router.post('/get_chatrooms/:id', [
 
 });
 
-router.post('/get_town_games/', [
+router.post('/sync_contacts', [
   verifyToken,
 ], (req, res, next) => {
   User.findById({_id: req.userId},{}).lean().then(user=> {
     console.log(req.body);
-    let following = user.following
-        following = following.concat(req.userId)
-    const filter = req.body.sport === 'all' ? { created_by: { $in: following } ,town:true, host:{ $in: following },start_time:{$gte:req.body.date}} :{ created_by: { $in: following } ,town:true,sport_name:req.body.sport, host:{ $in: following }, start_time:{$gte:new Date()}}
-    Game.find(filter).lean().populate('conversation').populate('host','_id name profile_picture phone').populate('users','_id name profile_picture phone').populate('invites','_id name profile_picture phone').then(existingConversation=>{
-        console.log('existing conversation',existingConversation);  
-        var groupBy = (xs, key) => {
-          return xs.reduce((rv, x) =>{
-            (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
-            return rv;
-          }, {});
-        };
-        let finalResult = existingConversation.sort((a, b) => moment(a.start_time).format("YYYYMMDDHmm") > moment(b.start_time).format("YYYYMMDDHmm") ? 1 : -1 )
-        const a = groupBy(finalResult,'start_time')
-        const q =   Object.entries(a).map(([key,value])=>{
-                return {title:key,data:value }
-          })
-        res.status(201).send({status: "success", message: "town games collected",data:q})
-
-      }).catch(next)
   }).catch(next)
 
 });
@@ -369,10 +350,10 @@ router.post('/save_token_device', [
       console.log(req.body);
       User.findOne({_id: req.userId},{activity_log:0}).then(user=> {
         User.findByIdAndUpdate({_id: req.userId},{device_token:req.body.device_token, os:req.body.os}).then(user1=>{
-          notify(user,`<i style=' background: url("/cat.png");
-          height: 20px;
-          width: 20px;
-          display: block;'></span> ${user.name} , \uD83D Welcome to Turftown :-)`)
+          // notify(user,`<i style=' background: url("/cat.png");
+          // height: 20px;
+          // width: 20px;
+          // display: block;'></span> ${user.name} , \uD83D Welcome to Turftown :-)`)
           if (user1) {
           res.status(201).send({status: "success", message: "user collected",data:user})
         } else {
@@ -445,6 +426,7 @@ router.post('/edit_user', [
 router.post('/send_otp',[
   check('phone').isLength({ min: 10, max: 10 }).withMessage('phone number must be 10 digits long'),
 ], (req, res, next) => {
+  console.log(req.body)
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     var result = {};
@@ -467,17 +449,17 @@ router.post('/send_otp',[
         {
           if(user)
           {
-            if(user.email)
+            if(user.email || user.password)
             {
-              User.findOneAndUpdate({phone: req.body.phone},{otp:req.body.phone === '8136948537' ? '7484':otp}).then(user=> {
+              User.findOneAndUpdate({phone: req.body.phone},{otp:otp}).then(user=> {
                 User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
-                  res.status(201).send({status:"success",message:"existing user",otp:req.body.phone === '8136948537' ? '7484':otp,data:user})
+                  res.status(201).send({status:"success",message:"existing user",otp:otp,data:user})
                 })
               })
             }else{
-              User.findOneAndUpdate({phone: req.body.phone},{otp:req.body.phone === '8136948537' ? '7484':otp}).then(user=> {
+              User.findOneAndUpdate({phone: req.body.phone},{otp:otp}).then(user=> {
                 User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
-                  res.status(201).send({status:"success",message:"existing user",otp:req.body.phone === '8136948537' ? '7484':otp,data:user})
+                  res.status(201).send({status:"success",message:"existing user",otp:otp,data:user})
                 })
               })
               // User.create({phone:req.body.phone,otp:otp}).then(user=>{
@@ -507,6 +489,32 @@ router.post('/send_otp',[
 });
 
 
+
+
+
+router.post('/send_new_otp', (req, res, next) => {
+  
+  let phone = 91+req.body.user.phone;
+  let otp   = Math.floor(999 + Math.random() * 9000);
+    axios.get(process.env.PHP_SERVER+'/textlocal/otp.php?otp='+otp+'&phone='+phone).then(response => {
+        if(response.data.status === 'success')
+        {
+          User.create({phone:req.body.user.phone,handle:req.body.user.handle,otp:otp,temporary:true}).then((user)=>{
+            res.status(201).send({status:"success", message:'new user', data:{phone:req.body.user.phone,otp:otp,handle:req.body.user.handle}})
+            // setTimeout(()=>{
+            //   User.findOneAndDelete({phone:user.phone,temporary:true}).then(u=>console.log('user deleted'))
+            // },180000)
+          })
+
+        }
+        else
+          {
+            res.status(422).send({status:"failure", errors:{template:"invalid template"}, data:response.data})
+         }
+    }).catch(next)
+});
+
+
 //Verify OTP
 router.post('/verify_otp', (req, res, next) => {
   User.findOne({phone: req.body.phone}).then(user=> {
@@ -516,9 +524,11 @@ router.post('/verify_otp', (req, res, next) => {
       if(user.otp===req.body.otp){
           User.findOneAndUpdate({phone: req.body.phone},{token,last_login:moment()}).then(user=>{
             User.findOne({phone: req.body.phone},{__v:0,token:0,activity_log:0},null).then(user=> {
-            if(user.email){
+            if(user.password || user.email){
               token = jwt.sign({ id: user._id, phone:user.phone, role:"user", name:user.name }, config.secret);
-              res.status(201).send({status:"success", message:"existing user", token:token, data:user})
+              user['token'] = token
+              user['password'] = undefined
+              res.status(201).send({status:"success", message:"existing user",data:user})
               
               //Activity Log
               // let activity_log = {
@@ -545,9 +555,10 @@ router.post('/verify_otp', (req, res, next) => {
 
 //Edit User
 router.post('/edit_user/:id',verifyToken, AccessControl('users', 'update'), (req, res, next) => {
+  console.log('pass',req.params.id)
   User.findByIdAndUpdate({_id: req.params.id},req.body).then(user=> {
-    User.findById({_id: req.params.id},{token:0,},null).then(user=> {
-      res.send({status:"success", message:"user edited"})
+    User.findById({_id: req.params.id},{activity_log:0}).lean().then(user=> {
+      res.send({status:"success", message:"user edited",data:user})
     }).catch(next);
   }).catch(next);
 });
@@ -1715,6 +1726,36 @@ router.post('/update_invoice/:id', verifyToken, (req, res, next) => {
                   res.send({status:"success", message:"Invoice generated"})
             }).catch(next);
       })
+  }).catch(next)
+})
+
+router.post('/checkUserName', (req, res, next) => {
+	User.find({"handle":{ "$regex": req.body.user_name, "$options": "i" }}).then(user=>{
+        if(user && user.length > 0){
+          res.send({status:"success", message:"username exists",data:{error:true,error_description:`The username ${req.body.user_name} is not available.`}})
+        }else
+        res.send({status:"success", message:"username doesnt exist",data:{error:false,error_description:''}})
+
+  }).catch(next)
+})
+
+router.post('/checkMobile', (req, res, next) => {
+	User.find({"phone":{ "$regex": req.body.mobile, "$options": "i" }}).then(user=>{
+        if(user && user.length > 0){
+          res.send({status:"success", message:"phone exists",data:{error:true,error_description:`The phone number +91 ${req.body.mobile} is not available.`}})
+        }else
+        res.send({status:"success", message:"phone doesnt exist",data:{error:false,error_description:''}})
+
+  }).catch(next)
+})
+
+router.post('/checkMobileForLogin', (req, res, next) => {
+	User.find({"phone":{ "$regex": req.body.mobile, "$options": "i" }}).then(user=>{
+        if(user && user.length > 0){
+          res.send({status:"success", message:"phone  exist",data:{error:false,error_description:``}})
+        }else
+        res.send({status:"success", message:"phone doesnt exist",data:{error:true,error_description:`The phone number +91 ${req.body.mobile} is not registered.`}})
+
   }).catch(next)
 })
 

@@ -11,6 +11,9 @@ const schema = new Schema({
   modified_at: Date,
   phone:String,
   token:String,
+  password:String,
+  reset_password_hash:String,
+  reset_password_expiry:Date,
   device_token:String,
   otp:Number,
   name:String,
@@ -23,6 +26,7 @@ const schema = new Schema({
   gender:String,
   login_type:String,
   visibility:{type:String, default:'public'},
+  role:{type:String, default:'user'},
   followers:[{type:mongoose.Schema.Types.ObjectId, ref:'user'}],
   following:[{type:mongoose.Schema.Types.ObjectId, ref:'user'}],
   requests:[{
@@ -30,7 +34,7 @@ const schema = new Schema({
     username:{type:String,default:''},
     timeStamp: { type : Date , default:moment()},
   }],
-  sent_requests:[{
+  requests:[{
     user:{type:mongoose.Schema.Types.ObjectId, ref:'user'},
     username:{type:String,default:''},
     timeStamp: { type : Date , default:moment()},
@@ -40,7 +44,7 @@ const schema = new Schema({
   }],
 
 
-  
+  temporary:Boolean,
   sports_interest:Array,
   activity_log:Array,
   online_status:String,

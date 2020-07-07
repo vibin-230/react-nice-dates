@@ -12,6 +12,7 @@ const schema = new Schema({
   phone:String,
   token:String,
   password:String,
+  sync_contacts:{ type : Boolean , default:false},
   reset_password_hash:String,
   reset_password_expiry:Date,
   device_token:String,

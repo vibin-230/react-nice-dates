@@ -6,7 +6,7 @@ const moment = require('moment');
 const schema = new Schema({
   created_at: { type : Date , default:moment()},
   contacts:Array,
-  user:[{ type: Schema.Types.ObjectId, ref: 'user' }],
+  user_id:{ type: Schema.Types.ObjectId, ref: 'user' },
 });
 
 //Model

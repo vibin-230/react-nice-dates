@@ -737,14 +737,15 @@ router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
 
 
 router.post('/get_group_info',verifyToken, (req, res, next) => {
-  Conversation.findById({_id:req.body.conversation_id}).then((convo)=>{ 
+  Conversation.findById({_id:req.body.conversation_id}).populate('members','_id name device_token profile_picture handle').then((convo)=>{
     User.find({_id:convo.created_by}).select('name -_id').then(user=>{
       Message.find({$and:[{ "image": { $exists: true, $ne: null }},{conversation:req.body.conversation_id},{type:"image"} ]}).distinct("image").then((image)=>{
     Message.find({$and:[{ "game": { $exists: true, $ne: null }},{conversation:req.body.conversation_id}]}).distinct("game").then((games)=>{
      Game.find({_id:{ $in: games}}).populate('conversation').lean().then(gameinfo=>{
       let activities = gameinfo.map((key)=>key.sport_name)
       let uninque_activity = [...new Set(activities)]
-      let data =[{name:user,game:gameinfo,activities:uninque_activity,image:image}]
+      console.log("convo",convo)
+      let data =[{name:user,game:gameinfo,activities:uninque_activity,image:image,convo:convo}]
       res.send({status:"sucess",message:"activity fetched",data:data})  
      })
   }).catch(next);

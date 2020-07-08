@@ -368,44 +368,70 @@ router.post('/sync_contacts', [
 ], (req, res, next) => {
   console.log('hit');
   User.findById({_id: req.userId},{}).lean().then(user=> {
+    console.log('hit 1' );
 
-    console.log('pass',req.body,user.sync_contacts);
     if(user.handle && user.sync_contacts){
       Contacts.findOne({user_id:req.userId}).then((c)=>{
         if(c){
-          console.log(c._id)
           //get contacts and remove spaces between numbers
+          console.log(c.contacts.length);
          const contacts =  c.contacts.filter((c)=>c.phoneNumbers.length > 0&&c.displayName).map((a)=>a.phoneNumbers).flat().map(c=>c.number.replace(/\s/g, ""))
          //for +91 numbers
-         let contacts1 = contacts.filter((f)=>f.length >= 10 && f.substring(0,3) === "+91").map(c=>c.substring(3,c.length))
-        //for exact 10 digits match
-         let contacts2 = contacts.filter((f)=>f.length === 10 && (f.substring(0,1) === "9" || f.substring(0,1) === "8" || f.substring(0,1) === "7"))
-         //for 11 digits where first digit is 0
-         let contacts3 = contacts.filter((f)=>f.length === 11 && f.substring(0,1) === "0").map(c=>c.substring(1,c.length))
+         console.log(contacts.filter((a)=>a === '9941882305'));
+         let finalcontacts = contacts.filter((c)=>{
+              if(c.length>=10){
+                  if(c.substring(0,3) === '+91')
+                  {
+                    return c.substring(3,c.length)
+                  }
+                  else if(c.length === 10)
+                  {
+                    return c
+                  }else if(c.length === 11  && c.substring(0,1) === "0")
+                  {
+                    return c.substring(1,c.length)
+                  }
+              }
+            })
+
+        //  let contactsTest = contacts.filter((f)=>f.length >= 10 && f.substring(0,3) === "+91").map(c=>c.substring(3,c.length))
+        //  let contacts1 = contacts.filter((f)=>f.length >= 10 && f.substring(0,3) === "+91").map(c=>c.substring(3,c.length))
+        // //for exact 10 digits match
+        //  let contacts2 = contacts.filter((f)=>f.length === 10)
+        //  //for 11 digits where first digit is 0
+        //  let contacts3 = contacts.filter((f)=>f.length === 11 && f.substring(0,1) === "0").map(c=>c.substring(1,c.length))
          //concat all contacts 
-         contacts1.concat(contacts2)
-          contacts1.concat(contacts3)
-          console.log(contacts1.length,contacts2.length,contacts3.length)
-          User.find({phone: { $in :contacts1 },status:true }).lean().then(user=> {
+        //  contacts1.concat(contacts2)
+        //   contacts1.concat(contacts3)
+        //  console.log(contacts1.filter((c)=>c === '9941883205'))
+         // console.log(contacts1);
+          User.find({phone: { $in :finalcontacts },status:true }).lean().then(user=> {
             res.status(201).send({status: "success", message: "common users collected",data:user})
-         
+            console.log(user);
           }).catch(next)
         }
       }).catch(next)
     }else if(user.handle && !user.sync_contacts){
       console.log('hit');
       Contacts.create({user_id:req.userId,contacts:req.body}).then(c=>{
-          //get contacts and remove spaces between numbers
         const contacts =  c.contacts.filter((c)=>c.phoneNumbers.length > 0&&c.displayName).map((a)=>a.phoneNumbers).flat().map(c=>c.number.replace(/\s/g, ""))
-         //for +91 numbers
-         let contacts1 = contacts.filter((f)=>f.length >= 10 && f.substring(0,3) === "+91").map(c=>c.substring(3,c.length-1))
-        //for exact 10 digits match
-         let contacts2 = contacts.filter((f)=>f.length === 10 && (f.substring(0,1) === "9" || f.substring(0,1) === "8" && f.substring(0,1) === "7"))
-         //for 11 digits where first digit is 0
-         let contacts3 = contacts.filter((f)=>f.length === 11 && f.substring(0,1) === "0")
-         contacts1.concat(contacts2)
-         contacts1.concat(contacts3)
-          User.find({phone: { $in :contacts1 } },{activity_log:0}).lean().then(user=> {
+        let finalcontacts = contacts.filter((c)=>{
+          if(c.length>=10){
+              if(c.substring(0,3) === '+91')
+              {
+                return c.substring(3,c.length)
+              }
+              else if(c.length === 10)
+              {
+                return c
+              }else if(c.length === 11  && c.substring(0,1) === "0")
+              {
+                return c.substring(1,c.length)
+              }
+          }
+        })
+          User.find({phone: { $in :finalcontacts } },{activity_log:0}).lean().then(user=> {
+           console.log(user);
             User.findByIdAndUpdate({_id: req.userId},{sync_contacts:true}).then(user1=>{
               res.status(201).send({status: "success", message: "common users collected",data:user})
         })
@@ -576,7 +602,9 @@ router.post('/send_new_otp', (req, res, next) => {
   let phone = 91+req.body.user.phone;
   let otp   = Math.floor(999 + Math.random() * 9000);
     axios.get(process.env.PHP_SERVER+'/textlocal/otp.php?otp='+otp+'&phone='+phone).then(response => {
-        if(response.data.status === 'success')
+      console.log(response.data)
+       
+      if(response.data.status === 'success')
         {
           User.create({phone:req.body.user.phone,handle:req.body.user.handle,otp:otp,temporary:true}).then((user)=>{
             res.status(201).send({status:"success", message:'new user', data:{phone:req.body.user.phone,otp:otp,handle:req.body.user.handle}})

@@ -466,13 +466,16 @@ router.post('/alter_user/:id', [
       //Check if user exist
       console.log(req.body);
       User.findOne({_id: req.params.id},{activity_log:0}).then(user=> {
-        User.findByIdAndUpdate({_id: req.params.id},req.body).then(user1=>{
-          if (user1) {
-          res.status(201).send({status: "success", message: "user collected",data:user})
+        User.findByIdAndUpdate({_id: req.params.id},req.body).then(user=>{
+          User.findOne({_id: req.params.id},{activity_log:0}).then(user1=> {
+            if (user1) {
+          res.status(201).send({status: "success", message: "user collected",data:user1})
         } else {
             res.status(422).send({status: "failure", errors: {user:"force update failed"}});
         }
     }).catch(next);
+  }).catch(next);
+
   }).catch(next);
 });
 

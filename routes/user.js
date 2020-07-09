@@ -342,7 +342,11 @@ router.post('/get_town_games/', [
     let following = user.following
         following = following.concat(req.userId)
     const filter = req.body.sport === 'all' ? { created_by: { $in: following } ,town:true, host:{ $in: following },start_time:{$gte:req.body.date}} :{ created_by: { $in: following } ,town:true,sport_name:req.body.sport, host:{ $in: following }, start_time:{$gte:new Date()}}
-    Game.find(filter).lean().populate('conversation').populate('host','_id name profile_picture phone handle').populate('users','_id name profile_picture phone handle').populate('invites','_id name profile_picture phone').then(existingConversation=>{
+    Game.find(filter).lean().populate('conversation').populate('host','_id name profile_picture phone handle').populate("venue","venue").populate('users','_id name profile_picture phone handle').populate('invites','_id name profile_picture phone').then(existingConversation=>{
+      existingConversation.map((key)=>{
+       key["venue"] = key.venue.venue
+      })
+       console.log("Expsiost",existingConversation)
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{
             (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
@@ -2831,7 +2835,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
   //req.role==="super_admin"?delete filter.created_by:null
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
     EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
-      Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate("host","name _id handle").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
+      Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate('venue','venue'). populate("host","name _id handle").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
         result = Object.values(combineSlots(booking))
         const open_games = game.filter((g)=>{
          return g.share_type === 'open' || (g.share_type === 'closed' && g.host.some(key=>key._id.toString() === req.userId.toString()))

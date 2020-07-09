@@ -297,7 +297,7 @@ module.exports = function () {
     
     async function makeTownTrue(game_id,town){
       console.log(game_id,town);
-     const x = await  Game.findByIdAndUpdate({_id:game_id},{town:town}).then(game=>{
+     const x = await  Game.findByIdAndUpdate({_id:game_id},{town:town,town_date:new Date()}).then(game=>{
       console.log('pass',game_id,town);
 
       return game
@@ -321,6 +321,15 @@ module.exports = function () {
       }).catch((e)=>{console.log(e)});
       return x
     }
+
+
+    async function setTownTrue(id){
+      console.log('hit asd',id);
+             return Game.findByIdAndUpdate({_id:id},{town:true,town_date:new Date()} ).then(game=>{
+              console.log('hit asd',game._id);
+              return game
+                 }).catch((e)=>{console.log(e)});
+       }
 
    async function sendInvites(game_id,conversation,ids,user_id,town,client){
    const x = await  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: ids } } ,$set:{town:town,town_date:new Date()} } ).then(game=> {
@@ -760,6 +769,7 @@ return x
     sendGroupInvites,
     joinGame,
     updateImage,
+    setTownTrue,
     updateGroup,
     updateParams
   }

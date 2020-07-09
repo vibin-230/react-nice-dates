@@ -339,12 +339,10 @@ router.post('/get_town_games/', [
   verifyToken,
 ], (req, res, next) => {
   User.findById({_id: req.userId},{}).lean().then(user=> {
-    console.log(req.body);
     let following = user.following
         following = following.concat(req.userId)
     const filter = req.body.sport === 'all' ? { created_by: { $in: following } ,town:true, host:{ $in: following },start_time:{$gte:req.body.date}} :{ created_by: { $in: following } ,town:true,sport_name:req.body.sport, host:{ $in: following }, start_time:{$gte:new Date()}}
     Game.find(filter).lean().populate('conversation').populate('host','_id name profile_picture phone handle').populate('users','_id name profile_picture phone handle').populate('invites','_id name profile_picture phone').then(existingConversation=>{
-        console.log('existing conversation',existingConversation);  
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{
             (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
@@ -366,7 +364,6 @@ router.post('/get_town_games/', [
 router.post('/sync_contacts', [
   verifyToken,
 ], (req, res, next) => {
-  console.log('hit');
   User.findById({_id: req.userId},{}).lean().then(user=> {
     console.log('hit 1' );
 
@@ -454,6 +451,22 @@ router.post('/save_token_device', [
           // height: 20px;
           // width: 20px;
           // display: block;'></span> ${user.name} , \uD83D Welcome to Turftown :-)`)
+          if (user1) {
+          res.status(201).send({status: "success", message: "user collected",data:user})
+        } else {
+            res.status(422).send({status: "failure", errors: {user:"force update failed"}});
+        }
+    }).catch(next);
+  }).catch(next);
+});
+
+router.post('/alter_user/:id', [
+  verifyToken,
+], (req, res, next) => {
+      //Check if user exist
+      console.log(req.body);
+      User.findOne({_id: req.params.id},{activity_log:0}).then(user=> {
+        User.findByIdAndUpdate({_id: req.params.id},req.body).then(user1=>{
           if (user1) {
           res.status(201).send({status: "success", message: "user collected",data:user})
         } else {
@@ -964,7 +977,7 @@ router.post('/host_block_slot/:id', verifyToken, (req, res, next) => {
           }
           console.log(convertable);
           if(convertable){
-            res.status(409).send({status:"failed", message:"slot already booked"})
+            res.status(201).send({status:"success", message:"slot already booked"})
           }else{
             console.log('booking ',body);
               resolve(body)

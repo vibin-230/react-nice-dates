@@ -22,6 +22,14 @@ const schema = new Schema({
   profile_picture:String,
   os:String,
   dob:Date,
+  email_status:{type:Boolean, default:false},
+  name_status:{type:Boolean, default:false},
+  gender_status:{type:Boolean, default:false},
+  bio_status:{type:Boolean, default:false},
+  
+  bio:Array,
+
+
   force_update:Boolean,
   version:String,
   gender:String,

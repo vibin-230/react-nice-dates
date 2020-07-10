@@ -375,9 +375,18 @@ router.post('/sync_contacts', [
       Contacts.findOne({user_id:req.userId}).then((c)=>{
         if(c){
           //get contacts and remove spaces between numbers
-          console.log(c.contacts.length);
-         const contacts =  c.contacts.filter((c)=>c.phoneNumbers.length > 0&&c.displayName).map((a)=>a.phoneNumbers).flat().map(c=>c.number.replace(/\s/g, ""))
+        //  const contacts =  c.contacts.filter((c)=>c.phoneNumbers.length > 0&&c.displayName).map((a)=>a.phoneNumbers).flat().map(c=>c.number.replace(/\s/g, ""))
          //for +91 numbers
+
+
+         const contacts1 =  c.contacts.filter((c)=>c.phoneNumbers.length > 0&&c.displayName)
+         let data = []
+         const contacts2 = contacts1.map((a)=>{
+           data.push(...a.phoneNumbers)
+          })
+         const contacts = data.map(c=>c.number.replace(/\s/g, ""))
+
+
          console.log(contacts.filter((a)=>a === '9941882305'));
          let finalcontacts = contacts.filter((c)=>{
               if(c.length>=10){
@@ -415,7 +424,13 @@ router.post('/sync_contacts', [
     }else if(user.handle && !user.sync_contacts){
       console.log('hit');
       Contacts.create({user_id:req.userId,contacts:req.body}).then(c=>{
-        const contacts =  c.contacts.filter((c)=>c.phoneNumbers.length > 0&&c.displayName).map((a)=>a.phoneNumbers).flat().map(c=>c.number.replace(/\s/g, ""))
+        Contacts.findById({_id:c._id}).then((c)=>{
+        const contacts1 =  c.contacts.filter((c)=>c.phoneNumbers.length > 0&&c.displayName)
+        let data = []
+        const contacts2 = contacts1.map((a)=>{
+          data.push(...a.phoneNumbers)
+         })
+        const contacts = data.map(c=>c.number.replace(/\s/g, ""))
         let finalcontacts = contacts.filter((c)=>{
           if(c.length>=10){
               if(c.substring(0,3) === '+91')
@@ -438,6 +453,7 @@ router.post('/sync_contacts', [
         })
       })
         
+    }).catch(next)
       }).catch(next)
     }
   }).catch(next)
@@ -2838,7 +2854,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
   //req.role==="super_admin"?delete filter.created_by:null
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
     EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
-      Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate('venue','venue'). populate("host","name _id handle name_status").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
+      Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate('venue','venue'). populate("host","name _id handle name_status profile_picture").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
         result = Object.values(combineSlots(booking))
         const open_games = game.filter((g)=>{
          return g.share_type === 'open' || (g.share_type === 'closed' && g.host.some(key=>key._id.toString() === req.userId.toString()))

@@ -406,6 +406,8 @@ module.exports = function () {
             return   User.findOne({_id: user_id },{activity_log:0}).lean().then(sender=> {
               return   User.find({_id: { $in :result } },{activity_log:0}).lean().then(user=> {
                  let finalMessages = conversation1.map((nc)=>{ return {conversation:nc._id,game:game_id,message:` Game (${name}) from ${sender.name}`,name:sender.name,read_status:false,read_by:group_ids[0],author:user_id,type:'game',created_at:new Date()}}) 
+                 console.log('hi 2');
+                 console.log('hi 2',finalMessages);
                  return Message.insertMany(finalMessages).then(message1=>{
                   const message_ids = message1.map((m)=>m._id)
                   return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id').populate('user', 'name _id profile_picture phone handle').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
@@ -414,7 +416,7 @@ module.exports = function () {
                     client.to(id).emit('new',entry)
                     return m.conversation
                   })
-                  return Conversation.updateMany({_id:{ $in: cids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
+                  return Conversation.updateMany({_id:{ $in: group_ids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
                     const device_token_list=user.map((e)=>e.device_token)
                                                   NotifyArray(device_token_list,`Game (${name}) from ${sender.name}`,'Turftown Game Request')
                                                     return user.map((e)=>e._id)
@@ -589,6 +591,7 @@ module.exports = function () {
                       const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id :entry.conversation
                       Conversation.findByIdAndUpdate({_id:id},{$set:{last_message:entry._id, last_updated:new Date()}}).then((m)=>console.log('pass'))
                       client.to(id).emit('new',entry)
+                      client.to(id).emit('unread','invites')
                       return id
                     })
                       const device_token_list=user.map((e)=>e.device_token)

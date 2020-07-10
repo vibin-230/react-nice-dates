@@ -1006,6 +1006,26 @@ router.post('/support',
 		}).catch(next)
 })
 
+router.post('/support_email/:id',
+	verifyToken,
+	AccessControl('support', 'create'),
+	(req, res, next) => {
+		User.findById(req.params.id).then(user=>{
+			if(user){
+				let otp  = Math.floor(999 + Math.random() * 9000);
+				let html = "<h4><b>Hey "+user.name+"</b></h4><h4>Your otp is "+otp+"</h4>"
+				mail("support@turftown.in",req.body.email,"Email Verification Support",'',html,response=>{
+				if(response){
+					res.send({status:"success", message:"support request raised",data:{otp:otp,email:req.body.email}})
+				}else{
+					res.send({status:"failed"})
+				}
+				},req.body.name)
+			}
+			
+		}).catch(next)
+})
+
 
 router.post('/contact',
 	(req, res, next) => {

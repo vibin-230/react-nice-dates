@@ -217,6 +217,7 @@ async function handleUpdateGroup({ chatroomName, message,members } = {}, callbac
     if(game.ids.length > 0  || game.convo_ids.length > 0){
       let x = game.ids.length > 0 && await chatroomManager.sendInvites(game.game._id,game.game.conversation,game.ids,game.user_id,game.town,client)
       let y = game.convo_ids.length > 0 && await chatroomManager.sendGroupInvites(game.game._id,game.game.conversation,game.convo_ids,game.user_id,game.game.name,game.town,client)
+      console.log('hit ',game.convo_ids)
       x.length > 0 && x.forEach((clientId)=>{
         const client =  clientManager.getClient(clientId)
        })
@@ -225,7 +226,6 @@ async function handleUpdateGroup({ chatroomName, message,members } = {}, callbac
         })
         callback()
     } else{
-      console.log('ga',game)
       const z = await chatroomManager.makeTownTrue(game.game._id,game.town)
       
       callback(z)

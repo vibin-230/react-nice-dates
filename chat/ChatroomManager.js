@@ -63,7 +63,7 @@ module.exports = function () {
   }
 
  async function getConversationAndSendBotMessage(convo,client){
- const x = await Conversation.findById({_id:convo._id}).populate('members','_id name device_token handle').then((conversation1)=>{
+ const x = await Conversation.findById({_id:convo._id}).populate('members','_id name device_token handle name_status').then((conversation1)=>{
       const messages =  conversation1.members.map((user)=> ({conversation:convo._id,message:groupChatMessage(conversation1.members[0].name,user.name),name:conversation1.members[0].name,author:conversation1.members[0]._id,type:'bot',created_at:new Date()}))
       const messages1 =  conversation1.members.map((user)=> ({conversation:convo._id,message:groupChatMessage1(conversation1.members[0].name,user.name),name:conversation1.members[0].name,author:conversation1.members[0]._id,type:'bot',created_at:new Date(),user_name:user.name}))
       
@@ -184,7 +184,7 @@ module.exports = function () {
      const x = await Message.insertMany(message).then(message1=>{
                    return Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},{last_message:message1[message1.length-1]._id,last_updated:new Date()}).then(conversation=>{
                       const message_ids = message1.map(m=>m._id)
-                      return Message.find({_id: {$in : message_ids}}).lean().populate('author', 'name handle _id').populate('user', 'name _id profile_picture phone handle').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({ $natural: 1 }).then(m => {
+                      return Message.find({_id: {$in : message_ids}}).lean().populate('author', 'name handle _id name_status').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({ $natural: 1 }).then(m => {
                         return m
         }).catch((e)=>{console.log(e)});
       }).catch((e)=>{console.log(e)});
@@ -286,7 +286,7 @@ module.exports = function () {
       let value = Object.values(params)[0]
      const x = Message.insertMany(message).then(message1=>{
         return Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},{last_message:message1[message1.length-1]._id,last_updated:new Date(),[object_key]:value}).then(conversation=>{
-          return Conversation.findById({_id:message1[message1.length-1].conversation}).populate('members','name _id profile_picture last_active online_status status handle').populate('last_message').then(conversation=>{
+          return Conversation.findById({_id:message1[message1.length-1].conversation}).populate('members','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(conversation=>{
             return {conversation:conversation,message:message1}
           }).catch((e)=>{console.log(e)});
         }).catch((e)=>{console.log(e)});
@@ -312,7 +312,7 @@ module.exports = function () {
       return  Conversation.findById({_id:message.conversation}).then(conversation=>{
           conversation.members = conversation.members.length > 0 ?  conversation.members.concat(members) : members
           return Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},conversation ).then(conversation=>{
-            return Conversation.findById({_id:message1[message1.length-1].conversation}).populate('members','name _id profile_picture last_active online_status status handle').populate('last_message').then(conversation=>{
+            return Conversation.findById({_id:message1[message1.length-1].conversation}).populate('members','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(conversation=>{
               return {conversation:conversation,message:message1}
             }).catch((e)=>{console.log(e)});
       }).catch((e)=>{console.log(e)});
@@ -361,7 +361,7 @@ module.exports = function () {
                                           let finalMessages = messages.concat(messages1)
                                             return Message.insertMany(finalMessages).then(message1=>{
                                               const message_ids = message1.map((m)=>m._id)
-                                              return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id').populate('user', 'name _id profile_picture handle phone').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
+                                              return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id handle name_status').populate('user', 'name _id profile_picture handle phone name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
                                                 const cids = m.map((entry)=>{
                                                   const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id :entry.conversation
                                                   client.to(id).emit('new',entry)
@@ -390,7 +390,7 @@ module.exports = function () {
 
 
     async function sendGroupInvites(game_id,conversation,group_ids,user_id,name,town,client){
-    const x = await Conversation.find({_id: {$in : group_ids}}).lean().populate('members','_id name device_token handle').then(conversation1=> {
+    const x = await Conversation.find({_id: {$in : group_ids}}).lean().populate('members','_id name device_token handle name_status').then(conversation1=> {
          return  Game.findById({_id: game_id}).then(ac_game=> {
       
       const c = conversation1.reduce((acc,l)=>{
@@ -410,7 +410,7 @@ module.exports = function () {
                  console.log('hi 2',finalMessages);
                  return Message.insertMany(finalMessages).then(message1=>{
                   const message_ids = message1.map((m)=>m._id)
-                  return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id').populate('user', 'name _id profile_picture phone handle').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
+                  return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id handle name_status').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
                   const cids = m.map((entry)=>{
                     const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id :entry.conversation
                     client.to(id).emit('new',entry)
@@ -449,7 +449,7 @@ module.exports = function () {
         return Game.findByIdAndUpdate({ _id: game_id }, { $set: game }).then(game2 => {
           return User.findById({ _id: userId }, { activity_log: 0, }).lean().then(user => {
           return Conversation.findByIdAndUpdate({ _id: game1.conversation }, { $set: conversation }).then(conversation2 => {
-            return Conversation.findById({ _id: game.conversation }).lean().populate('members', '_id device_token handle name').then(conversation2 => {
+            return Conversation.findById({ _id: game.conversation }).lean().populate('members', '_id device_token handle name name_status').then(conversation2 => {
                 saveMessage({ conversation: conversation2._id, message: `${user.name} has joined the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() })
                 const token_list  = conversation2.members.filter((key) => key._id.toString() !== userId.toString())
                 const device_token_list = token_list.map((e) => e.device_token)
@@ -477,7 +477,7 @@ module.exports = function () {
           console.log('conversation',conversation._id);
           return Game.findByIdAndUpdate({ _id: game1.game_id }, { $set: game }).then(game2 => {
              return Conversation.findByIdAndUpdate({ _id: game1.convo_id }, { $set: conversation }).then(conversation2 => {
-              return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token handle name').then(conversation2 => {
+              return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token handle name name_status').then(conversation2 => {
                 return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
                   let message_formation = game1.type == "game" ? `${user.name} has left the game` : `${game1.host} has removed ${user.name}` 
                   saveMessage({ conversation: conversation2._id, message: message_formation, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() })
@@ -504,7 +504,7 @@ module.exports = function () {
           console.log('conversation',conversation._id);
           return Game.findByIdAndUpdate({ _id: game1.game_id }, { $set: game }).then(game2 => {
              return Conversation.findByIdAndUpdate({ _id: game1.convo_id }, { $set: conversation }).then(conversation2 => {
-              return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token handle name').then(conversation2 => {
+              return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token handle name name_status').then(conversation2 => {
                 return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
                   let message_formation = game1.type == "game" ? `${user.name} has left the game` : `${game1.host} has removed ${user.name}` 
                   saveMessage({ conversation: conversation2._id, message: message_formation, read_status: false, name: user.name, author: game1.id, type: 'bot', created_at: new Date() })
@@ -586,7 +586,7 @@ module.exports = function () {
                   return   User.find({_id: { $in :members } },{activity_log:0}).lean().then(user=> {
                   return Message.insertMany(messages).then(message1=>{
                     const message_ids = message1.map((m)=>m._id)
-                    return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id').populate('user', 'name _id profile_picture phone handle').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
+                    return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id handle name_status').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
                     const cids = m.map((entry)=>{
                       const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id :entry.conversation
                       Conversation.findByIdAndUpdate({_id:id},{$set:{last_message:entry._id, last_updated:new Date()}}).then((m)=>console.log('pass'))
@@ -628,7 +628,7 @@ module.exports = function () {
                   return   User.find({_id: { $in :members } },{activity_log:0}).lean().then(user=> {
                   return Message.insertMany(messages).then(message1=>{
                     const message_ids = message1.map((m)=>m._id)
-                    return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id').populate('user', 'name _id profile_picture phone handle').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
+                    return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id handle name_status').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
                     const cids = m.map((entry)=>{
                       const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id :entry.conversation
                       Conversation.findByIdAndUpdate({_id:id},{$set:{last_message:entry._id, last_updated:new Date()}}).then((m)=>console.log('pass'))
@@ -661,7 +661,7 @@ module.exports = function () {
         game.host = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString()).length > 0 ? conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())[0] : []
         return Game.findOneAndUpdate({ conversation: game1.convo_id }, { $set: game }).then(conversation2 => {
          return Conversation.findByIdAndUpdate({ _id: game1.convo_id }, { $set: conversation }).then(conversation2 => {
-          return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token handle name').then(conversation2 => {
+          return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token handle name name_status').then(conversation2 => {
             return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
             saveMessage({ conversation: conversation2._id, message: `${user.name} has left the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() })
             const token_list  = conversation2.members.filter((key) => key._id.toString() !== game1.user_id.toString())
@@ -698,7 +698,7 @@ return x
            }
            else{
              return Conversation.findByIdAndUpdate({ _id: game1.convo_id }, { $set: conversation }).then(conversation2 => {
-                 return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token handle name').then(conversation2 => {
+                 return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token handle name name_status').then(conversation2 => {
                    return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
                    conversation2.type !== 'single' && saveMessage({ conversation: conversation2._id, message: `${user.name} has left the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() })
                    const token_list  = conversation2.members.filter((key) => key._id.toString() !== game1.user_id.toString())

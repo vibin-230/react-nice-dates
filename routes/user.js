@@ -190,7 +190,7 @@ router.post('/show_more_messages/:id', [
   verifyToken,
 ], (req, res, next) => {
   console.log('last activity',req.body.message);
-    Message.find({conversation:req.params.id,created_at: { $lt: req.body.message.created_at }}).lean().populate('author', 'name _id').populate('user', 'name _id profile_picture phone handle').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({_id:-1}).limit(10).then(m => {
+    Message.find({conversation:req.params.id,created_at: { $lt: req.body.message.created_at }}).lean().populate('author', 'name _id').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({_id:-1}).limit(10).then(m => {
       res.status(201).send({status: "success", message: "Conversation messages success",data:m})
     }).catch(next); 
 });
@@ -294,7 +294,7 @@ router.post('/get_chatrooms/:id', [
 ], (req, res, next) => {
       //Check if user existinvites:{$in:[req.params.id]}
       //Conversation.find({members:{$in:[req.params.id]}}).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(existingConversation=>{
-      Conversation.find({ $or: [ { members: { $in: [req.params.id] } }] }).lean().populate('to',' name _id profile_picture last_active online_status status handle').populate('members','name _id profile_picture last_active online_status status handle').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle').populate('last_message').then(existingConversation=>{
+      Conversation.find({ $or: [ { members: { $in: [req.params.id] } }] }).lean().populate('to',' name _id profile_picture last_active online_status status handle name_status').populate('members','name _id profile_picture last_active online_status status handle name_status').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(existingConversation=>{
        const exit_convo_list = existingConversation.filter((e)=> e.type === 'single' && e.exit_list && e.exit_list.length > 0 )
        //console.log(exit_convo_list)
        User.findOne({_id: req.params.id},{activity_log:0,followers:0,following:0}).then(user=> {
@@ -342,7 +342,7 @@ router.post('/get_town_games/', [
     let following = user.following
         following = following.concat(req.userId)
     const filter = req.body.sport === 'all' ? { created_by: { $in: following } ,town:true, host:{ $in: following },start_time:{$gte:req.body.date}} :{ created_by: { $in: following } ,town:true,sport_name:req.body.sport, host:{ $in: following }, start_time:{$gte:new Date()}}
-    Game.find(filter).lean().populate('conversation').populate('host','_id name profile_picture phone handle').populate("venue","venue").populate('users','_id name profile_picture phone handle').populate('invites','_id name profile_picture phone').then(existingConversation=>{
+    Game.find(filter).lean().populate('conversation').populate('host','_id name profile_picture phone handle name_status').populate("venue","venue").populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone').then(existingConversation=>{
       existingConversation.map((key)=>{
        key["venue"] = key.venue.venue
       })
@@ -741,7 +741,7 @@ router.post('/send_invite',verifyToken, (req, res, next) => {
 });
 
 router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
-          Game.findOne({conversation:req.params.conversation_id}).lean().populate('host','_id name profile_picture phone handle').populate('users','_id name profile_picture phone handle').populate('invites','_id name profile_picture phone handle').then(game=>{
+          Game.findOne({conversation:req.params.conversation_id}).lean().populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=>{
             Venue.findById({_id:game.bookings[0].venue_id}).then(venue =>{
               let game1 = Object.assign({},game)
               console.log('pass',game1);
@@ -757,7 +757,7 @@ router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
 
 
 router.post('/get_group_info',verifyToken, (req, res, next) => {
-  Conversation.findById({_id:req.body.conversation_id}).populate('members','_id name device_token profile_picture handle').then((convo)=>{
+  Conversation.findById({_id:req.body.conversation_id}).populate('members','_id name device_token profile_picture handle name_status').then((convo)=>{
     User.find({_id:convo.created_by}).select('name -_id').then(user=>{
       Message.find({$and:[{ "image": { $exists: true, $ne: null }},{conversation:req.body.conversation_id},{type:"image"} ]}).distinct("image").then((image)=>{
     Message.find({$and:[{ "game": { $exists: true, $ne: null }},{conversation:req.body.conversation_id}]}).distinct("game").then((games)=>{
@@ -1187,7 +1187,7 @@ async function handleSlotAvailabilityForGames(booking1,client){
                 return   User.find({_id: { $in :members } },{activity_log:0}).lean().then(user=> {
                 return Message.insertMany(messages).then(message1=>{
                   const message_ids = message1.map((m)=>m._id)
-                  return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id').populate('user', 'name _id profile_picture phone handle').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
+                  return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
                   const cids = m.map((entry)=>{
                     const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id :entry.conversation
                     Conversation.findByIdAndUpdate({_id:id},{$set:{last_message:entry._id, last_updated:new Date()}}).then((m)=>console.log('pass'))
@@ -2021,7 +2021,7 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
                 return   User.find({_id: { $in :members } },{activity_log:0}).lean().then(user=> {
                 return Message.insertMany(messages).then(message1=>{
                   const message_ids = message1.map((m)=>m._id)
-                  return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id').populate('user', 'name _id profile_picture phone handle').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
+                  return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
                   const cids = m.map((entry)=>{
                     const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id :entry.conversation
                     Conversation.findByIdAndUpdate({_id:id},{$set:{last_message:entry._id, last_updated:new Date()}}).then((m)=>console.log('pass'))
@@ -2067,7 +2067,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                  
                     Message.create({conversation:game.conversation,message:`Hey ! Slot has been cancelled. Please book your slot to confirm the game`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                       Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
-                          Game.findOne({conversation:game.conversation}).lean().populate('host','_id name profile_picture phone handle').populate('users','_id name profile_picture phone handle').populate('invites','_id name profile_picture phone').then(game1=>{
+                          Game.findOne({conversation:game.conversation}).lean().populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone name_status handle').then(game1=>{
                             game1["venue"] = venue.venue
                             game1["rating"] = venue.rating
                             game1['final'] = _.xor(game1.users,game1.host)
@@ -2170,7 +2170,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
                     Message.create({conversation:game.conversation,message:`Hey ! slot has been cancelled . Please book your slot to confirm the game`,name:'bot',read_status:false,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                       Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
-                        Game.findOne({conversation:game.conversation}).lean().populate('host','_id name profile_picture phone handle').populate('users','_id name profile_picture phone handle').populate('invites','_id name profile_picture phone').then(game1=>{
+                        Game.findOne({conversation:game.conversation}).lean().populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone name_status').then(game1=>{
                           const venue_data = booking[0].venue_data
                           game1["venue"] = venue_data.venue
                           game1["rating"] = venue_data.rating
@@ -2328,7 +2328,7 @@ router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
 })
 
 router.post('/followers/:id', verifyToken, (req, res, next) => {
-  User.findById({_id:req.params.id},{activity_log:0}).lean().populate('following','name phone profile_picture handle').then(user=>{
+  User.findById({_id:req.params.id},{activity_log:0}).lean().populate('following','name phone profile_picture handle name_status').then(user=>{
     const folloers = user.following.map((a)=>{
       a['select'] = false
       return a
@@ -2339,8 +2339,8 @@ router.post('/followers/:id', verifyToken, (req, res, next) => {
 
 
 router.post('/convos_and_followers/:id', verifyToken, (req, res, next) => {
-  Conversation.find({ $and: [ { members: { $in: [req.params.id] } },{$or:[{type:'group'},{type:'game'}]}] }).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(existingConversation=>{
-      User.findById({_id:req.params.id},{activity_log:0}).lean().populate('following','name phone profile_picture handle').then(user=>{
+  Conversation.find({ $and: [ { members: { $in: [req.params.id] } },{$or:[{type:'group'},{type:'game'}]}] }).lean().populate('to',' name _id profile_picture last_active online_status status name_status handle').populate('members','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(existingConversation=>{
+      User.findById({_id:req.params.id},{activity_log:0}).lean().populate('following','name phone profile_picture handle name_status _id').then(user=>{
            const folloers = user.following.map((f)=>{
             f['select'] = false
             return f
@@ -2838,7 +2838,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
   //req.role==="super_admin"?delete filter.created_by:null
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
     EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
-      Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate('venue','venue'). populate("host","name _id handle").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
+      Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate('venue','venue'). populate("host","name _id handle name_status").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
         result = Object.values(combineSlots(booking))
         const open_games = game.filter((g)=>{
          return g.share_type === 'open' || (g.share_type === 'closed' && g.host.some(key=>key._id.toString() === req.userId.toString()))

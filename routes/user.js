@@ -341,7 +341,7 @@ router.post('/get_town_games/', [
   User.findById({_id: req.userId},{}).lean().then(user=> {
     let following = user.following
         following = following.concat(req.userId)
-    const filter = req.body.sport === 'all' ? { created_by: { $in: following } ,town:true, host:{ $in: following },start_time:{$gte:req.body.date}} :{ created_by: { $in: following } ,town:true,sport_name:req.body.sport, host:{ $in: following }, start_time:{$gte:new Date()}}
+    const filter = req.body.sport === 'all' ? { created_by: { $in: following } ,town:true, host:{ $in: following },start_time:{$gte:req.body.date}} :{ created_by: { $in: following } ,town:true,sport_name:{$in:req.body.sport}, host:{ $in: following }, start_time:{$gte:new Date()}}
     Game.find(filter).lean().populate('conversation').populate('host','_id name profile_picture phone handle name_status').populate("venue","venue").populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone').then(existingConversation=>{
       existingConversation.map((key)=>{
        key["venue"] = key.venue.venue

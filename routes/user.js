@@ -2324,24 +2324,29 @@ router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
       }else{
         User.findByIdAndUpdate({_id:req.params.friend},{$addToSet: { followers: { $each: [obj] } } }).then(user=>{  
           User.findByIdAndUpdate({_id:req.body.id},{$addToSet: { following: { $each: [friend._id] } } }).then(user=>{  
-            console.log("fffff",user)
-            res.send({status:'success', message:"following"})
+            User.findById({_id:req.body.id}).then(user=>{ 
+              res.send({status:"success", message:"following "+friend.handle, data:user})
+            }).catch(next)
 
         }).catch(next)
       }).catch(next)
       }
     }
     else {
-      User.findByIdAndUpdate({_id:req.params.friend},{$addToSet: { followers: { $each: [obj] } } }).then(user=>{  
-        User.findByIdAndUpdate({_id:req.body.id},{$addToSet: { following: { $each: [friend._id] } } }).then(user=>{  
-      res.send({status:'success', message:"Request"})
-
+      User.findByIdAndUpdate({_id:req.params.friend},{$addToSet: { requests: { $each: [obj] } } }).then(user=>{  
+        User.findByIdAndUpdate({_id:req.body.id},{$addToSet: { sent_requests: { $each: [friend._id] } } }).then(user=>{  
+          User.findById({_id:req.body.id}).then(user=>{ 
+            res.send({status:"success", message:"Request sent to "+friend.handle, data:user})
+          }).catch(next)
       }).catch(next)
     }).catch(next)
     }
   }).catch(next)
   }).catch(next)
 })
+
+
+
 
 router.post('/followers/:id', verifyToken, (req, res, next) => {
   User.findById({_id:req.params.id},{activity_log:0}).lean().populate('following','name phone profile_picture handle name_status').then(user=>{
@@ -2350,6 +2355,57 @@ router.post('/followers/:id', verifyToken, (req, res, next) => {
       return a
   })
     res.send({status:"success", message:"followers fetched", data:folloers})
+  }).catch(next)
+})
+
+
+router.post('/unfollow_request/:friend', verifyToken, (req, res, next) => {
+  User.findById({_id:req.params.friend},{activity_log:0}).lean().then(friend=>{
+    User.findById({_id:req.body.id},{activity_log:0}).lean().then(user=>{    
+
+      const following = user.following.filter((u)=>u.toString() !== friend._id.toString())
+      const friend_followers = friend.followers.filter((u)=>u.toString() !== user._id.toString())
+      User.findByIdAndUpdate({_id:req.params.friend},{$set: { followers: friend_followers } }).then(user=>{  
+        User.findByIdAndUpdate({_id:req.body.id},{$set: { following: following } }).then(user=>{  
+            User.findById({_id:req.body.id}).then(user=>{ 
+              console.log(user.following)
+              res.send({status:"success", message:"Unfollowed "+friend.handle, data:user})
+  }).catch(next)
+  }).catch(next)
+  }).catch(next)
+  }).catch(next)
+  }).catch(next)
+})
+
+router.post('/remove_request/:friend', verifyToken, (req, res, next) => {
+  User.findById({_id:req.params.friend},{activity_log:0}).lean().then(friend=>{
+    User.findById({_id:req.body.id},{activity_log:0}).lean().then(user=>{    
+      //In user followers filter friend id
+      const followers = user.followers.filter((u)=>u.toString() !== friend._id.toString())
+      // In friend following list remove user id 
+      const friend_following = friend.following.filter((u)=>u.toString() !== user._id.toString())
+      User.findByIdAndUpdate({_id:req.params.friend},{$set: { following: friend_following } }).then(user=>{  
+        User.findByIdAndUpdate({_id:req.body.id},{$set: { followers: followers } }).then(user=>{  
+            User.findById({_id:req.body.id}).then(user=>{ 
+              res.send({status:"success", message:"Removed "+friend.handle, data:user})
+  }).catch(next)
+  }).catch(next)
+  }).catch(next)
+  }).catch(next)
+  }).catch(next)
+})
+
+router.post('/get_followers_and_following', verifyToken, (req, res, next) => {
+  User.findById({_id:req.userId},{activity_log:0}).lean().populate('following','name phone profile_picture handle name_status').populate('followers','name phone profile_picture handle name_status').then(user=>{
+    const following = user.following.map((a)=>{
+      a['select'] = false
+      return a
+  })
+  const followers = user.followers.map((a)=>{
+    a['select'] = false
+    return a
+})
+    res.send({status:"success", message:"followers fetched", data:{followers,following}})
   }).catch(next)
 })
 

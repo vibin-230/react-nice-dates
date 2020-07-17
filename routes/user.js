@@ -1994,6 +1994,7 @@ router.post('/test_textlocal', verifyToken, (req, res, next) => {
   // SendMessage(numbers,sender,EVENT_BOOKED_MANAGER)
   User.find({phone:req.body.phone},{activity_log:0}).lean().then((u)=>{
     console.log(u[0]._id);
+    
     notify(u[0],'total')
     res.send({status:"success", message:"Version Log",data:u[0]})
   }).catch(next)

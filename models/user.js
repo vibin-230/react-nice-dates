@@ -51,8 +51,7 @@ const schema = new Schema({
   conversation:[{
     conversation:{type:mongoose.Schema.Types.ObjectId, ref:'conversation'},
   }],
-
-
+  mute:[{type:mongoose.Schema.Types.ObjectId, ref:'conversation'}],
   temporary:Boolean,
   sports_interest:Array,
   activity_log:Array,

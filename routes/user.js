@@ -499,6 +499,25 @@ router.post('/alter_user/:id', [
   }).catch(next);
 });
 
+router.post('/mute_user/:id', [
+  verifyToken,
+], (req, res, next) => {
+      //Check if user exist
+      console.log(req.body.mute);
+      User.findOne({_id: req.params.id},{activity_log:0}).then(user=> {
+        User.findByIdAndUpdate({_id: req.params.id},{mute:req.body.mute}).then(user=>{
+          User.findOne({_id: req.params.id},{activity_log:0}).then(user1=> {
+            if (user1) {
+          res.status(201).send({status: "success", message: "user collected",data:user1})
+        } else {
+            res.status(422).send({status: "failure", errors: {user:"force update failed"}});
+        }
+    }).catch(next);
+  }).catch(next);
+
+  }).catch(next);
+});
+
 
 router.post('/edit_user', [
   verifyToken,
@@ -764,12 +783,13 @@ router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
               game1["venue"] = venue.venue
               game1["rating"] = venue.rating
               game1['final'] = _.xor(game1.users,game1.host)
-
               res.send({status:"success", message:"game_fetched",data:game1})
 
             })
     }).catch(next);
 });
+
+
 
 
 router.post('/get_group_info',verifyToken, (req, res, next) => {
@@ -789,9 +809,6 @@ router.post('/get_group_info',verifyToken, (req, res, next) => {
 }).catch(next)
 }).catch(next)
 });
-
-
-
 
 //Upload profile picture
 router.post('/profile_picture',verifyToken, (req, res, next) => {

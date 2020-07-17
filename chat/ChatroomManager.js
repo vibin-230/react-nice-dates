@@ -255,7 +255,7 @@ module.exports = function () {
         }
       })
 
-       User.find({_id: {$in : filter}},{activity_log:0}).then(user=> {
+       User.find({and:[{_id: {$in : filter}},{mute:{$nin:[chatroom._id]}}]},{activity_log:0}).then(user=> {
         console.log('hit user',message);
         if(Array.isArray(message)){
           const s = message.length > 1 ?'s':''

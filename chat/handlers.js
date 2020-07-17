@@ -82,20 +82,20 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     client.to(chatroomName.convo_id).emit('unread',{})
     let x
     if(chatroomName.type === 'group'){
-       x  = await chatroomManager.leaveChatroomGroup(chatroomName,client)
+       x  = await chatroomManager.leaveChatroomGroup(chatroomName,io)
 
     }
      else if(chatroomName.type === 'game_without_game_id'){
-      x  = await chatroomManager.leaveChatroomWithConversationId(chatroomName,client)
+      x  = await chatroomManager.leaveChatroomWithConversationId(chatroomName,io)
 
    }
    else if(chatroomName.type === 'kick_player'){
-    x  = await chatroomManager.kickPlayer(chatroomName,client)
+    x  = await chatroomManager.kickPlayer(chatroomName,io)
     client.to(chatroomName.convo_id).emit('unread',{})
 
  }
     else{
-      x  = await chatroomManager.leaveChatroom(chatroomName,client)
+      x  = await chatroomManager.leaveChatroom(chatroomName,io)
     }
     x.forEach((clientId)=>{
       const client =  clientManager.getClient(clientId)
@@ -129,12 +129,13 @@ module.exports = function (client, clientManager, chatroomManager,io) {
 
 }
 
-async function handleSlotAvailability({ booking } = {}, callback) {
+async function handleSlotAvailability({ game } = {}, callback) {
   // const clientNumber = io.sockets.adapter.rooms[game.conversation];
   // const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
   // client.to(chatroomName._id).emit('new',message)
   // client.to(chatroomName._id).emit('unread',message)
-  chatroomManager.handleSlotAvailability(booking,client)
+  console.log('handleSlotAvailability',game);
+  chatroomManager.handleSlotAvailability(game.conversation,io)
   // chatroomManager.saveMessages(message) 
   //chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
   callback()
@@ -236,7 +237,7 @@ async function handleUpdateGroup({ chatroomName, message,members } = {}, callbac
 
 
   async function handleJoinGame(game,callback){
-    const x = await chatroomManager.joinGame(game.game_id,game.id,client)
+    const x = await chatroomManager.joinGame(game.game_id,game.id,io)
     x.forEach((clientId)=>{
      const client =  clientManager.getClient(clientId)
     })

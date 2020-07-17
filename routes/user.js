@@ -1061,7 +1061,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
     // Capture the payment
      
     var data = {
-      amount:req.body[0].booking_amount*100
+      amount:(req.body[0].booking_amount*req.body.length)*100
     }
 
     //Capture Payment
@@ -1248,7 +1248,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
     // Capture the payment
      
     var data = {
-      amount:req.body[0].booking_amount*100
+      amount:(req.body[0].booking_amount*req.body.length)*100
     }
 
 
@@ -1399,12 +1399,12 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
     // Capture the payment
      
     var data = {
-      amount:req.body[0].booking_amount*100
+      amount:(req.body[0].booking_amount*req.body.length)*100
     }
 
 
    console.log('razorpay api',process.env.RAZORPAY_API)
-   console.log('transaction api',values)
+   console.log('transaction api',data,req.body[0])
 
     //Capture Payment
     axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
@@ -2088,7 +2088,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                             game1["rating"] = venue.rating
                             game1['final'] = _.xor(game1.users,game1.host)
                        
-                        res.send({status:"success", message:"booking cancelled",data:game})
+                        res.send({status:"success", message:"booking cancelled",data:game1})
                         
                   let booking_id = booking[0].booking_id
                   let venue_name = booking[0].venue

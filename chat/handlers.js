@@ -82,20 +82,20 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     client.to(chatroomName.convo_id).emit('unread',{})
     let x
     if(chatroomName.type === 'group'){
-       x  = await chatroomManager.leaveChatroomGroup(chatroomName)
+       x  = await chatroomManager.leaveChatroomGroup(chatroomName,client)
 
     }
      else if(chatroomName.type === 'game_without_game_id'){
-      x  = await chatroomManager.leaveChatroomWithConversationId(chatroomName)
+      x  = await chatroomManager.leaveChatroomWithConversationId(chatroomName,client)
 
    }
    else if(chatroomName.type === 'kick_player'){
-    x  = await chatroomManager.kickPlayer(chatroomName)
+    x  = await chatroomManager.kickPlayer(chatroomName,client)
     client.to(chatroomName.convo_id).emit('unread',{})
 
  }
     else{
-      x  = await chatroomManager.leaveChatroom(chatroomName)
+      x  = await chatroomManager.leaveChatroom(chatroomName,client)
     }
     x.forEach((clientId)=>{
       const client =  clientManager.getClient(clientId)

@@ -307,7 +307,7 @@ router.post('/get_chatrooms/:id', [
             if(exit_convo_list && exit_convo_list.length > 0 && c.exit_list && c.exit_list.length > 0){
               const x =  exit_convo_list.filter((e)=> e.exit_list && c.exit_list.length>0 && e._id.toString() === c._id.toString())
              const user  =  x.length > 0 ? x[0].exit_list[x[0].exit_list.length -1 ] : []
-             c.members =  user ? c.members.concat(user.user_id) : c.members
+             c.members =  user && user.length > 0 ? c.members.concat(user.user_id) : c.members
              c['exit'] = true
             }
             const filter = c && c.last_active ? c.last_active.filter((c)=> c && c.user_id && c.user_id.toString() === req.params.id.toString()) : []

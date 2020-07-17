@@ -247,7 +247,6 @@ module.exports = function () {
 
 
     function notifyAllUsersNotInTheChatroom(chatroom,message,users){
-      console.log('hit users',users,message);
       const filter = chatroom.members.filter((member)=>{ 
         const string  = member && member._id ? member._id.toString() : member.toString()
         if(!users.includes(string) ){
@@ -255,20 +254,20 @@ module.exports = function () {
         }
       })
 
-       User.find({and:[{_id: {$in : filter}},{mute:{$nin:[chatroom._id]}}]},{activity_log:0}).then(user=> {
-        console.log('hit user',message);
+       User.find({_id: {$in : filter}},{activity_log:0}).lean().then(user=> {
+        console.log('hit user',user.length);
+        const final_user  = user.filter((u)=> u.mute.filter((u)=>u.toString() === chatroom._id.toString()).length <= 0)
+        console.log(final_user.length,chatroom._id.toString());
         if(Array.isArray(message)){
           const s = message.length > 1 ?'s':''
           const messages = message[0].type === 'image' ? `${message.length} image${s}` : message[0].type === 'game' ? `${message.length} game${s} has been shared`:`${message.length} townie${s} has been shared`
           const messages1 = chatroom.type === 'single' ?  `${message[0].name} : ${messages}`:  `${message[0].name} @ ${chatroom.name} : ${messages}`
-          NotifyArray(user.map((u)=>u.device_token),messages1,'Turf Town')
+          NotifyArray(final_user.map((u)=>u.device_token),messages1,'Turf Town')
         }else{
           const s = message && message.image && message.image.length > 1 ?'s':''
-          console.log('hit user');
-          console.log(message);
           const messages = message.type === 'image' ? `${message.image.length} image${s} has been shared`: `${message.message}`
           const messages1 = chatroom.type === 'single' ?  `${message.name} : ${messages}`:  `${message.name} @ ${chatroom.name} : ${messages}`
-          NotifyArray(user.map((u)=>u.device_token),messages1,'Turf Town')
+          NotifyArray(final_user.map((u)=>u.device_token),messages1,'Turf Town')
 
         }
       }).catch((e)=>console.log(e))

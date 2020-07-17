@@ -80,7 +80,7 @@ module.exports = function () {
 
 
   async function checkIfUserExited(chatroomName){
-    const filter  = chatroomName && chatroomName._id ? {_id:chatroomName._id,type:'single'} :{members:chatroomName.members,type:'single'}
+    const filter  = chatroomName && chatroomName._id ? {_id:chatroomName._id,type:'single'} :{members:{$in:chatroomName.members},type:'single'}
     console.log('filter ',filter);
     const s = await Conversation.find(filter).limit(1).lean().then(ec=>{
       console.log(ec[0]);
@@ -435,7 +435,7 @@ module.exports = function () {
        }
 
     
-  async function joinGame(game_id, userId) {
+  async function joinGame(game_id, userId,client) {
     const x = await Game.findById({ _id: game_id }).lean().then(game1 => {
       return Conversation.findById({ _id: game1.conversation }).lean().then(conversation1 => {
         const conversation = Object.assign({}, conversation1)
@@ -450,7 +450,10 @@ module.exports = function () {
           return User.findById({ _id: userId }, { activity_log: 0, }).lean().then(user => {
           return Conversation.findByIdAndUpdate({ _id: game1.conversation }, { $set: conversation }).then(conversation2 => {
             return Conversation.findById({ _id: game.conversation }).lean().populate('members', '_id device_token handle name name_status').then(conversation2 => {
-                saveMessage({ conversation: conversation2._id, message: `${user.name} has joined the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() })
+              const message_save ={ conversation: conversation2._id, message: `${user.name} has joined the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() }
+              saveMessage(message_save)
+                client.to(conversation2._id).emit('new',message_save)
+                client.to(conversation2._id).emit('unread',message_save)
                 const token_list  = conversation2.members.filter((key) => key._id.toString() !== userId.toString())
                 const device_token_list = token_list.map((e) => e.device_token)
                 NotifyArray(device_token_list, `${user.name} has joined the game`, `New Game Joined`)

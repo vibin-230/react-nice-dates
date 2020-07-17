@@ -236,7 +236,7 @@ async function handleUpdateGroup({ chatroomName, message,members } = {}, callbac
 
 
   async function handleJoinGame(game,callback){
-    const x = await chatroomManager.joinGame(game.game_id,game.id)
+    const x = await chatroomManager.joinGame(game.game_id,game.id,client)
     x.forEach((clientId)=>{
      const client =  clientManager.getClient(clientId)
     })

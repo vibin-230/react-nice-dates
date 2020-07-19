@@ -334,7 +334,7 @@ module.exports = function () {
    const x = await  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: ids } } ,$set:{town:town,town_date:new Date()} } ).then(game=> {
                 return Conversation.findByIdAndUpdate({_id: conversation},{ $addToSet: { invites: { $each: ids } } }).then(conversation1=> {
                   return Game.findById({_id: game_id}).then(game1=> {
-                    const x = ids.map((id)=>{ return { members :{$all:[id,user_id]},type:'single'}})
+                    const x = ids.map((id)=>{ return { members :{$in:[id,user_id]},type:'single'}})
                     const members_list = ids.map((id)=>{ return {members :[id,user_id]} })
                     return Conversation.find({$or:x}).then(conversation2=> {
                           const conversation_list = conversation2.reduce((z,c)=>{ 

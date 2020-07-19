@@ -80,7 +80,7 @@ module.exports = function () {
 
 
   async function checkIfUserExited(chatroomName){
-    const filter  = chatroomName && chatroomName._id ? {_id:chatroomName._id,type:'single'} :{members:{$in:chatroomName.members},type:'single'}
+    const filter  = chatroomName && chatroomName._id ? {_id:chatroomName._id,type:'single'} :{$or:[{members:chatroomName.members,type:'single'},{members:chatroomName.members.reverse(),type:'single'}]}
     console.log('filter ',filter);
     const s = await Conversation.find(filter).limit(1).lean().then(ec=>{
       console.log(ec[0]);

@@ -353,10 +353,10 @@ module.exports = function () {
                                return   User.findOne({_id: user_id },{activity_log:0}).lean().then(sender=> {
                                  return   User.find({_id: { $in :ids } },{activity_log:0}).lean().then(user=> {
 
-                                      let messages =  new_convos.map((nc)=>{ return {conversation:nc._id,game:game_id,message:`Game invite`,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
+                                      let messages =  new_convos.map((nc)=>{ return {conversation:nc._id,game:game_id,message:'Game invite',name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
                                         let messages1 = conversation2.map((nc)=>{ 
                                            // client.to(nc._id.toString()).emit('new',{conversation:nc._id,game:game_id,message:`Game (${game1.name}) invite`,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()})
-                                          return {conversation:nc._id,game:game_id,message:`Game invite`,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
+                                          return {conversation:nc._id,game:game_id,message:'Game invite',name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
                                           let finalMessages = messages.concat(messages1)
                                             return Message.insertMany(finalMessages).then(message1=>{
                                               const message_ids = message1.map((m)=>m._id)

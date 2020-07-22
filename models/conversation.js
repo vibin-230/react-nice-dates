@@ -22,6 +22,7 @@ const schema = new Schema({
   exit_list:[{
     user_id:{type:mongoose.Schema.Types.ObjectId, ref:'user'},
     //username:{type:String,default:''},
+    message:Object,
     timeStamp: { type : Date , default:new Date()},
   }],
   join_date:Array

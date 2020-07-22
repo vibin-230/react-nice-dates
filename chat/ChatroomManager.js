@@ -247,9 +247,11 @@ module.exports = function () {
 
 
     function notifyAllUsersNotInTheChatroom(chatroom,message,users){
+      const x = Array.isArray(message)
       const filter = chatroom.members.filter((member)=>{ 
         const string  = member && member._id ? member._id.toString() : member.toString()
-        if(!users.includes(string) ){
+        const user_id = x? message[0].author : message.author
+        if(!users.includes(string) || user_id.toString() !== string){
           return member
         }
       })
@@ -306,12 +308,29 @@ module.exports = function () {
 
     
 
- async function updateGroup(message,members){
+ async function updateGroup(message,members,client,chatroomName){
    const x = await  Message.insertMany(message).then(message1=>{    
       return  Conversation.findById({_id:message.conversation}).then(conversation=>{
-          conversation.members = conversation.members.length > 0 ?  conversation.members.concat(members) : members
+         
+        console.log('pass',members);
+        conversation.members = conversation.members.length > 0 ?  conversation.members.concat(members) : members
+          const new_join_date = members.map(m => {
+            return {user_id:m.toString(),join_date:message1[0].created_at}
+          })
+          const new_last_active = members.map(m => {
+            return {user_id:m.toString(),last_active:message1[0].created_at}
+          })
+
+          conversation.join_date = conversation.join_date.concat(new_join_date)
+          conversation.last_active = conversation.last_active.concat(new_last_active)
+          conversation.last_message = message1[message1.length-1]._id
+          console.log(conversation);
           return Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},conversation ).then(conversation=>{
             return Conversation.findById({_id:message1[message1.length-1].conversation}).populate('members','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(conversation=>{
+              client.to(chatroomName._id).emit('new',message)
+              client.emit('unread',message)
+              io.emit('unread', 'hello friends!');
+              client.to(chatroomName._id).emit('unread',message)
               return {conversation:conversation,message:message1}
             }).catch((e)=>{console.log(e)});
       }).catch((e)=>{console.log(e)});
@@ -471,10 +490,12 @@ module.exports = function () {
 
   async function leaveChatroom(game1,client) {
     const x = await Game.findById({ _id: game1.game_id }).lean().populate('conversation').then(game => {
+      return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
       const conversation = Object.assign({},game.conversation)
          game.users = game.users.filter((m)=> m.toString() !== game1.user_id.toString())
           conversation.members = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())
           conversation.host = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString()).length > 0 ? conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())[0] : []
+      conversation.exit_list = conversation.exit_list.concat({user_id:game1.user_id,timeStamp:new Date(),message:{ conversation: conversation._id, message: `${user.name} has left the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() }})
           game.host = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString()).length > 0 ? conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())[0] : []
           console.log('conversation',conversation._id);
           return Game.findByIdAndUpdate({ _id: game1.game_id }, { $set: game }).then(game2 => {
@@ -484,6 +505,7 @@ module.exports = function () {
                   let message_formation = game1.type == "game" ? `${user.name} has left the game` : `${game1.host} has removed ${user.name}` 
                   const save_message = { conversation: conversation2._id, message: message_formation, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() }
                   client.in(game1.convo_id).emit('new',save_message)
+                  client.in(game1.convo_id).emit('unread',{})
                   saveMessage(save_message)
                 const token_list  = conversation2.members.filter((key) => key._id.toString() !== game1.user_id.toString())
                 const device_token_list = token_list.map((e) => e.device_token)
@@ -494,16 +516,19 @@ module.exports = function () {
 }).catch(error => console.log(error))
 }).catch(error => console.log(error))
 }).catch(error => console.log(error))
+}).catch(error => console.log(error))
     return x
   }
 
 
   async function kickPlayer(game1,client) {
     const x = await Game.findById({ _id: game1.game_id }).lean().populate('conversation').then(game => {
+                 return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
       const conversation = Object.assign({},game.conversation)
          game.users = game.users.filter((m)=> m.toString() !== game1.user_id.toString())
           conversation.members = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())
           conversation.host = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString()).length > 0 ? conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())[0] : []
+      conversation.exit_list = conversation.exit_list.concat({user_id:game1.user_id,timeStamp:new Date(),message:{ conversation: conversation._id, message: `${user.name} has left the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() }})
           game.host = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString()).length > 0 ? conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())[0] : []
           console.log('conversation',conversation._id);
           return Game.findByIdAndUpdate({ _id: game1.game_id }, { $set: game }).then(game2 => {
@@ -513,6 +538,7 @@ module.exports = function () {
                   let message_formation = game1.type == "game" ? `${user.name} has left the game` : `${game1.host} has removed ${user.name}` 
                   const save_message = { conversation: conversation2._id, message: message_formation, read_status: false, name: user.name, author: game1.id, type: 'bot', created_at: new Date() }
                   client.in(conversation2._id).emit('new',save_message)
+                  client.in(game1.convo_id).emit('unread',{})
                   saveMessage(save_message)
                 const token_list  = conversation2.members.filter((key) => key._id.toString() !== game1.id.toString())
                 const device_token_list = token_list.map((e) => e.device_token)
@@ -525,6 +551,8 @@ module.exports = function () {
 }).catch(error => console.log(error))
 }).catch(error => console.log(error))
 }).catch(error => console.log(error))
+}).catch(error => console.log(error))
+
     return x
   }
 
@@ -625,8 +653,11 @@ module.exports = function () {
 
   async function leaveChatroomWithConversationId(game1,client) {
     const x = await Conversation.findById({ _id: game1.convo_id }).lean().then(conversation => {
+      return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
       conversation.members = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())
       conversation.host = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString()).length > 0 ? conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())[0] : []
+      conversation.exit_list = conversation.exit_list.concat({user_id:game1.user_id,timeStamp:new Date(),message:{ conversation: conversation._id, message: `${user.name} has left the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() }})
+      
       console.log('leave chatroom',conversation);
       return Game.findOne({ conversation: game1.convo_id }).then(game => {
         game.users = game.users.filter((m)=> m.toString() !== game1.user_id.toString())
@@ -637,6 +668,7 @@ module.exports = function () {
             return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
               const save_message = { conversation: conversation2._id, message: `${user.name} has left the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() }
               client.in(game1.convo_id).emit('new',save_message)
+              client.in(game1.convo_id).emit('unread',{})
               saveMessage(save_message)
             const token_list  = conversation2.members.filter((key) => key._id.toString() !== game1.user_id.toString())
             const device_token_list = token_list.map((e) => e.device_token)
@@ -648,28 +680,29 @@ module.exports = function () {
 }).catch(error => console.log(error))
 }).catch(error => console.log(error))
 }).catch(error => console.log(error))
+}).catch(error => console.log(error))
 return x
   }
 
   async function leaveChatroomGroup(game1,client) {
     const x = await Conversation.findById({ _id: game1.convo_id }).lean().then(conversation => {
+      return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
           conversation.members = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())
           conversation.host = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString()).length > 0 ? conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())[0] : []
-          conversation.exit_list = conversation.type === 'single' && conversation.exit_list.concat({user_id:game1.user_id,timeStamp:new Date()})
+          conversation.exit_list = conversation.exit_list.concat({user_id:game1.user_id,timeStamp:new Date(),message:{ conversation: conversation._id, message: `${user.name} has left the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() }})
            console.log('leave chatroom',conversation.exit_list);
            if((conversation.type === 'single' || conversation.type === 'group') && conversation.members.length <= 0){
             return Conversation.findByIdAndDelete({ _id: game1.convo_id }).then(conversation2 => {
               return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token').then(conversation2 => {
-                return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
                 conversation.type !== 'single' && saveMessage({ conversation: conversation2._id, message: `${user.name} has left the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() })
                 conversation.type !== 'single' && client.in(conversation2._id).emit('new',{ conversation: conversation2._id, message: `${user.name} has left the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() })
+                client.in(game1.convo_id).emit('unread',{})
                 const token_list  = conversation.members.filter((key) => key._id.toString() !== game1.user_id.toString())
                 //const device_token_list = token_list.map((e) => e.device_token)
                 //NotifyArray(device_token_list, `${user.name} has left the game`, `Game Left`)
                     return conversation2.members.map((e) => e._id)
                   }).catch(error => console.log(error))
                 }).catch(error => console.log(error))
-            }).catch(error => console.log(error))
            }
            else{
              return Conversation.findByIdAndUpdate({ _id: game1.convo_id }, { $set: conversation }).then(conversation2 => {
@@ -685,8 +718,10 @@ return x
           }).catch(error => console.log(error))
    }).catch(error => console.log(error))
    }).catch(error => console.log(error))
+   
 
            }
+          }).catch(error => console.log(error))
 }).catch(error => console.log(error))
     return x
   }

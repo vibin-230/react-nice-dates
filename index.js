@@ -18,8 +18,8 @@ const clientManager = ClientManager()
 const chatroomManager = ChatroomManager()
 const redis = require("redis").createClient;
 const io = require('socket.io')(server,{
-  pingTimeout:60000,
-  pingInterval:30000,
+  pingInterval: 10000,
+  pingTimeout: 5000,
 })
 const port = 6379;
 const host = '127.0.0.1';
@@ -90,6 +90,7 @@ io.on('connection', function (client) {
     handleInvites,
     handleTyping,
     handleUpdateImage,
+    handleSendBroadcast,
     handleUpdateGroup,
     handleUpdateParams
   } = makeHandlers(client, clientManager, chatroomManager,io)
@@ -101,6 +102,7 @@ io.on('connection', function (client) {
   client.on('join', handleJoin)
   client.on('join_game', handleJoinGame)
   client.on('leave', handleLeave)
+  client.on('send_broadcast',handleSendBroadcast)
 
   client.on('message', handleMessage)
   client.on('games_message', handleMessageGames)

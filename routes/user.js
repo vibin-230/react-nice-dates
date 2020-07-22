@@ -284,7 +284,7 @@ router.post('/get_user_details', [
 router.post('/get_following/:id', [
   verifyToken,
 ], (req, res, next) => {
-  User.find({_id:req.params.id},{activity_log:0}).populate("followers","name _id").lean().then(user1 => {
+  User.find({_id:req.params.id},{activity_log:0}).populate("followers","name _id").populate("following","name _id").lean().then(user1 => {
     res.status(201).send({status: "success", message: "user collected",data:user1})
   }).catch(next);
 });
@@ -294,21 +294,33 @@ router.post('/get_chatrooms/:id', [
 ], (req, res, next) => {
       //Check if user existinvites:{$in:[req.params.id]}
       //Conversation.find({members:{$in:[req.params.id]}}).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(existingConversation=>{
-      Conversation.find({ $or: [ { members: { $in: [req.params.id] } }] }).lean().populate('to',' name _id profile_picture last_active online_status status handle name_status').populate('members','name _id profile_picture last_active online_status status handle name_status').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(existingConversation=>{
-       const exit_convo_list = existingConversation.filter((e)=> e.type === 'single' && e.exit_list && e.exit_list.length > 0 )
+      Conversation.find({ $or: [ { members: { $in: [req.params.id] } },{ exit_list: { $elemMatch: {user_id:req.params.id} } }] }).lean().populate('to',' name _id profile_picture last_active online_status status handle name_status').populate('members','name _id profile_picture last_active online_status status handle name_status').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(existingConversation=>{
+       const exit_convo_list = existingConversation.filter((e)=> {
+        return (e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.params.id.toString()).length > 0)
+        } )
+        const exit_convo_list1 = existingConversation.filter((e)=> {
+          return !(e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.params.id.toString()).length > 0)
+          } )
+       //const exit_convo_list1 = existingConversation.filter((e)=> e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((u)=>u.user_id.toString() === req.params.id.toString()).length > 0)
+       console.log('asdasd',exit_convo_list.length,existingConversation.length);
        //console.log(exit_convo_list)
        User.findOne({_id: req.params.id},{activity_log:0,followers:0,following:0}).then(user=> {
           const date = user.last_active 
           const conversation  = req.body.conversation
-         Message.aggregate([{ $match: { $and: [  { conversation: {$in:existingConversation.map((c)=>c._id)} } ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"},"user" : {"$push" : "$author"}}}]).then((message)=>{
-          const x =  existingConversation.map((c)=> {
+
+         Message.aggregate([{ $match: { $and: [  { conversation: {$in:exit_convo_list1.map((c)=>c._id)} } ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"},"user" : {"$push" : "$author"}}}]).then((message)=>{
+           const x =  existingConversation.map((c)=> {
+            let user = {}
             c['time'] = 0
+            
             c['exit'] = false
             if(exit_convo_list && exit_convo_list.length > 0 && c.exit_list && c.exit_list.length > 0){
               const x =  exit_convo_list.filter((e)=> e.exit_list && c.exit_list.length>0 && e._id.toString() === c._id.toString())
-             const user  =  x.length > 0 ? x[0].exit_list[x[0].exit_list.length -1 ] : []
-             c.members =  user && user.length > 0 ? c.members.concat(user.user_id) : c.members
+              user  =  x.length > 0 ? x[0].exit_list.filter((e)=>e.user_id && e.user_id._id.toString() === req.params.id.toString())[0] : []
+             c.members =  user && user.length > 0 && c.type==='single' ? c.members.concat(user.user_id) : c.members
              c['exit'] = true
+             c['last_updated'] = user && user.timeStamp ? user.timeStamp : c.last_updated 
+             c['last_message'] = user && user.message ? user.message : c.last_message
             }
             const filter = c && c.last_active ? c.last_active.filter((c)=> c && c.user_id && c.user_id.toString() === req.params.id.toString()) : []
             message.length > 0 && message.map((m)=>{
@@ -321,7 +333,7 @@ router.post('/get_chatrooms/:id', [
                   }
                 })  
               
-                c['time'] = time.length 
+                c['time'] = user && user.message ? time.length : time.length 
                }
                })
              return c
@@ -341,7 +353,7 @@ router.post('/get_town_games/', [
   User.findById({_id: req.userId},{}).lean().then(user=> {
     let following = user.following
         following = following.concat(req.userId)
-        const date = moment().add(5,'hours')
+        const date = moment().add(5,'hours').add(30,'minutes')
         const date2 = moment(req.body.date).add(5,'hours').add(30,'minutes')
 
     const filter = req.body.sport === 'all' ? { created_by: { $in: following } ,town:true, host:{ $in: following },start_time:{$gte:date2}} :{ created_by: { $in: following } ,town:true,sport_name:{$in:req.body.sport}, host:{ $in: following }, start_time:{$gte:date}}
@@ -652,6 +664,23 @@ router.post('/send_otp',[
 
 router.post('/remove_temp_user', (req, res, next) => {
       User.findOneAndDelete({phone:req.body.phone,temporary:true}).then(u=>console.log('user deleted'))
+});
+
+router.post('/edit_game_status', (req, res, next) => {
+  Game.findByIdAndUpdate({_id:req.body.game_id},{$set:{share_type:req.body.status}}).then(g=>{
+    Game.findById({_id:req.body.game_id}).lean().populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=>{
+      Venue.findById({_id:game.bookings[0].venue_id}).then(venue =>{
+        let game1 = Object.assign({},game)
+        console.log('pass',game1);
+        game1["venue"] = venue.venue
+        game1["rating"] = venue.rating
+        game1['final'] = _.xor(game1.users,game1.host)
+        res.send({status:"success", message:"game_fetched",data:game1})
+
+      }).catch(next)
+    }).catch(next)
+  }).catch(next)
+
 });
 
 

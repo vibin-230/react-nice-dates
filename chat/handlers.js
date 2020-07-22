@@ -59,8 +59,8 @@ module.exports = function (client, clientManager, chatroomManager,io) {
         chatroom.addUser(client)
         client.join(chatroom.getId())
         const token = client.handshake.query.token;
-        const x =  await chatroom.getChatHistory(chatroom.getId(),token)
         const y = await chatroomManager.checkIfUserExited({_id:chatroom.getId()})
+        const x =  await chatroom.getChatHistory(chatroom.getId(),token)
         callback(chatroom.getId(),x,y)
       })
       .catch(callback)
@@ -78,8 +78,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     //     callback(null)
     //   })
     //   .catch(callback)  
-    client.leave(chatroomName.convo_id)
-    client.to(chatroomName.convo_id).emit('unread',{})
+    
     let x
     if(chatroomName.type === 'group'){
        x  = await chatroomManager.leaveChatroomGroup(chatroomName,io)
@@ -170,10 +169,12 @@ async function handleUpdateParams({ chatroomName, message,params } = {}, callbac
 
 async function handleUpdateGroup({ chatroomName, message,members } = {}, callback) {
   const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
+  const x  = await chatroomManager.updateGroup(message,members,client,chatroomName)
   const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
   client.to(chatroomName._id).emit('new',message)
+  client.emit('unread',message)
+  io.emit('unread', 'hello friends!');
   client.to(chatroomName._id).emit('unread',message)
-  const x  = await chatroomManager.updateGroup(message,members)
   // chatroomManager.saveMessages(message) 
   chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
 
@@ -188,9 +189,14 @@ async function handleUpdateGroup({ chatroomName, message,members } = {}, callbac
         if(chatroomName && chatroomName.exit){
           chatroomManager.registerExitedUser(chatroomName,message)
         }
+        const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
+       const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
         chatroomManager.saveMessage(message)
-        chatroomManager.notifyAllUsers(chatroomName, message)
-        
+        //chatroomManager.notifyAllUsers(chatroomName, message)
+        console.log(chatroomName._id,io.sockets.adapter.rooms);
+        client.to(chatroomName._id).emit('new',message)
+        client.to(chatroomName._id).emit('unread',message)
+        chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
         callback()
       }else{
          const x = await chatroomName && chatroomName.exit && chatroomManager.registerExitedUser(chatroomName,message)
@@ -202,7 +208,8 @@ async function handleUpdateGroup({ chatroomName, message,members } = {}, callbac
      }
     }else{
     const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
-     const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
+    console.log(chatroomName._id,io.sockets.adapter.rooms);
+    const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
        client.to(chatroomName._id).emit('new',message)
         client.to(chatroomName._id).emit('unread',message)
         chatroomManager.saveMessage(message) 
@@ -244,6 +251,18 @@ async function handleUpdateGroup({ chatroomName, message,members } = {}, callbac
     callback()
   }
 
+  async function handleSendBroadcast(message,callback){
+    
+    const clientNumber = io.sockets.adapter.rooms[message.conversation];
+    console.log(message,io.sockets.adapter.rooms);
+    const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
+       io.in(message.conversation).emit('new',message)
+        io.in(message.conversation).emit('unread',message)
+        chatroomManager.saveMessage(message) 
+        chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
+        callback()
+  }
+
   async function handleGetChatrooms(_, callback) {
     const x = await chatroomManager.serializeChatrooms(_)
     x.forEach((conversation)=>client.join(conversation._id))
@@ -274,5 +293,5 @@ async function handleUpdateGroup({ chatroomName, message,members } = {}, callbac
     return callback()
   }
 
-  return {handleSlotAvailabilityDueToCancellation,handleSlotAvailability,handleLeaveChatrooms,handleUpdateGroup,handleUpdateParams,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames}
+  return {handleSendBroadcast,handleSlotAvailabilityDueToCancellation,handleSlotAvailability,handleLeaveChatrooms,handleUpdateGroup,handleUpdateParams,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames}
 }

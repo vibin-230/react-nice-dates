@@ -2953,7 +2953,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         
         let event_booking_data = eventBooking
         let event = event_booking_data.reverse()
-        booking_data = req.body.type && req.body.type === 'host' ?[...open_games]:[...game]
+        booking_data = req.body.type && req.body.type === 'host' ?[...open_games,...result]:[...game,...result]
 
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{

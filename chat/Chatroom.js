@@ -36,9 +36,10 @@ module.exports = function ({ _id, image }) {
       const user1 =   conversation.exit_list && conversation.exit_list.length > 0 && conversation.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === user.id.toString())
       console.log(user,x,user1,x.length);
       const filter  = x.length > 0 ?  date && date.length > 0 ? { conversation: id, created_at: { $gte: date[date.length-1].join_date } } : { conversation: id} :{ conversation: id, created_at: { $lte: moment(user1[user1.length-1].timeStamp).add(10,'seconds') } }
-     console.log(filter);
+      conversation['exit'] = x.length > 0 ? false:true
+      console.log(filter,conversation);
       return Message.find(filter).lean().populate('author', 'name _id').populate('user', 'name _id profile_picture phone handle').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({_id:-1}).limit(20).then(m => {
-        return m.reverse()
+        return {messages:m.reverse(),conversation:conversation}
       }).catch((e) => console.log(e))
     }).catch((e) => console.log(e))
 

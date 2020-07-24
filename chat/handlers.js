@@ -59,9 +59,10 @@ module.exports = function (client, clientManager, chatroomManager,io) {
         chatroom.addUser(client)
         client.join(chatroom.getId())
         const token = client.handshake.query.token;
-        const y = await chatroomManager.checkIfUserExited({_id:chatroom.getId()})
+        //for single user
+        //const y = await chatroomManager.checkIfUserExited({_id:chatroom.getId()})
         const x =  await chatroom.getChatHistory(chatroom.getId(),token)
-        callback(chatroom.getId(),x,y)
+        callback(chatroom.getId(),x.messages,x.conversation)
       })
       .catch(callback)
   }

@@ -312,13 +312,14 @@ router.post('/get_chatrooms/:id', [
            const x =  existingConversation.map((c)=> {
             let user = {}
             c['time'] = 0
-            
             c['exit'] = false
             if(exit_convo_list && exit_convo_list.length > 0 && c.exit_list && c.exit_list.length > 0){
               const x =  exit_convo_list.filter((e)=> e.exit_list && c.exit_list.length>0 && e._id.toString() === c._id.toString())
-              user  =  x.length > 0 ? x[0].exit_list.filter((e)=>e.user_id && e.user_id._id.toString() === req.params.id.toString())[0] : []
+              user  =  x.length > 0 ? x[0].exit_list.filter((e)=>{
+                return e && e.user_id && e.user_id._id.toString() === req.params.id.toString()})[0] : []
+              console.log(user)
              c.members =  user && user.length > 0 && c.type==='single' ? c.members.concat(user.user_id) : c.members
-             c['exit'] = true
+             c['exit'] = user && user.timeStamp ? true : false
              c['last_updated'] = user && user.timeStamp ? user.timeStamp : c.last_updated 
              c['last_message'] = user && user.message ? user.message : c.last_message
             }

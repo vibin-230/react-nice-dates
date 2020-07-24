@@ -168,12 +168,12 @@ async function handleUpdateParams({ chatroomName, message,params } = {}, callbac
 }
 
 
-async function handleUpdateGroup({ chatroomName, message,members } = {}, callback) {
+async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, callback) {
   const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
   const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
   client.to(chatroomName._id).emit('new',message)
   client.to(chatroomName._id).emit('unread',message)
-  const x  = await chatroomManager.updateGroup(message,members)
+  const x  = await chatroomManager.updateGroup(message,members,colors)
   // chatroomManager.saveMessages(message) 
   chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
 

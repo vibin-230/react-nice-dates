@@ -67,6 +67,20 @@ function ActivityLog(activity_log) {
   })
 }
 
+function getRandomColor(){
+  let colors = ["rgba(9,86,230,0.8)","#E76036","#D111BB","#3DAA1F","#27B5D1","#ff4c67","#9044F0"]
+  return colors[Math.floor(Math.random() * colors.length)]
+}
+
+function getColors(members){
+  let data = members.map((key,index)=>{
+    let color = getRandomColor()
+    return color
+  })
+  return data
+}
+
+
 Date.prototype.addHours= function(h,m){
   this.setHours(this.getHours()+h);
   this.setMinutes(this.getMinutes()+m);
@@ -748,7 +762,7 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
 
 
 router.post('/host_game',verifyToken, (req, res, next) => {
-        Conversation.create({type:'game',display_picture:req.body.image,members:[req.body.userId],created_by:req.body.userId,name:req.body.game_name,sport_name:req.body.sport_name,subtitle:req.body.subtitle,sport_type:req.body.venue_type,host:[req.body.userId],last_active:[],join_date:[{user_id:req.body.userId,join_date:new Date()}]}).then(convo=>{
+        Conversation.create({type:'game',display_picture:req.body.image,members:[req.body.userId],colors:getColors([req.body.userId]),created_by:req.body.userId,name:req.body.game_name,sport_name:req.body.sport_name,subtitle:req.body.subtitle,sport_type:req.body.venue_type,host:[req.body.userId],last_active:[],join_date:[{user_id:req.body.userId,join_date:new Date()}]}).then(convo=>{
           Game.create({booking_status:'hosted',image:req.body.image,subtitle:req.body.subtitle,description:req.body.description,share_type:req.body.share_type,limit:req.body.limit,users:[req.body.userId],host:[req.body.userId],name:req.body.game_name,conversation:convo._id,sport_name:req.body.sport_name,type:req.body.venue_type,bookings:req.body.booking,booking_date:req.body.booking[0].booking_date,venue:req.body.booking[0].venue_id,start_time:req.body.booking[0].start_time,created_by:req.body.userId,created_type:'user'}).then(game=>{
             Message.create({conversation:convo._id,message:`${req.name} created the game`,read_status:false,name:req.name,author:req.body.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
@@ -1297,7 +1311,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
     Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
         User.findById({_id:req.userId}).then(user=>{
-        Conversation.create({type:'game',display_picture:req.body[0].image,subtitle:req.body[0].subtitle,members:[req.userId],host:[req.userId],created_by:req.userId,name:req.body[0].game_name,sport_name:values[0].sport_name,join_date:[{user_id:req.userId,join_date:new Date()}]}).then(convo=>{
+        Conversation.create({type:'game',display_picture:req.body[0].image,subtitle:req.body[0].subtitle,members:[req.userId],colors:getColors([req.userId]),host:[req.userId],created_by:req.userId,name:req.body[0].game_name,sport_name:values[0].sport_name,join_date:[{user_id:req.userId,join_date:new Date()}]}).then(convo=>{
            Game.create({booking_status:'booked',image:req.body[0].image,share_type:req.body[0].share_type,limit:req.body[0].limit,users:[req.userId],created_by:req.userId,created_type:'user',host:[req.userId],name:req.body[0].game_name,conversation:convo._id,subtitle:req.body[0].subtitle,sport_name:values[0].sport_name,type:req.body[0].format,bookings:values,description:req.body[0].description,booking_date:values[0].booking_date,start_time:values[0].start_time,venue:values[0].venue_id, }).then(game=>{
             Message.create({conversation:convo._id,message:`${req.name} created the game`,read_status:false,name:req.name,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
@@ -2953,7 +2967,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         
         let event_booking_data = eventBooking
         let event = event_booking_data.reverse()
-        booking_data = req.body.type && req.body.type === 'host' ?[...open_games,...result]:[...game,...result]
+        booking_data = req.body.type && req.body.type === 'host' ?[...open_games]:[...game]
 
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{
@@ -2971,6 +2985,48 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
     }).catch(next)
   }).catch(next)
   }).catch(next)
+})
+
+
+router.post('/host_and_games', verifyToken, (req, res, next) => {
+  let past_date  = moment(req.body.todate).add(1,'month')
+  let filter = {
+    booking_status:{$in:["booked"]},
+    phone:req.phone
+  }
+  let cancel_filter = {
+    booking_status:{$in:["cancelled"]},
+    created_by:req.userId,
+  }
+  let eventFilter = {
+    booking_status:{$in:["booked"]},
+    created_by:req.userId,
+  }
+  let booking_ids = []
+      Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate('venue','venue'). populate("host","name _id handle name_status profile_picture").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
+        game.map((key)=>{
+          key["venue"] = key.venue.venue
+         })
+
+        const open_games = game.filter((g)=>{
+         return g.share_type === 'open' || (g.share_type === 'closed' && g.host.some(key=>key._id.toString() === req.userId.toString()))
+        })     
+        booking_data = req.body.type && req.body.type === 'host' ?[...open_games]:[...game]
+
+        var groupBy = (xs, key) => {
+          return xs.reduce((rv, x) =>{
+            (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
+            return rv;
+          }, {});
+        };
+        
+        let finalResult = booking_data.sort((a, b) => moment(a.start_time).format("YYYYMMDDHmm") > moment(b.start_time).format("YYYYMMDDHmm") ? 1 : -1 )
+        const a = groupBy(finalResult,'start_time')
+        const q =   Object.entries(a).map(([key,value])=>{
+                return {title:key,data:value }
+          })
+        res.send({status:"success", message:"booking history fetched", data:q})
+    }).catch(next)
 })
 
 

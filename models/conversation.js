@@ -24,6 +24,7 @@ const schema = new Schema({
     //username:{type:String,default:''},
     timeStamp: { type : Date , default:new Date()},
   }],
+  colors:Array,
   join_date:Array
 });
 

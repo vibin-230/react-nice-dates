@@ -25,6 +25,7 @@ const schema = new Schema({
     message:Object,
     timeStamp: { type : Date , default:new Date()},
   }],
+  colors:Array,
   join_date:Array
 });
 

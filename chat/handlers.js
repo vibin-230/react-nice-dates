@@ -168,9 +168,9 @@ async function handleUpdateParams({ chatroomName, message,params } = {}, callbac
 }
 
 
-async function handleUpdateGroup({ chatroomName, message,members } = {}, callback) {
+async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, callback) {
   const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
-  const x  = await chatroomManager.updateGroup(message,members,client,chatroomName)
+  const x  = await chatroomManager.updateGroup(message,members,client,chatroomName,colors)
   const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
   client.to(chatroomName._id).emit('new',message)
   client.emit('unread',message)

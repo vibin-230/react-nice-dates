@@ -19,6 +19,19 @@ module.exports = function () {
       Chatroom(c)
     ])
   )
+
+  function getRandomColor(){
+    let colors = ["rgba(9,86,230,0.8)","#E76036","#D111BB","#3DAA1F","#27B5D1","#ff4c67","#9044F0"]
+    return colors[Math.floor(Math.random() * colors.length)]
+  }
+  
+  function getColors(members){
+    let data = members.map((key,index)=>{
+      let color = getRandomColor()
+      return color
+    })
+    return data
+  }
   function removeClient(client) {
     chatrooms.forEach(c => c.removeUser(client))
   }
@@ -125,7 +138,7 @@ module.exports = function () {
 
   async function getGroupOrGameName(chatroomName,client) {
       if(chatroomName._id.toString().length <= 0){
-        const convo = await saveConvo({display_picture:chatroomName.image?chatroomName.image:'',type:chatroomName.type,name:chatroomName.name,members:chatroomName.members,created_by:chatroomName.members[0],host:[chatroomName.members[0]]})
+        const convo = await saveConvo({display_picture:chatroomName.image?chatroomName.image:'',colors:chatroomName.colors ? chatroomName.colors : [],type:chatroomName.type,name:chatroomName.name,members:chatroomName.members,created_by:chatroomName.members[0],host:[chatroomName.members[0]]})
         chatrooms.set(convo._id,Chatroom(convo))
         const x = await getConversationAndSendBotMessage(convo,client)
         
@@ -308,7 +321,7 @@ module.exports = function () {
 
     
 
- async function updateGroup(message,members,client,chatroomName){
+ async function updateGroup(message,members,client,chatroomName,colors){
    const x = await  Message.insertMany(message).then(message1=>{    
       return  Conversation.findById({_id:message.conversation}).then(conversation=>{
          
@@ -324,6 +337,8 @@ module.exports = function () {
           conversation.join_date = conversation.join_date.concat(new_join_date)
           conversation.last_active = conversation.last_active.concat(new_last_active)
           conversation.last_message = message1[message1.length-1]._id
+          conversation.colors = conversation.colors.length > 0 ?  conversation.colors.concat(colors) : colors
+
           console.log(conversation);
           return Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},conversation ).then(conversation=>{
             return Conversation.findById({_id:message1[message1.length-1].conversation}).populate('members','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(conversation=>{
@@ -372,10 +387,10 @@ module.exports = function () {
                                return   User.findOne({_id: user_id },{activity_log:0}).lean().then(sender=> {
                                  return   User.find({_id: { $in :ids } },{activity_log:0}).lean().then(user=> {
 
-                                      let messages =  new_convos.map((nc)=>{ return {conversation:nc._id,game:game_id,message:`Game invite`,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
+                                      let messages =  new_convos.map((nc)=>{ return {conversation:nc._id,game:game_id,message:'Game invite',name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
                                         let messages1 = conversation2.map((nc)=>{ 
                                            // client.to(nc._id.toString()).emit('new',{conversation:nc._id,game:game_id,message:`Game (${game1.name}) invite`,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()})
-                                          return {conversation:nc._id,game:game_id,message:`Game invite`,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
+                                          return {conversation:nc._id,game:game_id,message:'Game invite',name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
                                           let finalMessages = messages.concat(messages1)
                                             return Message.insertMany(finalMessages).then(message1=>{
                                               const message_ids = message1.map((m)=>m._id)
@@ -454,6 +469,7 @@ module.exports = function () {
 
     
   async function joinGame(game_id, userId,client) {
+    let colors = getColors([userId])
     const x = await Game.findById({ _id: game_id }).lean().then(game1 => {
       return Conversation.findById({ _id: game1.conversation }).lean().then(conversation1 => {
         const conversation = Object.assign({}, conversation1)
@@ -461,6 +477,7 @@ module.exports = function () {
         game.invites = game.invites.filter((key) => key.toString() !== userId.toString())
         game.users = game.users.some((key) => key.toString() == userId.toString()) ? game.users : game.users.concat(userId)
         conversation.invites = conversation.invites.filter((key) => key.toString() !== userId.toString())
+        conversation.colors = conversation.members.some((key) => key.toString() == userId.toString()) ? conversation.colors : conversation.colors.concat(colors)
         conversation.members = conversation.members.some((key) => key.toString() == userId.toString()) ? conversation.members : conversation.members.concat(userId)
         conversation.last_active = conversation.last_active.some((key) => key.user_id.toString() == userId.toString()) ? conversation.last_active : conversation.last_active.concat({ "user_id": userId, last_active: new Date() })
         conversation.join_date = conversation.join_date.some((key) => key.user_id.toString() == userId.toString()) ? conversation.join_date : conversation.join_date.concat({ "user_id": userId, join_date: new Date() })
@@ -475,7 +492,7 @@ module.exports = function () {
                 client.in(conversation2._id).emit('unread',message_save)
                 const token_list  = conversation2.members.filter((key) => key._id.toString() !== userId.toString())
                 const device_token_list = token_list.map((e) => e.device_token)
-                NotifyArray(device_token_list, `${user.name} has joined the game`, `New Game Joined`)
+                NotifyArray(device_token_list, `${user.name} has joined ${game1.name}`, `Turf Town`)
                 return conversation2.members.map((e) => e._id)
 
                 //res.send({status:"success", message:"invitation sent"})

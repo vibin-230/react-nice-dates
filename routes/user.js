@@ -841,19 +841,21 @@ router.post('/send_invite',verifyToken, (req, res, next) => {
 });
 
 router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
-          Game.findOne({conversation:req.params.conversation_id}).lean().populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=>{
+   Conversation.findById({_id:req.params.conversation_id}).populate('members','_id name device_token profile_picture handle name_status').then((convo)=>{
+    Game.findOne({conversation:req.params.conversation_id}).lean().populate("conversation").populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=>{
             Venue.findById({_id:game.bookings[0].venue_id}).then(venue =>{
               let game1 = Object.assign({},game)
               console.log('pass',game1);
               game1["venue"] = venue.venue
               game1["rating"] = venue.rating
               game1['final'] = _.xor(game1.users,game1.host)
+              game1["conversation"] = convo
               res.send({status:"success", message:"game_fetched",data:game1})
 
             })
     }).catch(next);
+  }).catch(next);
 });
-
 
 
 

@@ -37,6 +37,7 @@ const mkdirp = require('mkdirp');
 const Offers = require('../models/offers');
 const User = require('../models/user');
 const Game = require('../models/game');
+const Post = require('../models/post');
 const Conversation = require('../models/conversation');
 const Event = require('./../models/event')
 const Booking = require('../models/booking');
@@ -527,6 +528,23 @@ router.post('/alter_user/:id', [
   }).catch(next);
 
   }).catch(next);
+});
+
+router.post('/share_post/:id', [
+  verifyToken,
+], (req, res, next) => {
+      //Check if user exist
+      console.log(req.body);
+      Game.findOne({_id: req.params.id},{activity_log:0}).then(game=> {
+        game['town'] = true
+        game['town_date'] = new Date()
+        Game.findByIdAndUpdate({_id: req.params.id},game).then(user=>{
+        Post.create(req.body).then(post=>{
+          res.status(201).send({status: "success", message: "user collected",data:post})
+        }).catch(next);
+  }).catch(next);
+}).catch(next);
+
 });
 
 router.post('/mute_user/:id', [

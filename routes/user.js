@@ -304,6 +304,7 @@ router.post('/get_following/:id', [
   }).catch(next);
 });
 
+
 router.post('/get_chatrooms/:id', [
   verifyToken,
 ], (req, res, next) => {
@@ -363,38 +364,6 @@ router.post('/get_chatrooms/:id', [
 
 });
 
-router.post('/get_town_games/', [
-  verifyToken,
-], (req, res, next) => {
-  User.findById({_id: req.userId},{}).lean().then(user=> {
-    let following = user.following
-        following = following.concat(req.userId)
-        const date = moment().add(5,'hours').add(30,'minutes')
-        const date2 = moment(req.body.date).add(5,'hours').add(30,'minutes')
-
-    const filter = req.body.sport === 'all' ? { created_by: { $in: following } ,town:true, host:{ $in: following },start_time:{$gte:date2}} :{ created_by: { $in: following } ,town:true,sport_name:{$in:req.body.sport}, host:{ $in: following }, start_time:{$gte:date}}
-    Game.find(filter).lean().populate('conversation').populate('host','_id name profile_picture phone handle name_status').populate("venue","venue").populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone').then(existingConversation=>{
-      existingConversation.map((key)=>{
-       key["venue"] = key.venue.venue
-      })
-       console.log("Expsiost",existingConversation)
-        var groupBy = (xs, key) => {
-          return xs.reduce((rv, x) =>{
-            (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
-            return rv;
-          }, {});
-        };
-        let finalResult = existingConversation.sort((a, b) => moment(a.start_time).format("YYYYMMDDHmm") > moment(b.start_time).format("YYYYMMDDHmm") ? 1 : -1 )
-        const a = groupBy(finalResult,'start_time')
-        const q =   Object.entries(a).map(([key,value])=>{
-                return {title:key,data:value }
-          })
-        res.status(201).send({status: "success", message: "town games collected",data:q})
-
-      }).catch(next)
-  }).catch(next)
-
-});
 
 router.post('/sync_contacts', [
   verifyToken,

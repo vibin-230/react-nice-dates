@@ -62,6 +62,8 @@ app.use(function(req,res,next){
 //Route
 app.use('/api/user',require('./routes/user'));
 app.use('/api/venue',require('./routes/venue'));
+app.use('/api/feed',require('./routes/feed'));
+
 app.use('/api/admin',require('./routes/admin'));
 
 

@@ -5,17 +5,20 @@ const Schema    = mongoose.Schema;
 const schema = new Schema({
   created_at: { type : Date , default:new Date()},
   modified_at: { type : Date , default:new Date()},
+
   modified_by:{type: Schema.Types.ObjectId, ref: 'user' },
   created_by:{type: Schema.Types.ObjectId, ref: 'user' },
   conversation : { type: Schema.Types.ObjectId, ref: 'conversation' },
   author : { type: Schema.Types.ObjectId, ref: 'user' },
   message: String,
   image : Array,
+  start_time:Date,
   status: { type : Boolean , default:true},
   shout_out_count:{ type : Number , default:0},
   shout_out:[{type: Schema.Types.ObjectId, ref: 'user' }],
   video : String,
   name : String,
+  sport_name:String,
   read_status: {
     type: Boolean,
     default: false

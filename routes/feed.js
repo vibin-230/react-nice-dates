@@ -78,10 +78,26 @@ router.post('/get_town_games/', [
         let x = posts.map((s)=>{
             if( s && s.shout_out && s.shout_out.length>0 && s.shout_out.filter((a)=>a._id.toString() === req.userId.toString()).length > 0){
                 s['shout_out_status'] = true
-
-            }else{
+                
+              }else{
                 s['shout_out_status'] = false
-            }
+              }
+              var array3 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter(function(obj) { return following.indexOf(obj._id.toString()) !== -1; }):[]
+              var string_array = array3.length > 0 ? array3.map((a)=>a.name_status ? a.name : a.handle):[]
+              let x = ''
+              if(string_array.length === 1){
+                x = `Shoutout by ${string_array[0]}`
+                 }else if(string_array.length === 2){
+                  x = `Shoutout by ${string_array[0]},${string_array[1]}`
+                 }
+                 else if(string_array.length === 3){
+                  x = `Shoutout by ${string_array[0]},${string_array[1]},${string_array[2]}`
+                }
+                else if(string_array.length >= 4){
+                  x = `Shoutout by ${string_array[0]},${string_array[1]},${string_array[2]} and ${string_array.length-3} more`
+                   
+                }
+                s['shout_line'] = x
             return s
         })
           // var groupBy = (xs, key) => {

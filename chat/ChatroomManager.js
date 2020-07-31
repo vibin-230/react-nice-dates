@@ -365,19 +365,20 @@ module.exports = function () {
        }
 
    async function sendInvites(game_id,conversation,ids,user_id,town,client){
+    const convo = typeof(conversation) == "string" ? conversation : conversation._id
    const x = await  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: ids } } ,$set:{town:town,town_date:new Date()} } ).then(game=> {
-                return Conversation.findByIdAndUpdate({_id: conversation},{ $addToSet: { invites: { $each: ids } } }).then(conversation1=> {
+                return Conversation.findByIdAndUpdate({_id: convo},{ $addToSet: { invites: { $each: ids } } }).then(conversation1=> {
                   return Game.findById({_id: game_id}).then(game1=> {
-                    const x = ids.map((id)=>{ return { members :{$in:[id,user_id]},type:'single'}})
-                    const members_list = ids.map((id)=>{ return {members :[id,user_id]} })
-                    return Conversation.find({$or:x}).then(conversation2=> {
-                          const conversation_list = conversation2.reduce((z,c)=>{ 
-                                    c.members.forEach((mem)=>{ 
-                                    if(z.indexOf(mem.toString())=== -1)  
-                                      z.push(mem.toString())
-                                    })
-                                    return z
-                          },[])
+                    // const x = ids.map((id)=>{ return { members :{$in:[id,user_id]},type:'single'}})
+                    // const members_list = ids.map((id)=>{ return {members :[id,user_id]} })
+                    // return Conversation.find({$or:x}).then(conversation2=> {
+                    //       const conversation_list = conversation2.reduce((z,c)=>{ 
+                    //                 c.members.forEach((mem)=>{ 
+                    //                 if(z.indexOf(mem.toString())=== -1)  
+                    //                   z.push(mem.toString())
+                    //                 })
+                    //                 return z
+                    //       },[])
                             const list_with_no_convos = ids.map((id)=>{
                              if(conversation_list.indexOf(id) === -1){
                                return {members:[id,user_id],type:'single',created_by:user_id,last_active:[{user_id:id, last_active : new Date()},{user_id:user_id, last_active:new Date()}],join_date:[{user_id:id, join_date : new Date()},{user_id:user_id, join_date:new Date()}]}
@@ -388,10 +389,11 @@ module.exports = function () {
                                  return   User.find({_id: { $in :ids } },{activity_log:0}).lean().then(user=> {
 
                                       let messages =  new_convos.map((nc)=>{ return {conversation:nc._id,game:game_id,message:'Game invite',name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
-                                        let messages1 = conversation2.map((nc)=>{ 
+                                        // let messages1 = conversation2.map((nc)=>{ 
                                            // client.to(nc._id.toString()).emit('new',{conversation:nc._id,game:game_id,message:`Game (${game1.name}) invite`,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()})
-                                          return {conversation:nc._id,game:game_id,message:'Game invite',name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
-                                          let finalMessages = messages.concat(messages1)
+                                          // return {conversation:nc._id,game:game_id,message:'Game invite',name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
+                                          let finalMessages = messages
+                                          // .concat(messages1)
                                             return Message.insertMany(finalMessages).then(message1=>{
                                               const message_ids = message1.map((m)=>m._id)
                                               return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id handle name_status').populate('user', 'name _id profile_picture handle phone name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
@@ -417,14 +419,15 @@ module.exports = function () {
     }).catch((e)=>console.log(e));
     }).catch((e)=>console.log(e));
     }).catch((e)=>console.log(e));
-    }).catch((e)=>console.log(e));
+    // }).catch((e)=>console.log(e));
     return x
     }
 
 
     async function sendGroupInvites(game_id,conversation,group_ids,user_id,name,town,client){
-    const x = await Conversation.find({_id: {$in : group_ids}}).lean().populate('members','_id name device_token handle name_status').then(conversation1=> {
-         return  Game.findById({_id: game_id}).then(ac_game=> {
+    const convo = typeof(conversation) == "string" ? conversation : conversation._id
+    const x = await Conversation.find({_id: {$in : group_ids}}).populate('members','_id name device_token handle name_status').lean().then(conversation1=> {
+      return  Game.findById({_id: game_id}).then(ac_game=> {
       
       const c = conversation1.reduce((acc,l)=>{
             const x = l.members.map((c)=>c._id.toString())
@@ -435,7 +438,8 @@ module.exports = function () {
         const game_players = ac_game.users.length > 0 && ac_game.users.map((g)=>g._id.toString())
         const result = flatten_ids.filter(word => word.toString() !== user_id.toString() || game_players.indexOf(word.toString()) === -1);
         return  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: result } } ,$set:{town:town,town_date:new Date()} } ).then(game=> {
-          return Conversation.findByIdAndUpdate({_id: game.conversation},{ $addToSet: { invites: { $each: result } } }).then(conversation12=> {
+          return Conversation.findByIdAndUpdate({_id: convo},{ $addToSet: { invites: { $each: result } } }).then(conversation12=> {
+            console.log("ccc",conversation12)
             return   User.findOne({_id: user_id },{activity_log:0}).lean().then(sender=> {
               return   User.find({_id: { $in :result } },{activity_log:0}).lean().then(user=> {
                  let finalMessages = conversation1.map((nc)=>{ return {conversation:nc._id,game:game_id,message:` Game invite`,name:sender.name,read_status:false,read_by:group_ids[0],author:user_id,type:'game',created_at:new Date()}}) 

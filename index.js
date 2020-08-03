@@ -63,7 +63,7 @@ app.use(function(req,res,next){
 app.use('/api/user',require('./routes/user'));
 app.use('/api/venue',require('./routes/venue'));
 app.use('/api/feed',require('./routes/feed'));
-
+app.use('/api/chat',require('./routes/chat'));
 app.use('/api/admin',require('./routes/admin'));
 
 

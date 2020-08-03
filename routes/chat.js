@@ -80,6 +80,27 @@ router.post('/shout_out/:id', verifyToken, (req, res, next) => {
 
 // })
 
+function parseDate(title){
+    //.format('dddd, Do MMMM')
+    const date = moment(title, "MM-DD-YYYY").format('ddd, Do MMM')
+    const date1 = moment(title, "MM-DD-YYYY")
+    const date_diff = moment().startOf('days').diff(date1,'days')
+    if(date_diff === 0){
+      return 'Today'
+    }
+    else if(date_diff === -1){
+      return 'Tomorrow'
+    }
+    else if(date_diff === 1){
+        return 'Yesterday'
+      }
+    else{
+      return date
+
+    }
+
+  }
+
 async function getChatHistory(id, user,final_date,message_id) {
     const x = await Conversation.findById({ _id: id }).populate("members","name profile_picture handle name_status").populate("host","name profile_picture handle name_status").lean().then((conversation) => {
       let date = conversation.join_date.length > 0 ? conversation.join_date.filter((jd) => jd.user_id.toString() === user.id.toString()) : []
@@ -87,8 +108,20 @@ async function getChatHistory(id, user,final_date,message_id) {
       const user1 =   conversation.exit_list && conversation.exit_list.length > 0 && conversation.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === user.id.toString())
       const filter  = x.length > 0 ?  date && date.length > 0 ? { _id:{$nin:[message_id]},conversation: id, created_at: { $lte: final_date } } : { conversation: id} :{ conversation: id, created_at: { $lte: moment(user1[user1.length-1].timeStamp).add(10,'seconds') } }
       conversation['exit'] = x.length > 0 ? false:true
+      
       return Message.find(filter).lean().populate('author', 'name _id handle').populate('user', 'name _id profile_picture phone handle').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({_id:-1}).limit(100).then(m => {
-        console.log(m.length)
+        // var groupBy = (xs, key) => {
+        //     return xs.reduce((rv, x) =>{
+        //       (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
+        //       return rv;
+        //     }, {});
+        //   };
+        //   const a = groupBy(m,'created_at')
+          for(let i = 1 ;i <m.length; i++){
+            if( moment(m[i].created_at).utc().format('MM-DD-YYYY') !== moment(m[i-1].created_at).utc().format('MM-DD-YYYY')){
+                m.splice(i,0,{conversation:conversation._id,message:parseDate(moment(m[i-1].created_at).utc().format('MM-DD-YYYY')),name:'bot',read_status:false,read_by:user.id,author:user.id,type:'bot',created_at:m[i].created_at})
+            }
+          }
         return {messages:m,conversation:conversation}
       }).catch((e) => console.log(e))
     }).catch((e) => console.log(e))

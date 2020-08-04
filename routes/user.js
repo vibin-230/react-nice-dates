@@ -49,7 +49,7 @@ const Ads = require('../models/ads')
 const Invoice = require('../models/Invoice')
 const Message = require('../models/message')
 const Contacts = require('../models/contacts')
-
+const send_message_otp = require('../helper/send_message_otp')
 const notify = require('../scripts/Notify')
 const NotifyArray = require('../scripts/NotifyArray')
 const multer = require('multer')
@@ -613,11 +613,10 @@ router.post('/send_otp',[
   let phone = 91+req.body.phone;
   let otp   = Math.floor(999 + Math.random() * 9000);
   User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
-    axios.get(process.env.PHP_SERVER+'/textlocal/otp.php?otp='+otp+'&phone='+phone)
-    .then(response => {
-      console.log(response.data)
+    send_message_otp(req.body.phone,"TRFTWN","Welcome to Turftown! Your OTP is "+otp ).then((a)=>{
+      console.log(a)
       console.log("send otp")
-        if(response.data.status === 'success')
+        if(a.status === 'success')
         {
           if(user)
           {
@@ -652,7 +651,7 @@ router.post('/send_otp',[
           }
         }else
           {
-            res.status(422).send({status:"failure", errors:{template:"invalid template"}, data:response.data})
+            res.status(422).send({status:"failure", errors:{template:"invalid template"}, data:a})
         }
     }).catch(error => {
         console.log(error);
@@ -690,10 +689,8 @@ router.post('/send_new_otp', (req, res, next) => {
   
   let phone = 91+req.body.user.phone;
   let otp   = Math.floor(999 + Math.random() * 9000);
-    axios.get(process.env.PHP_SERVER+'/textlocal/otp.php?otp='+otp+'&phone='+phone).then(response => {
-      console.log(response.data)
-       
-      if(response.data.status === 'success')
+      send_message_otp(phone,'TRFTWN',"Welcome to Turftown! Your OTP is "+otp).then((a)=>{
+      if(a.status === 'success')
         {
           User.create({phone:req.body.user.phone,handle:req.body.user.handle,otp:otp,temporary:true}).then((user)=>{
             res.status(201).send({status:"success", message:'new user', data:{phone:req.body.user.phone,otp:otp,handle:req.body.user.handle}})
@@ -705,7 +702,7 @@ router.post('/send_new_otp', (req, res, next) => {
         }
         else
           {
-            res.status(422).send({status:"failure", errors:{template:"invalid template"}, data:response.data})
+            res.status(422).send({status:"failure", errors:{template:"invalid template"}, data:a})
          }
     }).catch(next)
 });

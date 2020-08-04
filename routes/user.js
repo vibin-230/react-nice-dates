@@ -53,6 +53,7 @@ const send_message_otp = require('../helper/send_message_otp')
 const notify = require('../scripts/Notify')
 const NotifyArray = require('../scripts/NotifyArray')
 const multer = require('multer')
+const sendAlert = require('./../scripts/sendAlert')
 var multer_upload = multer({ dest: 'uploads/' })
 var io = require('socket.io-emitter')("//127.0.0.1:6379")
 const rzp_key = require('../scripts/rzp')
@@ -2373,9 +2374,10 @@ router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
       if(filter){
         res.send({status:'failiure', message:"following"})
       }else{
-        User.findByIdAndUpdate({_id:req.params.friend},{$addToSet: { followers: { $each: [obj] } } }).then(user=>{  
+        User.findByIdAndUpdate({_id:req.params.friend},{$addToSet: { followers: { $each: [obj] } } }).then(friend=>{  
           User.findByIdAndUpdate({_id:req.body.id},{$addToSet: { following: { $each: [friend._id] } } }).then(user=>{  
             User.findById({_id:req.body.id}).then(user=>{ 
+               sendAlert({created_by:user._id,user:friend._id,type:'follow',status_description:`${user.name_status ? user.name:user.handle} is following you`},'addorupdate',next)
               res.send({status:"success", message:"following "+friend.handle, data:user})
             }).catch(next)
 
@@ -2387,6 +2389,7 @@ router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
       User.findByIdAndUpdate({_id:req.params.friend},{$addToSet: { requests: { $each: [obj] } } }).then(user=>{  
         User.findByIdAndUpdate({_id:req.body.id},{$addToSet: { sent_requests: { $each: [friend._id] } } }).then(user=>{  
           User.findById({_id:req.body.id}).then(user=>{ 
+            sendAlert({created_by:req.body.id,user:req.params.friend,type:'follow',status_description:`${user.name_status ? user.name:user.handle} has sent a follow request`},'addorupdate',next)
             res.send({status:"success", message:"Request sent to "+friend.handle, data:user})
           }).catch(next)
       }).catch(next)

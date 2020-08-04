@@ -22,6 +22,7 @@ const Post = require('../models/post');
 const Game = require('../models/game');
 const Conversation = require('../models/conversation');
 const sendAlert = require('./../scripts/sendAlert')
+const Alert = require('./../models/alerts')
 
 router.post('/shout_out/:id', verifyToken, (req, res, next) => {
     const filter = !req.body.status ? { $addToSet: { shout_out: { $each: [req.userId] } } ,$set:{shout_out_count:1} } :{ $pull: { shout_out:  req.userId  }}
@@ -61,6 +62,8 @@ router.post('/shout_out/:id', verifyToken, (req, res, next) => {
 }).catch(next);
 
 })
+
+
 
 // router.post('/shout_out/:id', verifyToken, (req, res, next) => {
 //     console.log('passasasasasaas',req.body)
@@ -138,6 +141,17 @@ router.post('/get_town_games/', [
           res.status(201).send({status: "success", message: "town games collected",data:finalResult})
   
         }).catch(next)
+      }).catch(next)
+    //}).catch(next)
+  
+  });
+
+  router.post('/get_alerts/', [
+    verifyToken,
+  ], (req, res, next) => {
+    Alert.find({user: req.userId},{}).lean().populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'post', populate: { path: 'game' , populate :{path:'conversation',populate :{path:'last_message'}} } }).populate('created_by','name _id handle').then(alert=> {
+      console.log(alert)    
+      res.status(201).send({status: "success", message: "alerts collected",data:alert})
       }).catch(next)
     //}).catch(next)
   

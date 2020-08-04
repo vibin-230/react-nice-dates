@@ -19,7 +19,7 @@ const User = require('../models/user');
     }).catch(next)
   }
   else if(type === 'addorupdate'){
-    Alert.findOne({user:body.user,created_by:body.created_by}).then(a=>{
+    Alert.findOne({user:body.user,created_by:body.created_by,type:body.type}).then(a=>{
       if(a){
         Alert.findOneAndUpdate({user:body.user,created_by:body.created_by,type:body.type},{$set:body}).then((s)=>{
           console.log(s)

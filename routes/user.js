@@ -40,6 +40,7 @@ const Version = require('../models/version');
 const Admin = require('../models/admin');
 const Ads = require('../models/ads')
 const rzp_key = require('../scripts/rzp')
+const send_message_otp = require('./../helper/send_message_otp')
  const indianRupeeComma = (value) => {
   return value.toLocaleString('EN-IN');
 }
@@ -255,12 +256,12 @@ router.post('/send_otp',[
 
   let phone = 91+req.body.phone;
   let otp   = Math.floor(999 + Math.random() * 9000);
-  console.log('pass hit ')
+  console.log('pass hit')
   User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
-    axios.get(process.env.PHP_SERVER+'/textlocal/otp.php?otp='+otp+'&phone='+phone)
-    .then(response => {
-      console.log(response.data)
-        if(response.data.status === 'success')
+    // axios.get(process.env.PHP_SERVER+'/textlocal/otp.php?otp='+otp+'&phone='+phone)
+    // .then(response => {
+      send_message_otp(req.body.phone,"TRFTWN","Welcome to Turftown! Your OTP is "+otp ).then((a)=>{
+        if(a.status === 'success')
         {
           if(user)
           {
@@ -295,7 +296,7 @@ router.post('/send_otp',[
           }
         }else
           {
-            res.status(422).send({status:"failure", errors:{template:"invalid template"}, data:response.data})
+            res.status(422).send({status:"failure", errors:{template:"invalid template"}, data:a})
         }
     }).catch(error => {
         console.log(error);

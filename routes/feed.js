@@ -149,7 +149,7 @@ router.post('/get_town_games/', [
   router.post('/get_alerts/', [
     verifyToken,
   ], (req, res, next) => {
-    Alert.find({user: req.userId},{}).lean().populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'post', populate: { path: 'game' , populate :{path:'venue',select:'venue'} } }).populate('created_by','name _id handle').then(alert=> {
+    Alert.find({user: req.userId},{}).lean().populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'post', populate: { path: 'game' , populate :{path:'venue',select:'venue'} } }).populate('created_by','name _id handle profile_picture').then(alert=> {
       console.log(alert)    
       res.status(201).send({status: "success", message: "alerts collected",data:alert})
       }).catch(next)

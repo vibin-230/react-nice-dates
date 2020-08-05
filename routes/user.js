@@ -2377,7 +2377,7 @@ router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
         User.findByIdAndUpdate({_id:req.params.friend},{$addToSet: { followers: { $each: [obj] } } }).then(friend=>{  
           User.findByIdAndUpdate({_id:req.body.id},{$addToSet: { following: { $each: [friend._id] } } }).then(user=>{  
             User.findById({_id:req.body.id}).then(user=>{ 
-               sendAlert({created_by:user._id,user:friend._id,type:'follow',status_description:`${user.name_status ? user.name:user.handle} is following you`},'addorupdate',next)
+               sendAlert({created_at:new Date(),created_by:user._id,user:friend._id,type:'follow',status_description:`${user.name_status ? user.name:user.handle} is following you`},'addorupdate',next)
               res.send({status:"success", message:"following "+friend.handle, data:user})
             }).catch(next)
 
@@ -2389,7 +2389,7 @@ router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
       User.findByIdAndUpdate({_id:req.params.friend},{$addToSet: { requests: { $each: [obj] } } }).then(user=>{  
         User.findByIdAndUpdate({_id:req.body.id},{$addToSet: { sent_requests: { $each: [friend._id] } } }).then(user=>{  
           User.findById({_id:req.body.id}).then(user=>{ 
-            sendAlert({created_by:req.body.id,user:req.params.friend,type:'follow',status_description:`${user.name_status ? user.name:user.handle} has sent a follow request`},'addorupdate',next)
+            sendAlert({created_at:new Date(),created_by:req.body.id,user:req.params.friend,type:'follow',status_description:`${user.name_status ? user.name:user.handle} has sent a follow request`},'addorupdate',next)
             res.send({status:"success", message:"Request sent to "+friend.handle, data:user})
           }).catch(next)
       }).catch(next)

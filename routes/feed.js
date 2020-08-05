@@ -32,7 +32,7 @@ router.post('/shout_out/:id', verifyToken, (req, res, next) => {
       //following = following.concat(req.userId)   
       Post.findByIdAndUpdate({_id: req.params.id},filter ).then(game=> {
         Post.findOne({_id: req.params.id}).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then((s)=>{
-          !req.body.status && sendAlert({created_by:req.userId,user:s.created_by,post:s._id,type:'shoutout',status_description:`${user.name_status ? user.name:user.handle} gave you a shoutout.`},'addorupdate',next)
+          !req.body.status && sendAlert({created_at:new Date(),created_by:req.userId,user:s.created_by,post:s._id,type:'shoutout',status_description:`${user.name_status ? user.name:user.handle} gave you a shoutout.`},'addorupdate',next)
                         if( s && s.shout_out && s.shout_out.length>0 && s.shout_out.filter((a)=>a._id.toString() === req.userId.toString()).length > 0){
                             s['shout_out_status'] = true
             
@@ -149,7 +149,7 @@ router.post('/get_town_games/', [
   router.post('/get_alerts/', [
     verifyToken,
   ], (req, res, next) => {
-    Alert.find({user: req.userId},{}).lean().populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'post', populate: { path: 'game' , populate :{path:'conversation',populate :{path:'last_message'}} } }).populate('created_by','name _id handle').then(alert=> {
+    Alert.find({user: req.userId},{}).lean().populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'post', populate: { path: 'game' , populate :{path:'venue',select:'venue'} } }).populate('created_by','name _id handle').then(alert=> {
       console.log(alert)    
       res.status(201).send({status: "success", message: "alerts collected",data:alert})
       }).catch(next)

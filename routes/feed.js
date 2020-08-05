@@ -41,7 +41,7 @@ router.post('/shout_out/:id', verifyToken, (req, res, next) => {
                         }
                         // var array3 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter(function(obj) { return following.indexOf(obj._id.toString()) !== -1; }):[]
                         var array3 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter((obj)=> following.filter(a=>a.toString() === obj._id.toString()).length > 0  ):[]
-                        var string_array = array3.length > 0 ? array3.map((a)=>a.name_status ? a.name : a.handle):[]
+                        var string_array = array3.length > 0 && array3.filter((a)=>a._id.toString() === s.created_by._id.toString()).length <= 0 ? array3.map((a)=>a.name_status ? a.name : a.handle):[]
               if(string_array.length === 1){
                 s['shout_line'] = `Shoutout by ${string_array[0]}`
                  }else if(string_array.length === 2){
@@ -100,7 +100,7 @@ router.post('/get_town_games/', [
         // existingConversation.map((key)=>{
         //  key["venue"] = key.venue.venue
         // })
-
+        // c is req.userId  
         let x = posts.map((s)=>{
             if( s && s.shout_out && s.shout_out.length>0 && s.shout_out.filter((a)=>a._id.toString() === req.userId.toString()).length > 0){
                 s['shout_out_status'] = true
@@ -110,7 +110,8 @@ router.post('/get_town_games/', [
               }
               var array3 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter((obj)=> following.filter(a=>a.toString() === obj._id.toString()).length > 0  ):[]
               //var array4 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter((obj)=> following.indexOf(obj._id.toString()) !== -1 ):[]
-              var string_array = array3.length > 0 ? array3.map((a)=>a.name_status ? a.name : a.handle):[]
+            // let as = array3.filter((a)=>a._id.toString() === s.created_by._id.toString())
+              var string_array = array3.length > 0  ? array3.map((a)=>a.name_status ? a.name : a.handle):[]
               let x = ''
               if(string_array.length === 1){
                 x = `Shoutout by ${string_array[0]}`
@@ -138,6 +139,7 @@ router.post('/get_town_games/', [
           // const q =   Object.entries(a).map(([key,value])=>{
           //         return {title:key,data:value }
           //   })
+          console.log(finalResult)
           res.status(201).send({status: "success", message: "town games collected",data:finalResult})
   
         }).catch(next)

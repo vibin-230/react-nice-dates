@@ -33,6 +33,7 @@ const schema = new Schema({
   sport_name:String,
   venue_type:String,
   amount:Number,
+  images:Array,
   coupons_used:String,
   coupon_amount:Number,
   offer_amount:Number,

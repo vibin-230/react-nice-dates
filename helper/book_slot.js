@@ -60,6 +60,7 @@ module.exports = function BookSlot(body,id,booking_id,params,req,res,next){
               sport_name:body.sport_name,
               venue_type:body.venue_type,
               amount:body.amount,
+              images:body.images,
               coupons_used:body.coupons_used,
               commission:body.commission,
               start_time:body.start_time,

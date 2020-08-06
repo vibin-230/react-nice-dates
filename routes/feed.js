@@ -87,14 +87,15 @@ router.post('/shout_out/:id', verifyToken, (req, res, next) => {
 router.post('/get_town_games/', [
     verifyToken,
   ], (req, res, next) => {
-    User.findById({_id: req.userId},{}).lean().then(user=> {
+    User.findById({_id: req.userId},{activity_log:0}).lean().then(user=> {
       let following = user.following
-         // following = following.concat(req.userId)
-          const date = moment().add(5,'hours').add(30,'minutes')
+         following = following.concat(req.userId)
+          // const date = moment().add(5,'hours').add(30,'minutes')
           const date2 = moment(req.body.date).add(5,'hours').add(30,'minutes')
-  
-      const filter = req.body.sport === 'all' ? { created_by: { $in: following } ,town:true, host:{ $in: following },start_time:{$gte:date2}} :{ created_by: { $in: following } ,town:true,sport_name:{$in:req.body.sport}, host:{ $in: following }, start_time:{$gte:date}}
-      const filter1 = req.body.sport === 'all'? { $or:[{created_by: { $in: following } ,status:true},{shout_out: { $in: following } ,status:true}]}:{ created_by: { $in: following } ,status:true,sport_name:req.body.sport}  
+
+          // console.log("Data",req.userId,date,date2)
+      // const filter = req.body.sport === 'all' ? { created_by: { $in: following } ,town:true, host:{ $in: following },start_time:{$gte:date2}} :{ created_by: { $in: following } ,town:true,sport_name:{$in:req.body.sport}, host:{ $in: following }, start_time:{$gte:date}}
+      const filter1 = req.body.sport === 'all'? { $or:[{created_by: { $in: following } ,status:true,start_time:{$gte:date2}},{shout_out: { $in: following },start_time:{$gte:date2},status:true}]} : { $or:[{created_by: { $in: following } ,status:true,sport_name:{$in:req.body.sport},start_time:{$gte:date2}},{shout_out: { $in: following },start_time:{$gte:date2},status:true,sport_name:{$in:req.body.sport}}]}   
       //Game.find(filter).lean().populate('conversation').populate('host','_id name profile_picture phone handle name_status').populate("venue","venue").populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone').then(existingConversation=>{
        Post.find(filter1).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then((posts)=>{
         // existingConversation.map((key)=>{

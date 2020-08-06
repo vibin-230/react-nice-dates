@@ -43,7 +43,7 @@ const schema = new Schema({
     username:{type:String,default:''},
     timeStamp: { type : Date , default:moment()},
   }],
-  requests:[{
+  sent_requests:[{
     user:{type:mongoose.Schema.Types.ObjectId, ref:'user'},
     username:{type:String,default:''},
     timeStamp: { type : Date , default:moment()},

@@ -34,6 +34,7 @@ const schema = new Schema({
   venue_type:String,
   amount:Number,
   images:Array,
+  game:{type:Boolean, default:false},
   coupons_used:String,
   coupon_amount:Number,
   offer_amount:Number,

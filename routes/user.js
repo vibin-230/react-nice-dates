@@ -38,6 +38,8 @@ const Offers = require('../models/offers');
 const User = require('../models/user');
 const Game = require('../models/game');
 const Post = require('../models/post');
+const Alert = require('../models/alerts');
+
 const Conversation = require('../models/conversation');
 const Event = require('./../models/event')
 const Booking = require('../models/booking');
@@ -254,16 +256,64 @@ router.post('/get_user', [
   verifyToken,
 ], (req, res, next) => {
       //Check if user exist
+      var count  = 0
       console.log(req.body);
-        User.findByIdAndUpdate({_id: req.userId},{version:'26',online_status:'online'}).then(user1=>{
-           User.findOne({_id: req.userId},{activity_log:0}).then(user=> {
-          if (user) {
-          res.status(201).send({status: "success", message: "user collected",data:user})
-        } else {
-            res.status(422).send({status: "failure", errors: {user:"force update failed"}});
-        }
-    }).catch(next);
-}).catch(next);
+      Alert.find({user: req.userId,status:true},{}).lean().then(alert=> {
+      Conversation.find({ $or: [ { members: { $in: [req.userId] } },{ exit_list: { $elemMatch: {user_id:req.userId} } }] }).lean().populate('to',' name _id profile_picture last_active online_status status handle name_status').populate('members','name _id profile_picture last_active online_status status handle name_status').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(existingConversation=>{
+        const exit_convo_list = existingConversation.filter((e)=> {
+         return (e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.userId.toString()).length > 0)
+         } )
+         const exit_convo_list1 = existingConversation.filter((e)=> {
+           return !(e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.userId.toString()).length > 0)
+           } )
+        //const exit_convo_list1 = existingConversation.filter((e)=> e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((u)=>u.user_id.toString() === req.userId.toString()).length > 0)
+        console.log('asdasd',exit_convo_list.length,existingConversation.length);
+        //console.log(exit_convo_list)
+        User.findOne({_id: req.userId},{activity_log:0,followers:0,following:0}).then(user=> {
+           const date = user.last_active 
+ 
+          Message.aggregate([{ $match: { $and: [  { conversation: {$in:exit_convo_list1.map((c)=>c._id)} } ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"},"user" : {"$push" : "$author"}}}]).then((message)=>{
+            let counter
+            const x =  existingConversation.map((c)=> {
+             let user = {}
+             if(exit_convo_list && exit_convo_list.length > 0 && c.exit_list && c.exit_list.length > 0){
+               const x =  exit_convo_list.filter((e)=> e.exit_list && c.exit_list.length>0 && e._id.toString() === c._id.toString())
+               user  =  x.length > 0 ? x[0].exit_list.filter((e)=>{
+                 return e && e.user_id && e.user_id._id.toString() === req.userId.toString()})[0] : []
+              c.members =  user && user.length > 0 && c.type==='single' ? c.members.concat(user.user_id) : c.members
+             }
+             const filter = c && c.last_active ? c.last_active.filter((c)=> c && c.user_id && c.user_id.toString() === req.userId.toString()) : []
+             message.length > 0 && message.map((m)=>{
+                if(m._id.toString() === c._id.toString()) { 
+                 const time = m.time.filter((timestamp,index)=>{ 
+                   if( filter.length > 0 &&  moment(filter[0].last_active).isSameOrBefore(timestamp) && m.user[index].toString() !== req.userId.toString()) {
+                     return timestamp
+                   }
+                 })  
+                 c['time'] = user && user.message ? time.length : time.length 
+                 count = time.length > 0 ? count+1 : count
+                 console.log('count',count,c['time']);
+                }
+                })
+              return c
+           })
+          User.findOne({_id: req.userId},{activity_log:0}).lean().then(user=> {
+            if (user) {
+             user['total'] = count
+             console.log(user.total);
+               const alerts1 = alert && alert.length > 0 ? alert.filter(a=>moment(a.created_at).isSameOrBefore(user.last_active)) : []   
+               console.log(alert,alerts1.length) 
+               user['alert_total'] = alerts1.length
+               res.status(201).send({status: "success", message: "user collected",data:user})
+              } else {
+                res.status(422).send({status: "failure", errors: {user:"force update failed"}});
+              }
+            }).catch(next);
+          }).catch(next)
+         }).catch(next)
+       }).catch(next)
+   }).catch(next)
+       
 
 });
 
@@ -1280,7 +1330,7 @@ async function handleSlotAvailabilityForGames(booking1,client){
 router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
   function BookSlot(body,id){
     return new Promise(function(resolve, reject){
-      Booking.findByIdAndUpdate({_id:body._id},{booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount,coupon_amount:body.coupon_amount,coupons_used:body.coupons_used, multiple_id:id}).lean().then(booking=>{
+      Booking.findByIdAndUpdate({_id:body._id},{booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount,coupon_amount:body.coupon_amount,coupons_used:body.coupons_used, multiple_id:id,game:true}).lean().then(booking=>{
         Booking.findById({_id:body._id}).lean().populate('venue_data').then(booking=>{
         resolve(booking)
       }).catch(next)
@@ -2963,7 +3013,8 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
   let past_date  = moment(req.body.todate).add(1,'month')
   let filter = {
     booking_status:{$in:["booked"]},
-    phone:req.phone
+    phone:req.phone,
+    game:false,
   }
   let cancel_filter = {
     booking_status:{$in:["cancelled"]},
@@ -2985,8 +3036,8 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         })
         
         let event_booking_data = eventBooking
-        let event = event_booking_data.reverse()
-        booking_data = req.body.type && req.body.type === 'host' ?[...open_games]:[...game]
+         event_booking_data.reverse()
+        booking_data = req.body.type && req.body.type === 'host' ?[...open_games,...event_booking_data,...result]:[...game,...event_booking_data,...result]
 
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{

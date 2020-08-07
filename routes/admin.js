@@ -988,6 +988,29 @@ router.post('/search',
 
 })
 
+
+router.post('/search_venue',
+	verifyToken,
+	AccessControl('venue', 'read'),
+	(req, res, next) => {
+		Venue.find({"venue.name":{ "$regex": req.body.search, "$options": "i" }}).then(venue=>{
+			Offers.find({}).then(offers=>{
+			let combinedResult
+			if(venue){
+					let list = Object.values(venue).map((value,index)=>{
+					let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
+					value.rating = value.rating
+					value.offers = filteredOffer
+					return value
+				})
+				combinedResult = list;
+			}
+			let finalResult = [...combinedResult]
+			res.send({status:"success", message:"venues fetched based on search", data:finalResult})
+		}).catch(next)
+	}).catch(next)
+})
+
 router.post('/search_users',
 	verifyToken,
 	AccessControl('venue', 'read'),

@@ -38,16 +38,12 @@ const schema = new Schema({
   role:{type:String, default:'user'},
   followers:[{type:mongoose.Schema.Types.ObjectId, ref:'user'}],
   following:[{type:mongoose.Schema.Types.ObjectId, ref:'user'}],
-  requests:[{
-    user:{type:mongoose.Schema.Types.ObjectId, ref:'user'},
-    username:{type:String,default:''},
-    timeStamp: { type : Date , default:moment()},
-  }],
-  sent_requests:[{
-    user:{type:mongoose.Schema.Types.ObjectId, ref:'user'},
-    username:{type:String,default:''},
-    timeStamp: { type : Date , default:moment()},
-  }],
+  requests:[
+    {type:mongoose.Schema.Types.ObjectId, ref:'user'}
+    ],
+  sent_requests:[
+    {type:mongoose.Schema.Types.ObjectId, ref:'user'}
+  ],
   conversation:[{
     conversation:{type:mongoose.Schema.Types.ObjectId, ref:'conversation'},
   }],

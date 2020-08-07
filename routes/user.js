@@ -2416,11 +2416,9 @@ router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
   User.findById({_id:req.params.friend},{activity_log:0}).lean().then(friend=>{
     User.findById({_id:req.body.id},{activity_log:0}).lean().then(user=>{    
       console.log(friend,user);
-    if(friend.visibility === 'public'){
       let obj = user._id
+    if(friend.visibility === 'public'){
       let filter = friend && friend.followers.length > 0 && friend.followers.some(u => u.id === req.body.id)
-      // console.log('filter',filter);
-      console.log("!11")
       if(filter){
         res.send({status:'failiure', message:"following"})
       }else{
@@ -2438,7 +2436,7 @@ router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
     else {
       User.findByIdAndUpdate({_id:req.params.friend},{$addToSet: { requests: { $each: [obj] } } }).then(user=>{  
         User.findByIdAndUpdate({_id:req.body.id},{$addToSet: { sent_requests: { $each: [friend._id] } } }).then(user=>{  
-          User.findById({_id:req.body.id}).then(user=>{ 
+          User.findById({_id:req.body.id},{activity_log:0}).then(user=>{ 
             sendAlert({created_at:new Date(),created_by:req.body.id,user:req.params.friend,type:'follow',status_description:`${user.name_status ? user.name:user.handle} has sent a follow request`},'addorupdate',next)
             res.send({status:"success", message:"Request sent to "+friend.handle, data:user})
           }).catch(next)
@@ -2496,6 +2494,57 @@ router.post('/remove_request/:friend', verifyToken, (req, res, next) => {
   }).catch(next)
   }).catch(next)
   }).catch(next)
+  }).catch(next)
+})
+
+router.post('/remove_request_pending/:friend', verifyToken, (req, res, next) => {
+  User.findById({_id:req.params.friend},{activity_log:0}).lean().then(friend=>{
+    User.findById({_id:req.body.id},{activity_log:0}).lean().then(user=>{    
+      //In user followers filter friend id
+      const sent_requests = user.sent_requests.filter((u)=>u.toString() !== friend._id.toString())
+      // In friend following list remove user id 
+      const requests = friend.requests.filter((u)=>u.toString() !== user._id.toString())
+      User.findByIdAndUpdate({_id:req.params.friend},{$set: { requests: requests } }).then(user=>{  
+        User.findByIdAndUpdate({_id:req.body.id},{$set: { sent_requests: sent_requests } }).then(user=>{  
+            User.findById({_id:req.body.id}).then(user=>{ 
+              res.send({status:"success", message:"Removed "+friend.handle, data:user})
+  }).catch(next)
+  }).catch(next)
+  }).catch(next)
+  }).catch(next)
+  }).catch(next)
+})
+
+router.post('/get_requests', verifyToken, (req, res, next) => {
+  User.findById({ _id: req.userId }, { activity_log: 0 }).lean().then(user => {
+    let requests = user.requests
+    User.find({ _id: { $in: requests }, status: true }, { activity_log: 0 }).lean().then(user1 => {
+      res.send({ status: "success", message: "user requests fetched", data: user1 })
+    }).catch(next)
+  }).catch(next)
+})
+
+router.post('/accept_or_delete_requests', verifyToken, (req, res, next) => {
+  User.findById({ _id: req.body.id }, { activity_log: 0 }).lean().then(friend => {
+    User.findById({ _id: req.userId }, { activity_log: 0 }).lean().then(user => {
+      let type = req.body.type
+
+      const sent_requests = friend.sent_requests.filter((u) => u.toString() !== req.userId.toString())
+      const requests = user.requests.filter((u) => u.toString() !== req.body.id.toString())
+      let friend1 = type == "accept" ? { $addToSet: { following: { $each: [req.userId] } } ,$set:{sent_requests:sent_requests} } : {$set:{sent_requests:sent_requests} }
+      let user_guy = type == "accept" ?  { $addToSet: { followers: { $each: [req.body.id] } } ,$set:{requests:requests} } : {$set:{requests:requests} }
+      User.findByIdAndUpdate({ _id: req.body.id },friend1).then(user => {
+        User.findByIdAndUpdate({ _id: req.userId },user_guy).then(user2 => {
+          User.findById({_id:req.userId},{activity_log:0}).then(user=>{ 
+              let requested_user = user.requests
+              User.find({ _id: { $in: requested_user }, status: true }, { activity_log: 0 }).lean().then(user1 => {
+            res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1}})
+          }).catch(next)
+        }).catch(next)
+
+        }).catch(next)
+      }).catch(next)
+    }).catch(next)
   }).catch(next)
 })
 

@@ -252,6 +252,37 @@ router.post('/force_update_by_user_app', [
     }).catch(next);
 });
 
+router.post('/check_user_game', [
+  verifyToken,
+], (req, res, next) => {
+      //Check if user exist
+      console.log('hit',req.body)
+      User.findOne({_id: req.userId}).then(user=> {
+        if (user) {
+          Game.findOne({_id:req.body.id}).lean().populate("conversation").populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=>{
+            Conversation.findById({_id:game.conversation._id}).populate('members','_id name device_token profile_picture handle name_status').then((convo)=>{
+                    Venue.findById({_id:game.bookings[0].venue_id}).then(venue =>{
+                      let game1 = Object.assign({},game)
+                      console.log('pass',game1);
+                      game1["venue"] = venue.venue
+                      game1["rating"] = venue.rating
+                      game1['final'] = _.xor(game1.users,game1.host)
+                      game1["conversation"] = convo
+                      if(game1.users.filter(a=>a._id.toString() === req.userId.toString()).length > 0 ){
+                        res.send({status:"success", message:"user exists",data:game1})
+                      }else{
+                        res.send({status:"success", message:"no user",data:game1})
+                      }
+        
+                    })
+    }).catch(next);
+    }).catch(next);
+        } else {
+            res.status(422).send({status: "failure", errors: {user:"force update failed"}});
+        }
+    }).catch(next);
+});
+
 router.post('/get_user', [
   verifyToken,
 ], (req, res, next) => {

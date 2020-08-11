@@ -127,7 +127,7 @@ module.exports = function () {
       const s = await checkIfUserExited(chatroomName)
       console.log('s',s);
       if(s.length <= 0){
-        const convo = await saveConvo({type:'single',members:chatroomName.members,created_by:chatroomName.members[0],to:chatroomName.members[1]})
+        const convo = await saveConvo({type:'single',members:chatroomName.members,created_by:chatroomName.members[0],to:chatroomName.members[1],invite_status:chatroomName.invite_status ?chatroomName.invite_status : false })
         chatrooms.set(convo._id,Chatroom(convo))
         return chatrooms.get(convo._id)
       }else{
@@ -264,13 +264,13 @@ module.exports = function () {
       const filter = chatroom.members.filter((member)=>{ 
         const string  = member && member._id ? member._id.toString() : member.toString()
         const user_id = x? message[0].author : message.author
-        if(!users.includes(string) || user_id.toString() !== string){
+        users = users.concat([user_id])
+        if(!users.includes(string)){
           return member
         }
       })
 
        User.find({_id: {$in : filter}},{activity_log:0}).lean().then(user=> {
-        console.log('hit user',user.length);
         const final_user  = user.filter((u)=> u.mute.filter((u)=>u.toString() === chatroom._id.toString()).length <= 0)
         console.log(final_user.length,chatroom._id.toString());
         if(Array.isArray(message)){

@@ -188,8 +188,7 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
 
  async function handleMessage({ chatroomName, message } = {}, callback) {
     if(chatroomName.type === 'single'){
-      const clientNumber = io.sockets.adapter.rooms[chatroomName._id].length;
-      if(io.sockets.adapter.rooms[chatroomName._id].length < 2){
+      if(io.sockets.adapter.rooms[chatroomName._id] && io.sockets.adapter.rooms[chatroomName._id].length < 2){
         if(chatroomName && chatroomName.exit){
           chatroomManager.registerExitedUser(chatroomName,message)
         }
@@ -206,6 +205,7 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
          const x = await chatroomName && chatroomName.exit && chatroomManager.registerExitedUser(chatroomName,message)
         client.to(chatroomName._id).emit('new',message)
         client.to(chatroomName._id).emit('unread',message)
+        chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,[])
         //chatroomManager.notifyAllUsers(chatroomName, message)
         chatroomManager.saveMessage(message) 
         callback()

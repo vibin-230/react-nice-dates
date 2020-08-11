@@ -4,6 +4,7 @@ const Schema    = mongoose.Schema;
 
 const schema = new Schema({
   created_at: { type : Date , default:new Date()},
+  invite: { type : Boolean , default:false},
   conversation : { type: Schema.Types.ObjectId, ref: 'conversation' },
   author : { type: Schema.Types.ObjectId, ref: 'user' },
   message: String,

@@ -26,6 +26,7 @@ const schema = new Schema({
     timeStamp: { type : Date , default:new Date()},
   }],
   colors:Array,
+  invite_status:{ type : Boolean , default:false},
   join_date:Array
 });
 

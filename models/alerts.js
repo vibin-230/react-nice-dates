@@ -11,6 +11,7 @@ const schema = new Schema({
   user:{type:mongoose.Schema.Types.ObjectId, ref:'user'},
   post:{type:mongoose.Schema.Types.ObjectId, ref:'post'},
   game:{type:mongoose.Schema.Types.ObjectId, ref:'game'},
+  event:{type:mongoose.Schema.Types.ObjectId, ref:'event'},
 });
 
 //Model

@@ -761,12 +761,14 @@ module.exports = function () {
 
 
   
-  async function handleProfileAlerts(client){
+  async function handleProfileAlerts(friend,client){
       // console.log("useree",user)
       // const device_token_list  = [user.device_token]
-      client.emit('profile_handlers')
+    const x =  await User.findById({ _id: friend}, { activity_log: 0, }).lean().then(user => {
+      client.emit('profile_handlers',user)
       // NotifyArray(device_token_list, `following you`, `Turf Town`)
-    return x
+  }).catch(error => console.log(error))
+  return x
   }
 
   async function leaveChatroomWithConversationId(game1,client) {

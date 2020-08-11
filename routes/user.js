@@ -596,6 +596,14 @@ router.post('/share_post/:id', [
 
 });
 
+router.post('/share_post_event/:id', [
+  verifyToken,
+], (req, res, next) => {
+        Post.create(req.body).then(post=>{
+          res.status(201).send({status: "success", message: "user collected",data:post})
+        }).catch(next);
+});
+
 router.post('/mute_user/:id', [
   verifyToken,
 ], (req, res, next) => {

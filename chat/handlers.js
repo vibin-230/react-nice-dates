@@ -154,7 +154,10 @@ async function handleSlotAvailabilityDueToCancellation({ booking } = {}, callbac
 
 }
 
-
+async function handleProfileAlerts({friend} = {}, callback) {
+  chatroomManager.handleProfileAlerts(friend,io)
+  callback()
+}
 async function handleUpdateParams({ chatroomName, message,params } = {}, callback) {
   const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
   const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
@@ -244,6 +247,24 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
   }
 
 
+  async function handleEventInvites(event,callback){ 
+    if(event.ids.length > 0  || event.convo_ids.length > 0){
+     let x = event.ids.length > 0 ? await chatroomManager.sendEventInvites(event.event._id,event.ids,event.user_id,event.town,client) : []
+      let y = event.convo_ids.length > 0 ? await chatroomManager.sendConvoEventInvites(event.event._id,event.convo_ids,event.user_id,event.event.event.name,event.town,client) : []
+      x && x.length > 0 && x.forEach((clientId)=>{
+        const client =  clientManager.getClient(clientId)
+       })
+       y && y.length > 0 && y.forEach((clientId)=>{
+         const client =  clientManager.getClient(clientId)
+        })
+        callback()
+    } else{
+      const z = await chatroomManager.makeTownTrue(game.game._id,game.town) 
+      callback(z)
+    } 
+  }
+
+
   async function handleJoinGame(game,callback){
     const x = await chatroomManager.joinGame(game.game_id,game.id,io)
     x.forEach((clientId)=>{
@@ -294,5 +315,5 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
     return callback()
   }
 
-  return {handleSendBroadcast,handleSlotAvailabilityDueToCancellation,handleSlotAvailability,handleLeaveChatrooms,handleUpdateGroup,handleUpdateParams,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames}
+  return {handleSendBroadcast,handleSlotAvailabilityDueToCancellation,handleSlotAvailability,handleLeaveChatrooms,handleUpdateGroup,handleUpdateParams,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames,handleProfileAlerts,handleEventInvites}
 }

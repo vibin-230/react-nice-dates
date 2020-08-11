@@ -331,9 +331,7 @@ router.post('/get_user', [
           User.findOne({_id: req.userId},{activity_log:0}).lean().then(user=> {
             if (user) {
              user['total'] = count
-             console.log(user.total);
-               const alerts1 = alert && alert.length > 0 ? alert.filter(a=>moment(a.created_at).isSameOrBefore(user.last_active)) : []   
-               console.log(alert,alerts1.length) 
+               const alerts1 = alert && alert.length > 0 ? alert.filter(a=>moment(a.created_at).isAfter(user.last_active)) : []   
                user['alert_total'] = alerts1.length
                res.status(201).send({status: "success", message: "user collected",data:user})
               } else {
@@ -2444,6 +2442,7 @@ router.post('/group_by_event', verifyToken, (req, res, next) => {
  
 //when user clicks follow 
 router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
+  console.log("Req ibjwcrrr",req.io)
   User.findById({_id:req.params.friend},{activity_log:0}).lean().then(friend=>{
     User.findById({_id:req.body.id},{activity_log:0}).lean().then(user=>{    
       console.log(friend,user);

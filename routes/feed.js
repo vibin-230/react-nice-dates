@@ -23,6 +23,7 @@ const Game = require('../models/game');
 const Conversation = require('../models/conversation');
 const sendAlert = require('./../scripts/sendAlert')
 const Alert = require('./../models/alerts')
+const Experience = require('./../models/experience')
 
 router.post('/shout_out/:id', verifyToken, (req, res, next) => {
     const filter = !req.body.status ? { $addToSet: { shout_out: { $each: [req.userId] } } ,$set:{shout_out_count:1} } :{ $pull: { shout_out:  req.userId  }}
@@ -157,6 +158,45 @@ router.post('/get_town_games/', [
       }).catch(next)
     //}).catch(next)
   
+  });
+
+  router.post('/create_experience/', [
+    verifyToken,
+  ], (req, res, next) => {
+    Experience.create(req.body).then(data=>{
+        res.status(201).send({status: "success", message: "user collected",data:data})
+      }).catch(next)
+  });
+
+
+  router.post('/alter_experience/:id', [
+    verifyToken,
+  ], (req, res, next) => {
+        console.log(req.body);
+        Experience.findOne({_id: req.params.id}).then(exp=> {
+          Experience.findByIdAndUpdate({_id: req.params.id},req.body).then(exp=>{
+            Experience.findOne({_id: req.params.id}).then(exp=> {
+              if (exp) {
+            res.status(201).send({status: "success", message: "exp collected",data:exp})
+          } else {
+              res.status(422).send({status: "failure", errors: {user:"force update failed"}});
+          }
+      }).catch(next);
+    }).catch(next);
+    }).catch(next);
+  });
+
+
+  router.post('/get_experiences/', [
+    verifyToken,
+  ], (req, res, next) => {
+        Experience.find({user:req.userId}).then(exp=> {
+              if (exp) {
+            res.status(201).send({status: "success", message: "exp collected",data:exp})
+          } else {
+              res.status(422).send({status: "failure", errors: {user:"force update failed"}});
+          }
+      }).catch(next);
   });
 
 module.exports = router;

@@ -14,6 +14,9 @@ function NotifyArray(device_token, message,title) {
           title: title,
           icon: "ic_launcher",
           body: message
+        },
+        data:{
+          key:'Details'
         }
       });
       sender.send(message, { registrationTokens: device_token }, function (err, response) {

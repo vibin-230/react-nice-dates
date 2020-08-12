@@ -16,7 +16,7 @@ function Notify(receiver_user, message) {
           body: message
         },
         data:{
-          key:'Hi'
+          key:'Details'
         }
       });
       sender.send(message, { registrationTokens: [receiver_user.device_token] }, function (err, response) {

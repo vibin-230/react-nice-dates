@@ -720,9 +720,9 @@ router.post('/check_completed_games', [
   verifyToken,
 ], (req, res, next) => {
       //Check if user exist
-      Game.findOne({users: {$in:[req.userId]},completed:true,skipped:{$nin:[req.userId]}}).populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
-            if (game.length > 0) {
-          res.status(201).send({status: "success", message: "game collected",data: x && x.length === 0 ? []:[x[x.length-1]]})
+      Game.find({users: {$in:[req.userId]},completed:true,"mvp.sender_id":{$nin:[req.userId]},skipped:{$nin:[req.userId]}}).populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
+        if (game.length > 0) {
+          res.status(201).send({status: "success", message: "game collected",data:game})
         } else {
             res.status(201).send({status: "failure",  message: "game collected",data:[]});
         }

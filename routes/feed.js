@@ -172,7 +172,6 @@ router.post('/get_town_games/', [
   router.post('/alter_experience/:id', [
     verifyToken,
   ], (req, res, next) => {
-        console.log(req.body);
         Experience.findOne({_id: req.params.id}).then(exp=> {
           Experience.findByIdAndUpdate({_id: req.params.id},req.body).then(exp=>{
             Experience.findOne({_id: req.params.id}).then(exp=> {

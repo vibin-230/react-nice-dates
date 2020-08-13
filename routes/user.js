@@ -634,9 +634,9 @@ router.post('/alter_user/:id', [
         Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
           game_completed_count = game && game.length > 0 ? game.length : 0
           const aw = game && game.length > 0 && game.filter((a)=>{
-           let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc.targetId.toString() === req.userId.toString).length > 0 ? a.mvp.filter((sc)=>sc.targetId.toString() === req.userId.toString).length : 0
+           let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc.target_id.toString() === req.userId.toString()).length : 0
            mvp_count = mvp_count + f
-           return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc.targetId.toString() === req.userId.toString).length>0
+           return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc.target_id.toString() === req.userId.toString()).length>0
           })
           //mvp_count = aw && aw.length > 0 ? aw.length : 0
           Conversation.find({ $or: [ { members: { $in: [req.userId] } },{ exit_list: { $elemMatch: {user_id:req.userId} } }] }).lean().populate('to',' name _id profile_picture last_active online_status status handle name_status').populate('members','name _id profile_picture last_active online_status status handle name_status').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(existingConversation=>{
@@ -721,9 +721,9 @@ router.post('/check_completed_games', [
   verifyToken,
 ], (req, res, next) => {
       //Check if user exist
-      Game.findOne({users: {$in:[req.userId]},completed:true,skipped:{$nin:[req.userId]}}).populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
-            if (game.length > 0) {
-          res.status(201).send({status: "success", message: "game collected",data: x && x.length === 0 ? []:[x[x.length-1]]})
+      Game.find({users: {$in:[req.userId]},completed:true,"mvp.sender_id":{$nin:[req.userId]},skipped:{$nin:[req.userId]}}).populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
+        if (game.length > 0) {
+          res.status(201).send({status: "success", message: "game collected",data:game})
         } else {
             res.status(201).send({status: "failure",  message: "game collected",data:[]});
         }

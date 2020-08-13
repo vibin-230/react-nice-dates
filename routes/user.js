@@ -343,9 +343,10 @@ router.post('/get_user', [
         Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
           game_completed_count = game && game.length > 0 ? game.length : 0
           const aw = game && game.length > 0 && game.filter((a)=>{
-           let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc.target_id.toString() === req.userId.toString()).length : 0
+            console.log(a.mvp)
+           let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0
            mvp_count = mvp_count + f
-           return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc.target_id.toString() === req.userId.toString()).length>0
+           return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length>0
           })
           //mvp_count = aw && aw.length > 0 ? aw.length : 0
           Conversation.find({ $or: [ { members: { $in: [req.userId] } },{ exit_list: { $elemMatch: {user_id:req.userId} } }] }).lean().populate('to',' name _id profile_picture last_active online_status status handle name_status').populate('members','name _id profile_picture last_active online_status status handle name_status').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(existingConversation=>{

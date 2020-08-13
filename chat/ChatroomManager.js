@@ -229,7 +229,7 @@ module.exports = function () {
         const s = message && message.image && message.image.length > 1 ?'s':''
         const messages = message.type === 'image' ? `${message.image.length} image${s} has been shared`: `${message.message}`
           const messages1 = chatroom.type === 'single' ?  `${message.name} : ${messages}`:  `${message.name} @ ${chatroom.name} : ${messages}`
-       NotifyArray(user.map((u)=>u.device_token),messages1,"Turf Town")
+       NotifyArray(user.map((u)=>u.device_token),messages1,"Turf Town",chatroom)
       }).catch((e)=>console.log(e))
     }
 
@@ -250,7 +250,7 @@ module.exports = function () {
                           const messages = message.type === 'image' ? `${message.image.length} image${s} has been shared`: `${message.message}`
                           const messages1 = chatroom.type === 'single' ?  `${message.name} : ${messages}`:  `${message.name} @ ${chatroom.name} : ${messages}`
                           client.broadcast.emit('unread', {});
-                          NotifyArray([u.device_token],messages1,"Turf Town")
+                          NotifyArray([u.device_token],messages1,"Turf Town",chatroom)
                         }
                     })
                  })
@@ -277,12 +277,13 @@ module.exports = function () {
           const s = message.length > 1 ?'s':''
           const messages = message[0].type === 'image' ? `${message.length} image${s}` : message[0].type === 'game' ? `${message.length} game${s} has been shared`:`${message.length} townie${s} has been shared`
           const messages1 = chatroom.type === 'single' ?  `${message[0].name} : ${messages}`:  `${message[0].name} @ ${chatroom.name} : ${messages}`
-          NotifyArray(final_user.map((u)=>u.device_token),messages1,'Turf Town')
+          NotifyArray(final_user.map((u)=>u.device_token),messages1,'Turf Town',chatroom)
         }else{
           const s = message && message.image && message.image.length > 1 ?'s':''
           const messages = message.type === 'image' ? `${message.image.length} image${s} has been shared`: `${message.message}`
           const messages1 = chatroom.type === 'single' ?  `${message.name} : ${messages}`:  `${message.name} @ ${chatroom.name} : ${messages}`
-          NotifyArray(final_user.map((u)=>u.device_token),messages1,'Turf Town')
+          console.log('turf town')
+          NotifyArray(final_user.map((u)=>u.device_token),messages1,'Turf Town',chatroom)
 
         }
       }).catch((e)=>console.log(e))
@@ -581,7 +582,7 @@ module.exports = function () {
                 client.in(conversation2._id).emit('unread',message_save)
                 const token_list  = conversation2.members.filter((key) => key._id.toString() !== userId.toString())
                 const device_token_list = token_list.map((e) => e.device_token)
-                NotifyArray(device_token_list, `${user.name} has joined ${game1.name}`, `Turf Town`)
+                NotifyArray(device_token_list, `${user.name} has joined ${game1.name}`, `Turf Town`,conversation2)
                 return conversation2.members.map((e) => e._id)
 
                 //res.send({status:"success", message:"invitation sent"})
@@ -614,7 +615,7 @@ module.exports = function () {
                   saveMessage(save_message)
                 const token_list  = conversation2.members.filter((key) => key._id.toString() !== game1.user_id.toString())
                 const device_token_list = token_list.map((e) => e.device_token)
-                NotifyArray(device_token_list, message_formation, `Game Left`)
+                NotifyArray(device_token_list, message_formation, `Game Left`,conversation2)
                 client.in(game1.convo_id).emit('new',save_message)
                 client.in(game1.convo_id).emit('unread',{})
                 return conversation2.members.map((e) => e._id)
@@ -651,8 +652,8 @@ module.exports = function () {
                 const user_device_token_list = [user.device_token]
                 client.in(conversation2._id).emit('new',save_message)
                 client.in(game1.convo_id).emit('unread',{})
-                NotifyArray(device_token_list, message_formation, `Game Left`)
-                NotifyArray(user_device_token_list, message_formation, `Game Left`)
+                NotifyArray(device_token_list, message_formation, `Game Left`,conversation2)
+                NotifyArray(user_device_token_list, message_formation, `Game Left`,conversation2)
                 return conversation2.members.map((e) => e._id)
        }).catch(error => console.log(error))
   }).catch(error => console.log(error))
@@ -790,7 +791,7 @@ module.exports = function () {
               saveMessage(save_message)
               const token_list  = conversation2.members.filter((key) => key._id.toString() !== game1.user_id.toString())
               const device_token_list = token_list.map((e) => e.device_token)
-              NotifyArray(device_token_list, `${user.name} has left the game`, `Game Left`)
+              NotifyArray(device_token_list, `${user.name} has left the game`, `Game Left`,conversation2)
               client.in(game1.convo_id).emit('new',save_message)
               client.in(game1.convo_id).emit('unread',{})
             return conversation2.members.map((e) => e._id)

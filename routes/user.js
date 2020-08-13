@@ -288,14 +288,67 @@ router.post('/check_user_game', [
     }).catch(next);
 });
 
+
+function getLevel(x){
+  if(x<500){
+    return {value:x,limit:500,level:0}
+  }
+  else if(x>500 && x<=1200){
+    return {value:x,limit:1200,level:1}
+  }
+  else if(x>1200 && x<=2000){
+    return {value:x,limit:2000,level:2}
+  }
+  else if(x>2000 && x<=3000){
+    return {value:x,limit:3000,level:3}
+  }
+  else if(x>3000 && x<=4000){
+    return {value:x,limit:4000,level:4}
+  }
+  else if(x>4000 && x<=5250){
+    return {value:x,limit:5250,level:5}
+  }
+  else if(x>5250 && x<=7000){
+    return {value:x,limit:7000,level:6}
+  }
+  else if(x>7000 && x<=8500){
+    return {value:x,limit:8500,level:7}
+  }
+  else if(x>8500 && x<=10000){
+    return {value:x,limit:10000,level:8}
+  }
+  else if(x>10000 && x<=12000){
+    return {value:x,limit:12000,level:9}
+  }
+  else if(x>12000 && x<=14000){
+    return {value:x,limit:14000,level:10}
+  }
+  else if(x>14000 && x<=16000){
+    return {value:x,limit:16000,level:11}
+  }
+  else if(x>16000 && x<=22000){
+    return {value:x,limit:22000,level:12}
+  }
+
+}
+
 router.post('/get_user', [
   verifyToken,
 ], (req, res, next) => {
       //Check if user exist
       var count  = 0
-      console.log(req.body);
+      let game_completed_count = 0
+      let mvp_count = 0
       Alert.find({user: req.userId,status:true},{}).lean().then(alert=> {
-      Conversation.find({ $or: [ { members: { $in: [req.userId] } },{ exit_list: { $elemMatch: {user_id:req.userId} } }] }).lean().populate('to',' name _id profile_picture last_active online_status status handle name_status').populate('members','name _id profile_picture last_active online_status status handle name_status').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(existingConversation=>{
+        Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
+          game_completed_count = game && game.length > 0 ? game.length : 0
+          const aw = game && game.length > 0 && game.filter((a)=>{
+           let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc.targetId.toString() === req.userId.toString).length > 0 ? a.mvp.filter((sc)=>sc.targetId.toString() === req.userId.toString).length : 0
+           mvp_count = mvp_count + f
+           return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc.targetId.toString() === req.userId.toString).length>0
+          })
+          //mvp_count = aw && aw.length > 0 ? aw.length : 0
+          Conversation.find({ $or: [ { members: { $in: [req.userId] } },{ exit_list: { $elemMatch: {user_id:req.userId} } }] }).lean().populate('to',' name _id profile_picture last_active online_status status handle name_status').populate('members','name _id profile_picture last_active online_status status handle name_status').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(existingConversation=>{
         const exit_convo_list = existingConversation.filter((e)=> {
          return (e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.userId.toString()).length > 0)
          } )
@@ -303,7 +356,6 @@ router.post('/get_user', [
            return !(e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.userId.toString()).length > 0)
            } )
         //const exit_convo_list1 = existingConversation.filter((e)=> e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((u)=>u.user_id.toString() === req.userId.toString()).length > 0)
-        console.log('asdasd',exit_convo_list.length,existingConversation.length);
         //console.log(exit_convo_list)
         User.findOne({_id: req.userId},{activity_log:0,followers:0,following:0}).then(user=> {
            const date = user.last_active 
@@ -328,7 +380,6 @@ router.post('/get_user', [
                  })  
                  c['time'] = user && user.message ? time.length : time.length 
                  count = time.length > 0 ? count+1 : count
-                 console.log('count',count,c['time']);
                 }
                 })
               return c
@@ -338,6 +389,9 @@ router.post('/get_user', [
              user['total'] = count
                const alerts1 = alert && alert.length > 0 ? alert.filter(a=>moment(a.created_at).isAfter(user.last_active)) : []   
                user['alert_total'] = alerts1.length
+               user['game_completed'] = game_completed_count
+               user['mvp_count'] = mvp_count
+               user['level'] =  getLevel(250 * mvp_count + 100 * game_completed_count)
                res.status(201).send({status: "success", message: "user collected",data:user})
               } else {
                 res.status(422).send({status: "failure", errors: {user:"force update failed"}});
@@ -345,6 +399,7 @@ router.post('/get_user', [
             }).catch(next);
           }).catch(next)
          }).catch(next)
+        }).catch(next)
        }).catch(next)
    }).catch(next)
        
@@ -571,15 +626,107 @@ router.post('/alter_user/:id', [
       console.log(req.body);
       User.findOne({_id: req.params.id},{activity_log:0}).then(user=> {
         User.findByIdAndUpdate({_id: req.params.id},req.body).then(user=>{
-          User.findOne({_id: req.params.id},{activity_log:0}).then(user1=> {
+          var count  = 0
+      let game_completed_count = 0
+      let mvp_count = 0
+      Alert.find({user: req.userId,status:true},{}).lean().then(alert=> {
+        Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
+          game_completed_count = game && game.length > 0 ? game.length : 0
+          const aw = game && game.length > 0 && game.filter((a)=>{
+           let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc.targetId.toString() === req.userId.toString).length > 0 ? a.mvp.filter((sc)=>sc.targetId.toString() === req.userId.toString).length : 0
+           mvp_count = mvp_count + f
+           return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc.targetId.toString() === req.userId.toString).length>0
+          })
+          //mvp_count = aw && aw.length > 0 ? aw.length : 0
+          Conversation.find({ $or: [ { members: { $in: [req.userId] } },{ exit_list: { $elemMatch: {user_id:req.userId} } }] }).lean().populate('to',' name _id profile_picture last_active online_status status handle name_status').populate('members','name _id profile_picture last_active online_status status handle name_status').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(existingConversation=>{
+        const exit_convo_list = existingConversation.filter((e)=> {
+         return (e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.userId.toString()).length > 0)
+         } )
+         const exit_convo_list1 = existingConversation.filter((e)=> {
+           return !(e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.userId.toString()).length > 0)
+           } )
+        //const exit_convo_list1 = existingConversation.filter((e)=> e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((u)=>u.user_id.toString() === req.userId.toString()).length > 0)
+        //console.log(exit_convo_list)
+        User.findOne({_id: req.userId},{activity_log:0,followers:0,following:0}).then(user=> {
+           const date = user.last_active 
+ 
+          Message.aggregate([{ $match: { $and: [  { conversation: {$in:exit_convo_list1.map((c)=>c._id)} } ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"},"user" : {"$push" : "$author"}}}]).then((message)=>{
+            let counter
+            const x =  existingConversation.map((c)=> {
+             let user = {}
+             if(exit_convo_list && exit_convo_list.length > 0 && c.exit_list && c.exit_list.length > 0){
+               const x =  exit_convo_list.filter((e)=> e.exit_list && c.exit_list.length>0 && e._id.toString() === c._id.toString())
+               user  =  x.length > 0 ? x[0].exit_list.filter((e)=>{
+                 return e && e.user_id && e.user_id._id.toString() === req.userId.toString()})[0] : []
+              c.members =  user && user.length > 0 && c.type==='single' ? c.members.concat(user.user_id) : c.members
+             }
+             const filter = c && c.last_active ? c.last_active.filter((c)=> c && c.user_id && c.user_id.toString() === req.userId.toString()) : []
+             message.length > 0 && message.map((m)=>{
+                if(m._id.toString() === c._id.toString()) { 
+                 const time = m.time.filter((timestamp,index)=>{ 
+                   if( filter.length > 0 &&  moment(filter[0].last_active).isSameOrBefore(timestamp) && m.user[index].toString() !== req.userId.toString()) {
+                     return timestamp
+                   }
+                 })  
+                 c['time'] = user && user.message ? time.length : time.length 
+                 count = time.length > 0 ? count+1 : count
+                }
+                })
+              return c
+           })
+          User.findOne({_id: req.userId},{activity_log:0}).lean().then(user=> {
+            if (user) {
+             user['total'] = count
+               const alerts1 = alert && alert.length > 0 ? alert.filter(a=>moment(a.created_at).isAfter(user.last_active)) : []   
+               user['alert_total'] = alerts1.length
+               user['game_completed'] = game_completed_count
+               user['mvp_count'] = mvp_count
+               user['level'] =  getLevel(250 * mvp_count + 100 * game_completed_count)
+               res.status(201).send({status: "success", message: "user collected",data:user})
+              } else {
+                res.status(422).send({status: "failure", errors: {user:"force update failed"}});
+              }
+            }).catch(next);
+          }).catch(next)
+         }).catch(next)
+        }).catch(next)
+       }).catch(next)
+   }).catch(next)
+  }).catch(next);
+
+  }).catch(next);
+});
+
+router.post('/alter_game/:id', [
+  verifyToken,
+], (req, res, next) => {
+      //Check if user exist
+      console.log(req.body);
+      Game.findOne({_id: req.params.id},{activity_log:0}).then(game=> {
+        Game.findByIdAndUpdate({_id: req.params.id},req.body).then(game=>{
+          Game.findOne({_id: req.params.id}).lean().populate("conversation").populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(g1=> {
             if (user1) {
-          res.status(201).send({status: "success", message: "user collected",data:user1})
+          res.status(201).send({status: "success", message: "game edited",data:g1})
         } else {
-            res.status(422).send({status: "failure", errors: {user:"force update failed"}});
+            res.status(422).send({status: "failure", errors: {game:"edit failed"}});
         }
     }).catch(next);
   }).catch(next);
 
+  }).catch(next);
+});
+
+router.post('/check_completed_games', [
+  verifyToken,
+], (req, res, next) => {
+      //Check if user exist
+      console.log(req.body);
+      Game.find({users: {$in:[req.userId]},completed:true,skipped:{$nin:[req.userId]}}).populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
+            if (game.length > 0) {
+          res.status(201).send({status: "success", message: "game collected",data:[game[game.length-1]]})
+        } else {
+            res.status(201).send({status: "failure",  message: "game collected",data:[]});
+        }
   }).catch(next);
 });
 
@@ -1960,6 +2107,10 @@ router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
     }
     Booking.updateMany({booking_id:req.params.id},req.body,{multi:true}).then(booking=>{
       Booking.find({booking_id:req.params.id}).then(booking=>{
+        Game.findOne({"bookings.booking_id":booking[0].booking_id}).then((g)=>{
+        if(g){
+          Game.findOneAndUpdate({"bookings.booking_id":booking[0].booking_id},{$set:{bookings:booking,completed:true}}).then((a)=>console.log(a))
+        }  
         result = Object.values(combineSlots(booking))
         res.send({status:"success", message:"booking completed", data:result})
 
@@ -1984,6 +2135,8 @@ router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
         ActivityLog(activity_log)
       })
     })
+  })
+
   })
 })
 
@@ -2119,7 +2272,6 @@ router.post('/test_textlocal', verifyToken, (req, res, next) => {
   // SendMessage(numbers,sender,EVENT_BOOKED_MANAGER)
   User.find({phone:req.body.phone},{activity_log:0}).lean().then((u)=>{
     console.log(u[0]._id);
-    
     notify(u[0],'total')
     res.send({status:"success", message:"Version Log",data:u[0]})
   }).catch(next)

@@ -169,13 +169,12 @@ router.post('/get_town_games/', [
   });
 
 
-  router.post('/alter_experience/:id', [
+  router.post('/alter_experience/', [
     verifyToken,
   ], (req, res, next) => {
-        console.log(req.body);
-        Experience.findOne({_id: req.params.id}).then(exp=> {
-          Experience.findByIdAndUpdate({_id: req.params.id},req.body).then(exp=>{
-            Experience.findOne({_id: req.params.id}).then(exp=> {
+        Experience.findOne({_id: req.userId}).then(exp=> {
+          Experience.findByIdAndUpdate({_id: req.userId},req.body).then(exp=>{
+            Experience.findOne({_id: req.userId}).then(exp=> {
               if (exp) {
             res.status(201).send({status: "success", message: "exp collected",data:exp})
           } else {

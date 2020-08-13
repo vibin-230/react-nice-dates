@@ -704,7 +704,7 @@ router.post('/alter_game/:id', [
       console.log(req.body);
       Game.findOne({_id: req.params.id},{activity_log:0}).then(game=> {
         Game.findByIdAndUpdate({_id: req.params.id},req.body).then(game=>{
-          Game.findOne({_id: req.params.id}).lean().populate("conversation").populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(g1=> {
+          Game.findOne({_id: req.params.id}).lean().populate("venue").populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(g1=> {
             if (user1) {
           res.status(201).send({status: "success", message: "game edited",data:g1})
         } else {

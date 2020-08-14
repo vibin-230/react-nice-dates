@@ -448,9 +448,29 @@ router.post('/get_user_details', [
 router.post('/get_following/:id', [
   verifyToken,
 ], (req, res, next) => {
-  User.find({_id:req.params.id},{activity_log:0}).populate("followers","name _id").populate("following","name _id").lean().then(user1 => {
-    res.status(201).send({status: "success", message: "user collected",data:user1})
+  let game_completed_count = 0
+  let mvp_count = 0
+  User.findOne({_id:req.params.id},{activity_log:0}).populate("followers","name _id").populate("following","name _id").lean().then(user1 => {
+    Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
+      game_completed_count = game && game.length > 0 ? game.length : 0
+      const aw = game && game.length > 0 && game.filter((a)=>{
+       let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0
+       mvp_count = mvp_count + f
+       return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length>0
+      })
+      user1.game_completed = game_completed_count
+      user1.mvp_count = mvp_count
+      user1.level =  getLevel(250 * mvp_count + 100 * game_completed_count)
+      console.log("user11112222",user1)
+    if(user1){
+    res.status(201).send({status: "success", message: "user collected",data:[user1]})
+    }
+    else {
+      res.status(201).send({status: "success", message: "user collected",data:[]})
+    }
   }).catch(next);
+}).catch(next)
+
 });
 
 
@@ -718,10 +738,9 @@ router.post('/alter_game/:id', [
   verifyToken,
 ], (req, res, next) => {
       //Check if user exist
-      console.log(req.body);
       Game.findOne({_id: req.params.id},{activity_log:0}).then(game=> {
         Game.findByIdAndUpdate({_id: req.params.id},req.body).then(game=>{
-          Game.findOne({_id: req.params.id}).lean().populate("venue").populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(g1=> {
+          Game.findOne({_id: req.params.id},{activity_log:0}).lean().populate("venue").populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(g1=> {
             if (g1) {
           res.status(201).send({status: "success", message: "game edited",data:g1})
         } else {

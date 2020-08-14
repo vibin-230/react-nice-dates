@@ -34,6 +34,8 @@ const schema = new Schema({
   venue_type:String,
   amount:Number,
   images:Array,
+  coins:Number,
+  coin_id:[{ type: Schema.Types.ObjectId, ref: 'coin' }],
   game:{type:Boolean, default:false},
   coupons_used:String,
   coupon_amount:Number,

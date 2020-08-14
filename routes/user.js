@@ -50,6 +50,8 @@ const Admin = require('../models/admin');
 const Ads = require('../models/ads')
 const Invoice = require('../models/Invoice')
 const Message = require('../models/message')
+const Coins = require('../models/coins')
+
 const Contacts = require('../models/contacts')
 const send_message_otp = require('../helper/send_message_otp')
 const notify = require('../scripts/Notify')
@@ -386,12 +388,17 @@ router.post('/get_user', [
               return c
            })
           User.findOne({_id: req.userId},{activity_log:0}).lean().then(user=> {
+            Coins.aggregate([ { $match: { user:user._id } },{ $group: { _id: "$user", amount: { $sum: "$amount" } } }]).then((coins)=>{
+              console.log('coins',coins,req.userId);
             if (user) {
              user['total'] = count
                const alerts1 = alert && alert.length > 0 ? alert.filter(a=>moment(a.created_at).isAfter(user.last_active)) : []   
                user['alert_total'] = alerts1.length
                user['game_completed'] = game_completed_count
                user['mvp_count'] = mvp_count
+               user['refer_custom_value'] = 100
+               user['refer_custom_value1'] = 50
+               user['coins'] =  coins && coins.length > 0 && coins[0].amount ? coins[0].amount : 0
                user['level'] =  getLevel(250 * mvp_count + 100 * game_completed_count)
                res.status(201).send({status: "success", message: "user collected",data:user})
               } else {
@@ -401,6 +408,7 @@ router.post('/get_user', [
           }).catch(next)
          }).catch(next)
         }).catch(next)
+      }).catch(next)
        }).catch(next)
    }).catch(next)
        
@@ -631,7 +639,7 @@ router.post('/alter_user/:id', [
       let game_completed_count = 0
       let mvp_count = 0
       Alert.find({user: req.userId,status:true},{}).lean().then(alert=> {
-        Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
+          Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
           game_completed_count = game && game.length > 0 ? game.length : 0
           const aw = game && game.length > 0 && game.filter((a)=>{
            let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc.target_id.toString() === req.userId.toString()).length : 0
@@ -676,12 +684,17 @@ router.post('/alter_user/:id', [
               return c
            })
           User.findOne({_id: req.userId},{activity_log:0}).lean().then(user=> {
-            if (user) {
+            Coins.aggregate([ { $match: { user:user._id } },{ $group: { _id: "$user", amount: { $sum: "$amount" } } }]).then((coins)=>{
+          console.log('coins',coins,req.userId);
+              if (user) {
              user['total'] = count
                const alerts1 = alert && alert.length > 0 ? alert.filter(a=>moment(a.created_at).isAfter(user.last_active)) : []   
                user['alert_total'] = alerts1.length
                user['game_completed'] = game_completed_count
                user['mvp_count'] = mvp_count
+               user['refer_custom_value'] = 100
+               user['refer_custom_value1'] = 50
+               user['coins'] =  coins && coins.length > 0 && coins[0].amount ? coins[0].amount : 0
                user['level'] =  getLevel(250 * mvp_count + 100 * game_completed_count)
                res.status(201).send({status: "success", message: "user collected",data:user})
               } else {
@@ -694,9 +707,12 @@ router.post('/alter_user/:id', [
        }).catch(next)
    }).catch(next)
   }).catch(next);
+}).catch(next);
+
 
   }).catch(next);
 });
+
 
 router.post('/alter_game/:id', [
   verifyToken,
@@ -878,12 +894,12 @@ router.post('/send_otp',[
             }
           }else{
             if(req.body.phone === '8136948537') {
-            User.create({phone:req.body.phone,otp:req.body.phone === '8136948537' ? '7484':otp}).then(user=>{
+            User.create({phone:req.body.phone,refer_id:'TURF',otp:req.body.phone === '8136948537' ? '7484':otp}).then(user=>{
               res.status(201).send({status:"success",message:"new user",otp:req.body.phone === '8136948537' ? '7484':user.otp})
             })
           }
             else{
-            User.create({phone:req.body.phone,otp:req.body.phone === '8136948537' ? '7484':otp}).then(user=>{
+            User.create({phone:req.body.phone,otp:otp,refer_id:'TURF'}).then(user=>{
               res.status(201).send({status:"success",message:"new user",otp:req.body.phone === '8136948537' ? '7484':otp})
             })
           }
@@ -931,7 +947,7 @@ router.post('/send_new_otp', (req, res, next) => {
       send_message_otp(phone,'TRFTWN',"Welcome to Turftown! Your OTP is "+otp).then((a)=>{
       if(a.status === 'success')
         {
-          User.create({phone:req.body.user.phone,handle:req.body.user.handle,otp:otp,temporary:true}).then((user)=>{
+          User.create({refer_id:'TURF',phone:req.body.user.phone,handle:req.body.user.handle,otp:otp,temporary:true}).then((user)=>{
             res.status(201).send({status:"success", message:'new user', data:{phone:req.body.user.phone,otp:otp,handle:req.body.user.handle}})
             // setTimeout(()=>{
             //   User.findOneAndDelete({phone:user.phone,temporary:true}).then(u=>console.log('user deleted'))
@@ -1324,13 +1340,17 @@ router.post('/host_block_slot/:id', verifyToken, (req, res, next) => {
   })
 
 
-
+  function createCoin(req,next){
+    Coins.create(Object.assign({},req)).then((s)=>{
+      console.log(s)
+    }).catch(next);
+  }
 
 //Slot Booked
 router.post('/book_slot', verifyToken, (req, res, next) => {
   function BookSlot(body,id){
     return new Promise(function(resolve, reject){
-      Booking.findByIdAndUpdate({_id:body._id},{booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount,coupon_amount:body.coupon_amount,coupons_used:body.coupons_used, multiple_id:id}).lean().then(booking=>{
+      Booking.findByIdAndUpdate({_id:body._id},{booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount,coupon_amount:body.coupon_amount,coupons_used:body.coupons_used, multiple_id:id,coins:body.coins}).lean().then(booking=>{
         Booking.findById({_id:body._id}).lean().populate('venue_data').then(booking=>{
         resolve(booking)
 
@@ -1372,7 +1392,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
 
     Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
-
+          req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id},next)
         let booking_id = values[0].booking_id
         let phone = "91"+values[0].phone
         let venue_name = values[0].venue
@@ -1518,7 +1538,7 @@ async function handleSlotAvailabilityForGames(booking1,client){
 router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
   function BookSlot(body,id){
     return new Promise(function(resolve, reject){
-      Booking.findByIdAndUpdate({_id:body._id},{booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount,coupon_amount:body.coupon_amount,coupons_used:body.coupons_used, multiple_id:id,game:true}).lean().then(booking=>{
+      Booking.findByIdAndUpdate({_id:body._id},{booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount,coupon_amount:body.coupon_amount,coupons_used:body.coupons_used, multiple_id:id,game:true,coins:body.coins}).lean().then(booking=>{
         Booking.findById({_id:body._id}).lean().populate('venue_data').then(booking=>{
         resolve(booking)
       }).catch(next)
@@ -1575,6 +1595,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
             res.send({status:"success", message:"slot booked",data: {game:game,convo:convo}})
             console.log('hit1');
             
+          req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id},next)
 
         let booking_id = values[0].booking_id
         let phone = "91"+values[0].phone
@@ -1720,6 +1741,7 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
             Message.create({conversation:game.conversation,message:`${req.name} has booked the slot for this game . Please be on time to the venue`,read_status:false,name:req.name,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : req.userId}},{activity_log:0,followers:0,following:0,}).then(users=> {
                 Conversation.findByIdAndUpdate({_id:message1.conversation},{last_message:message1._id,last_updated:new Date()}).then(conversation=>{
+                 req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id},next)
                 
                   Conversation.findById({_id:message1.conversation}).then(convo=>{
                     console.log('hit message',message1);

@@ -12,6 +12,7 @@ const schema = new Schema({
   team_name:String,
   year:String,
   honors:String,
+  list:Number,
   positon:String,
   user : { type: Schema.Types.ObjectId, ref: 'user' },
   type:String,

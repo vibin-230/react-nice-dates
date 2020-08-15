@@ -768,6 +768,31 @@ router.post('/check_completed_games', [
   }).catch(next);
 });
 
+router.post('/get_mvp_history', [
+  verifyToken,
+], (req, res, next) => {
+      //Check if user exist
+      Game.find({users: {$in:[req.userId]},completed:true,"mvp.target_id":req.userId.toString()}).populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
+        var groupBy = (xs, key) => {
+          return xs.reduce((rv, x) =>{
+            (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
+            return rv;
+          }, {});
+        };
+        
+        let finalResult = game.sort((a, b) => moment(a.start_time).format("YYYYMMDDHmm") > moment(b.start_time).format("YYYYMMDDHmm") ? 1 : -1 )
+        const a = groupBy(finalResult,'start_time')
+        const q =   Object.entries(a).map(([key,value])=>{
+                return {title:key,data:value }
+          })
+        if (game.length > 0) {
+          res.status(201).send({status: "success", message: "game collected",data:q})
+        } else {
+            res.status(201).send({status: "failure",  message: "game collected",data:[]});
+        }
+  }).catch(next);
+});
+
 router.post('/share_post/:id', [
   verifyToken,
 ], (req, res, next) => {

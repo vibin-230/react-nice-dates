@@ -66,23 +66,53 @@ router.post('/shout_out/:id', verifyToken, (req, res, next) => {
 
 
 
-// router.post('/shout_out/:id', verifyToken, (req, res, next) => {
-//     console.log('passasasasasaas',req.body)
-//     const filter = !req.body.status ? { $addToSet: { shout_out: { $each: [req.userId] } } ,$set:{shout_out_count:1} } :{ $pull: { shout_out:  req.userId  }}
-//     Post.findByIdAndUpdate({_id: req.params.id},filter ).then(game=> {
-//                 Post.findOne({_id: req.params.id}).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then((s)=>{
-//                     if( s && s.shout_out && s.shout_out.length>0 && s.shout_out.filter((a)=>a._id.toString() === req.userId.toString()).length > 0){
-//                         s['shout_out_status'] = true
-        
-//                     }else{
-//                         s['shout_out_status'] = false
-//                     }
-//                    //console.log(s)
-//                     res.send({status:"success", message:"shouted out fetched successfully", data: s})
-// }).catch(next);
-// }).catch(next);
+router.post('/activity/:id', verifyToken, (req, res, next) => {
+  User.findById({_id: req.params.id},{}).lean().then(user=> {
+    let following = user.following
+  Post.find({created_by: { $in: [req.params.id] } ,status:true}).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate({path:"event",populate:{path:"venue",select:"venue"}}).populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then((created_posts)=>{
+      Post.find({shout_out: { $in: [req.params.id] } ,status:true}).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate({path:"event",populate:{path:"venue",select:"venue"}}).populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then((shouted_posts)=>{
+        Game.find({$or:[{host:{$in:[req.params.id]}}]}).lean().populate('venue','venue'). populate("host","name _id handle name_status profile_picture").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
+        const posts  = [...created_posts,...shouted_posts]
+       let x = posts.map((s)=>{
+            if( s && s.shout_out && s.shout_out.length>0 && s.shout_out.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0){
+                s['shout_out_status'] = true
+                
+              }else{
+                s['shout_out_status'] = false
+              }
+              var array3 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter((obj)=> following.filter(a=>a.toString() === obj._id.toString()).length > 0  ):[]
+              //var array4 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter((obj)=> following.indexOf(obj._id.toString()) !== -1 ):[]
+            // let as = array3.filter((a)=>a._id.toString() === s.created_by._id.toString())
+              var string_array = array3.length > 0  ? array3.map((a)=>a.name_status ? a.name.trim() : a.handle.trim()):[]
+              let x = ''
+              if(string_array.length === 1){
+                x = `Shoutout by ${string_array[0]}`
+                 }else if(string_array.length === 2){
+                  x = `Shoutout by ${string_array[0]} and ${string_array[1]}`
+                 }
+                 else if(string_array.length === 3){
+                  x = `Shoutout by ${string_array[0]}, ${string_array[1]} and ${string_array[2]}`
+                }
+                else if(string_array.length >= 4){
+                  x = `Shoutout by ${string_array[0]}, ${string_array[1]}, ${string_array[2]} and ${string_array.length-3} more`
+                   
+                }
+                s['shout_line'] = x
+            return s
+        })
+        const games_and_posts = [...x,...game]
+        let finalResult = games_and_posts.sort((a, b) => moment(a.created_at).format("YYYYMMDDHmm") >= moment(b.created_at).format("YYYYMMDDHmm") ? 1 : -1 )
 
-// })
+                   //console.log(s)
+                    res.send({status:"success", message:"activity fetched successfully", data: finalResult})
+}).catch(next);
+}).catch(next);
+}).catch(next);
+
+}).catch(next);
+
+
+})
 
 
 router.post('/get_town_games/', [

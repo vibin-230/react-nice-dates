@@ -55,6 +55,8 @@ const Coins = require('../models/coins')
 const Contacts = require('../models/contacts')
 const send_message_otp = require('../helper/send_message_otp')
 const notify = require('../scripts/Notify')
+const notifyRedirect = require('../scripts/NotifyNoRedirect')
+
 const NotifyArray = require('../scripts/NotifyArray')
 const multer = require('multer')
 const sendAlert = require('./../scripts/sendAlert')
@@ -655,6 +657,7 @@ router.post('/alter_user/:id', [
       console.log(req.body);
       User.findOne({_id: req.params.id},{activity_log:0}).then(user=> {
         User.findByIdAndUpdate({_id: req.params.id},req.body).then(user=>{
+        console.log(user.refer_id);
           var count  = 0
       let game_completed_count = 0
       let mvp_count = 0
@@ -1612,7 +1615,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
                 Conversation.findByIdAndUpdate({_id:message1.conversation},{last_message:message1._id,last_updated:new Date()}).then(convo=>{
                 convo['invite'] = false
             res.send({status:"success", message:"slot booked",data: {game:game,convo:convo}})
-            console.log('hit1');
+            console.log('hit1',req.body[0]);
             
           req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id},next)
 
@@ -1642,7 +1645,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
         let SLOT_BOOKED_GAME_USER =`Hey ${values[0].name}! Thank you for using Turf Town! Your Game has been created .\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${Math.round(result[0].booking_amount)}\nBalance to be paid : ${Math.round(balance)}`
 
         // SendMessage(phone,sender,SLOT_BOOKED_USER) // sms to user
-        notify(user,SLOT_BOOKED_GAME_USER)
+        notifyRedirect(user,SLOT_BOOKED_GAME_USER)
         // SendMessage(manger_numbers.join(","),sender,SLOT_BOOKED_MANAGER) // sms to user 
         // axios.get(process.env.PHP_SERVER+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&manager_phone='+manager_phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount)
         // .then(response => {
@@ -4016,6 +4019,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               commission:req.body.commission,
               booking_amount:req.body.booking_amount,
               name:req.body.name,
+              coins:req.body.coins,
               email:req.body.email,
               transaction_id:req.body.transaction_id,
               phone:req.body.phone,
@@ -4040,6 +4044,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                     if(response.data.status === "captured")
                     {
                       res.send({status:"success", message:"event booked", data:bookingOrder})
+
                     }
                   })
                   .catch(error => {
@@ -4048,6 +4053,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                   }).catch(next);
                 }
               // Send SMS
+              req.body.coins > 0 && createCoin({type:'booking',amount:-(req.body.coins),transaction_id:req.body.transaction_id,user:req.userId,comments:`You have used ${req.body.coins} for this ${req.body.event_name}`},next)
               let booking_id = eventBooking.booking_id
               let phone = eventBooking.phone
               let event_name = req.body.event_name

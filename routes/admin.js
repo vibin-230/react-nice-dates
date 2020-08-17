@@ -29,6 +29,13 @@ const SuperAdmin = require('../models/superAdmin');
 const Booking = require('../models/booking');
 const Admin = require('../models/admin');
 const Event = require('../models/event');
+const Alert = require('../models/alerts');
+const Coins = require('../models/coins');
+const Conversation = require('../models/conversation');
+
+const Game = require('../models/game');
+const Message = require('../models/message');
+
 const Coupon = require('../models/coupon');
 const Support = require('../models/support');
 const Ads = require('../models/ads');
@@ -110,6 +117,49 @@ router.post('/create_super_admin',
 	}).catch(next)
 })
 
+function getLevel(x){
+  if(x<500){
+    return {value:x,limit:500,level:0}
+  }
+  else if(x>500 && x<=1200){
+    return {value:x,limit:1200,level:1}
+  }
+  else if(x>1200 && x<=2000){
+    return {value:x,limit:2000,level:2}
+  }
+  else if(x>2000 && x<=3000){
+    return {value:x,limit:3000,level:3}
+  }
+  else if(x>3000 && x<=4000){
+    return {value:x,limit:4000,level:4}
+  }
+  else if(x>4000 && x<=5250){
+    return {value:x,limit:5250,level:5}
+  }
+  else if(x>5250 && x<=7000){
+    return {value:x,limit:7000,level:6}
+  }
+  else if(x>7000 && x<=8500){
+    return {value:x,limit:8500,level:7}
+  }
+  else if(x>8500 && x<=10000){
+    return {value:x,limit:10000,level:8}
+  }
+  else if(x>10000 && x<=12000){
+    return {value:x,limit:12000,level:9}
+  }
+  else if(x>12000 && x<=14000){
+    return {value:x,limit:14000,level:10}
+  }
+  else if(x>14000 && x<=16000){
+    return {value:x,limit:16000,level:11}
+  }
+  else if(x>16000 && x<=22000){
+    return {value:x,limit:22000,level:12}
+  }
+
+}
+
 router.post('/savePassword',
 	check('password').exists().isLength({ min: 6}).withMessage('password length should be minimum 6 letters'),
 	(req, res, next) => {
@@ -139,6 +189,7 @@ router.post('/savePassword',
 			user['followers'] = []
 			user['following'] = []
 			user['requests'] = []
+			
 			user['sent_requests'] = []
 			user['_id'] = user1._id
 			user['name'] = user1.handle
@@ -146,6 +197,13 @@ router.post('/savePassword',
 			user['token'] =  jwt.sign({ id: user1._id, phone:user1.phone, role:"user", name:user1.handle }, config.secret);
 			User.findOneAndUpdate({phone:user.phone},user).then(u=>{
 				User.findOne({phone:u.phone}).then(user=>{
+					user['alert_total'] = 0
+					user['mvp_count'] = 0
+					user['refer_custom_value'] = 100
+					user['refer_custom_value1'] = 50
+					user['coins'] =   0
+					user['total'] = 0
+					user['level'] =  getLevel(0)
 				res.send({status:"success", message:"user added",data:user})
 			}).catch(next)
 	}).catch(next)
@@ -198,7 +256,83 @@ User.findOne({ $or: [ { handle: req.body.username }, { phone: req.body.username 
 						var token = jwt.sign({ id: user._id, name:user.handle, role:user.role, name:user.name}, config.secret);
 						user.password = undefined
 						user.token = token
-						res.send({status:"success", message:"login success",data:user})
+						var count  = 0
+      let game_completed_count = 0
+			let mvp_count = 0
+			req.userId = user._id
+      Alert.find({user: req.userId,status:true},{}).lean().then(alert=> {
+        Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
+          game_completed_count = game && game.length > 0 ? game.length : 0
+          const aw = game && game.length > 0 && game.filter((a)=>{
+            console.log(a.mvp)
+           let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0
+           mvp_count = mvp_count + f
+           return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length>0
+          })
+          //mvp_count = aw && aw.length > 0 ? aw.length : 0
+          Conversation.find({ $or: [ { members: { $in: [req.userId] } },{ exit_list: { $elemMatch: {user_id:req.userId} } }] }).lean().populate('to',' name _id profile_picture last_active online_status status handle name_status').populate('members','name _id profile_picture last_active online_status status handle name_status').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(existingConversation=>{
+        const exit_convo_list = existingConversation.filter((e)=> {
+         return (e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.userId.toString()).length > 0)
+         } )
+         const exit_convo_list1 = existingConversation.filter((e)=> {
+           return !(e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.userId.toString()).length > 0)
+           } )
+        //const exit_convo_list1 = existingConversation.filter((e)=> e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((u)=>u.user_id.toString() === req.userId.toString()).length > 0)
+        //console.log(exit_convo_list)
+        User.findOne({_id: req.userId},{activity_log:0,followers:0,following:0}).then(user=> {
+           const date = user.last_active 
+          Message.aggregate([{ $match: { $and: [  { conversation: {$in:exit_convo_list1.map((c)=>c._id)} } ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"},"user" : {"$push" : "$author"}}}]).then((message)=>{
+            let counter
+            const x =  existingConversation.map((c)=> {
+             let user = {}
+             if(exit_convo_list && exit_convo_list.length > 0 && c.exit_list && c.exit_list.length > 0){
+               const x =  exit_convo_list.filter((e)=> e.exit_list && c.exit_list.length>0 && e._id.toString() === c._id.toString())
+               user  =  x.length > 0 ? x[0].exit_list.filter((e)=>{
+                 return e && e.user_id && e.user_id._id.toString() === req.userId.toString()})[0] : []
+              c.members =  user && user.length > 0 && c.type==='single' ? c.members.concat(user.user_id) : c.members
+             }
+             const filter = c && c.last_active ? c.last_active.filter((c)=> c && c.user_id && c.user_id.toString() === req.userId.toString()) : []
+             message.length > 0 && message.map((m)=>{
+                if(m._id.toString() === c._id.toString()) { 
+                 const time = m.time.filter((timestamp,index)=>{ 
+                   if( filter.length > 0 &&  moment(filter[0].last_active).isSameOrBefore(timestamp) && m.user[index].toString() !== req.userId.toString()) {
+                     return timestamp
+                   }
+                 })  
+                 c['time'] = user && user.message ? time.length : time.length 
+                 count = time.length > 0 ? count+1 : count
+                }
+                })
+              return c
+           })
+          User.findOne({_id: req.userId},{activity_log:0}).lean().then(user=> {
+            Coins.aggregate([ { $match: { user:user._id } },{ $group: { _id: "$user", amount: { $sum: "$amount" } } }]).then((coins)=>{
+              console.log('coins',coins,req.userId);
+            if (user) {
+             user['total'] = count
+               const alerts1 = alert && alert.length > 0 ? alert.filter(a=>moment(a.created_at).isAfter(user.last_active)) : []   
+               user['alert_total'] = alerts1.length
+               user['game_completed'] = game_completed_count
+							 user['mvp_count'] = mvp_count
+							 user['password'] = undefined
+							 user['token'] = token
+               user['refer_custom_value'] = 100
+               user['refer_custom_value1'] = 50
+               user['coins'] =  coins && coins.length > 0 && coins[0].amount ? coins[0].amount : 0
+               user['level'] =  getLevel(250 * mvp_count + 100 * game_completed_count)
+               res.status(201).send({status: "success", message: "login success",data:user})
+              } else {
+                res.status(422).send({status: "failure", errors: {user:"force update failed"}});
+              }
+            }).catch(next);
+          }).catch(next)
+         }).catch(next)
+        }).catch(next)
+      }).catch(next)
+       }).catch(next)
+   }).catch(next)
+       
+					//	res.send({status:"success", message:"login success",data:user})
 						// ActivityLog(admin._id, admin.role, 'login', admin.username +" logged-in successfully")
 					}else{
 						res.send({status:"failed", message:"Invalid username or password"})

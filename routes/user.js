@@ -998,9 +998,9 @@ router.post('/send_new_otp', (req, res, next) => {
         {
           User.create({refer_id:'TURF',phone:req.body.user.phone,handle:req.body.user.handle,otp:otp,temporary:true}).then((user)=>{
             res.status(201).send({status:"success", message:'new user', data:{phone:req.body.user.phone,otp:otp,handle:req.body.user.handle}})
-            // setTimeout(()=>{
-            //   User.findOneAndDelete({phone:user.phone,temporary:true}).then(u=>console.log('user deleted'))
-            // },180000)
+            setTimeout(()=>{
+              User.findOneAndDelete({phone:user.phone,temporary:true}).then(u=>console.log('user deleted'))
+            },125000)
           })
 
         }
@@ -1899,7 +1899,8 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
         let SLOT_BOOKED_GAME_USER =`Hey ${values[0].name}! Thank you for using Turf Town! Your Game has been created .\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${Math.round(result[0].booking_amount)}\nBalance to be paid : ${Math.round(balance)}`
 
         // SendMessage(phone,sender,SLOT_BOOKED_USER) // sms to user
-        notify(user,SLOT_BOOKED_GAME_USER)
+       // notifyRedirect(user,SLOT_BOOKED_GAME_USER)
+
         // SendMessage(manger_numbers.join(","),sender,SLOT_BOOKED_MANAGER) // sms to user 
         // axios.get(process.env.PHP_SERVER+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&manager_phone='+manager_phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount)
         // .then(response => {
@@ -2751,7 +2752,6 @@ router.post('/group_by_event', verifyToken, (req, res, next) => {
  
 //when user clicks follow 
 router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
-  console.log("Req ibjwcrrr",req.io)
   User.findById({_id:req.params.friend},{activity_log:0}).lean().then(friend=>{
     User.findById({_id:req.body.id},{activity_log:0}).lean().then(user=>{    
       console.log(friend,user);

@@ -18,11 +18,21 @@ const User = require('../models/user');
       }
     }).catch(next)
   }
-  else if(type === 'addorupdate'){
+  else if(type === 'remove'){
     Alert.findOne({user:body.user,created_by:body.created_by,type:body.type}).then(a=>{
       if(a){
-        Alert.findOneAndUpdate({user:body.user,created_by:body.created_by,type:body.type},{$set:body}).then((s)=>{
+        Alert.findOneAndDelete({user:body.user,created_by:body.created_by,type:body.type},{$set:body}).then((s)=>{
           console.log(s)
+        }).catch(next) 
+      }
+    }).catch(next)
+  }
+  else if(type === 'addorupdate'){
+    Alert.findOne({user:body.user,created_by:body.created_by,type:body.type}).then(a=>{
+      console.log('alert',a)
+      if(a){
+        Alert.findOneAndUpdate({user:body.user,created_by:body.created_by,type:body.type},{$set:body}).then((s)=>{
+          console.log('alert',a)
         }).catch(next) 
       }else{
         Alert.create(body).then((a)=>{

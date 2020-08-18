@@ -9,6 +9,8 @@ const Booking  = require('./../models/booking')
 const notify = require('../scripts/Notify')
 const SlotsAvailable = require("../helper/slots_available")
 const NotifyArray = require('../scripts/NotifyArray')
+const NotifyArray1 = require('../scripts/NotifyArray1')
+
 const _ = require('lodash')
 
 module.exports = function () {
@@ -738,7 +740,7 @@ module.exports = function () {
                       return id
                     })
                       const device_token_list=user.map((e)=>e.device_token)
-                                                    NotifyArray(device_token_list,'Hey ! Game is available again . Please book your slot to confirm the game','Turftown Game Availability')
+                                                    NotifyArray1(device_token_list,'Hey ! Game is available again . Please book your slot to confirm the game','Turftown Game Availability')
                                                       return user.map((e)=>e._id)
                    }).catch((e)=>console.log(e));
                 }).catch(error => console.log(error))

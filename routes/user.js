@@ -2174,6 +2174,18 @@ router.post('/get_invoice_advance', verifyToken, (req, res, next) => {
 }).catch(next);  
 })
 
+router.post('/update_invoice', verifyToken, (req, res, next) => {
+  Invoice.findOne({repeat_id: req.body.repeat_id},{booking_data:0}).then(invoice=> {
+    if (invoice && invoice.repeat_id) {
+      Invoice.findOneAndUpdate({repeat_id: req.body.repeat_id},req.body).then(invoice=>{
+        res.status(201).send({status: "invoice address updated",data:invoice});
+      }).catch(next);  
+    } else {
+        res.send({status:"failiure", message:"No invoice id found", data:invoice})
+    }
+}).catch(next);  
+})
+
 router.post('/get_invoice_advance_many', verifyToken, (req, res, next) => {
   Invoice.find({repeat_id: {$in:req.body.repeat_id}},{booking_data:0}).then(invoice=> {
         res.send({status:"failiure", message:"No invoice", data:invoice})

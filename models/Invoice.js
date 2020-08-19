@@ -13,6 +13,10 @@ const schema = new Schema({
   booking_data:Array,
   payment_type:String,
   update_advance:Number,
+  address1:{ type : String , default:''},
+  address2:{ type : String , default:''},
+  address3:{ type : String , default:''},
+  gst:{ type : String , default:''},
   
  
 },{ timestamps: { createdAt: 'created_at', updatedAt: 'modified_at' } });

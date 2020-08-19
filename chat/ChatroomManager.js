@@ -605,12 +605,12 @@ module.exports = function () {
          game.users = game.users.filter((m)=> m.toString() !== game1.user_id.toString())
           conversation.members = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())
           conversation.host = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString()).length > 0 ? conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())[0] : []
-      conversation.exit_list = conversation.exit_list.concat({user_id:game1.user_id,timeStamp:new Date(),message:{ conversation: conversation._id, message: `${user.name} has left the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() }})
+          conversation.exit_list = conversation.exit_list.concat({user_id:game1.user_id,timeStamp:new Date(),message:{ conversation: conversation._id, message: `${user.name} has left the game`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() }})
           game.host = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString()).length > 0 ? conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())[0] : []
           console.log('conversation',conversation._id);
           return Game.findByIdAndUpdate({ _id: game1.game_id }, { $set: game }).then(game2 => {
-             return Conversation.findByIdAndUpdate({ _id: game1.convo_id }, { $set: conversation }).then(conversation2 => {
-              return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token handle name name_status').then(conversation2 => {
+             return Conversation.findByIdAndUpdate({ _id: conversation._id }, { $set: conversation }).then(conversation2 => {
+              return Conversation.findById({ _id: conversation._id }).lean().populate('members', '_id device_token handle name name_status').then(conversation2 => {
                 return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
                   let message_formation = game1.type == "game" ? `${user.name} has left the game` : `${game1.host} has removed ${user.name}` 
                   const save_message = { conversation: conversation2._id, message: message_formation, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() }
@@ -620,6 +620,8 @@ module.exports = function () {
                 NotifyArray(device_token_list, message_formation, `Game Left`,conversation2)
                 client.in(game1.convo_id).emit('new',save_message)
                 client.in(game1.convo_id).emit('unread',{})
+                console.log('conversation');
+
                 return conversation2.members.map((e) => e._id)
        }).catch(error => console.log(error))
   }).catch(error => console.log(error))

@@ -80,7 +80,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     //   })
     //   .catch(callback)  
     
-    let x
+    console.log('type',chatroomName.type)
     if(chatroomName.type === 'group'){
        x  = await chatroomManager.leaveChatroomGroup(chatroomName,io)
 
@@ -173,16 +173,16 @@ async function handleUpdateParams({ chatroomName, message,params } = {}, callbac
 
 async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, callback) {
   const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
-  const x  = await chatroomManager.updateGroup(message,members,client,chatroomName,colors)
+  const x  = await chatroomManager.addMemberIntoTheClub(chatroomName,message,members,colors,io)
   const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
-  client.to(chatroomName._id).emit('new',message)
-  client.emit('unread',message)
-  io.emit('unread', 'hello friends!');
-  client.to(chatroomName._id).emit('unread',message)
+  //client.to(chatroomName._id).emit('new',message)
+  //client.emit('unread',message)
+  //io.emit('unread', 'hello friends!');
+  //client.to(chatroomName._id).emit('unread',message)
   // chatroomManager.saveMessages(message) 
   chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
 
-  callback(x)
+  callback()
 
 }
 

@@ -128,7 +128,7 @@ router.post('/get_town_games/', [
       // const filter = req.body.sport === 'all' ? { created_by: { $in: following } ,town:true, host:{ $in: following },start_time:{$gte:date2}} :{ created_by: { $in: following } ,town:true,sport_name:{$in:req.body.sport}, host:{ $in: following }, start_time:{$gte:date}}
       const filter1 = req.body.sport === 'all'? { $or:[{created_by: { $in: following } ,status:true,start_time:{$gte:date2}},{shout_out: { $in: following },start_time:{$gte:date2},status:true}]} : { $or:[{created_by: { $in: following } ,status:true,sport_name:{$in:req.body.sport},start_time:{$gte:date2}},{shout_out: { $in: following },start_time:{$gte:date2},status:true,sport_name:{$in:req.body.sport}}]}   
       //Game.find(filter).lean().populate('conversation').populate('host','_id name profile_picture phone handle name_status').populate("venue","venue").populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone').then(existingConversation=>{
-      Post.find({created_by: { $in: following } ,status:true,start_time:{$gte:date2}}).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate({path:"event",populate:{path:"venue",select:"venue"}}).populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then((posts)=>{
+      Post.find(filter1).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate({path:"event",populate:{path:"venue",select:"venue"}}).populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then((posts)=>{
         // existingConversation.map((key)=>{
         //  key["venue"] = key.venue.venue
         // })
@@ -182,7 +182,7 @@ router.post('/get_town_games/', [
   router.post('/get_alerts/', [
     verifyToken,
   ], (req, res, next) => {
-    Alert.find({user: req.userId},{}).lean().populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'post', populate: { path: 'game' , populate :{path:'venue',select:'venue'} } }).populate('created_by','name _id handle profile_picture').then(alert=> {
+    Alert.find({user: req.userId,created_by:{$nin:[req.userId]}}).lean().populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'post', populate: { path: 'event' , populate :{path:'venue',select:'venue'} } }).populate({ path: 'post', populate: { path: 'game' , populate :{path:'venue',select:'venue'} } }).populate('created_by','name _id handle profile_picture').then(alert=> {
       console.log(alert)    
       res.status(201).send({status: "success", message: "alerts collected",data:alert})
       }).catch(next)

@@ -18,25 +18,23 @@ const User = require('../models/user');
       }
     }).catch(next)
   }
-  else if(type === 'remove'){
+  else if(type === 'delete'){
     Alert.findOne({user:body.user,created_by:body.created_by,type:body.type}).then(a=>{
       if(a){
-        Alert.findOneAndDelete({user:body.user,created_by:body.created_by,type:body.type},{$set:body}).then((s)=>{
+        Alert.findOneAndDelete({user:body.user,created_by:body.created_by,type:body.type}).then((s)=>{
           console.log(s)
         }).catch(next) 
       }
     }).catch(next)
   }
+
   else if(type === 'addorupdate'){
-    Alert.findOne({user:body.user,created_by:body.created_by,type:body.type}).then(a=>{
-      console.log('alert',a)
+    Alert.findOne({user:body.user,created_by:body.created_by}).then(a=>{
       if(a){
-        Alert.findOneAndUpdate({user:body.user,created_by:body.created_by,type:body.type},{$set:body}).then((s)=>{
-          console.log('alert',a)
+        Alert.findOneAndUpdate({user:body.user,created_by:body.created_by},{$set:body}).then((s)=>{
         }).catch(next) 
       }else{
         Alert.create(body).then((a)=>{
-          console.log('alert',a)
           NotifyUsers([body.user],body.status_description)
         }).catch(next)
       }

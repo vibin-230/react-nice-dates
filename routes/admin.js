@@ -196,15 +196,17 @@ router.post('/savePassword',
 			user['email'] = `${user1.phone}@turftown.in`
 			user['token'] =  jwt.sign({ id: user1._id, phone:user1.phone, role:"user", name:user1.handle }, config.secret);
 			User.findOneAndUpdate({phone:user.phone},user).then(u=>{
-				User.findOne({phone:u.phone}).then(user=>{
-					user['alert_total'] = 0
-					user['mvp_count'] = 0
-					user['refer_custom_value'] = 100
-					user['refer_custom_value1'] = 50
-					user['coins'] =   0
-					user['total'] = 0
-					user['level'] =  getLevel(0)
-				res.send({status:"success", message:"user added",data:user})
+				User.findOne({phone:user.phone}).lean().then(user=>{
+					let lin = Object.assign({},user)
+					lin['alert_total'] = 0
+					lin['mvp_count'] = 0
+					lin['refer_custom_value'] = 100
+					lin['refer_custom_value1'] = 50
+					lin['coins'] =   0
+					lin['total'] = 0
+					lin['level'] =  getLevel(0)
+					console.log('hit pass',lin)
+				res.send({status:"success", message:"user added",data:lin})
 			}).catch(next)
 	}).catch(next)
 		})

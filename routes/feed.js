@@ -204,7 +204,7 @@ router.post('/get_town_games/', [
   ], (req, res, next) => {
         Experience.findOne({_id: req.params.id}).then(exp=> {
           Experience.findByIdAndUpdate({_id: req.params.id},req.body).then(exp=>{
-            Experience.findOne({_id: req.params.id}).then(exp=> {
+            Experience.find({user: req.userId}).then(exp=> {
               if (exp) {
             res.status(201).send({status: "success", message: "exp collected",data:exp})
           } else {

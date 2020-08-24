@@ -14,6 +14,9 @@ const sendMail = (from,to,subject,text,html,callback,name) => {
         auth: {
             user: "support@turftown.in", // generated ethereal user
             pass: "kopsupport8" // generated ethereal password
+        },
+        tls: {
+            rejectUnauthorized: false
         }
         });
 

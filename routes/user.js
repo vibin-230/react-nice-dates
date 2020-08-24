@@ -502,11 +502,11 @@ router.post('/get_chatrooms/:id', [
             let user = {}
             c['time'] = 0
             c['exit'] = false
+            c['validity'] =  moment().format('YYYYMMDDHHmm') < moment(c.end_time).format('YYYYMMDDHHmm') 
             if(exit_convo_list && exit_convo_list.length > 0 && c.exit_list && c.exit_list.length > 0){
               const x =  exit_convo_list.filter((e)=> e.exit_list && c.exit_list.length>0 && e._id.toString() === c._id.toString())
               user  =  x.length > 0 ? x[0].exit_list.filter((e)=>{
                 return e && e.user_id && e.user_id._id.toString() === req.params.id.toString()})[0] : []
-              console.log(user)
              c.members =  user && user.length > 0 && c.type==='single' ? c.members.concat(user.user_id) : c.members
              c['exit'] = user && user.timeStamp ? true : false
              c['last_updated'] = user && user.timeStamp ? user.timeStamp : c.last_updated 
@@ -1004,7 +1004,7 @@ router.post('/send_new_otp', (req, res, next) => {
             res.status(201).send({status:"success", message:'new user', data:{phone:req.body.user.phone,otp:otp,handle:req.body.user.handle}})
             setTimeout(()=>{
               User.findOneAndDelete({phone:user.phone,temporary:true}).then(u=>console.log('user deleted'))
-            },125000)
+            },300000)
           })
         }).catch(next)
 
@@ -1174,7 +1174,7 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
 
 
 router.post('/host_game',verifyToken, (req, res, next) => {
-        Conversation.create({type:'game',display_picture:req.body.image,members:[req.body.userId],colors:getColors([req.body.userId]),created_by:req.body.userId,name:req.body.game_name,sport_name:req.body.sport_name,subtitle:req.body.subtitle,sport_type:req.body.venue_type,host:[req.body.userId],last_active:[],join_date:[{user_id:req.body.userId,join_date:new Date()}]}).then(convo=>{
+        Conversation.create({start_time:req.body.booking[0].start_time,end_time:req.body.booking[req.body.booking.length-1].end_time,type:'game',display_picture:req.body.image,members:[req.body.userId],colors:getColors([req.body.userId]),created_by:req.body.userId,name:req.body.game_name,sport_name:req.body.sport_name,subtitle:req.body.subtitle,sport_type:req.body.venue_type,host:[req.body.userId],last_active:[],join_date:[{user_id:req.body.userId,join_date:new Date()}]}).then(convo=>{
           Game.create({booking_status:'hosted',image:req.body.image,subtitle:req.body.subtitle,description:req.body.description,share_type:req.body.share_type,limit:req.body.limit,users:[req.body.userId],host:[req.body.userId],name:req.body.game_name,conversation:convo._id,sport_name:req.body.sport_name,type:req.body.venue_type,bookings:req.body.booking,booking_date:req.body.booking[0].booking_date,venue:req.body.booking[0].venue_id,start_time:req.body.booking[0].start_time,created_by:req.body.userId,created_type:'user'}).then(game=>{
             Message.create({conversation:convo._id,message:`${req.name} created the game`,read_status:false,name:req.name,author:req.body.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
@@ -1209,11 +1209,11 @@ router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
     Game.findOne({conversation:req.params.conversation_id}).lean().populate("conversation").populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=>{
             Venue.findById({_id:game.bookings[0].venue_id}).then(venue =>{
               let game1 = Object.assign({},game)
-              console.log('pass',game1);
               game1["venue"] = venue.venue
               game1["rating"] = venue.rating
               game1['final'] = _.xor(game1.users,game1.host)
               game1["conversation"] = convo
+              game1['validity'] =  moment().format('YYYYMMDDHHmm') < moment(game1.bookings[game1.bookings.length-1].end_time).format('YYYYMMDDHHmm') 
               res.send({status:"success", message:"game_fetched",data:game1})
 
             })
@@ -1729,7 +1729,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
     Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
         User.findById({_id:req.userId}).then(user=>{
-        Conversation.create({type:'game',display_picture:req.body[0].image,subtitle:req.body[0].subtitle,members:[req.userId],colors:getColors([req.userId]),host:[req.userId],created_by:req.userId,name:req.body[0].game_name,sport_name:values[0].sport_name,join_date:[{user_id:req.userId,join_date:new Date()}]}).then(convo=>{
+        Conversation.create({type:'game',start_time:values[0].start_time,end_time:values[values.length-1].end_time,display_picture:req.body[0].image,subtitle:req.body[0].subtitle,members:[req.userId],colors:getColors([req.userId]),host:[req.userId],created_by:req.userId,name:req.body[0].game_name,sport_name:values[0].sport_name,join_date:[{user_id:req.userId,join_date:new Date()}]}).then(convo=>{
            Game.create({booking_status:'booked',image:req.body[0].image,share_type:req.body[0].share_type,limit:req.body[0].limit,users:[req.userId],created_by:req.userId,created_type:'user',host:[req.userId],name:req.body[0].game_name,conversation:convo._id,subtitle:req.body[0].subtitle,sport_name:values[0].sport_name,type:req.body[0].format,bookings:values,description:req.body[0].description,booking_date:values[0].booking_date,start_time:values[0].start_time,venue:values[0].venue_id, }).then(game=>{
             Message.create({conversation:convo._id,message:`${req.name} created the game`,read_status:false,name:req.name,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {

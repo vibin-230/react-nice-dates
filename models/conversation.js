@@ -12,6 +12,8 @@ const schema = new Schema({
   last_updated: { type : Date , default:new Date()},
   subtitle:String,
   sport_type:String,
+  start_time:Date,
+  end_time:Date,
   invites:[{type:mongoose.Schema.Types.ObjectId, ref:'user'}],
   host: [{ type: Schema.Types.ObjectId, ref: 'user' }] ,
   sport_name:String,

@@ -134,7 +134,6 @@ async function handleSlotAvailability({ game } = {}, callback) {
   // const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
   // client.to(chatroomName._id).emit('new',message)
   // client.to(chatroomName._id).emit('unread',message)
-  console.log('handleSlotAvailability',game);
   chatroomManager.handleSlotAvailability(game.conversation,io)
   // chatroomManager.saveMessages(message) 
   //chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)

@@ -19,6 +19,8 @@ const schema = new Schema({
   last_login: Date,
   last_active:Date,
   modified_at: Date,
+  location:Array,
+  location_status:{type:Boolean, default:false},
   phone:String,
   token:String,
   password:String,

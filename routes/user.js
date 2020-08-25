@@ -502,7 +502,7 @@ router.post('/get_chatrooms/:id', [
             let user = {}
             c['time'] = 0
             c['exit'] = false
-            c['validity'] =  moment().format('YYYYMMDDHHmm') < moment(c.end_time).format('YYYYMMDDHHmm') 
+            c['validity'] =  moment().format('YYYYMMDDHHmm') > moment(c.end_time).format('YYYYMMDDHHmm') 
             if(exit_convo_list && exit_convo_list.length > 0 && c.exit_list && c.exit_list.length > 0){
               const x =  exit_convo_list.filter((e)=> e.exit_list && c.exit_list.length>0 && e._id.toString() === c._id.toString())
               user  =  x.length > 0 ? x[0].exit_list.filter((e)=>{
@@ -559,9 +559,7 @@ router.post('/sync_contacts', [
           })
          const contacts = data.map(c=>c.number.replace(/\s/g, ""))
 
-
-         console.log(contacts.filter((a)=>a === '9941882305'));
-         let finalcontacts = contacts.filter((c)=>{
+         let finalcontacts = contacts.map((c)=>{
               if(c.length>=10){
                   if(c.substring(0,3) === '+91')
                   {
@@ -588,6 +586,8 @@ router.post('/sync_contacts', [
         //   contacts1.concat(contacts3)
         //  console.log(contacts1.filter((c)=>c === '9941883205'))
          // console.log(contacts1);
+         console.log('final contacts',finalcontacts)
+
           User.find({phone: { $in :finalcontacts },status:true }).lean().then(user=> {
             res.status(201).send({status: "success", message: "common users collected",data:user})
             console.log(user);
@@ -619,6 +619,7 @@ router.post('/sync_contacts', [
               }
           }
         })
+          console.log('final contacts',finalcontacts)
           User.find({phone: { $in :finalcontacts } },{activity_log:0}).lean().then(user=> {
            console.log(user);
             User.findByIdAndUpdate({_id: req.userId},{sync_contacts:true}).then(user1=>{
@@ -1213,7 +1214,8 @@ router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
               game1["rating"] = venue.rating
               game1['final'] = _.xor(game1.users,game1.host)
               game1["conversation"] = convo
-              game1['validity'] =  moment().format('YYYYMMDDHHmm') < moment(game1.bookings[game1.bookings.length-1].end_time).format('YYYYMMDDHHmm') 
+              game1['validity'] =  moment().format('YYYYMMDDHHmm') > moment(game1.bookings[game1.bookings.length-1].end_time).format('YYYYMMDDHHmm') 
+              console.log('time validity',game1.validity,game1.bookings[game1.bookings.length-1].end_time)
               res.send({status:"success", message:"game_fetched",data:game1})
 
             })
@@ -2559,11 +2561,12 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   
                   Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
                  
-                    Message.create({conversation:game.conversation,message:`Hey ! Slot has been cancelled. Please book your slot to confirm the game`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
+                    Message.create({conversation:game.conversation,message:`Hey ! Slot has been cancelled and refund has been initiated.Amount will be credited in 2 - 4 working days.Please book your slot to confirm the game`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                       Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
                           Game.findOne({conversation:game.conversation}).lean().populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone name_status handle').then(game1=>{
                             game1["venue"] = venue.venue
                             game1["rating"] = venue.rating
+                            game1['refund'] = true
                             game1['final'] = _.xor(game1.users,game1.host)
                        
                         res.send({status:"success", message:"booking cancelled",data:game1})
@@ -2662,12 +2665,13 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                 Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
                   handleSlotAvailabilityWithCancellation(booking,req.socket)
                   Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
-                    Message.create({conversation:game.conversation,message:`Hey ! slot has been cancelled . Please book your slot to confirm the game`,name:'bot',read_status:false,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
+                    Message.create({conversation:game.conversation,message:`Hey ! slot has been cancelled .No refund for this slot. Please book your slot to confirm the game`,name:'bot',read_status:false,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                       Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
                         Game.findOne({conversation:game.conversation}).lean().populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone name_status').then(game1=>{
                           const venue_data = booking[0].venue_data
                           game1["venue"] = venue_data.venue
                           game1["rating"] = venue_data.rating
+                          game1['refund'] = false
                           game1['final'] = _.xor(game1.users,game1.host)
                           //req.socket && req.socket.emit('unread',{})
                         res.send({status:"success", message:"booking cancelled",data:game1})

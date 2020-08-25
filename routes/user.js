@@ -1194,6 +1194,7 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
 router.post('/host_game',verifyToken, (req, res, next) => {
         Conversation.create({start_time:req.body.booking[0].start_time,end_time:req.body.booking[req.body.booking.length-1].end_time,type:'game',display_picture:req.body.image,members:[req.body.userId],colors:getColors([req.body.userId]),created_by:req.body.userId,name:req.body.game_name,sport_name:req.body.sport_name,subtitle:req.body.subtitle,sport_type:req.body.venue_type,host:[req.body.userId],last_active:[],join_date:[{user_id:req.body.userId,join_date:new Date()}]}).then(convo=>{
           Game.create({booking_status:'hosted',image:req.body.image,subtitle:req.body.subtitle,description:req.body.description,share_type:req.body.share_type,limit:req.body.limit,users:[req.body.userId],host:[req.body.userId],name:req.body.game_name,conversation:convo._id,sport_name:req.body.sport_name,type:req.body.venue_type,bookings:req.body.booking,booking_date:req.body.booking[0].booking_date,venue:req.body.booking[0].venue_id,start_time:req.body.booking[0].start_time,created_by:req.body.userId,created_type:'user'}).then(game=>{
+            Game.findOne({_id:game._id}).lean().populate("conversation").populate('host','_id name profile_picture phone handle name_status').populate("venue").populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=>{
             Message.create({conversation:convo._id,message:`${req.name} created the game`,read_status:false,name:req.name,author:req.body.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
                 const x = users.map((u)=>{ return ({user_id:u._id,last_active:u.last_active ? u.last_active : new Date()})})
@@ -1206,6 +1207,7 @@ router.post('/host_game',verifyToken, (req, res, next) => {
   }).catch(next);
    }).catch(next);
   }).catch(next);
+}).catch(next);
 });
 
 
@@ -1227,12 +1229,11 @@ router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
     Game.findOne({conversation:req.params.conversation_id}).lean().populate("conversation").populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=>{
             Venue.findById({_id:game.bookings[0].venue_id}).then(venue =>{
               let game1 = Object.assign({},game)
-              game1["venue"] = venue.venue
+              game1["venue"] = venue
               game1["rating"] = venue.rating
               game1['final'] = _.xor(game1.users,game1.host)
               game1["conversation"] = convo
               game1['validity'] =  moment().format('YYYYMMDDHHmm') > moment(game1.bookings[game1.bookings.length-1].end_time).format('YYYYMMDDHHmm') 
-              console.log('time validity',game1.validity,game1.bookings[game1.bookings.length-1].end_time)
               res.send({status:"success", message:"game_fetched",data:game1})
 
             })
@@ -1251,7 +1252,7 @@ router.post('/get_group_info',verifyToken, (req, res, next) => {
       let activities = gameinfo.map((key)=>key.sport_name)
       let uninque_activity = [...new Set(activities)]
       console.log("convo",convo)
-      let data =[{name:user,game:gameinfo,activities:uninque_activity,image:image,convo:convo}]
+      let data =[{name:user,game:gameinfo,activities:uninque_activity,image:image.reverse(),convo:convo}]
       res.send({status:"sucess",message:"activity fetched",data:data})  
      })
   }).catch(next);
@@ -1750,6 +1751,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
         User.findById({_id:req.userId}).then(user=>{
         Conversation.create({type:'game',start_time:values[0].start_time,end_time:values[values.length-1].end_time,display_picture:req.body[0].image,subtitle:req.body[0].subtitle,members:[req.userId],colors:getColors([req.userId]),host:[req.userId],created_by:req.userId,name:req.body[0].game_name,sport_name:values[0].sport_name,join_date:[{user_id:req.userId,join_date:new Date()}]}).then(convo=>{
            Game.create({booking_status:'booked',image:req.body[0].image,share_type:req.body[0].share_type,limit:req.body[0].limit,users:[req.userId],created_by:req.userId,created_type:'user',host:[req.userId],name:req.body[0].game_name,conversation:convo._id,subtitle:req.body[0].subtitle,sport_name:values[0].sport_name,type:req.body[0].format,bookings:values,description:req.body[0].description,booking_date:values[0].booking_date,start_time:values[0].start_time,venue:values[0].venue_id, }).then(game=>{
+            Game.findOne({_id:game._id}).lean().populate("conversation").populate('host','_id name profile_picture phone handle name_status').populate("venue").populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=>{
             Message.create({conversation:convo._id,message:`${req.name} created the game`,read_status:false,name:req.name,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
                 Conversation.findByIdAndUpdate({_id:message1.conversation},{last_message:message1._id,last_updated:new Date()}).then(convo=>{
@@ -1843,7 +1845,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
 }).catch(next)
   }).catch(next)
 }).catch(next)
-
+}).catch(next)
     }).catch(next)
   })
 })

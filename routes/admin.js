@@ -1178,7 +1178,8 @@ router.post('/support_email/:id',
 	verifyToken,
 	AccessControl('support', 'create'),
 	(req, res, next) => {
-		User.findById(req.params.id).then(user=>{
+		User.findById({_id:req.params.id},{activity_log:0}).then(user=>{
+			console.log("user",user)
 			if(user){
 				let otp  = Math.floor(999 + Math.random() * 9000);
 				let html = "<h4><b>Hey "+user.name+"</b></h4><h4>Your otp is "+otp+"</h4>"

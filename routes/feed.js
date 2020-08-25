@@ -28,7 +28,7 @@ const Experience = require('./../models/experience')
 router.post('/shout_out/:id', verifyToken, (req, res, next) => {
     const filter = !req.body.status ? { $addToSet: { shout_out: { $each: [req.userId] } } ,$set:{shout_out_count:1} } :{ $pull: { shout_out:  req.userId  }}
   
-    User.findById({_id: req.userId},{}).lean().then(user=> {
+    User.findById({_id: req.userId},{activity_log:0}).lean().then(user=> {
       let following = user.following
       //following = following.concat(req.userId)   
       Post.findByIdAndUpdate({_id: req.params.id},filter ).then(game=> {
@@ -202,12 +202,21 @@ router.post('/get_town_games/', [
   });
 
 
+  router.post('/tt_users/', [
+    verifyToken,
+  ], (req, res, next) => {
+    User.find({_id:{$nin:[req.userId]}}).select("name profile_picture handle name_status _id").then(data=>{
+        res.status(201).send({status: "success", message: "user collected",data:data})
+      }).catch(next)
+  });
+
+
   router.post('/alter_experience/:id', [
     verifyToken,
   ], (req, res, next) => {
         Experience.findOne({_id: req.params.id}).then(exp=> {
           Experience.findByIdAndUpdate({_id: req.params.id},req.body).then(exp=>{
-            Experience.findOne({_id: req.params.id}).then(exp=> {
+            Experience.find({user: req.userId}).then(exp=> {
               if (exp) {
             res.status(201).send({status: "success", message: "exp collected",data:exp})
           } else {
@@ -219,10 +228,10 @@ router.post('/get_town_games/', [
   });
 
 
-  router.post('/get_experiences/', [
+  router.post('/get_experiences/:id', [
     verifyToken,
   ], (req, res, next) => {
-        Experience.find({user:req.userId}).then(exp=> {
+        Experience.find({user:req.params.id}).then(exp=> {
               if (exp) {
             res.status(201).send({status: "success", message: "exp collected",data:exp})
           } else {
@@ -274,6 +283,80 @@ router.post('/get_town_games/', [
 
   });
 
+  router.post('/user_activity/:id', [
+    verifyToken,
+  ], (req, res, next) => {
+
+
+    // {$and:[{_id:{$nin:[req.userId]}},{ $or: [{"name":{ "$regex": req.body.search, "$options": "i" }}, {"handle":{ "$regex": req.body.search, "$options": "i" }}]}]}
+
+  
+
+
+    Post.find({created_by:req.params.id}).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate({path:"event",populate:{path:"venue",select:"venue"}}).populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then((posts)=>{
+      let x = posts.map((s)=>{
+        if( s && s.shout_out && s.shout_out.length>0 && s.shout_out.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0){
+            s['shout_out_status'] = true
+            
+          }else{
+            s['shout_out_status'] = false
+          }
+          var array3 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter((a)=>a._id.toString() !== req.params.id.toString()) : []
+          var string_array = array3.length > 0  ? array3.map((a)=>a.name_status ? a.name.trim() : a.handle.trim()):[]
+          let x = ''
+          if(string_array.length === 1){
+            x = `Shoutout by ${string_array[0]}`
+             }else if(string_array.length === 2){
+              x = `Shoutout by ${string_array[0]} and ${string_array[1]}`
+             }
+             else if(string_array.length === 3){
+              x = `Shoutout by ${string_array[0]}, ${string_array[1]} and ${string_array[2]}`
+            }
+            else if(string_array.length >= 4){
+              x = `Shoutout by ${string_array[0]}, ${string_array[1]}, ${string_array[2]} and ${string_array.length-3} more`
+               
+            }
+            s['shout_line'] = x
+        return s
+    })
+
+      res.status(201).send({status: "success", message: "coin history collected",data:x})
+    }).catch(next);
+  });
+
+  router.post('/user_activity_friend/:id', [
+    verifyToken,
+  ], (req, res, next) => {
+    Post.find({created_by:req.params.id}).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate({path:"event",populate:{path:"venue",select:"venue"}}).populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then((posts)=>{
+      let x = posts.map((s)=>{
+        if( s && s.shout_out && s.shout_out.length>0 && s.shout_out.filter((a)=>a._id.toString() === req.userId.toString()).length > 0){
+            s['shout_out_status'] = true
+            
+          }else{
+            s['shout_out_status'] = false
+          }
+          var array3 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter((obj)=> following.filter(a=>a.toString() === obj._id.toString()).length > 0  ):[]
+          var string_array = array3.length > 0  ? array3.map((a)=>a.name_status ? a.name.trim() : a.handle.trim()):[]
+          let x = ''
+          if(string_array.length === 1){
+            x = `Shoutout by ${string_array[0]}`
+             }else if(string_array.length === 2){
+              x = `Shoutout by ${string_array[0]} and ${string_array[1]}`
+             }
+             else if(string_array.length === 3){
+              x = `Shoutout by ${string_array[0]}, ${string_array[1]} and ${string_array[2]}`
+            }
+            else if(string_array.length >= 4){
+              x = `Shoutout by ${string_array[0]}, ${string_array[1]}, ${string_array[2]} and ${string_array.length-3} more`
+               
+            }
+            s['shout_line'] = x
+        return s
+    })
+
+      res.status(201).send({status: "success", message: "coin history collected",data:x})
+    }).catch(next);
+  });
 
   router.post('/create_coin', [
     verifyToken,

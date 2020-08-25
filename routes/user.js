@@ -393,7 +393,7 @@ router.post('/get_user', [
                 })
               return c
            })
-          User.findOne({_id: req.userId},{activity_log:0}).lean().then(user=> {
+          User.findOne({_id: req.userId},{activity_log:0}).populate("requests","name _id profile_picture").lean().then(user=> {
             Coins.aggregate([ { $match: { user:user._id } },{ $group: { _id: "$user", amount: { $sum: "$amount" } } }]).then((coins)=>{
               console.log('coins',coins,req.userId);
             if (user) {
@@ -457,6 +457,7 @@ router.post('/get_following/:id', [
   let game_completed_count = 0
   let mvp_count = 0
   User.findOne({_id:req.params.id},{activity_log:0}).populate("followers","name _id").populate("following","name _id").lean().then(user1 => {
+    console.log("uyserrr",user1)
     Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
       game_completed_count = game && game.length > 0 ? game.length : 0
       const aw = game && game.length > 0 && game.filter((a)=>{
@@ -478,6 +479,22 @@ router.post('/get_following/:id', [
 
 });
 
+
+
+
+router.post('/get_follow_following', [
+  verifyToken,
+], (req, res, next) => {
+        User.findOne({_id:req.userId},{activity_log:0}).lean().then(user1=>{
+          let all = [...user1.followers,...user1.following]
+          let final_users = [... new Set(all)]
+          User.find({_id: {$in :final_users}},{activity_log:0,followers:0,following:0,}).lean().then(user1=>{
+            console.log("finaaa",user1)
+              res.status(201).send({status: "success", message: "user collected",data:user1})
+
+    }).catch(next);
+  }).catch(next);
+});
 
 router.post('/get_chatrooms/:id', [
   verifyToken,
@@ -710,7 +727,7 @@ router.post('/alter_user/:id', [
                 })
               return c
            })
-          User.findOne({_id: req.userId},{activity_log:0}).lean().then(user=> {
+          User.findOne({_id: req.userId},{activity_log:0}).populate("requests","name _id profile_picture").lean().then(user=> {
             Coins.aggregate([ { $match: { user:user._id } },{ $group: { _id: "$user", amount: { $sum: "$amount" } } }]).then((coins)=>{
           console.log('coins',coins,req.userId);
               if (user) {
@@ -1092,7 +1109,7 @@ router.post('/verify_otp', (req, res, next) => {
                         })
                       return c
                    })
-                  User.findOne({_id: req.userId},{activity_log:0}).lean().then(user=> {
+                  User.findOne({_id: req.userId},{activity_log:0}).populate("requests","name _id profile_picture").lean().then(user=> {
                     Coins.aggregate([ { $match: { user:user._id } },{ $group: { _id: "$user", amount: { $sum: "$amount" } } }]).then((coins)=>{
                       console.log('coins',coins,req.userId);
                     if (user) {
@@ -2804,7 +2821,7 @@ router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
       }else{
         User.findByIdAndUpdate({_id:req.params.friend},{$addToSet: { followers: { $each: [obj] } } }).then(friend=>{  
           User.findByIdAndUpdate({_id:req.body.id},{$addToSet: { following: { $each: [friend._id] } } }).then(user=>{  
-            User.findById({_id:req.body.id},{activity_log:0}).then(user=>{ 
+            User.findById({_id:req.body.id},{activity_log:0}).populate('requests','name profile_picture handle name_status').then(user=>{ 
                sendAlert({created_at:new Date(),created_by:user._id,user:friend._id,type:'following',status_description:`${user.handle} is following you`},'addorupdate',next)
               res.send({status:"success", message:"following "+friend.handle, data:user})
             }).catch(next)
@@ -2817,7 +2834,7 @@ router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
       console.log("1111")
       User.findByIdAndUpdate({_id:req.params.friend},{$addToSet: { requests: { $each: [obj] } } }).then(user=>{  
         User.findByIdAndUpdate({_id:req.body.id},{$addToSet: { sent_requests: { $each: [friend._id] } } }).then(user=>{  
-          User.findById({_id:req.body.id},{activity_log:0}).then(user=>{ 
+          User.findById({_id:req.body.id},{activity_log:0}).populate('requests','name profile_picture handle name_status').then(user=>{ 
             sendAlert({created_at:new Date(),created_by:req.body.id,user:req.params.friend,type:'follow',status_description:`${user.handle} has sent a follow request`},'addorupdate',next)
             res.send({status:"success", message:"Request sent to "+friend.handle, data:user})
           }).catch(next)
@@ -2850,7 +2867,7 @@ router.post('/unfollow_request/:friend', verifyToken, (req, res, next) => {
       const friend_followers = friend.followers.filter((u)=>u.toString() !== user._id.toString())
       User.findByIdAndUpdate({_id:req.params.friend},{$set: { followers: friend_followers } }).then(user=>{  
         User.findByIdAndUpdate({_id:req.body.id},{$set: { following: following } }).then(user=>{  
-            User.findById({_id:req.body.id},{activity_log:0}).then(user=>{ 
+            User.findById({_id:req.body.id},{activity_log:0}).populate('requests','name profile_picture handle name_status').then(user=>{ 
               console.log(user.following)
               res.send({status:"success", message:"Unfollowed "+friend.handle, data:user})
   }).catch(next)
@@ -2869,7 +2886,7 @@ router.post('/remove_request/:friend', verifyToken, (req, res, next) => {
       const friend_following = friend.following.filter((u)=>u.toString() !== user._id.toString())
       User.findByIdAndUpdate({_id:req.params.friend},{$set: { following: friend_following } }).then(user=>{  
         User.findByIdAndUpdate({_id:req.body.id},{$set: { followers: followers } }).then(user=>{  
-            User.findById({_id:req.body.id},{activity_log:0}).then(user=>{ 
+            User.findById({_id:req.body.id},{activity_log:0}).populate('requests','name profile_picture handle name_status').then(user=>{ 
               res.send({status:"success", message:"Removed "+friend.handle, data:user})
   }).catch(next)
   }).catch(next)
@@ -2887,7 +2904,7 @@ router.post('/remove_request_pending/:friend', verifyToken, (req, res, next) => 
       const requests = friend.requests.filter((u)=>u.toString() !== user._id.toString())
       User.findByIdAndUpdate({_id:req.params.friend},{$set: { requests: requests } }).then(user=>{  
         User.findByIdAndUpdate({_id:req.body.id},{$set: { sent_requests: sent_requests } }).then(user=>{  
-            User.findById({_id:req.body.id},{activity_log:0}).then(user=>{
+            User.findById({_id:req.body.id},{activity_log:0}).populate('requests','name profile_picture handle name_status').then(user=>{
               sendAlert({created_at:new Date(),created_by:req.body.id,user:req.params.friend,type:'follow',status_description:`${user.handle} has sent a follow request`},'delete',next) 
               res.send({status:"success", message:"Removed "+friend.handle, data:user})
   }).catch(next)
@@ -2917,7 +2934,7 @@ router.post('/accept_or_delete_requests', verifyToken, (req, res, next) => {
       let user_guy = type == "accept" ?  { $addToSet: { followers: { $each: [req.body.id] } } ,$set:{requests:requests} } : {$set:{requests:requests} }
       User.findByIdAndUpdate({ _id: req.body.id },friend1).then(user => {
         User.findByIdAndUpdate({ _id: req.userId },user_guy).then(user2 => {
-          User.findById({_id:req.userId},{activity_log:0}).then(user=>{ 
+          User.findById({_id:req.userId},{activity_log:0}).populate('requests','name profile_picture handle name_status').then(user=>{ 
               let requested_user = user.requests
               User.find({ _id: { $in: requested_user }, status: true }, { activity_log: 0 }).lean().then(user1 => {
                 if(type == "accept"){

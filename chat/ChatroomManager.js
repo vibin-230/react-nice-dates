@@ -62,7 +62,7 @@ module.exports = function () {
   const saveConversation = async function(obj){
     const conversation = await Conversation.create(obj).then(convo=>{
      return User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
-       const x = users.map((u)=>{ return ({user_id:u._id,last_active:u.last_active ? u.last_active : new Date()})})
+      const x = users.map((u)=>{ return ({user_id:u._id,last_active:u.last_active ? u.last_active : new Date()})})
        const y = users.map((u)=>{ return ({user_id:u._id,join_date:new Date()})})
        return Conversation.findByIdAndUpdate({_id:convo._id},{last_active:x,join_date:y}).then(conversation=>{
         return convo

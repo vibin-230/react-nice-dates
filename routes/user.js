@@ -2811,6 +2811,13 @@ router.post('/group_by_event', verifyToken, (req, res, next) => {
 })
  
 //when user clicks follow 
+
+function updateConvoStatus(conversation,body){
+  Conversation.findByIdAndUpdate({_id:conversation._id},body).limit(1).lean().then(ec=>{
+  console.log('updateConvoStatus');
+  }).catch(next)
+}
+
 router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
   User.findById({_id:req.params.friend},{activity_log:0}).lean().then(friend=>{
     User.findById({_id:req.body.id},{activity_log:0}).lean().then(user=>{    
@@ -2825,9 +2832,11 @@ router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
           User.findByIdAndUpdate({_id:req.body.id},{$addToSet: { following: { $each: [friend._id] } } }).then(user=>{  
             User.findById({_id:req.body.id},{activity_log:0}).populate('requests','name profile_picture handle name_status').then(user=>{ 
                sendAlert({created_at:new Date(),created_by:user._id,user:friend._id,type:'following',status_description:`${user.handle} is following you`},'addorupdate',next)
-              res.send({status:"success", message:"following "+friend.handle, data:user})
+                Conversation.find({$or:[{members:[req.params.friend,req.body.id],type:'single'},{members:[req.body.id,req.params.friend],type:'single'}]}).limit(1).lean().then(ec=>{
+                  ec.length > 0 && updateConvoStatus(ec[0],{invite_status : false})
+               res.send({status:"success", message:"following "+friend.handle, data:user})
             }).catch(next)
-
+          }).catch(next)
         }).catch(next)
       }).catch(next)
       }
@@ -2940,8 +2949,11 @@ router.post('/accept_or_delete_requests', verifyToken, (req, res, next) => {
               let requested_user = user.requests
               User.find({ _id: { $in: requested_user }, status: true }, { activity_log: 0 }).lean().then(user1 => {
                 if(type == "accept"){
+                  Conversation.find({$or:[{members:[req.body.id,req.userId],type:'single'},{members:[req.userId,req.body.id],type:'single'}]}).limit(1).lean().then(ec=>{
+                    ec.length > 0 && updateConvoStatus(ec[0],{invite_status : false})  
                 sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,type:'following',status_description:`${friend.handle} is following you`},'addorupdate',next) 
-                }
+               }).catch(next)
+              }
                 res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1}})
           }).catch(next)
         }).catch(next)

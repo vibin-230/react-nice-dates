@@ -204,15 +204,17 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
          const x = await chatroomName && chatroomName.exit && chatroomManager.registerExitedUser(chatroomName,message)
         client.to(chatroomName._id).emit('new',message)
         client.to(chatroomName._id).emit('unread',message)
-        chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,[])
+        console.log(chatroomName._id,io.sockets.adapter.rooms);
+      
+        //chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,[])
         //chatroomManager.notifyAllUsers(chatroomName, message)
         chatroomManager.saveMessage(message) 
         callback()
      }
     }else{
     const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
-    console.log(chatroomName._id,io.sockets.adapter.rooms);
     const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
+    console.log('pass',chatroomName._id,io.sockets.adapter.rooms,activeUsers);
        client.to(chatroomName._id).emit('new',message)
         client.to(chatroomName._id).emit('unread',message)
         chatroomManager.saveMessage(message) 

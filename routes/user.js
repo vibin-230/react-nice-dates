@@ -126,6 +126,7 @@ router.post('/create_user', [
         req.body.userid = users.userid + 1;
       }
       //Check if user exist
+      User.find
       User.findOne({_id: req.userId}).then(user=> {
         if (user) {
           User.findOne({email:req.body.email}).then(user=> {
@@ -2813,9 +2814,9 @@ router.post('/group_by_event', verifyToken, (req, res, next) => {
 //when user clicks follow 
 
 function updateConvoStatus(conversation,body){
-  Conversation.findByIdAndUpdate({_id:conversation._id},body).limit(1).lean().then(ec=>{
+  Conversation.findByIdAndUpdate({_id:conversation._id},body).then(ec=>{
   console.log('updateConvoStatus');
-  }).catch(next)
+  }).catch((e)=>console.log(e))
 }
 
 router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
@@ -2951,10 +2952,10 @@ router.post('/accept_or_delete_requests', verifyToken, (req, res, next) => {
                 if(type == "accept"){
                   Conversation.find({$or:[{members:[req.body.id,req.userId],type:'single'},{members:[req.userId,req.body.id],type:'single'}]}).limit(1).lean().then(ec=>{
                     ec.length > 0 && updateConvoStatus(ec[0],{invite_status : false})  
+                    res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1}})
                 sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,type:'following',status_description:`${friend.handle} is following you`},'addorupdate',next) 
                }).catch(next)
               }
-                res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1}})
           }).catch(next)
         }).catch(next)
 

@@ -65,6 +65,7 @@ app.use('/api/venue',require('./routes/venue'));
 app.use('/api/feed',require('./routes/feed'));
 app.use('/api/chat',require('./routes/chat'));
 app.use('/api/admin',require('./routes/admin'));
+app.use('/api/test',require('./routes/test'));
 
 
 io.use((socket, next) => {

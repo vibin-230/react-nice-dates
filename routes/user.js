@@ -621,7 +621,7 @@ router.post('/sync_contacts', [
           data.push(...a.phoneNumbers)
          })
         const contacts = data.map(c=>c.number.replace(/\s/g, ""))
-        let finalcontacts = contacts.filter((c)=>{
+        let finalcontacts = contacts.map((c)=>{
           if(c.length>=10){
               if(c.substring(0,3) === '+91')
               {
@@ -3488,9 +3488,8 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         
         let event_booking_data = eventBooking
          event_booking_data.reverse()
-        booking_data = req.body.type && req.body.type === 'host' ?[...open_games,...event_booking_data,...result]:[...game,...event_booking_data,...result]
-
-        var groupBy = (xs, key) => {
+         booking_data = req.body.type && req.body.type === 'host' ?[...open_games,...event_booking_data,...result]:[...game,...event_booking_data,...result]
+         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{
             (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
             return rv;
@@ -3502,6 +3501,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         const q =   Object.entries(a).map(([key,value])=>{
                 return {title:key,data:value }
           })
+
         res.send({status:"success", message:"booking history fetched", data:q})
     }).catch(next)
   }).catch(next)

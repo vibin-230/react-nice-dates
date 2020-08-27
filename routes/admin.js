@@ -1151,7 +1151,7 @@ router.post('/search_users',
 	verifyToken,
 	AccessControl('venue', 'read'),
 	(req, res, next) => {
-	User.find({$and:[{_id:{$nin:[req.userId]}},{ $or: [{"name":{ "$regex": req.body.search, "$options": "i" }},{"handle":{ "$regex": req.body.search, "$options": "i" }}]}]}).select("name handle _id name_status profile_picture following").then(user=>{
+	User.find({$and:[{_id:{$nin:[req.userId]}},{ $or: [{"name":{ "$regex": req.body.search, "$options": "i" }},{"handle":{ "$regex": req.body.search, "$options": "i" }}]}]}).select("name handle _id name_status profile_picture following visibility").then(user=>{
 		let finalResult = [...user]
 			res.send({status:"success", message:"venues and events fetched based on search", data:finalResult})
 		}).catch(next)

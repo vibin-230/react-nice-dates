@@ -132,7 +132,8 @@ module.exports = function () {
 
   async function getGroupOrGameName(chatroomName,client) {
       if(chatroomName._id.toString().length <= 0){
-        const convo = await saveConvo({display_picture:chatroomName.image?chatroomName.image:'',colors:chatroomName.colors ? chatroomName.colors : [],type:chatroomName.type,name:chatroomName.name,members:chatroomName.members,created_by:chatroomName.members[0],host:[chatroomName.members[0]]})
+        const invites = chatroomName.invites ? chatroomName.invites : []
+        const convo = await saveConvo({display_picture:chatroomName.image?chatroomName.image:'',colors:chatroomName.colors ? chatroomName.colors : [],type:chatroomName.type,name:chatroomName.name,members:chatroomName.members,created_by:chatroomName.members[0],host:[chatroomName.members[0]],invites:invites})
         chatrooms.set(convo._id,Chatroom(convo))
         const x = await getConversationAndSendBotMessage(convo,client)
         

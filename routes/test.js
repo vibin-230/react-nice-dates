@@ -49,6 +49,17 @@ const Experience = require('./../models/experience')
   });
 
 
+  router.post('/view_expense', [
+    verifyToken,
+  ], (req, res, next) => {
+      const body = req.body
+          Cashflow.find(body).then((a)=>{
+            res.status(201).send({status: "success", message: "cashflow generated",data:a})
+            //NotifyUsers([body.user],body.status_description)
+          }).catch(next)
+  });
+
+
  
 
 module.exports = router;

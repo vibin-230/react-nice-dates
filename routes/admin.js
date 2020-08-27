@@ -307,7 +307,7 @@ User.findOne({ $or: [ { handle: req.body.username }, { phone: req.body.username 
                 })
               return c
            })
-          User.findOne({_id: req.userId},{activity_log:0}).lean().then(user=> {
+          User.findOne({_id: req.userId},{activity_log:0}).populate("requests","name _id profile_picture").lean().then(user=> {
             Coins.aggregate([ { $match: { user:user._id } },{ $group: { _id: "$user", amount: { $sum: "$amount" } } }]).then((coins)=>{
               console.log('coins',coins,req.userId);
             if (user) {

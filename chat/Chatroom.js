@@ -51,7 +51,7 @@ module.exports = function ({ _id, image }) {
 
   async function getChatHistory(id, token) {
     const user = await verifyToken(token)
-    const x = await Conversation.findById({ _id: id }).populate("members","name profile_picture handle name_status").populate("host","name profile_picture handle name_status").lean().then((conversation) => {
+    const x = await Conversation.findById({ _id: id }).populate("members","name profile_picture handle name_status visibility").populate("host","name profile_picture handle name_status visibility").lean().then((conversation) => {
       let date = conversation.join_date.length > 0 ? conversation.join_date.filter((jd) => jd.user_id.toString() === user.id.toString()) : []
       const x = conversation.members.filter((a)=>a._id.toString() === user.id.toString())
       const user1 =   conversation.exit_list && conversation.exit_list.length > 0 && conversation.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === user.id.toString())
@@ -59,7 +59,7 @@ module.exports = function ({ _id, image }) {
       const filter  = x.length > 0 ?  date && date.length > 0 ? { conversation: id, created_at: { $gte: date[date.length-1].join_date } } : { conversation: id} :{ conversation: id, created_at: { $lte: moment(user1[user1.length-1].timeStamp).add(10,'seconds') } }
       conversation['exit'] = x.length > 0 ? false:true
       console.log(filter,conversation);
-      return Message.find(filter).lean().populate('author', 'name _id handle').populate('user', 'name _id profile_picture phone handle').populate({path:"event",populate:{path:"venue",select:"venue"}}).populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({_id:-1}).limit(20).then(m => {
+      return Message.find(filter).lean().populate('author', 'name _id handle').populate('user', 'name _id profile_picture phone handle visibility').populate({path:"event",populate:{path:"venue",select:"venue"}}).populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({_id:-1}).limit(20).then(m => {
         for(let i = 1 ;i <m.length; i++){
           if( moment(m[i].created_at).utc().format('MM-DD-YYYY') !== moment(m[i-1].created_at).utc().format('MM-DD-YYYY')){
               m.splice(i,0,{conversation:conversation._id,message:parseDate(moment(m[i-1].created_at).utc().format('MM-DD-YYYY')),name:'bot',read_status:false,read_by:user.id,author:user.id,type:'bot',created_at:m[i].created_at})

@@ -41,7 +41,7 @@ const User = require('../models/user');
 const Game = require('../models/game');
 const Post = require('../models/post');
 const Alert = require('../models/alerts');
-
+const createReport = require('../scripts/collectReport')
 const Conversation = require('../models/conversation');
 const Event = require('./../models/event')
 const Booking = require('../models/booking');
@@ -1761,6 +1761,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
             console.log('hit1',req.body[0]);
             
           req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id},next)
+          //createReport({venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,user:values[0].user_id,card:values[0].card?values[0].card:0,coins:(req.body[0].coins*req.body.length),cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
 
         let booking_id = values[0].booking_id
         let phone = "91"+values[0].phone
@@ -2059,6 +2060,8 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
         res.send({status:"success", message:"slot booked", data:values})
         Venue.findById({_id:values[0].venue_id}).then(venue=>{
           // Send SMS
+          console.log(values[0].cash,values[0].coins,values[0].upi,values[0].card,'pas');
+          createReport({venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,created_by:values[0].user_id,card:values[0].card?values[0].card:0,coins:0,cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
           let booking_id = values[0].booking_id
           let phone = "91"+values[0].phone
           let venue_name = values[0].venue
@@ -2074,7 +2077,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
           let venue_discount_coupon = result[0].commission == 0 ? "Venue Discount:0" : `Venue Discount:${Math.round(result[0].commission)}`
           let SLOT_BOOKED_USER =`Hey ${values[0].name}! Thank you for using Turf Town!\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${result[0].booking_amount}\nBalance to be paid : ${total_amount}`
           let sender = "TRFTWN"
-          SendMessage(phone,sender,SLOT_BOOKED_USER)
+          //SendMessage(phone,sender,SLOT_BOOKED_USER)
           // axios.get(process.env.PHP_SERVER+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount)
           // .then(response => {
           //   console.log(response.data)
@@ -2151,10 +2154,12 @@ router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'c
                     let advance = req.body.bookObject[0].total_advance && (req.body.bookObject[0].total_advance !== '0' || req.body.bookObject[0].total_advance !== '') ? req.body.bookObject[0].total_advance : 0 
                     let total = invoice[0].advance+parseInt(advance,10)
                       Invoice.findOneAndUpdate({repeat_id: booking[0].repeat_id},{booking_data:bookings,advance:total,name:booking[0].name}).then(invoice=>{
+                        createReport({repeat_id:booking[0].repeat_id,venue_id:values[0].venue_id,booking_id:values[0].booking_id,name:booking[0].name,status:true,admin:values[0].created_by,card:values[0].card?values[0].card:0,coins:0,cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
                         res.status(201).send({status: "success",data:invoice});
                     }).catch(next);
                 } else {
                   Invoice.create({booking_data:bookings,advance:req.body.bookObject[0].total_advance,repeat_id: booking[0].repeat_id,name:booking[0].name}).then(invoice=>{
+                    createReport({repeat_id: booking[0].repeat_id,name: booking[0].name,venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,admin:values[0].created_by,card:values[0].card?values[0].card:0,coins:0,cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
                     res.send({status:"success", message:"slot booked", data:invoice})
                   }).catch(next);  
                 }

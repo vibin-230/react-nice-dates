@@ -23,6 +23,8 @@ const Bookings = require('../models/booking');
 const Conversation = require('../models/conversation');
 const sendAlert = require('./../scripts/sendAlert')
 const Alert = require('./../models/alerts')
+const collectReport = require('./../scripts/collectReport')
+
 const Experience = require('./../models/experience')
 
 
@@ -33,6 +35,17 @@ const Experience = require('./../models/experience')
         a && a.length > 0 && res.status(201).send({status: "success", message: "coin created",data:a})
 }).catch(next);
 
+  });
+
+
+  router.post('/save_expense', [
+    verifyToken,
+  ], (req, res, next) => {
+      const body = req.body
+          Cashflow.create(body).then((a)=>{
+            res.status(201).send({status: "success", message: "cashflow created",data:a})
+            //NotifyUsers([body.user],body.status_description)
+          }).catch(next)
   });
 
 

@@ -149,7 +149,7 @@ router.post('/update_convo/:id', [
   Conversation.find({ _id: req.params.id }).populate("members", "name profile_picture handle name_status").populate("host", "name profile_picture handle name_status").lean().then(data => {
     if (data && data.length > 0) {
       Conversation.findByIdAndUpdate({ _id: req.params.id }, { $set: req.body }).then((data) => {
-        Conversation.find({ _id: req.params.id }).populate("members", "name profile_picture handle name_status").populate("host", "name profile_picture handle name_status").lean().then(data => {
+        Conversation.findOne({ _id: req.params.id }).populate("members", "name profile_picture handle name_status").populate("host", "name profile_picture handle name_status").lean().then(data => {
           res.status(201).send({ status: "success", message: "conversation updated", data: data })
         }).catch(next)
       })

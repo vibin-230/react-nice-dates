@@ -2060,7 +2060,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
         res.send({status:"success", message:"slot booked", data:values})
         Venue.findById({_id:values[0].venue_id}).then(venue=>{
           // Send SMS
-          createReport({venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,created_by:values[0].user_id,card:values[0].card?values[0].card:0,coins:0,cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
+          createReport({type:'booking',comments:values[0].comments ? values[0].comments:'',venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,created_by:values[0].user_id,card:values[0].card?values[0].card:0,coins:0,cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
           let booking_id = values[0].booking_id
           let phone = "91"+values[0].phone
           let venue_name = values[0].venue
@@ -2147,13 +2147,14 @@ router.post('/book_slot_for_value/:id', verifyToken, AccessControl('booking', 'c
         }))
       Promise.all(promisesToRun).then(values => {
             Booking.insertMany(values).then(booking=>{
+              let values = booking
               Invoice.find({repeat_id: booking[0].repeat_id}).limit(1).then(invoice=> {
                 let bookings = booking.map((b)=>b.booking_id)
                 if (invoice && invoice.length > 0) {
                     let advance = req.body.bookObject[0].total_advance && (req.body.bookObject[0].total_advance !== '0' || req.body.bookObject[0].total_advance !== '') ? req.body.bookObject[0].total_advance : 0 
                     let total = invoice[0].advance+parseInt(advance,10)
                       Invoice.findOneAndUpdate({repeat_id: booking[0].repeat_id},{booking_data:bookings,advance:total,name:booking[0].name}).then(invoice=>{
-                        createReport({repeat_id:booking[0].repeat_id,venue_id:values[0].venue_id,booking_id:values[0].booking_id,name:booking[0].name,status:true,admin:values[0].created_by,card:values[0].card?values[0].card:0,coins:0,cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
+                        createReport({type:'booking',comments:values[0].comments ? booking[0].comments:'',repeat_id:booking[0].repeat_id,venue_id:booking[0].venue_id,booking_id:values[0].booking_id,name:booking[0].name,status:true,admin:values[0].created_by,card:values[0].card?values[0].card:0,coins:0,cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
                         res.status(201).send({status: "success",data:invoice});
                     }).catch(next);
                 } else {
@@ -2279,7 +2280,10 @@ router.post('/modify_booking/:id', verifyToken, (req, res, next) => {
     }
     Booking.updateMany({booking_id:req.params.id},req.body,{multi:true}).then(booking=>{
       Booking.find({booking_id:req.params.id}).then(booking=>{
+        const values = booking
         result = Object.values(combineSlots(booking))
+          createReport({type:'booking',comments:values[0].comments ? values[0].comments:'',venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,user:values[0].user_id,card:values[0].card?values[0].card:0,coins:(req.body[0].coins*req.body.length),cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
+
         res.send({status:"success", message:"booking modified", data:result})
         let booking_id = booking[0].booking_id
         let venue_name = booking[0].venue
@@ -2885,7 +2889,10 @@ router.post('/unfollow_request/:friend', verifyToken, (req, res, next) => {
         User.findByIdAndUpdate({_id:req.body.id},{$set: { following: following } }).then(user=>{  
             User.findById({_id:req.body.id},{activity_log:0}).populate('requests','name profile_picture handle name_status').then(user=>{ 
               console.log(user.following)
+              Conversation.find({$or:[{members:[req.body.id,req.params.friend],type:'single'},{members:[req.params.friend,req.body.id],type:'single'}]}).limit(1).lean().then(ec=>{
+                ec.length > 0 && updateConvoStatus(ec[0],{invite_status : true})  
               res.send({status:"success", message:"Unfollowed "+friend.handle, data:user})
+  }).catch(next)
   }).catch(next)
   }).catch(next)
   }).catch(next)
@@ -2903,9 +2910,13 @@ router.post('/remove_request/:friend', verifyToken, (req, res, next) => {
       User.findByIdAndUpdate({_id:req.params.friend},{$set: { following: friend_following } }).then(user=>{  
         User.findByIdAndUpdate({_id:req.body.id},{$set: { followers: followers } }).then(user=>{  
             User.findById({_id:req.body.id},{activity_log:0}).populate('requests','name profile_picture handle name_status').then(user=>{ 
+              Conversation.find({$or:[{members:[req.body.id,req.params.friend],type:'single'},{members:[req.params.friend,req.body.id],type:'single'}]}).limit(1).lean().then(ec=>{
+                ec.length > 0 && updateConvoStatus(ec[0],{invite_status : true})  
               res.send({status:"success", message:"Removed "+friend.handle, data:user})
   }).catch(next)
   }).catch(next)
+}).catch(next)
+
   }).catch(next)
   }).catch(next)
   }).catch(next)

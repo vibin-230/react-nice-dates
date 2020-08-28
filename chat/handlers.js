@@ -216,7 +216,7 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
     const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
     console.log('pass',chatroomName._id,io.sockets.adapter.rooms,activeUsers);
        client.to(chatroomName._id).emit('new',message)
-        client.to(chatroomName._id).emit('unread',message)
+        //client.to(chatroomName._id).emit('unread',message)
         chatroomManager.saveMessage(message) 
         chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
         callback()

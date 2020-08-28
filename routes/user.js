@@ -502,7 +502,7 @@ router.post('/get_chatrooms/:id', [
 ], (req, res, next) => {
       //Check if user existinvites:{$in:[req.params.id]}
       //Conversation.find({members:{$in:[req.params.id]}}).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(existingConversation=>{
-      Conversation.find({ $or: [ { members: { $in: [req.params.id] } },{ exit_list: { $elemMatch: {user_id:req.params.id} } }] }).lean().populate("host","name profile_picture handle name_status").populate('to',' name _id profile_picture last_active online_status status handle name_status').populate('members','name _id profile_picture last_active online_status status handle name_status').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(existingConversation=>{
+      Conversation.find({ $or: [ { members: { $in: [req.params.id] } },{ exit_list: { $elemMatch: {user_id:req.params.id} } }] }).lean().populate("host","name profile_picture handle name_status").populate('to',' name _id profile_picture last_active online_status status handle name_status visibility').populate('members','name _id profile_picture last_active online_status status handle name_status visibility').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status visibility').populate('last_message').then(existingConversation=>{
        const exit_convo_list = existingConversation.filter((e)=> {
         return (e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.params.id.toString()).length > 0)
         } )
@@ -1226,8 +1226,8 @@ router.post('/send_invite',verifyToken, (req, res, next) => {
 });
 
 router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
-   Conversation.findById({_id:req.params.conversation_id}).populate('members','_id name device_token profile_picture handle name_status').then((convo)=>{
-    Game.findOne({conversation:req.params.conversation_id}).lean().populate("conversation").populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=>{
+   Conversation.findById({_id:req.params.conversation_id}).populate('members','_id name device_token profile_picture handle name_status visibility').then((convo)=>{
+    Game.findOne({conversation:req.params.conversation_id}).lean().populate("conversation").populate('host','_id name profile_picture phone handle name_status visibility').populate('users','_id name profile_picture phone handle name_status visibility').populate('invites','_id name profile_picture phone handle visibility').then(game=>{
             Venue.findById({_id:game.bookings[0].venue_id}).then(venue =>{
               let game1 = Object.assign({},game)
               game1["venue"] = venue
@@ -1245,7 +1245,7 @@ router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
 
 
 router.post('/get_group_info',verifyToken, (req, res, next) => {
-  Conversation.findById({_id:req.body.conversation_id}).populate('members','_id name device_token profile_picture handle name_status').populate('host','_id name profile_picture phone handle name_status').then((convo)=>{
+  Conversation.findById({_id:req.body.conversation_id}).populate('members','_id name device_token profile_picture handle name_status visibility').populate('host','_id name profile_picture phone handle name_status visibility').then((convo)=>{
     User.find({_id:convo.created_by}).select('name -_id').then(user=>{
       Message.find({$and:[{ "image": { $exists: true, $ne: null }},{conversation:req.body.conversation_id},{type:"image"} ]}).distinct("image").then((image)=>{
     Message.find({$and:[{ "game": { $exists: true, $ne: null }},{conversation:req.body.conversation_id}]}).distinct("game").then((games)=>{
@@ -2887,7 +2887,9 @@ router.post('/unfollow_request/:friend', verifyToken, (req, res, next) => {
       const friend_followers = friend.followers.filter((u)=>u.toString() !== user._id.toString())
       User.findByIdAndUpdate({_id:req.params.friend},{$set: { followers: friend_followers } }).then(user=>{  
         User.findByIdAndUpdate({_id:req.body.id},{$set: { following: following } }).then(user=>{  
-            User.findById({_id:req.body.id},{activity_log:0}).populate('requests','name profile_picture handle name_status').then(user=>{ 
+            User.findById({_id:req.body.id},{activity_log:0}).populate('requests','name profile_picture handle name_status').then(user=>{
+              Conversation.find({$or:[{members:[req.params.friend,req.userId],type:'single'},{members:[req.userId,req.params.id],type:'single'}]}).limit(1).lean().then(ec=>{
+                ec.length > 0 && updateConvoStatus(ec[0],{invite_status : true})
               console.log(user.following)
               Conversation.find({$or:[{members:[req.body.id,req.params.friend],type:'single'},{members:[req.params.friend,req.body.id],type:'single'}]}).limit(1).lean().then(ec=>{
                 ec.length > 0 && updateConvoStatus(ec[0],{invite_status : true})  
@@ -2898,6 +2900,7 @@ router.post('/unfollow_request/:friend', verifyToken, (req, res, next) => {
   }).catch(next)
   }).catch(next)
   }).catch(next)
+})
 })
 
 router.post('/remove_request/:friend', verifyToken, (req, res, next) => {
@@ -2966,11 +2969,59 @@ router.post('/accept_or_delete_requests', verifyToken, (req, res, next) => {
               User.find({ _id: { $in: requested_user }, status: true }, { activity_log: 0 }).lean().then(user1 => {
                 if(type == "accept"){
                   Conversation.find({$or:[{members:[req.body.id,req.userId],type:'single'},{members:[req.userId,req.body.id],type:'single'}]}).limit(1).lean().then(ec=>{
-                    ec.length > 0 && updateConvoStatus(ec[0],{invite_status : false})  
-                    res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1}})
+                    ec.length > 0 && updateConvoStatus(ec[0],{invite_status : false})
+                    Alert.findOne({user:req.userId,created_by:req.body.id}).populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'post', populate: { path: 'event' , populate :{path:'venue',select:'venue'} } }).populate({ path: 'post', populate: { path: 'game' , populate :{path:'venue',select:'venue'} } }).populate('created_by','name _id handle profile_picture').then(a=>{
+                      console.log("aaa",a)
+                    let alert = {...a,type:'following',status_description:`${friend.handle} is following you`}
+                    res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1,alert:alert}})
                 sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,type:'following',status_description:`${friend.handle} is following you`},'addorupdate',next) 
+                
                }).catch(next)
+              }).catch(next)
               }
+              else {
+                res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1}})
+              }
+          }).catch(next)
+        }).catch(next)
+
+        }).catch(next)
+      }).catch(next)
+    }).catch(next)
+  }).catch(next)
+})
+
+
+router.post('/accept_or_delete_requests_alert', verifyToken, (req, res, next) => {
+  User.findById({ _id: req.body.id }, { activity_log: 0 }).lean().then(friend => {
+    User.findById({ _id: req.userId }, { activity_log: 0 }).lean().then(user => {
+      let type = req.body.type
+
+      const sent_requests = friend.sent_requests.filter((u) => u.toString() !== req.userId.toString())
+      const requests = user.requests.filter((u) => u.toString() !== req.body.id.toString())
+      let friend1 = type == "accept" ? { $addToSet: { following: { $each: [req.userId] } } ,$set:{sent_requests:sent_requests} } : {$set:{sent_requests:sent_requests} }
+      let user_guy = type == "accept" ?  { $addToSet: { followers: { $each: [req.body.id] } } ,$set:{requests:requests} } : {$set:{requests:requests} }
+      User.findByIdAndUpdate({ _id: req.body.id },friend1).then(user => {
+        User.findByIdAndUpdate({ _id: req.userId },user_guy).then(user2 => {
+          User.findById({_id:req.userId},{activity_log:0}).populate('requests','name profile_picture handle name_status').then(user=>{ 
+              let requested_user = user.requests
+              User.find({ _id: { $in: requested_user }, status: true }, { activity_log: 0 }).lean().then(user1 => {
+                Alert.findOne({_id:req.body.item}).populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'post', populate: { path: 'event' , populate :{path:'venue',select:'venue'} } }).populate({ path: 'post', populate: { path: 'game' , populate :{path:'venue',select:'venue'} } }).populate('created_by','name _id handle profile_picture').then(a=>{
+                if(type == "accept"){
+                  Conversation.find({$or:[{members:[req.body.id,req.userId],type:'single'},{members:[req.userId,req.body.id],type:'single'}]}).limit(1).lean().then(ec=>{
+                    ec.length > 0 && updateConvoStatus(ec[0],{invite_status : false})
+                      a["type"] = "following"
+                      a["status_description"] = `${friend.handle} is following you`
+                    res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1,alert:a}})
+                sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,type:'following',status_description:`${friend.handle} is following you`},'addorupdate',next) 
+                
+              }).catch(next)
+              }
+              else {
+                sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,type:'follow',status_description:`${friend.handle} is following you`},'delete',next) 
+                res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1,alert:a}})
+              }
+            }).catch(next)
           }).catch(next)
         }).catch(next)
 

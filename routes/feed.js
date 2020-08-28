@@ -26,7 +26,8 @@ const Alert = require('./../models/alerts')
 const Experience = require('./../models/experience')
 
 router.post('/shout_out/:id', verifyToken, (req, res, next) => {
-    const filter = !req.body.status ? { $addToSet: { shout_out: { $each: [req.userId] } } ,$set:{shout_out_count:1} } :{ $pull: { shout_out:  req.userId  }}
+  console.log(req.body); 
+  const filter = !req.body.status ? { $addToSet: { shout_out: { $each: [req.userId] } } ,$set:{shout_out_count:1} } :{ $pull: { shout_out:  req.userId  }}
   
     User.findById({_id: req.userId},{activity_log:0}).lean().then(user=> {
       let following = user.following
@@ -34,7 +35,9 @@ router.post('/shout_out/:id', verifyToken, (req, res, next) => {
       Post.findByIdAndUpdate({_id: req.params.id},filter ).then(game=> {
         Post.findOne({_id: req.params.id}).lean().populate({path:"event",populate:{path:"venue",select:"venue"}}).populate('shout_out','_id name profile_picture phone handle name_status').populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then((s)=>{
           if(s.created_by !== req.userId){
-            !req.body.status && sendAlert({created_at:new Date(),created_by:req.userId,user:s.created_by,post:s._id,type:'shoutout',status_description:`${user.name_status ? user.name:user.handle} gave you a shoutout.`},'addorupdate',next)
+            !req.body.status && sendAlert({created_at:new Date(),created_by:req.userId,user:s.created_by,post:s._id,type:'shoutout',status_description:`${user.name_status ? user.name:user.handle} gave you a shoutout.`},'create',next)
+            req.body.status && sendAlert({created_at:new Date(),created_by:req.userId,user:s.created_by,post:s._id,type:'shoutout',status_description:`${user.name_status ? user.name:user.handle} gave you a shoutout.`},'delete',next)
+
           }              
           if( s && s.shout_out && s.shout_out.length>0 && s.shout_out.filter((a)=>a._id.toString() === req.userId.toString()).length > 0){
                             s['shout_out_status'] = true

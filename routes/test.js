@@ -55,9 +55,21 @@ const Experience = require('./../models/experience')
     verifyToken,
   ], (req, res, next) => {
       const body = req.body
-          Cashflow.find(body).then((a)=>{
-            Bookings.find({booking_status:'completed',booking_id:{$in:a.filter(s=>s.booking_id).map(s=>s.booking_id)}}).populate('collected_by','name _id email').then(booking=>{
-            res.status(201).send({status: "success", message: "cashflow generated",data:[...booking,...a]})
+          Cashflow.find(body).populate('created_by').lean().then((a)=>{
+            Bookings.find({booking_id:{$in:a.filter(s=>s.booking_id).map(s=>s.booking_id)}}).lean().populate('collected_by','name _id email').then(booking=>{
+            const x = a.map((l)=>{
+                    if(l && booking && booking.filter((book)=>book.booking_id === l.booking_id).length >0){
+                        l['booking_data'] = booking.filter((book)=>book.booking_id === l.booking_id)
+                        return l
+                    }else{
+                        l['booking_data'] = []
+                        return l
+
+                    }
+                    
+            })
+               // console.log(x)
+                res.status(201).send({status: "success", message: "cashflow generated",data:x})
             //NotifyUsers([body.user],body.status_description)
           }).catch(next)
         }).catch(next)

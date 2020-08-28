@@ -1,6 +1,7 @@
 const Chatroom = require('./Chatroom')
 const chatroomTemplates = require('./config/chatrooms')
 const Conversation = require('../models/conversation');
+const Alert = require('../models/alerts');
 const Game = require('../models/game');
 const Message = require('../models/message');
 const User = require('../models/user');
@@ -10,7 +11,7 @@ const notify = require('../scripts/Notify')
 const SlotsAvailable = require("../helper/slots_available")
 const NotifyArray = require('../scripts/NotifyArray')
 const NotifyArray1 = require('../scripts/NotifyArray1')
-
+const moment  = require('moment')
 const _ = require('lodash')
 
 module.exports = function () {
@@ -777,10 +778,17 @@ module.exports = function () {
   async function handleProfileAlerts(friend,client){
       // console.log("useree",user)
       // const device_token_list  = [user.device_token]
-    const x =  await User.findById({ _id: friend}, { activity_log: 0, }).lean().then(user => {
-      client.emit('profile_handlers',user)
+      console.log(friend,'freind id')
+      const x = await  Alert.find({user: friend,status:true},{}).lean().populate('user','_id name device_token last_active email').then(alert=> {
+       return User.findOne({_id: friend},{activity_log:0}).lean().then((user)=>{
+        console.log('alerts',alert.length)
+       console.log('0000032423423423423423423423423423432',user.last_active)
+        const alerts1 = alert && alert.length > 0 ? alert.filter(a=>moment(a.created_at).isAfter(user.last_active)) : []   
+        client.emit('profile_handlers',{alert_count:alerts1.length})
+        return alerts1.length
+      }).catch(error => console.log(error))
+      }).catch(error => console.log(error))
       // NotifyArray(device_token_list, `following you`, `Turf Town`)
-  }).catch(error => console.log(error))
   return x
   }
 

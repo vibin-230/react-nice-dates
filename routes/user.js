@@ -2830,17 +2830,17 @@ function updateConvoStatus(conversation,body){
 router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
   User.findById({_id:req.params.friend},{activity_log:0}).lean().then(friend=>{
     User.findById({_id:req.body.id},{activity_log:0}).lean().then(user=>{    
-      console.log(friend,user);
       let obj = user._id
     if(friend.visibility === 'public'){
       let filter = friend && friend.followers.length > 0 && friend.followers.some(u => u.id === req.body.id)
       if(filter){
         res.send({status:'failiure', message:"following"})
       }else{
+        console.log('hit friend request')
         User.findByIdAndUpdate({_id:req.params.friend},{$addToSet: { followers: { $each: [obj] } } }).then(friend=>{  
           User.findByIdAndUpdate({_id:req.body.id},{$addToSet: { following: { $each: [friend._id] } } }).then(user=>{  
             User.findById({_id:req.body.id},{activity_log:0}).populate('requests','name profile_picture handle name_status').then(user=>{ 
-               sendAlert({created_at:new Date(),created_by:user._id,user:friend._id,type:'following',status_description:`${user.handle} is following you`},'addorupdate',next)
+               sendAlert({created_at:new Date(),created_by:user._id,user:friend._id,type:'following',status_description:`${user.handle} is following you`},'create',next)
                 Conversation.find({$or:[{members:[req.params.friend,req.body.id],type:'single'},{members:[req.body.id,req.params.friend],type:'single'}]}).limit(1).lean().then(ec=>{
                   ec.length > 0 && updateConvoStatus(ec[0],{invite_status : false})
                res.send({status:"success", message:"following "+friend.handle, data:user})
@@ -2851,11 +2851,13 @@ router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
       }
     }
     else {
-      console.log("1111")
+      console.log('hit friend request')
+
       User.findByIdAndUpdate({_id:req.params.friend},{$addToSet: { requests: { $each: [obj] } } }).then(user=>{  
         User.findByIdAndUpdate({_id:req.body.id},{$addToSet: { sent_requests: { $each: [friend._id] } } }).then(user=>{  
           User.findById({_id:req.body.id},{activity_log:0}).populate('requests','name profile_picture handle name_status').then(user=>{ 
-            sendAlert({created_at:new Date(),created_by:req.body.id,user:req.params.friend,type:'follow',status_description:`${user.handle} has sent a follow request`},'addorupdate',next)
+            console.log('user hit and asldkjasldkjalskdjalsdkjalsdkjalsdkj',user.handle)
+            sendAlert({created_at:new Date(),created_by:req.body.id,user:req.params.friend,type:'follow',status_description:`${user.handle} has sent a follow request`},'create',next)
             res.send({status:"success", message:"Request sent to "+friend.handle, data:user})
           }).catch(next)
       }).catch(next)
@@ -2980,6 +2982,8 @@ router.post('/accept_or_delete_requests', verifyToken, (req, res, next) => {
               }).catch(next)
               }
               else {
+                sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,type:'following',status_description:`${friend.handle} is following you`},'delete',next) 
+
                 res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1}})
               }
           }).catch(next)
@@ -4542,8 +4546,6 @@ router.post('/revenue_report_months', verifyToken, (req, res, next) => {
             result[date].commission = new_commission + value_commission
             result[date].slots_booked = result[date].slots_booked + 1
             result[date].hours_played = (result[date].slots_booked*30)/60
-            console.log("vaa",value)
-            console.log("Resulte",result[date])
 
           }
         })

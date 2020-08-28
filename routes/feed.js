@@ -33,7 +33,7 @@ router.post('/shout_out/:id', verifyToken, (req, res, next) => {
       //following = following.concat(req.userId)   
       Post.findByIdAndUpdate({_id: req.params.id},filter ).then(game=> {
         Post.findOne({_id: req.params.id}).lean().populate({path:"event",populate:{path:"venue",select:"venue"}}).populate('shout_out','_id name profile_picture phone handle name_status').populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then((s)=>{
-          if(s.created_by !== req.userId){
+          if(s.created_by._id.toString() !== req.userId.toString() ){
             !req.body.status && sendAlert({created_at:new Date(),created_by:req.userId,user:s.created_by,post:s._id,type:'shoutout',status_description:`${user.name_status ? user.name:user.handle} gave you a shoutout.`},'addorupdate',next)
           }              
           if( s && s.shout_out && s.shout_out.length>0 && s.shout_out.filter((a)=>a._id.toString() === req.userId.toString()).length > 0){
@@ -44,7 +44,7 @@ router.post('/shout_out/:id', verifyToken, (req, res, next) => {
                         }
                         // var array3 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter(function(obj) { return following.indexOf(obj._id.toString()) !== -1; }):[]
                         var array3 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter((obj)=> following.filter(a=>a.toString() === obj._id.toString()).length > 0  ):[]
-                        var string_array = array3.length > 0 && array3.filter((a)=>a._id.toString() === s.created_by._id.toString()).length <= 0 ? array3.map((a)=>a.name_status ? a.name : a.handle):[]
+                        var string_array = array3.length > 0 && array3.filter((a)=> s.created_by._id.toString() !== req.userId && a._id.toString() === s.created_by._id.toString()).length <= 0 ? array3.map((a)=>a.name_status ? a.name : a.handle):[]
               if(string_array.length === 1){
                 s['shout_line'] = `Shoutout by ${string_array[0]}`
                  }else if(string_array.length === 2){

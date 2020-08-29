@@ -16,6 +16,13 @@ module.exports = function () {
     clients.set(user._id.toString(), { client, user })
   }
 
+ async function getClient1( user_id) {
+   const x = await clients.get(user_id)
+   return x
+  }
+
+
+
 
   function filterClients(clients1){
     let x = []
@@ -103,6 +110,8 @@ module.exports = function () {
     isUserAvailable,
     getUserByName,
     getClient,
+    getClient1,
+
     filterClients,
     getUserByClientId
   }

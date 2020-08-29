@@ -51,7 +51,7 @@ module.exports = function ({ _id, image }) {
 
   async function getChatHistory(id, token) {
     const user = await verifyToken(token)
-    const x = await Conversation.findById({ _id: id }).populate("members","name profile_picture handle name_status visibility").populate("host","name profile_picture handle name_status visibility").lean().then((conversation) => {
+    const x = await Conversation.findById({ _id: id }).populate("members","name profile_picture handle name_status visibility").populate("host","name profile_picture handle name_status visibility").populate("to","name profile_picture handle name_status visibility").lean().then((conversation) => {
       let date = conversation.join_date.length > 0 ? conversation.join_date.filter((jd) => jd.user_id.toString() === user.id.toString()) : []
       const x = conversation.members.filter((a)=>a._id.toString() === user.id.toString())
       const user1 =   conversation.exit_list && conversation.exit_list.length > 0 && conversation.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === user.id.toString())

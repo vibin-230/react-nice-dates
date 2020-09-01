@@ -1186,9 +1186,30 @@ router.post('/token',verifyToken, AccessControl('users', 'update'), (req, res, n
 
 //Delete User
 router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), (req, res, next) => {
-  User.findByIdAndRemove({_id: req.params.id}).then(user=> {
-      res.send({status:"success", message:"user deleted"})
-  }).catch(next);
+
+Post.deleteMany({created_by:req.params.id}).then(posts=> {
+  Post.updateMany({shout_out:{$in:[req.params.id]}},{ $pull: { shout_out: { $in: [req.params.id] }} },{multi:true}).then((postss)=>{
+    Alert.deleteMany({user_id:req.params.id}).then(alerts=> {
+      Conversation.deleteMany({type:'single',members:{$in:[req.params.id]}}).then(conversations=> {
+        Conversation.updateMany({type:'group',members:{$in:[req.params.id]}},{ $pull: [{ members: { $in: [req.params.id] }},{ host: { $in: [req.params.id] }}] },{multi:true}).then((c)=>{
+          Game.updateMany({users:{$in:[req.params.id]}},{ $pull: [{ users: { $in: [req.params.id] }},{ host: { $in: [req.params.id] }}] },{multi:true}).then((c)=>{
+             Game.deleteMany({host:[]}).then((c)=>{
+              User.updateMany({followers:{$in:[req.params.id]}},{ $pull:{ followers: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
+              User.updateMany({following:{$in:[req.params.id]}},{ $pull:{ following: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
+                User.findByIdAndRemove({_id: req.params.id}).then(user=> {
+
+                 res.send({status:"success", message:"user deleted"})
+}).catch(next);
+}).catch(next);
+}).catch(next);
+}).catch(next);
+}).catch(next);
+}).catch(next);
+}).catch(next);
+}).catch(next);
+}).catch(next);
+}).catch(next);
+
 });
 
 

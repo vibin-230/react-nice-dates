@@ -1195,8 +1195,12 @@ Post.deleteMany({created_by:req.params.id}).then(posts=> {
           Game.updateMany({users:{$in:[req.params.id]}},{ $pull: [{ users: { $in: [req.params.id] }},{ host: { $in: [req.params.id] }}] },{multi:true}).then((c)=>{
              Game.deleteMany({host:[]}).then((c)=>{
               User.updateMany({followers:{$in:[req.params.id]}},{ $pull:{ followers: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
+                User.updateMany({followers:{$in:[req.params.id]}},{ $pull:{ followers: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
+                  User.updateMany({requests:{$in:[req.params.id]}},{ $pull:{ requests: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
+                    User.updateMany({sent_requests:{$in:[req.params.id]}},{ $pull:{ sent_requests: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
+
               User.updateMany({following:{$in:[req.params.id]}},{ $pull:{ following: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
-                User.findByIdAndRemove({_id: req.params.id}).then(user=> {
+                User.findOneAndDelete({_id: req.params.id}).then(user=> {
 
                  res.send({status:"success", message:"user deleted"})
 }).catch(next);
@@ -1209,6 +1213,10 @@ Post.deleteMany({created_by:req.params.id}).then(posts=> {
 }).catch(next);
 }).catch(next);
 }).catch(next);
+}).catch(next);
+}).catch(next);
+}).catch(next);
+
 
 });
 

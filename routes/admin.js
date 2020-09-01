@@ -202,7 +202,7 @@ router.post('/savePassword',
 					lin['mvp_count'] = 0
 					lin['refer_custom_value'] = 100
 					lin['refer_custom_value1'] = 50
-					lin['coins'] =   0
+					lin['coins'] = 0
 					lin['total'] = 0
 					lin['level'] =  getLevel(0)
 					console.log('hit pass',lin)
@@ -320,7 +320,7 @@ User.findOne({ $or: [ { handle: req.body.username }, { phone: req.body.username 
 							 user['token'] = token
                user['refer_custom_value'] = 100
                user['refer_custom_value1'] = 50
-               user['coins'] =  coins && coins.length > 0 && coins[0].amount ? coins[0].amount : 0
+               user['coins'] =  coins && coins.length > 0 && coins[0] && coins[0].amount ? coins[0].amount : 0
                user['level'] =  getLevel(250 * mvp_count + 100 * game_completed_count)
                res.status(201).send({status: "success", message: "login success",data:user})
               } else {

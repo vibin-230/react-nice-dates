@@ -785,7 +785,7 @@ module.exports = function () {
        console.log('0000032423423423423423423423423423432',user.last_active)
         const alerts1 = alert && alert.length > 0 ? alert.filter(a=>moment(a.created_at).isAfter(user.last_active)) : []   
         // client.to(friend).emit('profile_handlers',{alert_count:alerts1.length,friend:friend})
-        client.emit('profile_handlers',{alert_count:alerts1.length})
+        client.emit('profile_handlers',{alert_count:alerts1.length,friend:friend})
         return alerts1.length
       }).catch(error => console.log(error))
       }).catch(error => console.log(error))

@@ -1093,9 +1093,10 @@ router.post('/search',
 	(req, res, next) => {
 	User.find({$and:[{_id:{$nin:[req.userId]}},{ $or: [{"name":{ "$regex": req.body.search, "$options": "i" }}, {"handle":{ "$regex": req.body.search, "$options": "i" }}]}]},{__v:0,token:0,otp:0,activity_log:0}).then(user=>{
 		Venue.find({"venue.name":{ "$regex": req.body.search, "$options": "i" }}).then(venue=>{
-		Event.find({"event.name":{ "$regex": req.body.search, "$options": "i" }}).lean().populate('venue').then(event=>{
+		Event.find({"event.name":{ "$regex": req.body.search, "$options": "i" },"event.start_date":{$gte:new Date()}}).lean().populate('venue').then(event=>{
 			Offers.find({}).then(offers=>{
 			let combinedResult
+			let list = []
 			Object.values(event).map((key)=>{
 				Object.values(key.venue).map((value,index)=>{
 					let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
@@ -1104,7 +1105,7 @@ router.post('/search',
 				})
 			})
 			if(venue){
-					let list = Object.values(venue).map((value,index)=>{
+					list = Object.values(venue).map((value,index)=>{
 					let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
 					value.rating = value.rating
 					value.offers = filteredOffer
@@ -1115,7 +1116,6 @@ router.post('/search',
 				combinedResult = event
 			}
 			let finalResult = [...combinedResult,...user]
-			console.log('final resul',finalResult)
 			if(finalResult && finalResult.length > 0){
 				res.send({status:"success", message:"venues and events fetched based on search", data:{error:false,error_description:'',venue:list,event:event,user:user}})
 			}else

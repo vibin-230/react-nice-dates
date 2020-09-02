@@ -1187,8 +1187,8 @@ router.post('/token',verifyToken, AccessControl('users', 'update'), (req, res, n
 //Delete User
 router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), (req, res, next) => {
 
-Post.deleteMany({created_by:req.params.id}).then(posts=> {
   Post.updateMany({shout_out:{$in:[req.params.id]}},{ $pull: { shout_out: { $in: [req.params.id] }} },{multi:true}).then((postss)=>{
+Post.deleteMany({created_by:req.params.id}).then(posts=> {
     Alert.deleteMany({user_id:req.params.id}).then(alerts=> {
       Conversation.deleteMany({type:'single',members:{$in:[req.params.id]}}).then(conversations=> {
         Conversation.updateMany({type:'group',members:{$in:[req.params.id]}},{ $pull: [{ members: { $in: [req.params.id] }},{ host: { $in: [req.params.id] }}] },{multi:true}).then((c)=>{
@@ -1198,8 +1198,7 @@ Post.deleteMany({created_by:req.params.id}).then(posts=> {
                 User.updateMany({followers:{$in:[req.params.id]}},{ $pull:{ followers: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
                   User.updateMany({requests:{$in:[req.params.id]}},{ $pull:{ requests: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
                     User.updateMany({sent_requests:{$in:[req.params.id]}},{ $pull:{ sent_requests: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
-
-              User.updateMany({following:{$in:[req.params.id]}},{ $pull:{ following: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
+                     User.updateMany({following:{$in:[req.params.id]}},{ $pull:{ following: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
                 User.findOneAndDelete({_id: req.params.id}).then(user=> {
 
                  res.send({status:"success", message:"user deleted"})

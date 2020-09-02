@@ -166,13 +166,14 @@ router.post('/get_town_games/', [
                 }
                 s['shout_line'] = x
             return s
-        })
+        }).filter(a => a && a.game)
           // var groupBy = (xs, key) => {
           //   return xs.reduce((rv, x) =>{
           //     (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
           //     return rv;
           //   }, {});
           // };
+
           let finalResult = x.sort((a, b) => moment(a.start_time).format("YYYYMMDDHmm") >= moment(b.start_time).format("YYYYMMDDHmm") ? 1 : -1 )
           // const a = groupBy(finalResult,'start_time')
           // const q =   Object.entries(a).map(([key,value])=>{

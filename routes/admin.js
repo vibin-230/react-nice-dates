@@ -1115,8 +1115,11 @@ router.post('/search',
 				combinedResult = event
 			}
 			let finalResult = [...combinedResult,...user]
-			console.log(finalResult)
-			res.send({status:"success", message:"venues and events fetched based on search", data:finalResult})
+			console.log('final resul',finalResult)
+			if(finalResult && finalResult.length > 0){
+				res.send({status:"success", message:"venues and events fetched based on search", data:{error:false,error_description:'',venue:list,event:event,user:user}})
+			}else
+			res.send({status:"success", message:"empty list",data:{error:true,error_description:'No Results found'}})
 		}).catch(next)
 	}).catch(next)
 }).catch(next);

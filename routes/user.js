@@ -2350,10 +2350,11 @@ router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
     }
     Booking.updateMany({booking_id:req.params.id},req.body,{multi:true}).then(booking=>{
       Booking.find({booking_id:req.params.id}).then(booking=>{
+        const values = booking
         Game.findOne({"bookings.booking_id":booking[0].booking_id}).then((g)=>{
         if(g){
           Game.findOneAndUpdate({"bookings.booking_id":booking[0].booking_id},{$set:{bookings:booking,completed:true}}).then((a)=>console.log(a))
-        }  
+        }
         result = Object.values(combineSlots(booking))
         res.send({status:"success", message:"booking completed", data:result})
 
@@ -3581,7 +3582,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
   let past_date  = moment(req.body.todate).add(1,'month')
   let filter = {
     booking_status:{$in:["booked"]},
-    phone:req.userId,
+    created_by:req.userId,
     game:false,
   }
   let cancel_filter = {
@@ -3604,9 +3605,10 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         })
         
         let event_booking_data = eventBooking.map((a)=>{
-          a['start_time'] = a.start_date
+          a['start_time'] = a.event_id.start_date
           return a
         })
+        console.log("vee",event_booking_data)
          event_booking_data.reverse()
          booking_data = req.body.type && req.body.type === 'host' ?[...open_games,...event_booking_data,...result]:[...game,...event_booking_data,...result]
          var groupBy = (xs, key) => {
@@ -3615,7 +3617,6 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
             return rv;
           }, {});
         };
-        
         let finalResult = booking_data.sort((a, b) => moment(a.start_time).format("YYYYMMDDHmm") > moment(b.start_time).format("YYYYMMDDHmm") ? 1 : -1 )
         const present = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') <= moment(a.start_time).format('YYYYMMDDHHmm'))
         const past = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') >= moment(a.start_time).format('YYYYMMDDHHmm'))
@@ -4063,7 +4064,8 @@ router.post('/booking_completed_list_by_venue', verifyToken, (req, res, next) =>
       Booking.find({booking_status:{$in:["completed"]}, venue_id:{$in:venue_id},repeat_booking:true,booking_date:{$gt:req.body.fromdate, $lte:req.body.todate}}).lean().populate('collected_by','name').then(booking2=>{
       Booking.find({booking_status:{$in:["completed"]}, venue_id:{$in:venue_id},repeat_booking:false,booking_date:{$gt:req.body.fromdate, $lte:req.body.todate}}).lean().populate('collected_by','name').then(booking=>{
       Booking.find({booking_status:{$in:["cancelled"]},refund_status:false,venue_id:{$in:venue_id}, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, booking_type:"app"}).lean().populate("cancelled_by" ,"name").then(booking1=>{
-      result = Object.values(combineSlots(booking))
+      
+        result = Object.values(combineSlots(booking))
       result1 = Object.values(combineSlots(booking1))
       result2 = Object.values(combineRepeatSlots(booking2))
       let finalResult = [...result,...result1,...result2]

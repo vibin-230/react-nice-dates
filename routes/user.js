@@ -3599,7 +3599,10 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
          return g.share_type === 'open' || (g.share_type === 'closed' && g.host.some(key=>key._id.toString() === req.userId.toString()))
         })
         
-        let event_booking_data = eventBooking
+        let event_booking_data = eventBooking.map((a)=>{
+          a['start_time'] = a.start_date
+          return a
+        })
          event_booking_data.reverse()
          booking_data = req.body.type && req.body.type === 'host' ?[...open_games,...event_booking_data,...result]:[...game,...event_booking_data,...result]
          var groupBy = (xs, key) => {
@@ -3610,12 +3613,18 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         };
         
         let finalResult = booking_data.sort((a, b) => moment(a.start_time).format("YYYYMMDDHmm") > moment(b.start_time).format("YYYYMMDDHmm") ? 1 : -1 )
-        const a = groupBy(finalResult,'start_time')
-        const q =   Object.entries(a).map(([key,value])=>{
-                return {title:key,data:value }
-          })
+        const present = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') <= moment(a.start_time).format('YYYYMMDDHHmm'))
+        const past = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') >= moment(a.start_time).format('YYYYMMDDHHmm'))
 
-        res.send({status:"success", message:"booking history fetched", data:q})
+        const apresent = groupBy(present,'start_time')
+        const apast = groupBy(past,'start_time')
+        let qpresent =   Object.entries(apresent).map(([key,value])=>{return {title:key,data:value }})
+        let qpast =   Object.entries(apast).map(([key,value])=>{return {title:key,data:value }})
+        const today_empty = qpresent && qpresent.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpresent.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
+        const today_empty1 = qpast && qpast.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpast.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
+        qpresent.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
+        qpast.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
+        res.send({status:"success", message:"booking history fetched", data:{past:qpast,present:qpresent}})
     }).catch(next)
   }).catch(next)
   }).catch(next)

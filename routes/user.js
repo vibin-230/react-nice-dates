@@ -1001,7 +1001,7 @@ router.post('/edit_game_status', (req, res, next) => {
       Venue.findById({_id:game.bookings[0].venue_id}).then(venue =>{
         let game1 = Object.assign({},game)
         console.log('pass',game1);
-        game1["venue"] = venue.venue
+        game1["venue"] = venue
         game1["rating"] = venue.rating
         game1['final'] = _.xor(game1.users,game1.host)
         res.send({status:"success", message:"game_fetched",data:game1})

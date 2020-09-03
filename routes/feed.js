@@ -24,7 +24,7 @@ const Conversation = require('../models/conversation');
 const sendAlert = require('./../scripts/sendAlert')
 const Alert = require('./../models/alerts')
 const Experience = require('./../models/experience')
-
+const _  = require('lodash')
 router.post('/shout_out/:id', verifyToken, (req, res, next) => {
   console.log(req.body); 
   const filter = !req.body.status ? { $addToSet: { shout_out: { $each: [req.userId] } } ,$set:{shout_out_count:1} } :{ $pull: { shout_out:  req.userId  }}
@@ -119,10 +119,18 @@ router.post('/activity/:id', verifyToken, (req, res, next) => {
 
 })
 
+function getZcode(hours_bfore_game,share,shout_out,hr_since_post,distance,players,joins){
+  return (50 * share) - (hours_bfore_game*100)  + (50 * shout_out) - (10 * hr_since_post) - (distance * 1) + (players / 10) + (30 * joins)
+}
 
-router.post('/get_town_games/', [
-    verifyToken,
-  ], (req, res, next) => {
+function getTimeToGame(hours_bfore_game){
+const dateOneObj = new Date();
+const dateTwoObj = new Date(hours_bfore_game);
+const milliseconds = Math.abs(dateTwoObj - dateOneObj);
+return Math.round(milliseconds / 36e5);
+}
+
+router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
     User.findById({_id: req.userId},{activity_log:0}).lean().then(user=> {
       let following = user.following
          following = following.concat(req.userId)
@@ -140,7 +148,19 @@ router.post('/get_town_games/', [
         //  key["venue"] = key.venue.venue
         // })
         // c is req.userId  
+
+
+
         let x = posts.map((s)=>{
+          const hours_bfore_game = getTimeToGame(s.start_time)
+          const share = user && user.following && user.following.some((a)=> a.toString() === s.created_by._id.toString()) ? 1 : 0
+          const shout_out_count = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.length : 0
+          const hr_since_post = getTimeToGame(s.created_at)
+          const players = s && s.game && s.game.users && s.game.users.length > 0  ?  (s.game.users.length/s.game.limit)*10 : 0
+          const users = s && s.game && s.game.users && s.game.users.length > 0 ? s.game.users.map((a)=>a._id).filter((a1)=> following.some((a)=> a.toString() === a1.toString())) : []
+          const common_friends_count_in_the_game = users
+          const zcode = getZcode(hours_bfore_game,share,shout_out_count,hr_since_post,1,players,users.length)
+          //console.log('hrs before game ',s.game.name,hours_bfore_game,share,shout_out_count,hr_since_post,1,players,users.length,'zcode:',zcode,s.start_time,s.created_at,new Date());
             if( s && s.shout_out && s.shout_out.length>0 && s.shout_out.filter((a)=>a._id.toString() === req.userId.toString()).length > 0){
                 s['shout_out_status'] = true
                 
@@ -165,6 +185,7 @@ router.post('/get_town_games/', [
                    
                 }
                 s['shout_line'] = x
+                s['zcode'] = zcode
             return s
         }).filter(a => a && a.game)
           // var groupBy = (xs, key) => {
@@ -174,7 +195,7 @@ router.post('/get_town_games/', [
           //   }, {});
           // };
 
-          let finalResult = x.sort((a, b) => moment(a.start_time).format("YYYYMMDDHmm") >= moment(b.start_time).format("YYYYMMDDHmm") ? 1 : -1 )
+          let finalResult = x.sort((a, b) => a.zcode <= b.zcode ? 1 : -1 )
           // const a = groupBy(finalResult,'start_time')
           // const q =   Object.entries(a).map(([key,value])=>{
           //         return {title:key,data:value }

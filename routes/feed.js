@@ -213,24 +213,10 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
     //}).catch(next)
   
   });
-
-  router.post('/get_alerts/', [
-    verifyToken,
-  ], (req, res, next) => {
-    Alert.find({user: req.userId,created_by:{$nin:[req.userId]}}).lean().populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'post', populate: { path: 'event' , populate :{path:'venue',select:'venue'} } }).populate({ path: 'post', populate: { path: 'game' , populate :{path:'venue',select:'venue'} } }).populate('created_by','name _id handle profile_picture').then(alert=> {
-      console.log(alert)    
-      res.status(201).send({status: "success", message: "alerts collected",data:alert})
-      }).catch(next)
-    //}).catch(next)
-  
-  });
-
-
   router.post('/get_more_posts/', [
     verifyToken,
   ], (req, res, next) => {
-      const client = req.redis() 
-      console.log(req.body); 
+      const client = req.redis()  
       client.get('post_'+req.userId, function(err, reply) { 
         if(err){
           console.log(err);
@@ -246,10 +232,53 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
           }else if(diff < 4 && diff >= 1){
             final_data = data.slice(index+1,index+diff)
           }else{
-            final_data.push({type:'empty',data:'No data available',_id:'no-id'})
+            final_data.push({type:'empty',data:'No data available'})
           }
         } 
       res.status(201).send({status: "success", message: "posts collected",data:final_data})
+    })
+  
+  });
+
+  router.post('/get_alerts/', [
+    verifyToken,
+  ], (req, res, next) => {
+    Alert.find({user: req.userId,created_by:{$nin:[req.userId]}}).lean().populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'post', populate: { path: 'event' , populate :{path:'venue',select:'venue'} } }).populate({ path: 'post', populate: { path: 'game' , populate :{path:'venue',select:'venue'} } }).populate('created_by','name _id handle profile_picture').then(alert=> {
+      const client = req.redis()
+          client.set('alerts_'+req.userId, JSON.stringify(alert), function(err, reply) {
+            console.log('redis comeback',reply);
+          });
+      const finalData = [...alert]
+
+      res.status(201).send({status: "success", message: "alerts collected",data:finalData})
+      }).catch(next)
+    //}).catch(next)
+  
+  });
+
+router.post('/get_more_alerts/', [
+    verifyToken,
+  ], (req, res, next) => {
+      const client = req.redis()  
+      client.get('alerts_'+req.userId, function(err, reply) { 
+        if(err){
+          console.log(err);
+        }
+        const data = JSON.parse(reply)
+        let index = data.findIndex(x => x._id.toString() ===req.body.alert.toString());
+       let final_data = []
+        console.log('data length',data.length);
+        if(index > 0){
+          let diff = data.length - index 
+          if(diff > 7){
+            final_data = data.slice(index+1,index+6)
+          }else if(diff < 6 && diff >= 1){
+            final_data = data.slice(index+1,index+diff)
+          }else{
+            final_data.push({type:'empty',data:'No data available',_id:'no-id'})
+          }
+        } 
+      res.status(201).send({status: "success", message: "alerts collected",data:final_data})
     })
   
   });
@@ -383,8 +412,43 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
         return s
     })
 
-      res.status(201).send({status: "success", message: "coin history collected",data:x})
+
+    const client = req.redis()
+    client.set('user_activity_'+req.userId, JSON.stringify(x), function(err, reply) {
+      console.log('redis comeback',reply);
+    });
+
+    const finalData = [...x]
+      res.status(201).send({status: "success", message: "coin history collected",data:finalData})
     }).catch(next);
+  });
+
+
+  router.post('/get_more_user_activity/', [
+    verifyToken,
+  ], (req, res, next) => {
+      const client = req.redis()  
+      client.get('user_activity_'+req.userId, function(err, reply) { 
+        if(err){
+          console.log(err);
+        }
+        const data = JSON.parse(reply)
+        let index = data.findIndex(x => x._id.toString() ===req.body.user_activity._id.toString());
+       let final_data = []
+        console.log('data length',data.length);
+        if(index > 0){
+          let diff = data.length - index 
+          if(diff > 4){
+            final_data = data.slice(index+1,index+3)
+          }else if(diff < 4 && diff >= 1){
+            final_data = data.slice(index+1,index+diff)
+          }else{
+            final_data.push({type:'empty',data:'No data available'})
+          }
+        } 
+      res.status(201).send({status: "success", message: "posts collected",data:final_data})
+    })
+  
   });
 
   router.post('/user_activity_friend/:id', [
@@ -416,9 +480,39 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
             s['shout_line'] = x
         return s
     })
-
+    client.set('user_activity_friend_'+req.userId, JSON.stringify(finalResult), function(err, reply) {
+      console.log('redis comeback',reply);
+    });
       res.status(201).send({status: "success", message: "coin history collected",data:x})
     }).catch(next);
+  });
+
+
+  router.post('/get_more_user_activity_friend/', [
+    verifyToken,
+  ], (req, res, next) => {
+      const client = req.redis()  
+      client.get('user_activity_friend_'+req.userId, function(err, reply) { 
+        if(err){
+          console.log(err);
+        }
+        const data = JSON.parse(reply)
+        let index = data.findIndex(x => x._id.toString() ===req.body.user_activity._id.toString());
+       let final_data = []
+        console.log('data length',data.length);
+        if(index > 0){
+          let diff = data.length - index 
+          if(diff > 4){
+            final_data = data.slice(index+1,index+3)
+          }else if(diff < 4 && diff >= 1){
+            final_data = data.slice(index+1,index+diff)
+          }else{
+            final_data.push({type:'empty',data:'No data available'})
+          }
+        } 
+      res.status(201).send({status: "success", message: "user activity collected",data:final_data})
+    })
+  
   });
 
   router.post('/create_coin', [

@@ -277,12 +277,45 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
           list.sort(function(a, b) {
               return a.displacement - b.displacement;
           });
-          res.status(201).send(list);
+          const client = req.redis()
+          client.set('venue_'+req.userId, JSON.stringify(list), function(err, reply) {
+            console.log('redis comeback',reply);
+          });
+
+          res.status(201).send(list.slice(0,7));
       }).catch(next);
     }).catch(next);
   }).catch(next)
   //   }
   // }).catch(next);
+});
+
+
+router.post('/get_more_venues/', [
+  verifyToken,
+], (req, res, next) => {
+    const client = req.redis()  
+    client.get('venue_'+req.userId, function(err, reply) { 
+      if(err){
+        console.log(err);
+      }
+      const data = JSON.parse(reply)
+      let index = data.findIndex(x => x._id.toString() ===req.body.venue_id.toString());
+     let final_data = []
+      console.log('data length',data.length);
+      if(index > 0){
+        let diff = data.length - index 
+        if(diff > 7){
+          final_data = data.slice(index+1,index+6)
+        }else if(diff < 7 && diff >= 1){
+          final_data = data.slice(index+1,index+diff)
+        }else{
+          final_data.push({type:'empty',data:'No data available'})
+        }
+      } 
+    res.status(201).send({status: "success", message: "venues collected",data:final_data})
+  })
+
 });
 
 

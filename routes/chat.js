@@ -156,6 +156,35 @@ router.post('/update_convo/:id', [
     }
   }).catch(next)
 
+
+  router.post('/get_more_chats/', [
+    verifyToken,
+  ], (req, res, next) => {
+      const client = req.redis() 
+      console.log(req.body); 
+      client.get('chatroom_'+req.userId, function(err, reply) { 
+        if(err){
+          console.log(err);
+        }
+        const data = JSON.parse(reply)
+        let index = data.findIndex(x => x._id.toString() ===req.body.id.toString());
+       let final_data = []
+        console.log('data length',data.length);
+        if(index > 0){
+          let diff = data.length - index 
+          if(diff > 4){
+            final_data = data.slice(index+1,index+3)
+          }else if(diff < 4 && diff >= 1){
+            final_data = data.slice(index+1,index+diff)
+          }else{
+            final_data.push({type:'empty',data:'No data available',_id:'no-id'})
+          }
+        } 
+      res.status(201).send({status: "success", message: "venues collected",data:final_data})
+    })
+  
+  });
+
 });
 
 module.exports = router;

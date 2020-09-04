@@ -98,6 +98,92 @@ Date.prototype.addHours= function(h,m){
 }
 
 
+router.post('/get_more_chats/', [
+  verifyToken,
+], (req, res, next) => {
+    const client = req.redis() 
+    console.log(req.body); 
+    client.get('chatroom_'+req.userId, function(err, reply) { 
+      if(err){
+        console.log(err);
+      }
+      const data = JSON.parse(reply)
+      let index = data.findIndex(x => x._id.toString() ===req.body.id.toString());
+     let final_data = []
+      console.log('data length',data.length);
+      if(index > 0){
+        let diff = data.length - index 
+        if(diff > 10){
+          final_data = data.slice(index+1,index+9)
+        }else if(diff < 10 && diff >= 1){
+          final_data = data.slice(index+1,index+diff)
+        }else{
+          final_data.push({type:'empty',data:'No data available',_id:'no-id'})
+        }
+      } 
+    res.status(201).send({status: "success", message: "venues collected",data:final_data})
+  })
+
+});
+
+router.post('/get_more_past_bookings/', [
+  verifyToken,
+], (req, res, next) => {
+    const client = req.redis() 
+    console.log(req.body); 
+    client.get('bookings_past_'+req.userId, function(err, reply) { 
+      if(err){
+        console.log(err);
+      }
+      const data = JSON.parse(reply)
+      let index = data.findIndex(x => x.title.toString() ===req.body.id.toString());
+     let final_data = []
+      console.log('data length',data.length);
+      if(index > 0){
+        let diff = data.length - index 
+        if(diff > 3){
+          final_data = data.slice(index+1,index+2)
+        }else if(diff < 2 && diff >= 1){
+          final_data = data.slice(index+1,index+diff)
+        }else{
+          final_data.push({type:'empty',data:'No data available',_id:'no-id'})
+        }
+      } 
+    res.status(201).send({status: "success", message: "venues collected",data:final_data})
+  })
+
+});
+
+router.post('/get_more_present_bookings/', [
+  verifyToken,
+], (req, res, next) => {
+    const client = req.redis() 
+    console.log(req.body); 
+    client.get('bookings_present_'+req.userId, function(err, reply) { 
+      if(err){
+        console.log(err);
+      }
+      const data = JSON.parse(reply)
+      let index = data.findIndex(x => x.title.toString() ===req.body.id.toString());
+     let final_data = []
+      console.log('data length',data.length,index);
+      if(index > 0){
+        let diff = data.length - index 
+        if(diff > 3){
+          final_data = data.slice(index+1,index+2)
+        }else if(diff < 3 && diff >= 1){
+          final_data = data.slice(index+1,index+diff)
+        }else{
+          //final_data.push({type:'empty',data:'No data available',_id:'no-id'})
+        }
+      } 
+    res.status(201).send({status: "success", message: "present collected",data:final_data})
+  })
+
+});
+
+
+
 //Create User
 router.post('/create_user', [
   verifyToken,
@@ -547,7 +633,15 @@ router.post('/get_chatrooms/:id', [
              return c
           })
        // console.log(x);
-          res.status(201).send({status: "success", message: "user collected",data:_.orderBy(x, ['last_updated', 'time','created_at'], ['desc', 'desc','desc'])})
+       const chatrooms = _.orderBy(x, ['last_updated', 'time','created_at'], ['desc', 'desc','desc'])
+       let finals = [...chatrooms]
+          res.status(201).send({status: "success", message: "user collected",data:finals.slice(0,10)})
+          req.redis().set('chatroom_'+req.userId,JSON.stringify(chatrooms),(err,rep)=>{
+            if(err) 
+            console.log(err);
+            console.log(rep);
+          })
+
 
         }).catch(next)
       }).catch(next)
@@ -3608,7 +3702,6 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
           a['start_time'] = a.event_id.start_date
           return a
         })
-        console.log("vee",event_booking_data)
          event_booking_data.reverse()
          booking_data = req.body.type && req.body.type === 'host' ?[...open_games,...event_booking_data,...result]:[...game,...event_booking_data,...result]
          var groupBy = (xs, key) => {
@@ -3629,7 +3722,11 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         const today_empty1 = qpast && qpast.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpast.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
         qpresent.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
         qpast.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
-        res.send({status:"success", message:"booking history fetched", data:{past:qpast,present:qpresent}})
+        let qpas = [...qpast]
+        let qprs = [...qpresent]
+        res.send({status:"success", message:"booking history fetched", data:{past:qpas.slice(qpas.length-5,qpas.length),present:qprs.slice(0,5)}})
+        req.redis().set('bookings_present_'+req.userId,JSON.stringify(qpresent))
+        req.redis().set('bookings_past_'+req.userId,JSON.stringify(qpast))
     }).catch(next)
   }).catch(next)
   }).catch(next)

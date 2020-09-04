@@ -229,7 +229,8 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
   router.post('/get_more_posts/', [
     verifyToken,
   ], (req, res, next) => {
-      const client = req.redis()  
+      const client = req.redis() 
+      console.log(req.body); 
       client.get('post_'+req.userId, function(err, reply) { 
         if(err){
           console.log(err);
@@ -245,7 +246,7 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
           }else if(diff < 4 && diff >= 1){
             final_data = data.slice(index+1,index+diff)
           }else{
-            final_data.push({type:'empty',data:'No data available'})
+            final_data.push({type:'empty',data:'No data available',_id:'no-id'})
           }
         } 
       res.status(201).send({status: "success", message: "posts collected",data:final_data})

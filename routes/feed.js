@@ -200,7 +200,12 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
           // const q =   Object.entries(a).map(([key,value])=>{
           //         return {title:key,data:value }
           //   })
-          res.status(201).send({status: "success", message: "town games collected",data:finalResult})
+          const client = req.redis()
+          client.set('post_'+req.userId, JSON.stringify(finalResult), function(err, reply) {
+            console.log('redis comeback',reply);
+          });
+          const finalData = [...finalResult]
+          res.status(201).send({status: "success", message: "town games collected",data:finalData.slice(0,4)})
   
         }).catch(next)
       }).catch(next)
@@ -217,6 +222,34 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
       res.status(201).send({status: "success", message: "alerts collected",data:alert})
       }).catch(next)
     //}).catch(next)
+  
+  });
+
+
+  router.post('/get_more_posts/', [
+    verifyToken,
+  ], (req, res, next) => {
+      const client = req.redis()  
+      client.get('post_'+req.userId, function(err, reply) { 
+        if(err){
+          console.log(err);
+        }
+        const data = JSON.parse(reply)
+        let index = data.findIndex(x => x._id.toString() ===req.body.post_id._id.toString());
+       let final_data = []
+        console.log('data length',data.length);
+        if(index > 0){
+          let diff = data.length - index 
+          if(diff > 4){
+            final_data = data.slice(index+1,index+3)
+          }else if(diff < 4 && diff >= 1){
+            final_data = data.slice(index+1,index+diff)
+          }else{
+            final_data.push({type:'empty',data:'No data available'})
+          }
+        } 
+      res.status(201).send({status: "success", message: "posts collected",data:final_data})
+    })
   
   });
 

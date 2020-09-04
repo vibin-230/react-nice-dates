@@ -45,8 +45,15 @@ mongoose.connection.once('open', function() {
 //To enable Cross-Origin Resource Sharing
 app.use(cors());
 
+app.use(function(req, res, next) {
+  req.redis = redis;
+  next();
+});
+
+
 // default options
 app.use(fileUpload());
+
 
 app.use(bodyParser.json({
   parameterLimit: 1000000,

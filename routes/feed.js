@@ -419,7 +419,7 @@ router.post('/get_more_alerts/', [
     });
 
     const finalData = [...x]
-      res.status(201).send({status: "success", message: "coin history collected",data:finalData.slice(0,4)})
+      res.status(201).send({status: "success", message: "coin history collected",data:finalData})
     }).catch(next);
   });
 
@@ -483,7 +483,7 @@ router.post('/get_more_alerts/', [
     client.set('user_activity_friend_'+req.userId, JSON.stringify(finalResult), function(err, reply) {
       console.log('redis comeback',reply);
     });
-      res.status(201).send({status: "success", message: "coin history collected",data:x.slice(0,4)})
+      res.status(201).send({status: "success", message: "coin history collected",data:x})
     }).catch(next);
   });
 

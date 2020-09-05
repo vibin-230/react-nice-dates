@@ -250,7 +250,7 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
           });
       const finalData = [...alert]
 
-      res.status(201).send({status: "success", message: "alerts collected",data:finalData})
+      res.status(201).send({status: "success", message: "alerts collected",data:finalData.slice(0,7)})
       }).catch(next)
     //}).catch(next)
   
@@ -411,15 +411,15 @@ router.post('/get_more_alerts/', [
             s['shout_line'] = x
         return s
     })
-
+    let y = x.filter((key)=> key && key.game )
 
     const client = req.redis()
-    client.set('user_activity_'+req.userId, JSON.stringify(x), function(err, reply) {
+    client.set('user_activity_'+req.userId, JSON.stringify(y), function(err, reply) {
       console.log('redis comeback',reply);
     });
 
-    const finalData = [...x]
-      res.status(201).send({status: "success", message: "coin history collected",data:finalData})
+    const finalData = [...y]
+      res.status(201).send({status: "success", message: "coin history collected",data:finalData.slice(0,4)})
     }).catch(next);
   });
 
@@ -483,7 +483,7 @@ router.post('/get_more_alerts/', [
     client.set('user_activity_friend_'+req.userId, JSON.stringify(finalResult), function(err, reply) {
       console.log('redis comeback',reply);
     });
-      res.status(201).send({status: "success", message: "coin history collected",data:x})
+      res.status(201).send({status: "success", message: "coin history collected",data:x.slice(0,4)})
     }).catch(next);
   });
 

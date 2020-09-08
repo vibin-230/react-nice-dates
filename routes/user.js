@@ -1871,7 +1871,6 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
 
     //Send Sms
     handleSlotAvailabilityForGames(values,req.socket)
-    var result = Object.values(combineSlots([...values]))
 
     Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
@@ -1888,6 +1887,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
             
           req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id},next)
           //createReport({venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,user:values[0].user_id,card:values[0].card?values[0].card:0,coins:(req.body[0].coins*req.body.length),cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
+          var result = Object.values(combineSlots([...values]))
 
         let booking_id = values[0].booking_id
         let phone = "91"+values[0].phone
@@ -1982,11 +1982,26 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
 router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
   function BookSlot(body,id){
     return new Promise(function(resolve, reject){
-      Booking.findByIdAndUpdate({_id:body._id},{booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount,coupon_amount:body.coupon_amount,coupons_used:body.coupons_used, multiple_id:id}).lean().then(booking=>{
+      Booking.find({booking_id:body.booking_id}).then(booking=>{
+
+        if(body.amount){
+          body.amount = body.amount/booking.length
+        }
+        if(body.commission){
+          body.commission = body.commission/booking.length
+        }
+        if(body.booking_amount){
+          body.booking_amount = body.booking_amount/booking.length
+        }
+        if(body.coupon_amount){
+          body.coupon_amount = body.coupon_amount/booking.length
+        }
+      Booking.updateMany({booking_id:body.booking_id},{booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount,coupon_amount:body.coupon_amount,coupons_used:body.coupons_used, multiple_id:id}).lean().then(booking=>{
         Booking.findById({_id:body._id}).lean().populate('venue_data').then(booking=>{
         resolve(booking)
       }).catch(next)
     }).catch(next)
+  }).catch(next)
     }).catch(error=>{
       reject()
     })
@@ -1999,7 +2014,6 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
   }
   Promise.all(promisesToRun).then(values => {
     // Capture the payment
-     
     var data = {
       amount:(req.body[0].booking_amount*req.body.length)*100
     }
@@ -2023,8 +2037,6 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
 
     //Send Sms
     handleSlotAvailabilityForGames(values,req.socket)
-    var result = Object.values(combineSlots([...values]))
-    console.log('hit message');
 
     Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
@@ -2041,6 +2053,7 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
                     //req && req.socket && req.socket.broadcast.emit('unread',{})
                   res.send({status:"success", message:"slot booked",data: {game:game,convo:convo}})
             
+        var result = Object.values(combineSlots([...values]))
 
         let booking_id = values[0].booking_id
         let phone = "91"+values[0].phone
@@ -2127,8 +2140,6 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
 }).catch(next)
 }).catch(next)
 }).catch(next)
-
-
     }).catch(next)
   })
 })

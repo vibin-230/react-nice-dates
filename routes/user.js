@@ -1312,8 +1312,7 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
       console.log('removed convos single by user',conversations)
         Conversation.updateMany({members:{$in:[req.params.id]}},{ $pull: { members: { $in: [req.params.id] }}},{multi:true}).then((c)=>{
       console.log('updage convos single by user',c)
-          Conversation.deleteMany({members:[]}).then((c)=>{
-      console.log('updage convos single by user',c)
+        
           
           Game.find({users:{$in:[req.params.id]},host:{$in:[req.params.id],}}).then((c)=>{
             console.log('find convos  by user',c)
@@ -1325,9 +1324,10 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
            
             Game.updateMany({host:{$in:[req.params.id]}},{ $pull: { host: { $in: [req.params.id] }}},{multi:true}).then((c)=>{
       console.log('updated game  by user',c)
-            
+      Game.find({host:[],users:[]}).then((c)=>{
+            const x  = c.length > 0 ? c.map(a=>a.conversation) : []     
                     Game.deleteMany({host:[],users:[]}).then((c)=>{
-                    Conversation.deleteMany({members:[]}).then((c)=>{
+                    Conversation.deleteMany({_id:{$in:x}}).then((c)=>{
 
                 console.log('updated game  by user',c)
 
@@ -1337,13 +1337,20 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
                       User.updateMany({following:{$in:[req.params.id]}},{ $pull:{ following: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
                          console.log('updated user  by user',c)
                         User.findOneAndDelete({_id: req.params.id}).then(user=> {
-                        Game.deleteMany({host:[]}).then((c)=>{
+                          Game.find({host:[]}).then((c)=>{
+                      const x  = c.length > 0 ? c.map(a=>a.conversation) : []     
+                          Game.deleteMany({host:[]}).then((c)=>{
+                            Conversation.deleteMany({_id:{$in:x}}).then((c)=>{
+
                           console.log('passed',c)
                           
                  res.send({status:"success", message:"user deleted",data:c})
 }).catch(next);
 }).catch(next);
 }).catch(next);
+}).catch(next);
+}).catch(next);
+
 }).catch(next);
 
 }).catch(next);

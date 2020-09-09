@@ -1311,7 +1311,10 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
       Conversation.deleteMany({type:'single',members:{$in:[req.params.id]}}).then(conversations=> {
       console.log('removed convos single by user',conversations)
         Conversation.updateMany({type:'group',members:{$in:[req.params.id]}},{ $pull: [{ members: { $in: [req.params.id] }},{ host: { $in: [req.params.id] }}] },{multi:true}).then((c)=>{
-      console.log('updated convos  by user',c)
+          Game.find({users:{$in:[req.params.id]},host:{$in:[req.params.id],}}).then((c)=>{
+            console.log('find convos  by user',c)
+            console.log('find convos  by user',c.length)
+
          
           Game.updateMany({users:{$in:[req.params.id]}},{ $pull: { users: { $in: [req.params.id] }}},{multi:true}).then((c)=>{
       console.log('updated game  by user',c)
@@ -1319,11 +1322,8 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
             Game.updateMany({host:{$in:[req.params.id]}},{ $pull: { host: { $in: [req.params.id] }}},{multi:true}).then((c)=>{
       console.log('updated game  by user',c)
             
-              Game.find({host:[],users:[]}).then((c)=>{
-                
-      console.log('updated game  by user',c)
-      Game.deleteMany({host:[],users:[]}).then((c)=>{
-        console.log('updated game  by user',c)
+                    Game.deleteMany({host:[],users:[]}).then((c)=>{
+                console.log('updated game  by user',c)
 
                 User.updateMany({followers:{$in:[req.params.id]}},{ $pull:{ followers: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
                   User.updateMany({requests:{$in:[req.params.id]}},{ $pull:{ requests: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
@@ -1331,13 +1331,15 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
                       User.updateMany({following:{$in:[req.params.id]}},{ $pull:{ following: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
                          console.log('updated user  by user',c)
                         User.findOneAndDelete({_id: req.params.id}).then(user=> {
-                        Game.find({host:[]}).then((c)=>{
+                        Game.deleteMany({host:[]}).then((c)=>{
                           console.log('passed',c)
-                 res.send({status:"success", message:"user deleted",data:{user:user,post:posts,alerts:alerts,game:games,conversation:conversations}})
+                          
+                 res.send({status:"success", message:"user deleted",data:c})
 }).catch(next);
 }).catch(next);
 }).catch(next);
 }).catch(next);
+
 }).catch(next);
 }).catch(next);
 }).catch(next);

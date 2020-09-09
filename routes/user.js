@@ -1311,6 +1311,8 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
       Conversation.deleteMany({type:'single',members:{$in:[req.params.id]}}).then(conversations=> {
       console.log('removed convos single by user',conversations)
         Conversation.updateMany({type:'group',members:{$in:[req.params.id]}},{ $pull: [{ members: { $in: [req.params.id] }},{ host: { $in: [req.params.id] }}] },{multi:true}).then((c)=>{
+        Conversation.updateMany({type:'game',members:{$in:[req.params.id]}},{ $pull: [{ members: { $in: [req.params.id] }},{ host: { $in: [req.params.id] }}] },{multi:true}).then((c)=>{
+          
           Game.find({users:{$in:[req.params.id]},host:{$in:[req.params.id],}}).then((c)=>{
             console.log('find convos  by user',c)
             console.log('find convos  by user',c.length)
@@ -1323,6 +1325,8 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
       console.log('updated game  by user',c)
             
                     Game.deleteMany({host:[],users:[]}).then((c)=>{
+                    Conversation.deleteMany({members:[]}).then((c)=>{
+
                 console.log('updated game  by user',c)
 
                 User.updateMany({followers:{$in:[req.params.id]}},{ $pull:{ followers: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
@@ -1341,12 +1345,16 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
 }).catch(next);
 
 }).catch(next);
+
 }).catch(next);
 }).catch(next);
 }).catch(next);
 }).catch(next);
 }).catch(next);
 }).catch(next);
+}).catch(next);
+}).catch(next);
+
 }).catch(next);
 }).catch(next);
 }).catch(next);

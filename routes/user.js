@@ -1285,18 +1285,32 @@ router.post('/token',verifyToken, AccessControl('users', 'update'), (req, res, n
 //Delete User
 router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), (req, res, next) => {
  Post.updateMany({shout_out:{$in:[req.params.id]}},{ $pull: { shout_out: { $in: [req.params.id] }} },{multi:true}).then((postss)=>{
- Post.deleteMany({created_by:req.params.id}).then(posts=> {
+  console.log('removed shout outs from posts',postss.length)
+  Post.deleteMany({created_by:req.params.id}).then(posts=> {
+  console.log('removed posts',posts)
   Alert.deleteMany({user:req.params.id}).then(alerts=> {
+  console.log('removed alerts with user',alerts)
     Alert.deleteMany({created_by:req.params.id}).then(alerts=> {
+    console.log('removed alerts created by user',alerts)
       Conversation.deleteMany({type:'single',members:{$in:[req.params.id]}}).then(conversations=> {
+      console.log('removed convos single by user',conversations)
         Conversation.updateMany({type:'group',members:{$in:[req.params.id]}},{ $pull: [{ members: { $in: [req.params.id] }},{ host: { $in: [req.params.id] }}] },{multi:true}).then((c)=>{
+      console.log('updated convos  by user',c.length)
+         
           Game.updateMany({users:{$in:[req.params.id]}},{ $pull: [{ users: { $in: [req.params.id] }},{ host: { $in: [req.params.id] }}] },{multi:true}).then((c)=>{
+      console.log('updated game  by user',c.length)
+           
             Game.updateMany({host:{$in:[req.params.id]}},{ $pull: [{ users: { $in: [req.params.id] }},{ host: { $in: [req.params.id] }}] },{multi:true}).then((c)=>{
+      console.log('updated game  by user',c.length)
+            
               Game.deleteMany({host:[],users:[]}).then((c)=>{
+      console.log('updated game  by user',c)
+
                 User.updateMany({followers:{$in:[req.params.id]}},{ $pull:{ followers: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
                   User.updateMany({requests:{$in:[req.params.id]}},{ $pull:{ requests: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
                     User.updateMany({sent_requests:{$in:[req.params.id]}},{ $pull:{ sent_requests: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
                       User.updateMany({following:{$in:[req.params.id]}},{ $pull:{ following: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
+                         console.log('updated user  by user',c)
                         User.findOneAndDelete({_id: req.params.id}).then(user=> {
                         Game.updateMany({host:[]},{$set:{host:["$users[0]"]}}).then((c)=>{
                           console.log('passed',c)

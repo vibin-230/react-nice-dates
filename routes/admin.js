@@ -1093,7 +1093,7 @@ router.post('/search',
 	(req, res, next) => {
 	User.find({$and:[{_id:{$nin:[req.userId]}},{ $or: [{"name":{ "$regex": req.body.search, "$options": "i" }}, {"handle":{ "$regex": req.body.search, "$options": "i" }}]}]},{__v:0,token:0,otp:0,activity_log:0}).then(user=>{
 		Venue.find({"venue.name":{ "$regex": req.body.search, "$options": "i" }}).then(venue=>{
-		Event.find({"event.name":{ "$regex": req.body.search, "$options": "i" },"event.start_date":{$gte:new Date()}}).lean().populate('venue').then(event=>{
+		Event.find({"event.name":{ "$regex": req.body.search, "$options": "i" },"start_date":{$gte:new Date()}}).lean().populate('venue').then(event=>{
 			Offers.find({}).then(offers=>{
 			let combinedResult
 			let list = []

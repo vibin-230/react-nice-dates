@@ -606,7 +606,7 @@ router.post('/get_chatrooms/:id', [
             let user = {}
             c['time'] = 0
             c['exit'] = false
-            c['validity'] =  moment().format('YYYYMMDDHHmm') > moment(c.end_time).format('YYYYMMDDHHmm') 
+            c['validity'] = c.type==='game' && moment().format('YYYYMMDDHHmm')  > moment(c.end_time).subtract(330,"minutes").format('YYYYMMDDHHmm')  
             if(exit_convo_list && exit_convo_list.length > 0 && c.exit_list && c.exit_list.length > 0){
               const x =  exit_convo_list.filter((e)=> e.exit_list && c.exit_list.length>0 && e._id.toString() === c._id.toString())
               user  =  x.length > 0 ? x[0].exit_list.filter((e)=>{
@@ -1284,22 +1284,25 @@ router.post('/token',verifyToken, AccessControl('users', 'update'), (req, res, n
 
 //Delete User
 router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), (req, res, next) => {
-
-  Post.updateMany({shout_out:{$in:[req.params.id]}},{ $pull: { shout_out: { $in: [req.params.id] }} },{multi:true}).then((postss)=>{
-Post.deleteMany({created_by:req.params.id}).then(posts=> {
-    Alert.deleteMany({user_id:req.params.id}).then(alerts=> {
+ Post.updateMany({shout_out:{$in:[req.params.id]}},{ $pull: { shout_out: { $in: [req.params.id] }} },{multi:true}).then((postss)=>{
+ Post.deleteMany({created_by:req.params.id}).then(posts=> {
+  Alert.deleteMany({user:req.params.id}).then(alerts=> {
+    Alert.deleteMany({created_by:req.params.id}).then(alerts=> {
       Conversation.deleteMany({type:'single',members:{$in:[req.params.id]}}).then(conversations=> {
         Conversation.updateMany({type:'group',members:{$in:[req.params.id]}},{ $pull: [{ members: { $in: [req.params.id] }},{ host: { $in: [req.params.id] }}] },{multi:true}).then((c)=>{
           Game.updateMany({users:{$in:[req.params.id]}},{ $pull: [{ users: { $in: [req.params.id] }},{ host: { $in: [req.params.id] }}] },{multi:true}).then((c)=>{
-             Game.deleteMany({host:[]}).then((c)=>{
-              User.updateMany({followers:{$in:[req.params.id]}},{ $pull:{ followers: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
+            Game.updateMany({host:{$in:[req.params.id]}},{ $pull: [{ users: { $in: [req.params.id] }},{ host: { $in: [req.params.id] }}] },{multi:true}).then((c)=>{
+              Game.deleteMany({host:[],users:[]}).then((c)=>{
                 User.updateMany({followers:{$in:[req.params.id]}},{ $pull:{ followers: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
                   User.updateMany({requests:{$in:[req.params.id]}},{ $pull:{ requests: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
                     User.updateMany({sent_requests:{$in:[req.params.id]}},{ $pull:{ sent_requests: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
-                     User.updateMany({following:{$in:[req.params.id]}},{ $pull:{ following: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
-                User.findOneAndDelete({_id: req.params.id}).then(user=> {
-
-                 res.send({status:"success", message:"user deleted"})
+                      User.updateMany({following:{$in:[req.params.id]}},{ $pull:{ following: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
+                        User.findOneAndDelete({_id: req.params.id}).then(user=> {
+                        Game.updateMany({host:[]},{$set:{host:["$users[0]"]}}).then((c)=>{
+                          console.log('passed',c)
+                 res.send({status:"success", message:"user deleted",data:{user:user,post:posts,alerts:alerts,game:games,conversation:conversations}})
+}).catch(next);
+}).catch(next);
 }).catch(next);
 }).catch(next);
 }).catch(next);
@@ -1360,7 +1363,8 @@ router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
               game1["rating"] = venue.rating
               game1['final'] = _.xor(game1.users,game1.host)
               game1["conversation"] = convo
-              game1['validity'] =  moment().format('YYYYMMDDHHmm') > moment(game1.bookings[game1.bookings.length-1].end_time).format('YYYYMMDDHHmm') 
+             // console.log('endtime',game1.bookings[game1.bookings.length-1].end_time,moment().format('YYYYMMDDHHmm'),moment(game1.bookings[game1.bookings.length-1].end_time).subtract(330,"minutes").format('YYYYMMDDHHmm') );
+              game1['validity'] =  moment().format('YYYYMMDDHHmm') > moment(game1.bookings[game1.bookings.length-1].end_time).subtract(330,"minutes").format('YYYYMMDDHHmm') 
               res.send({status:"success", message:"game_fetched",data:game1})
 
             })
@@ -1371,14 +1375,16 @@ router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
 
 
 router.post('/get_group_info',verifyToken, (req, res, next) => {
-  Conversation.findById({_id:req.body.conversation_id}).populate('members','_id name device_token profile_picture handle name_status visibility').populate('host','_id name profile_picture phone handle name_status visibility').then((convo)=>{
-    User.find({_id:convo.created_by}).select('name -_id').then(user=>{
-      Message.find({$and:[{ "image": { $exists: true, $ne: null }},{conversation:req.body.conversation_id},{type:"image"} ]}).distinct("image").then((image)=>{
+  Conversation.findById({_id:req.body.conversation_id}).lean().populate('members','_id name device_token profile_picture handle name_status visibility').populate('host','_id name profile_picture phone handle name_status visibility').then((convo)=>{
+   
+   const filter = convo.join_date.filter((a)=>a.user_id.toString() === req.userId.toString())
+   const query = filter.length > 0 ? {created_at:{$gte:filter[filter.length-1].join_date}} : {}
+   User.find({_id:convo.created_by}).select('name -_id').then(user=>{
+      Message.find({$and:[{ "image": { $exists: true, $ne: null }},{conversation:req.body.conversation_id},{type:"image"},query ]}).distinct("image").then((image)=>{
     Message.find({$and:[{ "game": { $exists: true, $ne: null }},{conversation:req.body.conversation_id}]}).distinct("game").then((games)=>{
      Game.find({_id:{ $in: games}}).populate('conversation').lean().then(gameinfo=>{
       let activities = gameinfo.map((key)=>key.sport_name)
       let uninque_activity = [...new Set(activities)]
-      console.log("convo",convo)
       let data =[{name:user,game:gameinfo,activities:uninque_activity,image:image.reverse(),convo:convo}]
       res.send({status:"sucess",message:"activity fetched",data:data})  
      })

@@ -85,11 +85,15 @@ module.exports = function () {
       
       return Message.insertMany(messages).then(message1=>{
               return Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},{last_message:message1[message1.length-1]._id,last_updated:new Date()}).then(conversation=>{
-                notifyParticularUsers(convo,messages1,client)
+               return Conversation.findById({_id:message1[message1.length-1].conversation}).populate('members','_id name device_token profile_picture handle name_status').then((convo1)=>{
+                console.log('hit asldkjasldkjalsdkajsldkaj')
+                notifyParticularUsers(convo1,messages1,client)
                 return 'pass'
              }).catch((e)=>{console.log(e)});
              }).catch((e)=>{console.log(e)});
              }).catch((e)=>{console.log(e)});
+            }).catch((e)=>{console.log(e)});
+
      return x
   }
 
@@ -97,7 +101,6 @@ module.exports = function () {
   async function checkIfUserExited(chatroomName){
     const filter  = chatroomName && chatroomName._id ? {_id:chatroomName._id,type:'single'} :{$or:[{members:chatroomName.members,type:'single'},{members:[chatroomName.members[1],chatroomName.members[0]],type:'single'}]}
     const s = await Conversation.find(filter).limit(1).lean().then(ec=>{
-      console.log(ec[0]);
       if(ec && ec.length > 0){
         const existingConversation = ec[0]
         const exit_user_id = existingConversation && existingConversation.exit_list.length > 0 ? existingConversation.exit_list[existingConversation.exit_list.length-1].user_id : []
@@ -262,7 +265,7 @@ module.exports = function () {
       })
 
        User.find({_id: {$in : filter}},{activity_log:0}).lean().then(user=> {
-        const final_user  = user.filter((u)=> u.mute.filter((u)=>u.toString() === chatroom._id.toString()).length <= 0)
+          const final_user  = user.filter((u)=> u.mute.filter((u)=>u.toString() === chatroom._id.toString()).length <= 0)
         console.log(final_user.length,chatroom._id.toString());
         if(Array.isArray(message)){
           const s = message.length > 1 ?'s':''
@@ -277,6 +280,8 @@ module.exports = function () {
 
         }
       }).catch((e)=>console.log(e))
+    
+
     }
 
     function updateImage(message){

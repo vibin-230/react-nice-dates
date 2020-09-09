@@ -1310,8 +1310,10 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
     console.log('removed alerts created by user',alerts)
       Conversation.deleteMany({type:'single',members:{$in:[req.params.id]}}).then(conversations=> {
       console.log('removed convos single by user',conversations)
-        Conversation.updateMany({type:'group',members:{$in:[req.params.id]}},{ $pull: [{ members: { $in: [req.params.id] }},{ host: { $in: [req.params.id] }}] },{multi:true}).then((c)=>{
-        Conversation.updateMany({type:'game',members:{$in:[req.params.id]}},{ $pull: [{ members: { $in: [req.params.id] }},{ host: { $in: [req.params.id] }}] },{multi:true}).then((c)=>{
+        Conversation.updateMany({members:{$in:[req.params.id]}},{ $pull: { members: { $in: [req.params.id] }}},{multi:true}).then((c)=>{
+      console.log('updage convos single by user',c)
+          Conversation.deleteMany({members:[]}).then((c)=>{
+      console.log('updage convos single by user',c)
           
           Game.find({users:{$in:[req.params.id]},host:{$in:[req.params.id],}}).then((c)=>{
             console.log('find convos  by user',c)

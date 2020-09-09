@@ -141,14 +141,13 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
       // const filter = req.body.sport === 'all' ? { created_by: { $in: following } ,town:true, host:{ $in: following },start_time:{$gte:date2}} :{ created_by: { $in: following } ,town:true,sport_name:{$in:req.body.sport}, host:{ $in: following }, start_time:{$gte:date}}
       const filter1 = req.body.sport === 'all'? { $or:[{created_by: { $in: following } ,status:true,start_time:{$gte:date2}},{shout_out: { $in: following },start_time:{$gte:date2},status:true}]} : { $or:[{created_by: { $in: following } ,status:true,sport_name:{$in:req.body.sport},start_time:{$gte:date2}},{shout_out: { $in: following },start_time:{$gte:date2},status:true,sport_name:{$in:req.body.sport}}]}   
       //Game.find(filter).lean().populate('conversation').populate('host','_id name profile_picture phone handle name_status').populate("venue","venue").populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone').then(existingConversation=>{
-      Post.find(filter1).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate({path:"event",populate:{path:"venue",select:"venue"}}).populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then((posts)=>{
-        Post.find({shout_out: { $in: [req.params.id] } ,status:true}).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate({path:"event",populate:{path:"venue",select:"venue"}}).populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then((shouted_posts)=>{
+      Post.find(filter1).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate({path:"event",populate:{path:"venue"}}).populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then((posts)=>{
+        Post.find({shout_out: { $in: [req.params.id] } ,status:true}).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate({path:"event",populate:{path:"venue"}}).populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then((shouted_posts)=>{
 
         // existingConversation.map((key)=>{
         //  key["venue"] = key.venue.venue
         // })
         // c is req.userId  
-
 
 
         let x = posts.map((s)=>{
@@ -167,9 +166,11 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
               }else{
                 s['shout_out_status'] = false
               }
-              var array3 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter((obj)=> following.filter(a=>a.toString() === obj._id.toString()).length > 0  ):[]
+              var array3 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out:[]
+              // .filter((obj)=> following.filter(a=>a.toString() === obj._id.toString()).length > 0  )
               //var array4 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter((obj)=> following.indexOf(obj._id.toString()) !== -1 ):[]
             // let as = array3.filter((a)=>a._id.toString() === s.created_by._id.toString())
+            console.log("ffffw",array3,s.shout_out)
               var string_array = array3.length > 0  ? array3.map((a)=>a.name_status ? a.name.trim() : a.handle.trim()):[]
               let x = ''
               if(string_array.length === 1){
@@ -187,7 +188,8 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
                 s['shout_line'] = x
                 s['zcode'] = zcode
             return s
-        }).filter(a => a && a.game)
+        })
+        // .filter(a => a && a.game)
           // var groupBy = (xs, key) => {
           //   return xs.reduce((rv, x) =>{
           //     (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
@@ -205,7 +207,7 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
             console.log('redis comeback',reply);
           });
           const finalData = [...finalResult]
-          res.status(201).send({status: "success", message: "town games collected",data:finalData.slice(0,4)})
+          res.status(201).send({status: "success", message: "town games collected",data:finalData})
   
         }).catch(next)
       }).catch(next)
@@ -250,7 +252,7 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
           });
       const finalData = [...alert]
 
-      res.status(201).send({status: "success", message: "alerts collected",data:finalData.slice(0,7)})
+      res.status(201).send({status: "success", message: "alerts collected",data:finalData})
       }).catch(next)
     //}).catch(next)
   
@@ -419,7 +421,7 @@ router.post('/get_more_alerts/', [
     });
 
     const finalData = [...y]
-      res.status(201).send({status: "success", message: "coin history collected",data:finalData.slice(0,4)})
+      res.status(201).send({status: "success", message: "coin history collected",data:finalData})
     }).catch(next);
   });
 

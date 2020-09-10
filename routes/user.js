@@ -53,7 +53,7 @@ const Ads = require('../models/ads')
 const Invoice = require('../models/Invoice')
 const Message = require('../models/message')
 const Coins = require('../models/coins')
-
+const Experience = require('./../models/experience')
 const Contacts = require('../models/contacts')
 const send_message_otp = require('../helper/send_message_otp')
 const notify = require('../scripts/Notify')
@@ -582,6 +582,36 @@ router.post('/get_following/:id', [
 
 });
 
+router.post('/friend_get_following/:id', [
+  verifyToken,
+], (req, res, next) => {
+  let game_completed_count = 0
+  let mvp_count = 0
+  User.findOne({_id:req.params.id},{activity_log:0}).populate("followers","name _id handle name_status profile_picture").populate("following","name _id handle name_status profile_picture").lean().then(user1 => {
+    Experience.find({user:req.params.id}).then(exp=>{
+    Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
+
+      game_completed_count = game && game.length > 0 ? game.length : 0
+      const aw = game && game.length > 0 && game.filter((a)=>{
+       let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0
+       mvp_count = mvp_count + f
+       return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length>0
+      })
+      user1.game_completed = game_completed_count
+      user1.mvp_count = mvp_count
+      user1.level =  getLevel(250 * mvp_count + 100 * game_completed_count)
+      user1.experience = exp
+    if(user1){
+    res.status(201).send({status: "success", message: "user collected",data:[user1]})
+    }
+    else {
+      res.status(201).send({status: "success", message: "user collected",data:[]})
+    }
+  }).catch(next)
+  }).catch(next);
+}).catch(next)
+
+});
 
 
 
@@ -1897,7 +1927,6 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
     var data = {
       amount:(req.body[0].booking_amount*req.body.length)*100
     }
-
 
    console.log('razorpay api',process.env.RAZORPAY_API)
    console.log('transaction api',values)
@@ -3736,7 +3765,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
 
   //req.role==="super_admin"?delete filter.created_by:null
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
-    EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
+    EventBooking.find(eventFilter).lean().populate({path:"event_id",populate:{path:"venue"}}).then(eventBooking=>{
       Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate('venue','venue'). populate("host","name _id handle name_status profile_picture").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
         result = Object.values(combineSlots(booking))
         const open_games = game.filter((g)=>{
@@ -4464,7 +4493,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
             }
             EventBooking.create(booking_data).then(eventBooking=>{
               //EventBooking.findOne({'booking_id':eventBooking.booking_id})
-              EventBooking.findOne({'booking_id':eventBooking.booking_id}).lean().populate('event_id').then(bookingOrder=>{
+              EventBooking.findOne({'booking_id':eventBooking.booking_id}).lean().populate({path:"event_id",populate:{path:"venue"}}).then(bookingOrder=>{
                 if(req.body.free_event){
                   res.send({status:"success", message:"event booked", data:bookingOrder})
                 }else{

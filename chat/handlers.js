@@ -90,16 +90,16 @@ module.exports = function (client, clientManager, chatroomManager,io) {
 
    }
    else if(chatroomName.type === 'kick_player'){
-    x  = await chatroomManager.kickPlayer(chatroomName,io)
-    client.to(chatroomName.convo_id).emit('unread',{})
+    x  = await chatroomManager.kickPlayer(chatroomName,io,client)
+    //client.to(chatroomName.convo_id).emit('unread',{})
 
  }
     else{
       x  = await chatroomManager.leaveChatroom(chatroomName,io)
     }
-    x.forEach((clientId)=>{
-      const client =  clientManager.getClient(clientId)
-     })
+    // x.forEach((clientId)=>{
+    //   const client =  clientManager.getClient(clientId)
+    //  })
     callback()
 
   }

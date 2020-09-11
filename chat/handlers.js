@@ -85,6 +85,10 @@ module.exports = function (client, clientManager, chatroomManager,io) {
        x  = await chatroomManager.leaveChatroomGroup(chatroomName,io)
 
     }
+    if(chatroomName.type === 'delete'){
+      x  = await chatroomManager.deleteChatroom(chatroomName,io)
+
+   }
      else if(chatroomName.type === 'game_without_game_id'){
       x  = await chatroomManager.leaveChatroomWithConversationId(chatroomName,io)
 

@@ -3792,8 +3792,9 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
          return g.share_type === 'open' || (g.share_type === 'closed' && g.host.some(key=>key._id.toString() === req.userId.toString()))
         })
         
-        let event_booking_data = eventBooking.map((a)=>{
+        let event_booking_data = eventBooking.filter(a => a.event_id).map((a)=>{
           a['start_time'] = a.event_id.start_date
+          a['event'] = a.event_id
           return a
         })
          event_booking_data.reverse()

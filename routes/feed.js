@@ -120,11 +120,11 @@ router.post('/activity/:id', verifyToken, (req, res, next) => {
 })
 
 function getZcode(hours_bfore_game,share,shout_out,hr_since_post,distance,players,joins){
-  return (50 * share) - (hours_bfore_game*100)  + (50 * shout_out) - (10 * hr_since_post) - (distance * 1) + (players / 10) + (30 * joins)
+  return (50 * share) - (hours_bfore_game*100)  + (50 * shout_out) - (2 * hr_since_post) - (distance * 1) + (players / 10) + (30 * joins)
 }
 
 function getTimeToGame(hours_bfore_game){
-const dateOneObj = new Date();
+const dateOneObj =new Date();
 const dateTwoObj = new Date(hours_bfore_game);
 const milliseconds = Math.abs(dateTwoObj - dateOneObj);
 return Math.round(milliseconds / 36e5);
@@ -141,7 +141,7 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
       // const filter = req.body.sport === 'all' ? { created_by: { $in: following } ,town:true, host:{ $in: following },start_time:{$gte:date2}} :{ created_by: { $in: following } ,town:true,sport_name:{$in:req.body.sport}, host:{ $in: following }, start_time:{$gte:date}}
       const filter1 = req.body.sport === 'all'? { $or:[{created_by: { $in: following } ,status:true,start_time:{$gte:date2}},{shout_out: { $in: following },start_time:{$gte:date2},status:true}]} : { $or:[{created_by: { $in: following } ,status:true,sport_name:{$in:req.body.sport},start_time:{$gte:date2}},{shout_out: { $in: following },start_time:{$gte:date2},status:true,sport_name:{$in:req.body.sport}}]}   
       //Game.find(filter).lean().populate('conversation').populate('host','_id name profile_picture phone handle name_status').populate("venue","venue").populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone').then(existingConversation=>{
-      Post.find(filter1).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate({path:"event",populate:{path:"venue"}}).populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then((posts)=>{
+      Post.find(filter1).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate({path:"event",populate:{path:"venue"}}).populate('created_by','_id name profile_picture phone handle name_status visibility').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then((posts)=>{
         Post.find({shout_out: { $in: [req.params.id] } ,status:true}).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate({path:"event",populate:{path:"venue"}}).populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then((shouted_posts)=>{
 
         // existingConversation.map((key)=>{
@@ -151,7 +151,7 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
 
 
         let x = posts.map((s)=>{
-          const hours_bfore_game = getTimeToGame(s.start_time)
+          const hours_bfore_game = getTimeToGame(s.start_time)-5
           const share = user && user.following && user.following.some((a)=> a.toString() === s.created_by._id.toString()) ? 1 : 0
           const shout_out_count = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.length : 0
           const hr_since_post = getTimeToGame(s.created_at)
@@ -159,7 +159,8 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
           const users = s && s.game && s.game.users && s.game.users.length > 0 ? s.game.users.map((a)=>a._id).filter((a1)=> following.some((a)=> a.toString() === a1.toString())) : []
           const common_friends_count_in_the_game = users
           const zcode = getZcode(hours_bfore_game,share,shout_out_count,hr_since_post,1,players,users.length)
-          //console.log('hrs before game ',s.game.name,hours_bfore_game,share,shout_out_count,hr_since_post,1,players,users.length,'zcode:',zcode,s.start_time,s.created_at,new Date());
+          // console.log("ssss")
+          // console.log('hrs before game ',s.message,hours_bfore_game,share,shout_out_count,hr_since_post,1,players,users.length,'zcode:',zcode,s.start_time,s.created_at,new Date());
             if( s && s.shout_out && s.shout_out.length>0 && s.shout_out.filter((a)=>a._id.toString() === req.userId.toString()).length > 0){
                 s['shout_out_status'] = true
                 
@@ -170,7 +171,6 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
               // .filter((obj)=> following.filter(a=>a.toString() === obj._id.toString()).length > 0  )
               //var array4 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter((obj)=> following.indexOf(obj._id.toString()) !== -1 ):[]
             // let as = array3.filter((a)=>a._id.toString() === s.created_by._id.toString())
-            console.log("ffffw",array3,s.shout_out)
               var string_array = array3.length > 0  ? array3.map((a)=>a.name_status ? a.name.trim() : a.handle.trim()):[]
               let x = ''
               if(string_array.length === 1){
@@ -226,7 +226,6 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
         const data = JSON.parse(reply)
         let index = req.body && req.body.post_id && req.body.post_id._id ?  data.findIndex(x => x._id.toString() ===req.body.post_id._id.toString()) : -1 ;
        let final_data = []
-        console.log('data length',data.length);
         if(index > 0){
           let diff = data.length - index 
           if(diff > 4){
@@ -263,7 +262,7 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
           });
       const finalData = [...y]
 
-      res.status(201).send({status: "success", message: "alerts collected",data:finalData})
+      res.status(201).send({status: "success", message: "alerts collected",data:finalData.slice(0,4)})
       }).catch(next)
     //}).catch(next)
   
@@ -278,14 +277,15 @@ router.post('/get_more_alerts/', [
           console.log(err);
         }
         const data = JSON.parse(reply)
+        console.log("Rewww",req.body.alert,data.length)
         let index = data.findIndex(x => x._id.toString() ===req.body.alert.toString());
        let final_data = []
         console.log('data length',data.length);
         if(index > 0){
           let diff = data.length - index 
-          if(diff > 7){
-            final_data = data.slice(index+1,index+6)
-          }else if(diff < 6 && diff >= 1){
+          if(diff > 4){
+            final_data = data.slice(index+1,index+3)
+          }else if(diff < 4 && diff >= 1){
             final_data = data.slice(index+1,index+diff)
           }else{
             final_data.push({type:'empty',data:'No data available',_id:'no-id'})
@@ -398,7 +398,7 @@ router.post('/get_more_alerts/', [
   
 
 
-    Post.find({created_by:req.params.id}).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate({path:"event",populate:{path:"venue",select:"venue"}}).populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then((posts)=>{
+    Post.find({created_by:req.params.id}).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate({path:"event",populate:{path:"venue"}}).populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue'}] }).then((posts)=>{
       let x = posts.map((s)=>{
         if( s && s.shout_out && s.shout_out.length>0 && s.shout_out.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0){
             s['shout_out_status'] = true
@@ -424,7 +424,8 @@ router.post('/get_more_alerts/', [
             s['shout_line'] = x
         return s
     })
-    let y = x.filter((key)=> key && key.game )
+    let y = x
+    // .filter((key)=> key && key.game )
 
     const client = req.redis()
     client.set('user_activity_'+req.userId, JSON.stringify(y), function(err, reply) {
@@ -432,7 +433,7 @@ router.post('/get_more_alerts/', [
     });
 
     const finalData = [...y]
-      res.status(201).send({status: "success", message: "coin history collected",data:finalData})
+      res.status(201).send({status: "success", message: "user post activity",data:finalData.slice(0,4)})
     }).catch(next);
   });
 

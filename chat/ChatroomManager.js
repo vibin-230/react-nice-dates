@@ -917,7 +917,6 @@ return x
         conversation.members = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())
         conversation.host = conversation.host.filter((m)=> m.toString() !== game1.user_id.toString()).length > 0 ? conversation.host.filter((m)=> m.toString() !== game1.user_id.toString()) : [conversation.members[0]]
         conversation.exit_list = conversation.exit_list.concat({user_id:game1.user_id,timeStamp:new Date(),message:{ conversation: conversation._id, message: `${user.name} ${game1 && game1.status && game1.status === 'terminate' ? 'has been removed':'has left the club'}`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() }})
-
           if((conversation.type === 'single' || conversation.type === 'group') && conversation.members.length <= 0){
             return Conversation.findByIdAndDelete({ _id: game1.convo_id }).then(conversation2 => {
               return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token').then(conversation2 => {

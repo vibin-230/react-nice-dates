@@ -456,6 +456,31 @@ module.exports = function () {
     }
 
 
+    async function sendMessageOnetoMany(conversation_filter,message,user,client){
+      //const convo = typeof(conversation) == "string" ? conversation : conversation._id
+     const x = await  Conversation.find({$or:conversation_filter}).then(conversation1=> {
+      let finalMessages = conversation1.map((nc)=>{ return {conversation:nc._id,message:message.message,name:message.name,read_status:false,author:message.author,type:message.type,created_at:new Date()}}) 
+      return Message.insertMany(finalMessages).then(message1=>{ 
+        const message_ids = message1.map((m)=>m._id)
+        return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id handle name_status').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
+          const cids = m.map((entry)=>{
+            const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id :entry.conversation
+            client.to(id).emit('new',entry)
+            return m.conversation
+          })
+      return Conversation.updateMany({$or:conversation_filter},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
+        const device_token_list=user.map((e)=>e.device_token)
+                                      NotifyArray(device_token_list,message.message,'Turftown profile')
+                                        return 'sent'
+       }).catch((e)=>console.log(e));
+      }).catch((e)=>console.log(e));
+    }).catch((e)=>console.log(e));
+  }).catch((e)=>console.log(e));
+      // }).catch((e)=>console.log(e));
+      return 'pass'
+      }
+
+
     async function sendGroupInvites(game_id,conversation,group_ids,user_id,name,town,client){
     const convo = typeof(conversation) == "string" ? conversation : conversation._id
     const x = await Conversation.find({_id: {$in : group_ids}}).populate('members','_id name device_token handle name_status').lean().then(conversation1=> {
@@ -974,6 +999,7 @@ return x
     leaveChatroomGroup,
     notifyOtherUsers,
     notifyAllUsers,
+    sendMessageOnetoMany,
     registerExitedUser,
     saveMessage,
     saveMessages,

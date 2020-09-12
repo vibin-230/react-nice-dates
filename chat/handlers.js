@@ -321,6 +321,12 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
     client.to(chatroomName._id).emit('typing',message)
     return callback()
   }
+  async function handleSendMultiple({ conversation_list, message,users } = {}, callback) {
+    //client.to(chatroomName._id).emit('typing',message)
+    const x = await chatroomManager.sendMessageOnetoMany(conversation_list,message,users,client)
 
-  return {handleSendBroadcast,handleSlotAvailabilityDueToCancellation,handleSlotAvailability,handleLeaveChatrooms,handleUpdateGroup,handleUpdateParams,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames,handleProfileAlerts,handleEventInvites}
+    return callback()
+  }
+
+  return {handleSendBroadcast,handleSlotAvailabilityDueToCancellation,handleSlotAvailability,handleLeaveChatrooms,handleUpdateGroup,handleUpdateParams,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames,handleProfileAlerts,handleEventInvites,handleSendMultiple}
 }

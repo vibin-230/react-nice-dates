@@ -91,6 +91,7 @@ io.on('connection', function (client) {
     handleMessage,
     handleGetChatrooms,
     handleLeaveChatrooms,
+    handleSendMultiple,
     handleGetAvailableUsers,
     handleMessageGames,
     handleSlotAvailability,
@@ -128,6 +129,8 @@ io.on('connection', function (client) {
   client.on('availableUsers', handleGetAvailableUsers)
 
   client.on('invite', handleInvites)
+  client.on('send_many', handleSendMultiple)
+
   client.on('event_invite', handleEventInvites)
   client.on('typing', handleTyping)
   client.on('handleSlotAvailability',handleSlotAvailability)
@@ -135,6 +138,7 @@ io.on('connection', function (client) {
   client.on('profile_alerts',handleProfileAlerts)
   client.on('disconnect', function () {
     console.log('client disconnect...', client.id)
+    
     handleDisconnect(token)
   })
   client.on('disconnect1',function(){

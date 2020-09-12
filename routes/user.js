@@ -587,10 +587,11 @@ router.post('/friend_get_following/:id', [
 ], (req, res, next) => {
   let game_completed_count = 0
   let mvp_count = 0
+  const filter  = {$or:[{members:[req.userId,req.params.id],type:'single'},{members:[req.params.id,req.userId],type:'single'}]}
+  Conversation.find(filter).limit(1).lean().then(ec=>{
   User.findOne({_id:req.params.id},{activity_log:0}).populate("followers","name _id handle name_status profile_picture").populate("following","name _id handle name_status profile_picture").lean().then(user1 => {
     Experience.find({user:req.params.id}).then(exp=>{
     Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
-
       game_completed_count = game && game.length > 0 ? game.length : 0
       const aw = game && game.length > 0 && game.filter((a)=>{
        let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0
@@ -601,6 +602,7 @@ router.post('/friend_get_following/:id', [
       user1.mvp_count = mvp_count
       user1.level =  getLevel(250 * mvp_count + 100 * game_completed_count)
       user1.experience = exp
+      user1.past_conversation = ec && ec.length > 0
     if(user1){
     res.status(201).send({status: "success", message: "user collected",data:[user1]})
     }
@@ -608,6 +610,8 @@ router.post('/friend_get_following/:id', [
       res.status(201).send({status: "success", message: "user collected",data:[]})
     }
   }).catch(next)
+}).catch(next)
+
   }).catch(next);
 }).catch(next)
 
@@ -627,6 +631,20 @@ router.post('/get_follow_following', [
 
     }).catch(next);
   }).catch(next);
+});
+
+router.post('/check_if_past_convo/:id', [
+  verifyToken,
+], (req, res, next) => {
+  const filter  = {$or:[{members:[req.userId,req.params.id],type:'single'},{members:[req.params.id,req.userId],type:'single'}]}
+  Conversation.find(filter).limit(1).lean().then(ec=>{
+      if(ec && ec.length > 0){
+        res.status(201).send({status: "success", message: "convo exists",data:true})
+      }else{
+        res.status(201).send({status: "success", message: "no convo exists",data:false})
+
+      }
+    }).catch(next);
 });
 
 router.post('/get_chatrooms/:id', [
@@ -674,6 +692,8 @@ router.post('/get_chatrooms/:id', [
                 })  
               
                 c['time'] = user && user.message ? time.length : time.length 
+              c['invite_status'] = c.invite_status && !(req.userId.toString() == c.created_by.toString())
+
                }
                })
              return c

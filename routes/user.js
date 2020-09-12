@@ -58,7 +58,8 @@ const Contacts = require('../models/contacts')
 const send_message_otp = require('../helper/send_message_otp')
 const notify = require('../scripts/Notify')
 const notifyRedirect = require('../scripts/NotifyNoRedirect')
-
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
 const NotifyArray = require('../scripts/NotifyArray')
 const multer = require('multer')
 const sendAlert = require('./../scripts/sendAlert')
@@ -653,14 +654,16 @@ router.post('/get_chatrooms/:id', [
       //Check if user existinvites:{$in:[req.params.id]}
       //Conversation.find({members:{$in:[req.params.id]}}).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(existingConversation=>{
       Conversation.find({ $or: [ { members: { $in: [req.params.id] } },{ exit_list: { $elemMatch: {user_id:req.params.id} } }] }).lean().populate("host","name profile_picture handle name_status").populate('to',' name _id profile_picture last_active online_status status handle name_status visibility').populate('members','name _id profile_picture last_active online_status status handle name_status visibility').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status visibility').populate('last_message').then(existingConversation=>{
-       const exit_convo_list = existingConversation.filter((e)=> {
+       existingConversation = existingConversation.filter((e)=>{
+         return !(e.type == "single" && e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.params.id.toString()).length > 0 )
+       })
+        const exit_convo_list = existingConversation.filter((e)=> {
         return (e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.params.id.toString()).length > 0)
         } )
         const exit_convo_list1 = existingConversation.filter((e)=> {
           return !(e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.params.id.toString()).length > 0)
           } )
        //const exit_convo_list1 = existingConversation.filter((e)=> e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((u)=>u.user_id.toString() === req.params.id.toString()).length > 0)
-       //console.log(exit_convo_list)
        User.findOne({_id: req.params.id},{activity_log:0,followers:0,following:0}).then(user=> {
           const date = user.last_active 
           const conversation  = req.body.conversation
@@ -670,12 +673,12 @@ router.post('/get_chatrooms/:id', [
             let user = {}
             c['time'] = 0
             c['exit'] = false
-            c['validity'] = c.type==='game' && moment().format('YYYYMMDDHHmm')  > moment(c.end_time).subtract(330,"minutes").format('YYYYMMDDHHmm')  
+            c['validity'] = c.type==='game' && moment().format('YYYYMMDDHHmm')  > moment(c.end_time).subtract(330,"minutes").format('YYYYMMDDHHmm')
             if(exit_convo_list && exit_convo_list.length > 0 && c.exit_list && c.exit_list.length > 0){
               const x =  exit_convo_list.filter((e)=> e.exit_list && c.exit_list.length>0 && e._id.toString() === c._id.toString())
               user  =  x.length > 0 ? x[0].exit_list.filter((e)=>{
                 return e && e.user_id && e.user_id._id.toString() === req.params.id.toString()})[0] : []
-             c.members =  user && user.length > 0 && c.type==='single' ? c.members.concat(user.user_id) : c.members
+                c.members =  user && user.length > 0 && c.type==='single' ? c.members.concat(user.user_id) : c.members
              c['exit'] = user && user.timeStamp ? true : false
              c['last_updated'] = user && user.timeStamp ? user.timeStamp : c.last_updated 
              c['last_message'] = user && user.message ? user.message : c.last_message
@@ -1080,6 +1083,28 @@ router.post('/edit_user', [
 });
 
 
+router.post('/change_passowrd', [
+  verifyToken,
+], (req, res, next) => {
+      User.findOne({_id: req.userId}).then(user=> {
+        if (user) {
+              req.body.modified_at = moment();
+
+              bcrypt.hash(req.body.password, saltRounds).then(function(hash) {
+                user['password'] = hash;
+                user['token'] =  jwt.sign({ id: user._id, phone:user.phone, role:"user", name:user.handle }, config.secret);
+                User.findByIdAndUpdate({_id: req.userId},user).then(user1=>{
+                  User.findOne({_id:req.userId},{__v:0,token:0,activity_log:0},null).then(user=>{
+                    res.status(201).send({status: "success", message: "password updated"})
+                })
+              })
+              })
+              
+        } else {
+            res.status(422).send({status: "failure", errors: {user:"user doesn't exist"}});
+        }
+    }).catch(next);
+});
 
 
 //Send OTP

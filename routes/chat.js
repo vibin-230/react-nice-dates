@@ -156,6 +156,34 @@ router.post('/update_convo/:id', [
     }
   }).catch(next)
 
+  router.post('/update_all_convo/:id', [
+    verifyToken,
+  ], (req, res, next) => {
+    // const x = await Conversation.find({ _id: { $in: group_ids } }).populate('members', '_id name device_token handle name_status').lean().then(conversation1 => {
+
+
+    Conversation.find({ _id:{$in:req.body} }).populate("members", "name profile_picture handle name_status").populate("host", "name profile_picture handle name_status").lean().then(data => {
+      let x = data.map((key)=>{
+       key.members = key.members.filter((m)=> m.toString() !== req.userId.toString())
+       key.invite_status = false
+       return key
+      })
+
+      // const users_filter = game.users.filter((m)=> m.toString() !== game1.user_id.toString())
+      // const conversation_filter = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())
+       Conversation.updateMany(x).then(message1 => {
+         console.log("message",message1)
+                     res.status(201).send({ status: "success", message: "conversation updated", data: message1 })
+        // if (data && data.length > 0) {
+      //   Conversation.findByIdAndUpdate({ _id: req.params.id }, { $set: req.body }).then((data) => {
+      //     Conversation.findOne({ _id: req.params.id }).populate("members", "name profile_picture handle name_status").populate("host", "name profile_picture handle name_status").lean().then(data => {
+      //     }).catch(next)
+      //   })
+      // }
+    }).catch(next)
+    }).catch(next)
+  })
+
 
   router.post('/get_more_chats/', [
     verifyToken,

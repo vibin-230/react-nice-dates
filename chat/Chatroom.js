@@ -66,8 +66,8 @@ module.exports = function ({ _id, image }) {
           }
 
         }
-       
-        return {messages:m.reverse(),conversation:conversation}
+       let d = m.filter((m) => (m && m.game) || (m && m.message) || (m && m.image) || (m && m.user)|| (m && m.event))
+        return {messages:d.reverse(),conversation:conversation}
       }).catch((e) => console.log(e))
     }).catch((e) => console.log(e))
 

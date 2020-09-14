@@ -852,8 +852,12 @@ module.exports = function () {
 
 
   async function handleSlotAvailability(convo_id,client){
-    const x = await Conversation.findById({ _id: convo_id }).populate('last_message').lean().then(conversation => {
-         client.in(convo_id).emit('new',conversation.last_message)
+    const string  = convo_id && convo_id._id ? convo_id._id.toString() : convo_id.toString()
+    console.log("object",string)
+    const x = await Conversation.findById({ _id: string }).populate('last_message').lean().then(conversation => {
+      console.log(conversation.last_message)  
+      client.in(string).emit('new',conversation.last_message)
+         client.in(string).emit('unread',conversation.last_message)
           }).catch(error => console.log(error))
   }
 

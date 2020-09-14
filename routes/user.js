@@ -2124,7 +2124,7 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
   Promise.all(promisesToRun).then(values => {
     // Capture the payment
     var data = {
-      amount:(req.body[0].booking_amount*req.body.length) * 100
+      amount:(req.body[0].booking_amount * 100) 
     }
 
 
@@ -2134,13 +2134,14 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
     //Capture Payment
     axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
       .then(response => {
+        console.log(response.data);
         if(response.data.status === "captured")
         {
           
         }
       })
       .catch(error => {
-        console.log(error.response)
+        console.log(error.response.data)
         res.send({error:error.response});
       }).catch(next);
 
@@ -2828,17 +2829,18 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
         if(booking.booking_type === "app" && req.body.refund_status){
           axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
+            console.log(response.data);
             if(response.data.entity === "refund") /// user  with refund 
             {
               Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true,refund_status:true}},{multi:true}).then(booking=>{
                 Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
-                  handleSlotAvailabilityWithCancellation(booking,req.socket)
                   
                   if(booking[0].game){
                     Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
                       Message.create({conversation:game.conversation,message:`Hey ! Slot has been cancelled and refund has been initiated.Amount will be credited in 2 - 4 working days.Please book your slot to confirm the game`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
                             getGame(res,game.conversation,true,next)
+                             handleSlotAvailabilityWithCancellation(booking,req.socket)
                       }).catch(next);
                       }).catch(next);
                       }).catch(next);
@@ -2932,17 +2934,17 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
 
             }
           }).catch(error => {
-            console.log(error)
+            console.log(error.response.data)
           }).catch(next);
         }else{
-                Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"},refund_status:false},{multi:true}).then(booking=>{ ////user cancellation without refund
-                Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
-                  handleSlotAvailabilityWithCancellation(booking,req.socket)
-                  if(booking[0].game){
-                    Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
-                      Message.create({conversation:game.conversation,message:`Hey ! slot has been cancelled .No refund for this slot. Please book your slot to confirm the game`,name:'bot',read_status:false,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
-                        Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
-                          getGame(res,game.conversation,true,next)
+          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"},refund_status:false},{multi:true}).then(booking=>{ ////user cancellation without refund
+            Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
+              if(booking[0].game){
+                Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
+                  Message.create({conversation:game.conversation,message:`Hey ! slot has been cancelled .No refund for this slot. Please book your slot to confirm the game`,name:'bot',read_status:false,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
+                    Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
+                      getGame(res,game.conversation,true,next)
+                      handleSlotAvailabilityWithCancellation(booking,req.socket)
                         }).catch(next);
                       }).catch(next);
                   }).catch(next);

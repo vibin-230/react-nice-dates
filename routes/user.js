@@ -1496,6 +1496,7 @@ router.post('/get_group_info',verifyToken, (req, res, next) => {
    
    const filter = convo.join_date.filter((a)=>a.user_id.toString() === req.userId.toString())
    const query = filter.length > 0 ? {created_at:{$gte:filter[filter.length-1].join_date}} : {}
+  console.log('filter',filter,query)
    User.find({_id:convo.created_by}).select('name -_id').then(user=>{
       Message.find({$and:[{ "image": { $exists: true, $ne: null }},{conversation:req.body.conversation_id},{type:"image"},query ]}).distinct("image").then((image)=>{
     Message.find({$and:[{ "game": { $exists: true, $ne: null }},{conversation:req.body.conversation_id}]}).distinct("game").then((games)=>{

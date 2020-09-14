@@ -3833,8 +3833,8 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
           }, {});
         };
         let finalResult = booking_data.sort((a, b) => moment(a.start_time).format("YYYYMMDDHmm") > moment(b.start_time).format("YYYYMMDDHmm") ? 1 : -1 )
-        const present = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') <= moment(a.start_time).format('YYYYMMDDHHmm'))
-        const past = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') >= moment(a.start_time).format('YYYYMMDDHHmm'))
+        const present = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') <= moment(a.start_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
+        const past = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') >= moment(a.start_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
 
         const apresent = groupBy(present,'start_time')
         const apast = groupBy(past,'start_time')

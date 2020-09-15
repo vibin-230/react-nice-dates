@@ -1478,7 +1478,7 @@ router.post('/get_group_info',verifyToken, (req, res, next) => {
   console.log('filter',filter,query)
    User.find({_id:convo.created_by}).select('name -_id').then(user=>{
       Message.find({$and:[{ "image": { $exists: true, $ne: null }},{conversation:req.body.conversation_id},{type:"image"},query ]}).distinct("image").then((image)=>{
-    Message.find({$and:[{ "game": { $exists: true, $ne: null }},{conversation:req.body.conversation_id}]}).distinct("game").then((games)=>{
+    Message.find({$and:[{ "game": { $exists: true, $ne: null }},{conversation:req.body.conversation_id},query]}).distinct("game").then((games)=>{
      Game.find({_id:{ $in: games}}).populate('conversation').lean().then(gameinfo=>{
       let activities = gameinfo.map((key)=>key.sport_name)
       let uninque_activity = [...new Set(activities)]

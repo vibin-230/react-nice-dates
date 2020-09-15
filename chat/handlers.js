@@ -85,7 +85,8 @@ module.exports = function (client, clientManager, chatroomManager,io) {
        x  = await chatroomManager.leaveChatroomGroup(chatroomName,io)
 
     }
-    if(chatroomName.type === 'delete'){
+
+  else  if(chatroomName.type === 'delete'){
       x  = await chatroomManager.deleteChatroom(chatroomName,io)
 
    }
@@ -210,7 +211,6 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
          const x = await chatroomName && chatroomName.exit && chatroomManager.registerExitedUser(chatroomName,message)
         client.to(chatroomName._id).emit('new',message)
         client.to(chatroomName._id).emit('unread',message)
-        console.log(chatroomName._id,io.sockets.adapter.rooms);
       
         //chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,[])
         //chatroomManager.notifyAllUsers(chatroomName, message)

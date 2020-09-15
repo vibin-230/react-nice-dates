@@ -164,15 +164,17 @@ module.exports = function () {
     }
 
     function registerExitedUser(conversation,message) {
-        conversation.join_date = conversation.join_date.map((c)=>{
-          if(conversation.exit_list.some((a)=>a.user_id.toString() === c.user_id.toString())){
-            c['join_date'] = message.created_at
-            return c
-          }else{
-            return c
-          }
-        })
-
+      const x =  conversation.exit_list
+      let user  =  x.length > 0 && x.filter((e)=>{ return e && e.user_id && e.user_id._id.toString() !== message.author.toString()})[0]
+      console.log('hit before',user)
+      if(user && conversation.type==='single'){
+          console.log('hit',user)
+          conversation.exit_list = []
+          conversation.members =  user && conversation.type==='single' ? conversation.members : conversation.members
+          conversation.join_date =  user && conversation.type==='single' ? conversation.join_date.concat([{user_id:user.user_id._id,join_date:new Date()}]) : conversation.join_date
+        }
+        conversation.last_message = message._id
+        console.log('dsf',conversation.members)
         Conversation.findByIdAndUpdate({_id:conversation._id},conversation).then(conversation=>{
 
         }).catch((e)=>{console.log(e)});
@@ -920,10 +922,12 @@ return x
         const tot  = conversation.host.filter((m)=> m.toString() == game1.user_id.toString()).length > 0 ? true : false
         conversation.members = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())
         conversation.host = conversation.host.filter((m)=> m.toString() !== game1.user_id.toString()).length > 0 ? conversation.host.filter((m)=> m.toString() !== game1.user_id.toString()) : [conversation.members[0]]
-        conversation.exit_list = conversation.exit_list.concat({user_id:game1.user_id,timeStamp:new Date(),message:{ conversation: conversation._id, message: `${user.name} ${game1 && game1.status && game1.status === 'terminate' ? 'has been removed':'has left the club'}`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() }})
-          if((conversation.type === 'single' || conversation.type === 'group') && conversation.members.length <= 0){
+        conversation.exit_list = conversation && conversation.exit_list ?  conversation.exit_list.concat({user_id:game1.user_id,timeStamp:new Date(),message:{ conversation: conversation._id, message: `${user.handle} ${game1 && game1.status && game1.status === 'terminate' ? 'has been removed':'has left the club'}`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() }}) :[{user_id:game1.user_id,timeStamp:new Date(),message:{ conversation: conversation._id, message: `${user.handle} ${game1 && game1.status && game1.status === 'terminate' ? 'has been removed':'has left the club'}`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() }}]
+         
+        if((conversation.type === 'single' || conversation.type === 'group') && conversation.members.length <= 0){
             return Conversation.findByIdAndDelete({ _id: game1.convo_id }).then(conversation2 => {
               return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token').then(conversation2 => {
+                console.log('hit pass')
                 conversation.type !== 'single' && saveMessage({ conversation: conversation2._id,message: `${user.name} ${game1 && game1.status && game1.status === 'terminate' ? 'has been removed':'has left the club'}`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() })
                 conversation.type !== 'single' && client.in(conversation2._id).emit('new',{ conversation: conversation2._id, message: `${user.name} has left the club`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() })
                 const token_list  = conversation.members.filter((key) => key._id.toString() !== game1.user_id.toString())
@@ -937,7 +941,8 @@ return x
                 }).catch(error => console.log(error))
            }
            else{
-             return Conversation.findByIdAndUpdate({ _id: game1.convo_id }, { $set: conversation }).then(conversation2 => {
+
+             return Conversation.findByIdAndUpdate({ _id: game1.convo_id }, { $set: {members:conversation.members,host:conversation.host,exit_list:conversation.exit_list} }).then(conversation2 => {
                  return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token handle name name_status').then(conversation2 => {
                    return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
                    conversation2.type !== 'single' && saveMessage({ conversation: conversation2._id, message: `${user.name} ${game1 && game1.status && game1.status === 'terminate' ? 'has been removed':'has left the club'}`, read_status: false, name: user.name, author: user._id, type: 'bot', created_at: new Date() })

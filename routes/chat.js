@@ -136,7 +136,6 @@ router.post('/history/:id', [
   ],async function(req, res, next) {
     // Conversation.findById({_id: req.params.id},{}).lean().then(user=> {
     //      // following = following.concat(req.userId)
-    console.log('hit',req.body.message.created_at,req.body.message._id)
     const x = await getChatHistory(req.params.id,{id:req.userId},req.body.message.created_at)  
     res.status(201).send({status: "success", message: "past chat collected",data:x})
   
@@ -156,40 +155,13 @@ router.post('/update_convo/:id', [
     }
   }).catch(next)
 
-  router.post('/update_all_convo/:id', [
-    verifyToken,
-  ], (req, res, next) => {
-    // const x = await Conversation.find({ _id: { $in: group_ids } }).populate('members', '_id name device_token handle name_status').lean().then(conversation1 => {
-
-
-    Conversation.find({ _id:{$in:req.body} }).populate("members", "name profile_picture handle name_status").populate("host", "name profile_picture handle name_status").lean().then(data => {
-      let x = data.map((key)=>{
-       key.members = key.members.filter((m)=> m.toString() !== req.userId.toString())
-       key.invite_status = false
-       return key
-      })
-
-      // const users_filter = game.users.filter((m)=> m.toString() !== game1.user_id.toString())
-      // const conversation_filter = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())
-       Conversation.updateMany(x).then(message1 => {
-         console.log("message",message1)
-                     res.status(201).send({ status: "success", message: "conversation updated", data: message1 })
-        // if (data && data.length > 0) {
-      //   Conversation.findByIdAndUpdate({ _id: req.params.id }, { $set: req.body }).then((data) => {
-      //     Conversation.findOne({ _id: req.params.id }).populate("members", "name profile_picture handle name_status").populate("host", "name profile_picture handle name_status").lean().then(data => {
-      //     }).catch(next)
-      //   })
-      // }
-    }).catch(next)
-    }).catch(next)
-  })
+  
 
 
   router.post('/get_more_chats/', [
     verifyToken,
   ], (req, res, next) => {
       const client = req.redis() 
-      console.log(req.body); 
       client.get('chatroom_'+req.userId, function(err, reply) { 
         if(err){
           console.log(err);
@@ -197,7 +169,6 @@ router.post('/update_convo/:id', [
         const data = JSON.parse(reply)
         let index = data.findIndex(x => x._id.toString() ===req.body.id.toString());
        let final_data = []
-        console.log('data length',data.length);
         if(index > 0){
           let diff = data.length - index 
           if(diff > 4){

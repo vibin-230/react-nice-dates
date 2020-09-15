@@ -171,7 +171,7 @@ module.exports = function () {
           console.log('hit',user)
           conversation.exit_list = []
           conversation.members =  user && conversation.type==='single' ? conversation.members : conversation.members
-          conversation.join_date =  user && conversation.type==='single' ? conversation.join_date.concat([{user_id:user.user_id._id,join_date:new Date()}]) : conversation.join_date
+          conversation.join_date =  user && conversation.type==='single' ? conversation.join_date.concat([{user_id:user.user_id._id,join_date:conversation.created_at}]) : conversation.join_date
         }
         conversation.last_message = message._id
         console.log('dsf',conversation.members)

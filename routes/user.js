@@ -663,7 +663,6 @@ router.post('/get_chatrooms/:id', [
         const exit_convo_list1 = existingConversation.filter((e)=> {
           return !(e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.params.id.toString()).length > 0)
           } )
-          console.log('pass',exit_convo_list)
 
        User.findOne({_id: req.params.id},{activity_log:0,followers:0,following:0}).then(user=> {
           const date = user.last_active 

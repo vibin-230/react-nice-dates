@@ -3122,7 +3122,7 @@ router.post('/unfollow_request/:friend', verifyToken, (req, res, next) => {
               console.log(user.following)
               Conversation.find({$or:[{members:[req.body.id,req.params.friend],type:'single'},{members:[req.params.friend,req.body.id],type:'single'}]}).limit(1).lean().then(ec=>{
                 ec.length > 0 && updateConvoStatus(ec[0],{invite_status : true})  
-                sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,type:'following',status_description:`${friend.handle} is following you`},'delete',next) 
+                sendAlert({created_at:new Date(),created_by:req.body.id,user:req.params.friend,type:'following',status_description:`${friend.handle} is following you`},'delete',next) 
               res.send({status:"success", message:"Unfollowed "+friend.handle, data:user})
   }).catch(next)
   }).catch(next)

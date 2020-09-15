@@ -1,6 +1,9 @@
 const Alert = require('./../models/alerts')
 const NotifyArray = require('../scripts/NotifyArray')
 const User = require('../models/user');
+var mongoose = require('mongoose');
+
+var objectId = mongoose.Types.ObjectId('569ed8269353e9f4c51617aa');
 
  const sendAlert = (body,type,next)=> {
   if(type === 'create'){
@@ -19,7 +22,9 @@ const User = require('../models/user');
     }).catch(next)
   }
   else if(type === 'delete'){
-    Alert.findOne({user:body.user,created_by:body.created_by,type:body.type}).then(a=>{
+    console.log("biody",body)
+    Alert.findOne({user:body.user,created_by:body.created_by,type:body.type}).lean().then(a=>{
+      console.log("aaa",a)
       if(a){
         Alert.findOneAndDelete({user:body.user,created_by:body.created_by,type:body.type}).then((s)=>{
           console.log(s)

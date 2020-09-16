@@ -1906,7 +1906,7 @@ async function handleSlotAvailabilityForGames(booking1,client){
              return Game.updateMany({"booking_date":booking.booking_date,"bookings.booking_status":'blocked',"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time },{$set:{status:false,status_description:'Sorry ! Slot has been booked by some other user'}}).lean().then(game1=>{
                return Game.find({"booking_date":booking.booking_date,"bookings.booking_status":'blocked',"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time }).lean().populate('conversation').then(game=>{
                 console.log('length',game.length);
-                let messages =  game.map((nc)=>{ return {conversation:nc.conversation._id,game:nc._id,message:`Sorry ! Game ${nc.name} has been cancelled becuase the slot has been booked by some other user.Please choose another slot to host your game`,name:'bot',read_status:true,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot'}}) 
+                let messages =  game.map((nc)=>{ return {conversation:nc.conversation._id,created_at:new Date(),message:`Sorry ! Game ${nc.name} has been cancelled becuase the slot has been booked by some other user.Please choose another slot to host your game`,name:'bot',read_status:true,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot'}}) 
                 const members = _.flatten(game.map((g)=>g.conversation.members))
                 return   User.find({_id: { $in :members } },{activity_log:0}).lean().then(user=> {
                 return Message.insertMany(messages).then(message1=>{

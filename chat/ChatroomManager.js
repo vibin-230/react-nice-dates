@@ -81,8 +81,8 @@ module.exports = function () {
 
  async function getConversationAndSendBotMessage(convo,client){
  const x = await Conversation.findById({_id:convo._id}).populate('members','_id name device_token handle name_status').then((conversation1)=>{
-      const messages =  conversation1.members.map((user)=> ({conversation:convo._id,message:groupChatMessage(conversation1.members[0].name,user.name),name:conversation1.members[0].name,author:conversation1.members[0]._id,type:'bot',created_at:new Date()}))
-      const messages1 =  conversation1.members.map((user)=> ({conversation:convo._id,message:groupChatMessage1(conversation1.members[0].name,user.name),name:conversation1.members[0].name,author:conversation1.members[0]._id,type:'bot',created_at:new Date(),user_name:user.name}))
+      const messages =  conversation1.members.map((user)=> ({conversation:convo._id,message:groupChatMessage(conversation1.members[0].handle,user.handle),name:conversation1.members[0].handle,author:conversation1.members[0]._id,type:'bot',created_at:new Date()}))
+      const messages1 =  conversation1.members.map((user)=> ({conversation:convo._id,message:groupChatMessage1(conversation1.members[0].handle,user.handle),name:conversation1.members[0].handle,author:conversation1.members[0]._id,type:'bot',created_at:new Date(),user_name:user.name}))
       
       return Message.insertMany(messages).then(message1=>{
               return Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},{last_message:message1[message1.length-1]._id,last_updated:new Date()}).then(conversation=>{

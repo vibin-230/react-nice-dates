@@ -169,17 +169,22 @@ router.post('/update_convo/:id', [
         const data = JSON.parse(reply)
         let index = data.findIndex(x => x._id.toString() ===req.body.id.toString());
        let final_data = []
+       let diff
         if(index > 0){
-          let diff = data.length - index 
-          if(diff > 4){
-            final_data = data.slice(index+1,index+3)
+          diff = data.length - index  > 5 ? 5 : data.length - index
+          if(diff >= 5){
+            final_data = data.slice(index+1,index+5)
           }else if(diff < 4 && diff >= 1){
             final_data = data.slice(index+1,index+diff)
           }else{
             final_data.push({type:'empty',data:'No data available',_id:'no-id'})
           }
         } 
-      res.status(201).send({status: "success", message: "venues collected",data:final_data})
+        console.log('final_data',final_data.length);
+        console.log('data',data.length);
+        console.log('index',index);
+          console.log('diff',diff);
+      res.status(201).send({status: "success", message: "chats collected",data:final_data})
     })
   
   });

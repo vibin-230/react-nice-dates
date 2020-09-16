@@ -129,17 +129,24 @@ router.post('/get_more_chats/', [
       const data = JSON.parse(reply)
       let index = data.findIndex(x => x._id.toString() ===req.body.id.toString());
      let final_data = []
-      console.log('data length',data.length);
+     let diff
       if(index > 0){
-        let diff = data.length - index 
-        if(diff > 10){
-          final_data = data.slice(index+1,index+9)
+         diff = data.length - index  > 10 ? 10 : data.length - index
+        if(diff >= 10){
+          final_data = data.slice(index+1,index+10)
+          console.log('next index',index+1,index+10);
         }else if(diff < 10 && diff >= 1){
           final_data = data.slice(index+1,index+diff)
+          console.log('next index',index+1,index+diff);
+
         }else{
           final_data.push({type:'empty',data:'No data available',_id:'no-id'})
         }
       } 
+      console.log('final_data',final_data.length);
+        console.log('data',data.length);
+        console.log('index',index);
+          console.log('diff',diff);
     res.status(201).send({status: "success", message: "venues collected",data:final_data})
   })
 

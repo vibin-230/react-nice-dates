@@ -235,15 +235,21 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
         const data = JSON.parse(reply)
         let index = req.body && req.body.post_id && req.body.post_id._id ?  data.findIndex(x => x._id.toString() ===req.body.post_id._id.toString()) : -1 ;
        let final_data = []
+
         if(index > 0){
-          let diff = data.length - index 
+          diff = data.length - index  > 4 ? 4 : data.length - index
           if(diff > 4){
-            final_data = data.slice(index+1,index+3)
+            final_data = data.slice(index+1,index+4)
           }else if(diff < 4 && diff >= 1){
             final_data = data.slice(index+1,index+diff)
           }else{
             final_data.push({type:'empty',data:'No data available'})
           }
+          console.log('final_data',final_data.length);
+          console.log('index',index);
+          console.log('data',data.length);
+          console.log('diff',diff);
+
         } 
       res.status(201).send({status: "success", message: "posts collected",data:final_data})
     })

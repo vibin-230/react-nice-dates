@@ -79,7 +79,10 @@ function ActivityLog(activity_log) {
 }
 
 function getGame(res,convo_id,refund_status,next){
-  Conversation.findById({_id:convo_id}).populate('members','_id name device_token profile_picture handle name_status visibility').then((convo)=>{
+  Conversation.findById({_id:convo_id}).lean().populate('members','_id name device_token profile_picture handle name_status visibility').then((convo)=>{
+    // convo['exit2'] =  convo.members.filter((a)=>a._id.toString() === req.userId.toString()).length > 0 ? false : true
+    // convo['exit'] =  convo.members.filter((a)=>a._id.toString() === req.userId.toString()).length > 0 ? false : true
+
     Game.findOne({conversation:convo_id}).lean().populate("conversation").populate('host','_id name profile_picture phone handle name_status visibility').populate('users','_id name profile_picture phone handle name_status visibility').populate('invites','_id name profile_picture phone handle visibility').then(game=>{
             Venue.findById({_id:game.bookings[0].venue_id}).then(venue =>{
               let game1 = Object.assign({},game)
@@ -679,14 +682,16 @@ router.post('/get_chatrooms/:id', [
             let user = {}
             c['time'] = 0
             c['exit'] = false
+            c['exit2'] = c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0 ? false : true
             c['validity'] = c.type==='game' && moment().format('YYYYMMDDHHmm')  > moment(c.end_time).subtract(330,"minutes").format('YYYYMMDDHHmm')
             if( c.exit_list && c.exit_list.length > 0){
               const x =  c.exit_list
                 let user  =  x.length > 0 && x.filter((e)=>{ return e && e.user_id && e.user_id._id.toString() !== req.params.id.toString()})[0]
                 c.members =  user && c.type==='single' ? c.members.concat(user.user_id) : c.members
-                c['exit'] = user && user.timeStamp ? true : false
+                console.log(user)
+                c['exit'] = user && user.timeStamp ? c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0 ? false : true : false
              c['last_updated'] = user && user.timeStamp ? user.timeStamp : c.last_updated 
-             c['last_message'] = user && user.message ? user.message : c.last_message
+             c['last_message'] = user && user.message ? c.type === 'single' ? c.last_message: user.message : c.last_message
             }
             const filter = c && c.last_active ? c.last_active.filter((c)=> c && c.user_id && c.user_id.toString() === req.params.id.toString()) : []
             message.length > 0 && message.map((m)=>{

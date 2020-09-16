@@ -11,6 +11,7 @@ const notify = require('../scripts/Notify')
 const SlotsAvailable = require("../helper/slots_available")
 const NotifyArray = require('../scripts/NotifyArray')
 const NotifyArray1 = require('../scripts/NotifyArray1')
+const Event = require('./../models/event')
 const moment  = require('moment')
 const _ = require('lodash')
 
@@ -404,16 +405,16 @@ module.exports = function () {
    const x = await  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: ids } } ,$set:{town:town,town_date:new Date()} } ).then(game=> {
                 return Conversation.findByIdAndUpdate({_id: convo},{ $addToSet: { invites: { $each: ids } } }).then(conversation1=> {
                   return Game.findById({_id: game_id}).then(game1=> {
-                    // const x = ids.map((id)=>{ return { members :{$in:[id,user_id]},type:'single'}})
-                    // const members_list = ids.map((id)=>{ return {members :[id,user_id]} })
-                    // return Conversation.find({$or:x}).then(conversation2=> {
-                    //       const conversation_list = conversation2.reduce((z,c)=>{ 
-                    //                 c.members.forEach((mem)=>{ 
-                    //                 if(z.indexOf(mem.toString())=== -1)  
-                    //                   z.push(mem.toString())
-                    //                 })
-                    //                 return z
-                    //       },[])
+                    const x = ids.map((id)=>{ return {"$or": [{members: [id,user_id]}, {members: [user_id,id]}],type:"single"}})
+                    const members_list = ids.map((id)=>{ return {members :[id,user_id]} })
+                    return Conversation.find({$or:x}).then(conversation2=> {
+                          const conversation_list = conversation2.reduce((z,c)=>{ 
+                                    c.members.forEach((mem)=>{ 
+                                    if(z.indexOf(mem.toString())=== -1)  
+                                      z.push(mem.toString())
+                                    })
+                                    return z
+                          },[])
                             const list_with_no_convos = ids.map((id)=>{
                              if(conversation_list.indexOf(id) === -1){
                                return {members:[id,user_id],type:'single',created_by:user_id,last_active:[{user_id:id, last_active : new Date()},{user_id:user_id, last_active:new Date()}],join_date:[{user_id:id, join_date : new Date()},{user_id:user_id, join_date:new Date()}]}
@@ -453,7 +454,7 @@ module.exports = function () {
     }).catch((e)=>console.log(e));
     }).catch((e)=>console.log(e));
     }).catch((e)=>console.log(e));
-    // }).catch((e)=>console.log(e));
+    }).catch((e)=>console.log(e));
     return x
     }
 
@@ -574,6 +575,18 @@ module.exports = function () {
     const x = await Event.findByIdAndUpdate({ _id: event_id }).then(event => {
       // return Conversation.findByIdAndUpdate({ _id: convo }, { $addToSet: { invites: { $each: ids } } }).then(conversation1 => {
         // return Game.findById({ _id: game_id }).then(game1 => {
+
+          const x = ids.map((id)=>{ return {"$or": [{members: [id,user_id]}, {members: [user_id,id]}],type:"single"}})
+          // const members_list = ids.map((id)=>{ return {members :[id,user_id]} })
+          return Conversation.find({$or:x}).then(conversation2=> {
+                const conversation_list = conversation2.reduce((z,c)=>{ 
+                          c.members.forEach((mem)=>{ 
+                          if(z.indexOf(mem.toString())=== -1)  
+                            z.push(mem.toString())
+                          })
+                          return z
+                },[])
+
           const list_with_no_convos = ids.map((id) => {
             if (conversation_list.indexOf(id) === -1) {
               return { members: [id, user_id], type: 'single', created_by: user_id, last_active: [{ user_id: id, last_active: new Date() }, { user_id: user_id, last_active: new Date() }], join_date: [{ user_id: id, join_date: new Date() }, { user_id: user_id, join_date: new Date() }] }
@@ -608,7 +621,7 @@ module.exports = function () {
           }).catch((e) => console.log(e));
         }).catch((e) => console.log(e));
       // }).catch((e) => console.log(e));
-    // }).catch((e) => console.log(e));
+    }).catch((e) => console.log(e));
     return x
   }
 

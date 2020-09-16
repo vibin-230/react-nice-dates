@@ -277,7 +277,7 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
           });
       const finalData = [...y]
 
-      res.status(201).send({status: "success", message: "alerts collected",data:finalData.slice(0,4)})
+      res.status(201).send({status: "success", message: "alerts collected",data:finalData})
       }).catch(next)
     //}).catch(next)
   

@@ -88,8 +88,7 @@ function getGame(res,convo_id,refund_status,next){
               game1['final'] = _.xor(game1.users,game1.host)
               game1["conversation"] = convo
               game1['refund'] = refund_status
-             // console.log('endtime',game1.bookings[game1.bookings.length-1].end_time,moment().format('YYYYMMDDHHmm'),moment(game1.bookings[game1.bookings.length-1].end_time).subtract(330,"minutes").format('YYYYMMDDHHmm') );
-              game1['validity'] =  moment().format('YYYYMMDDHHmm') > moment(game1.bookings[game1.bookings.length-1].end_time).subtract(330,"minutes").format('YYYYMMDDHHmm') 
+              game1['validity'] = moment().format('YYYYMMDDHHmm')  > moment(convo.end_time).subtract(330,"minutes").format('YYYYMMDDHHmm')
               res.send({status:"success", message:"game_fetched",data:game1})
             })
     }).catch(next);

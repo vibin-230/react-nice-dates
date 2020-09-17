@@ -1431,9 +1431,10 @@ router.post('/create_offer',
 	(req, res, next) => {
 		Offers.find({venue:{$in:req.body.venue},start_date:{$lte:req.body.start_date},end_date:{$gte:req.body.end_date},status:true}).then(offers=>{
 			let title_check = offers.filter(value=>value.title===req.body.title)
-			if(offers.length>=2){
-				res.send({status:"failed",message:"Offers limit reached"})
-			}else if(title_check.length){
+			// if(offers.length>=2){
+			// 	res.send({status:"failed",message:"Offers limit reached"})
+			// }else
+			 if(title_check.length){
 				res.send({status:"failed",message:"Offer title already exist"})
 			}else{
 				Offers.create(req.body).then(offers=>{

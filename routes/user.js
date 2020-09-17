@@ -1989,7 +1989,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
         User.findById({_id:req.userId}).then(user=>{
         Conversation.create({type:'game',start_time:values[0].start_time,end_time:values[values.length-1].end_time,display_picture:req.body[0].image,subtitle:req.body[0].subtitle,members:[req.userId],colors:getColors([req.userId]),host:[req.userId],created_by:req.userId,name:req.body[0].game_name,sport_name:values[0].sport_name,join_date:[{user_id:req.userId,join_date:new Date()}]}).then(convo=>{
-           Game.create({booking_status:'booked',image:req.body[0].image,share_type:req.body[0].share_type,limit:req.body[0].limit,users:[req.userId],created_by:req.userId,created_type:'user',host:[req.userId],name:req.body[0].game_name,conversation:convo._id,subtitle:req.body[0].subtitle,sport_name:values[0].sport_name,type:req.body[0].format,bookings:values,description:req.body[0].description,booking_date:values[0].booking_date,start_time:values[0].start_time,venue:values[0].venue_id, }).then(game=>{
+           Game.create({booking_status:'booked',image:req.body[0].image,share_type:req.body[0].share_type,limit:req.body[0].limit,users:[req.userId],created_by:req.userId,created_type:'user',host:[req.userId],name:req.body[0].game_name,conversation:convo._id,subtitle:req.body[0].subtitle,sport_name:values[0].sport_name,type:req.body[0].format,bookings:values,description:req.body[0].description,booking_date:values[0].booking_date,start_time:values[0].start_time,venue:values[0].venue_id }).then(game=>{
             Game.findOne({_id:game._id}).lean().populate("conversation").populate('host','_id name profile_picture phone handle name_status').populate("venue").populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=>{
             Message.create({conversation:convo._id,message:`${req.name} created the game`,read_status:false,name:req.name,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
@@ -2114,10 +2114,13 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
   }
   Promise.all(promisesToRun).then(values => {
     // Capture the payment
-    var data = {
-      amount:(req.body[0].booking_amount * 100) 
-    }
+    // var data = {
+    //   amount:(req.body[0].booking_amount * 100) 
+    // }
 
+    var data = {
+      amount:(req.body[0].booking_amount*req.body.length)*100
+    }
 
    console.log('razorpay api',process.env.RAZORPAY_API)
    console.log('transaction api',data,req.body[0])
@@ -2143,6 +2146,7 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
         User.findById({_id:req.userId}).then(user=>{
           Game.findOneAndUpdate({"bookings.booking_id":values[0].booking_id},{$set:{bookings:values,booking_status:'booked'}}).then(game=>{
+            Game.findById({_id:game._id}).then(game=>{
             Message.create({conversation:game.conversation,message:`${req.name} has booked the slot for this game . Please be on time to the venue`,read_status:false,name:req.name,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : req.userId}},{activity_log:0,followers:0,following:0,}).then(users=> {
                 Conversation.findByIdAndUpdate({_id:message1.conversation},{last_message:message1._id,last_updated:new Date()}).then(conversation=>{
@@ -2242,6 +2246,7 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
 }).catch(next)
 }).catch(next)
     }).catch(next)
+  }).catch(next)
   })
 })
 
@@ -3156,7 +3161,8 @@ router.post('/remove_request/:friend', verifyToken, (req, res, next) => {
             User.findById({_id:req.body.id},{activity_log:0}).populate('requests','name profile_picture handle name_status').then(user=>{ 
               Conversation.find({$or:[{members:[req.body.id,req.params.friend],type:'single'},{members:[req.params.friend,req.body.id],type:'single'}]}).limit(1).lean().then(ec=>{
                 ec.length > 0 && updateConvoStatus(ec[0],{invite_status : true})  
-              res.send({status:"success", message:"Removed "+friend.handle, data:user})
+                sendAlert({created_at:new Date(),created_by:req.body.id,user:req.params.friend,type:'following',status_description:`${friend.handle} is following you`},'delete',next) 
+                res.send({status:"success", message:"Removed "+friend.handle, data:user})
   }).catch(next)
   }).catch(next)
 }).catch(next)
@@ -3826,7 +3832,6 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         let finalResult = booking_data.sort((a, b) => moment(a.start_time).format("YYYYMMDDHmm") > moment(b.start_time).format("YYYYMMDDHmm") ? 1 : -1 )
         const present = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') <= moment(a.start_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
         const past = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') >= moment(a.start_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
-
         const apresent = groupBy(present,'start_time')
         const apast = groupBy(past,'start_time')
         let qpresent =   Object.entries(apresent).map(([key,value])=>{return {title:key,data:value }})

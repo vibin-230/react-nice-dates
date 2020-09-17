@@ -707,7 +707,15 @@ router.post('/get_chatrooms/:id', [
               
                 c['time'] = user && user.message ? time.length : time.length 
               c['invite_status'] = c.invite_status 
-              c['actual_invite_status'] = c.invite_status && !(req.userId.toString() == c.created_by.toString())
+              if(c.invite_status){
+                if(req.userId.toString() == c.created_by.toString()){
+                  c['actual_invite_status'] = false
+                }else{
+                  c['actual_invite_status'] = true
+                }
+              }else{
+                c['actual_invite_status'] = false
+              }
 
 
                }

@@ -3160,7 +3160,8 @@ router.post('/remove_request/:friend', verifyToken, (req, res, next) => {
             User.findById({_id:req.body.id},{activity_log:0}).populate('requests','name profile_picture handle name_status').then(user=>{ 
               Conversation.find({$or:[{members:[req.body.id,req.params.friend],type:'single'},{members:[req.params.friend,req.body.id],type:'single'}]}).limit(1).lean().then(ec=>{
                 ec.length > 0 && updateConvoStatus(ec[0],{invite_status : true})  
-              res.send({status:"success", message:"Removed "+friend.handle, data:user})
+                sendAlert({created_at:new Date(),created_by:req.body.id,user:req.params.friend,type:'following',status_description:`${friend.handle} is following you`},'delete',next) 
+                res.send({status:"success", message:"Removed "+friend.handle, data:user})
   }).catch(next)
   }).catch(next)
 }).catch(next)

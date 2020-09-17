@@ -12,6 +12,7 @@ const schema = new Schema({
   role:String,
   name:String,
   company_name:String,
+  device_token:String,
   address:String,
   phone:String,
   alt_phone:String,

@@ -688,9 +688,10 @@ router.post('/get_chatrooms/:id', [
               const x =  c.exit_list
                 let user  =  x.length > 0 && x.filter((e)=>{ return e && e.user_id && e.user_id._id.toString() !== req.params.id.toString()})[0]
                 c.members =  user && c.type==='single' ? c.members.concat(user.user_id) : c.members
-                console.log(user)
-                c['exit'] = user && user.timeStamp ? c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0 ? false : true : false
-             c['last_updated'] = user && user.timeStamp ? user.timeStamp : c.last_updated 
+                console.log(user && user.timeStamp && c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0,c._id )
+                //c['exit'] = user && user.timeStamp ? c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0 ? false : true : false
+                c['exit'] = user && user.timeStamp && c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0
+                c['last_updated'] = user && user.timeStamp ? user.timeStamp : c.last_updated 
              c['last_message'] = user && user.message ? c.type === 'single' ? c.last_message: user.message : c.last_message
             }
             const filter = c && c.last_active ? c.last_active.filter((c)=> c && c.user_id && c.user_id.toString() === req.params.id.toString()) : []

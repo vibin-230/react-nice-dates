@@ -105,12 +105,15 @@ module.exports = function () {
       if(ec && ec.length > 0){
         const existingConversation = ec[0]
         const exit_user_id = existingConversation && existingConversation.exit_list.length > 0 ? existingConversation.exit_list[existingConversation.exit_list.length-1].user_id : []
-        if(  existingConversation.exit_list && existingConversation.exit_list.length>0 && existingConversation.members.some((m)=>m.toString() !== exit_user_id.toString())){
+        if(  existingConversation.exit_list && existingConversation.exit_list.length>0){
           existingConversation.members =  existingConversation.members.concat(exit_user_id)
           existingConversation['exit'] = true
+          console.log(exit_user_id,'exit_user_id',existingConversation.members);
+       
         }else{
           existingConversation['exit'] = false
         }
+        console.log(exit_user_id,'exit_user_id',existingConversation.exit);
         return ([existingConversation]); 
       }else{
         let x = []
@@ -975,6 +978,14 @@ return x
   }
 
 
+  async function leaveChatroomSingle(game1,client) {
+    const x = await Conversation.findByIdAndDelete({ _id: game1.convo_id }).lean().then(conversation => {
+      //client.in(game1.convo_id).emit('unread',{})
+      }).catch(error => console.log(error))
+    return x
+  }
+
+
     // async function joinConversation1
 
 
@@ -1036,6 +1047,7 @@ return x
     updateImage,
     setTownTrue,
     updateGroup,
+    leaveChatroomSingle,
     updateParams,
     deleteChatroom,
     handleProfileAlerts,

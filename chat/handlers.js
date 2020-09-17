@@ -99,6 +99,11 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     //client.to(chatroomName.convo_id).emit('unread',{})
 
  }
+ else if(chatroomName.type === 'single'){
+  x  = await chatroomManager.leaveChatroomSingle(chatroomName,client)
+  //client.to(chatroomName.convo_id).emit('unread',{})
+
+}
     else{
       x  = await chatroomManager.leaveChatroom(chatroomName,io)
     }

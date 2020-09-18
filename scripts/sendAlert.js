@@ -25,7 +25,7 @@ var objectId = mongoose.Types.ObjectId('569ed8269353e9f4c51617aa');
     if(body.type == "shoutout"){
     Alert.findOne({user:body.user,created_by:body.created_by,type:body.type,post:body.post}).lean().then(a=>{
       if(a){
-        Alert.findOneAndDelete({user:body.user,created_by:body.created_by,type:body.type}).then((s)=>{
+        Alert.findOneAndDelete({user:body.user,created_by:body.created_by,type:body.type,post:body.post}).then((s)=>{
         }).catch(next) 
       }
     }).catch(next)

@@ -276,7 +276,6 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
             console.log('redis comeback',reply);
           });
       const finalData = [...y]
-
       res.status(201).send({status: "success", message: "alerts collected",data:finalData})
       }).catch(next)
     //}).catch(next)
@@ -292,7 +291,7 @@ router.post('/get_more_alerts/', [
           console.log(err);
         }
         const data = JSON.parse(reply)
-        let index = data.findIndex(x => x._id.toString() ===req.body.alert.toString());
+        let index = data.findIndex(x => x._id.toString() === req.body.alert.toString());
        let final_data = []
 
         let diff;

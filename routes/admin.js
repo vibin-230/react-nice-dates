@@ -1433,7 +1433,8 @@ router.post('/create_offer',
 			let title_check = offers.filter(value=>value.title===req.body.title)
 			if(offers.length>=2){
 				res.send({status:"failed",message:"Offers limit reached"})
-			}else if(title_check.length){
+			}else
+			 if(title_check.length){
 				res.send({status:"failed",message:"Offer title already exist"})
 			}else{
 				Offers.create(req.body).then(offers=>{

@@ -22,15 +22,23 @@ var objectId = mongoose.Types.ObjectId('569ed8269353e9f4c51617aa');
     }).catch(next)
   }
   else if(type === 'delete'){
-    console.log("biody",body)
+    if(body.type == "shoutout"){
+    Alert.findOne({user:body.user,created_by:body.created_by,type:body.type,post:body.post}).lean().then(a=>{
+      if(a){
+        Alert.findOneAndDelete({user:body.user,created_by:body.created_by,type:body.type}).then((s)=>{
+        }).catch(next) 
+      }
+    }).catch(next)
+  }
+  else {
     Alert.findOne({user:body.user,created_by:body.created_by,type:body.type}).lean().then(a=>{
-      console.log("aaa",a)
       if(a){
         Alert.findOneAndDelete({user:body.user,created_by:body.created_by,type:body.type}).then((s)=>{
           console.log(s)
         }).catch(next) 
       }
     }).catch(next)
+  }
   }
 
   else if(type === 'addorupdate'){

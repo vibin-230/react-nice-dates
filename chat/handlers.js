@@ -211,7 +211,7 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
         client.to(chatroomName._id).emit('new',message)
         client.to(chatroomName._id).emit('unread',message)
         chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
-        callback()
+        chatroomName.exit && chatroomName.type === 'single' ? callback({exit:false}):callback()
       }else{
          const x = await chatroomName && chatroomName.exit && chatroomManager.registerExitedUser(chatroomName,message)
         client.to(chatroomName._id).emit('new',message)
@@ -220,7 +220,7 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
         //chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,[])
         //chatroomManager.notifyAllUsers(chatroomName, message)
         chatroomManager.saveMessage(message) 
-        callback()
+        chatroomName.exit && chatroomName.type === 'single' ? callback({exit:false}):callback()
      }
     }else{
     const clientNumber = io.sockets.adapter.rooms[chatroomName._id];

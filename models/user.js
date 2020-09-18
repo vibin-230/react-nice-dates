@@ -47,6 +47,7 @@ const schema = new Schema({
   login_type:String,
   visibility:{type:String, default:'public'},
   role:{type:String, default:'user'},
+  past_convos:Array,
   followers:[{type:mongoose.Schema.Types.ObjectId, ref:'user'}],
   following:[{type:mongoose.Schema.Types.ObjectId, ref:'user'}],
   requests:[

@@ -688,7 +688,6 @@ router.post('/get_chatrooms/:id', [
               const x =  c.exit_list
                 let user  =  x.length > 0 && x.filter((e)=>{ return e && e.user_id && e.user_id._id.toString() !== req.params.id.toString()})[0]
                 c.members =  user && c.type==='single' ? c.members.concat(user.user_id) : c.members
-                console.log(user && user.timeStamp && c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0,c._id )
                 //c['exit'] = user && user.timeStamp ? c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0 ? false : true : false
                 c['exit'] = user && user.timeStamp && c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0
                 c['last_updated'] = user && user.timeStamp ? user.timeStamp : c.last_updated 
@@ -700,7 +699,7 @@ router.post('/get_chatrooms/:id', [
                 const time = m.time.filter((timestamp,index)=>{ 
                   
 
-                  if( filter.length > 0 &&  moment(filter[0].last_active).isSameOrBefore(timestamp) && m.user[index].toString() !== req.params.id.toString()) {
+                  if( filter.length > 0 &&  moment(filter[filter.length-1].last_active).isSameOrBefore(timestamp) && m.user[index].toString() !== req.params.id.toString()) {
                     return timestamp
                   }
                 })  

@@ -177,11 +177,10 @@ module.exports = function () {
             else if(e && e.user_id && e.user_id.toString() === message.author.toString()){
               return e && e.user_id && e.user_id.toString() == message.author.toString()
             }
-            
 
           }).length > 0
         
-      console.log('hit before',conversation)
+      console.log('hit before',conversation.hide_chat)
       if(user && conversation.type === 'single'){
           console.log('hit',user)
           conversation.members =  user && conversation.type==='single' ? conversation.members : conversation.members
@@ -189,8 +188,9 @@ module.exports = function () {
         }
        // conversation.last_message = message._id
         Conversation.findById({_id:conversation._id}).then(conversation1=>{
-          conversation.join_date =  user && conversation.type==='single' && conversation.exit_list.length > 0  ? conversation.join_date.concat([{user_id:user.user_id._id,join_date:conversation1.invite_status ? conversation.created_at:message.created_at}]) : conversation.join_date
-          conversation.last_active =  user && conversation.type==='single' && conversation.exit_list.length > 0  ? conversation.last_active.concat([{user_id:user.user_id._id,last_active:conversation1.invite_status ? conversation.created_at:message.created_at}]) : conversation.last_active
+          let id = conversation.hide_chat ? message.author.toString():user.user_id._id 
+          conversation.join_date =  user && conversation.type==='single' && conversation.exit_list.length > 0  ? conversation.join_date.concat([{user_id:id,join_date:conversation1.invite_status ? conversation.created_at:message.created_at}]) : conversation.join_date
+          conversation.last_active =  user && conversation.type==='single' && conversation.exit_list.length > 0  ? conversation.last_active.concat([{user_id:id,last_active:conversation1.invite_status ? conversation.created_at:message.created_at}]) : conversation.last_active
           conversation.exit_list = []
          // conversation
           console.log('dsf',conversation.join_date)

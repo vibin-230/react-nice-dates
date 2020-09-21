@@ -48,8 +48,8 @@ router.post('/shout_out/:id', verifyToken, (req, res, next) => {
                         // var array3 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter(function(obj) { return following.indexOf(obj._id.toString()) !== -1; }):[]
                         var array3 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter((obj)=> following.filter(a=>a.toString() === obj._id.toString()).length > 0  ):[]
                         // var string_array = array3.length > 0 && array3.filter((a)=> s.created_by._id.toString() !== req.userId && a._id.toString() === s.created_by._id.toString()).length <= 0 ? array3.map((a)=>a.name_status ? a.name : a.handle):[]
-                        var string_array1 = array3.length > 0 && array3.filter((a)=> s.created_by._id.toString() !== req.userId && a._id.toString() === s.created_by._id.toString() )
-                        var string_array =  string_array1.length >= 0 ?  string_array1.map((a)=>a.name_status ? a.name : a.handle):[]
+                        var string_array1 = array3.length > 0 && array3.filter((a)=> a._id.toString() !== req.userId.toString() )
+                        var string_array =  string_array1.length >= 0 ?  string_array1.map((a)=>a.handle):[]
 
                         if(string_array.length === 1){
                 s['shout_line'] = `Shoutout by ${string_array[0]}`
@@ -91,7 +91,7 @@ router.post('/activity/:id', verifyToken, (req, res, next) => {
               var array3 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter((obj)=> following.filter(a=>a.toString() === obj._id.toString()).length > 0  ):[]
               //var array4 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter((obj)=> following.indexOf(obj._id.toString()) !== -1 ):[]
             // let as = array3.filter((a)=>a._id.toString() === s.created_by._id.toString())
-            var string_array1 = array3.length > 0 && array3.filter((a)=> s.created_by._id.toString() !== req.userId.toString() && a._id.toString() === s.created_by._id.toString() )
+            var string_array1 = array3.length > 0 && array3.filter((a)=> a._id.toString() !== req.userId.toString() )
             var string_array =  string_array1.length >= 0 ?  string_array1.map((a)=>a.name_status ? a.name : a.handle):[]
               let x = ''
             
@@ -179,8 +179,9 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
               //var array4 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter((obj)=> following.indexOf(obj._id.toString()) !== -1 ):[]
             // let as = array3.filter((a)=>a._id.toString() === s.created_by._id.toString())
               // var string_array = array3.length > 0  ? array3.map((a)=>a.name_status ? a.name.trim() : a.handle.trim()):[]
-              var string_array1 = array3.length > 0 && array3.filter((a)=> s.created_by._id.toString() !== req.userId.toString() && a._id.toString() === s.created_by._id.toString() )
-              var string_array =  string_array1.length >= 0 ?  string_array1.map((a)=>a.name_status ? a.name : a.handle):[]
+              var string_array1 = array3.length > 0 && array3.filter((a)=>  a._id.toString() !== req.userId.toString() )
+              // .filter((a)=> s.created_by._id.toString() !== req.userId.toString() && a._id.toString() === s.created_by._id.toString() )
+              var string_array =  string_array1.length >= 0 ?  string_array1.map((a)=>a.handle):[]
               let x = ''
               if(string_array.length === 1){
                 x = `Shoutout by ${string_array[0]}`

@@ -179,21 +179,30 @@ module.exports = function () {
             }
 
           }).length > 0
+          let user1  =  x.length > 0 && x.filter((e)=>{ 
+            if(e && e.user_id && e.user_id._id && e.user_id.toString() !== message.author.toString()){
+              return e && e.user_id && e.user_id._id.toString() !== message.author.toString()
+            }
+            else if(e && e.user_id && e.user_id.toString() === message.author.toString()){
+              return e && e.user_id && e.user_id.toString() == message.author.toString()
+            }
+
+          })
         
       console.log('hit before',conversation.hide_chat)
       if(user && conversation.type === 'single'){
-          console.log('hit',user)
+          console.log('hit',user1)
           conversation.members =  user && conversation.type==='single' ? conversation.members : conversation.members
 
         }
        // conversation.last_message = message._id
         Conversation.findById({_id:conversation._id}).then(conversation1=>{
-          let id = conversation.hide_chat ? message.author.toString():user.user_id._id 
+          let id = conversation.hide_chat ? message.author.toString():user1[0].user_id._id 
           conversation.join_date =  user && conversation.type==='single' && conversation.exit_list.length > 0  ? conversation.join_date.concat([{user_id:id,join_date:conversation1.invite_status ? conversation.created_at:message.created_at}]) : conversation.join_date
           conversation.last_active =  user && conversation.type==='single' && conversation.exit_list.length > 0  ? conversation.last_active.concat([{user_id:id,last_active:conversation1.invite_status ? conversation.created_at:message.created_at}]) : conversation.last_active
           conversation.exit_list = []
          // conversation
-          console.log('dsf',conversation.join_date)
+          console.log('dsf',conversation.join_date,conversation.hide_chat)
           Conversation.findByIdAndUpdate({_id:conversation._id},conversation).then(conversation=>{
 
         }).catch((e)=>{console.log(e)});
@@ -915,7 +924,6 @@ module.exports = function () {
       // NotifyArray(device_token_list, `following you`, `Turf Town`)
   return x
   }
-
   async function leaveChatroomWithConversationId(game1,client) {
     const x = await Conversation.findById({ _id: game1.convo_id }).lean().then(conversation => {
       return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {

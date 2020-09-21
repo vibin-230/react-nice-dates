@@ -3819,6 +3819,9 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
     EventBooking.find(eventFilter).lean().populate({path:"event_id",populate:{path:"venue"}}).then(eventBooking=>{
       Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate('venue','venue'). populate("host","name _id handle name_status profile_picture").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
         result = Object.values(combineSlots(booking))
+        game.map((key)=>{
+         key["end_time"] = key.conversation && key.conversation.end_time ? key.conversation.end_time : key.bookings[key.bookings.length-1].end_time 
+        })
         const open_games = game.filter((g)=>{
          return g.share_type === 'open' || (g.share_type === 'closed' && g.host.some(key=>key._id.toString() === req.userId.toString()))
         })
@@ -3826,6 +3829,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         let event_booking_data = eventBooking.filter(a => a.event_id).map((a)=>{
           a['start_time'] = a.event_id.start_date
           a['event'] = a.event_id
+          a["end_time"] = a.event_id.start_date
           return a
         })
          event_booking_data.reverse()
@@ -3836,11 +3840,11 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
             return rv;
           }, {});
         };
-        let finalResult = booking_data.sort((a, b) => moment(a.start_time).format("YYYYMMDDHmm") > moment(b.start_time).format("YYYYMMDDHmm") ? 1 : -1 )
-        const present = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') <= moment(a.start_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
-        const past = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') >= moment(a.start_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
-        const apresent = groupBy(present,'start_time')
-        const apast = groupBy(past,'start_time')
+        let finalResult = booking_data.sort((a, b) => moment(a.end_time).format("YYYYMMDDHmm") > moment(b.end_time).format("YYYYMMDDHmm") ? 1 : -1 )
+        const present = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') <= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
+        const past = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') >= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
+        const apresent = groupBy(present,'end_time')
+        const apast = groupBy(past,'end_time')
         let qpresent =   Object.entries(apresent).map(([key,value])=>{return {title:key,data:value }})
         let qpast =   Object.entries(apast).map(([key,value])=>{return {title:key,data:value }})
         const today_empty = qpresent && qpresent.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpresent.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})

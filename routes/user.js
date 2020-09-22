@@ -85,6 +85,9 @@ function getGame(res,convo_id,refund_status,next){
 
     Game.findOne({conversation:convo_id}).lean().populate("conversation").populate('host','_id name profile_picture phone handle name_status visibility').populate('users','_id name profile_picture phone handle name_status visibility').populate('invites','_id name profile_picture phone handle visibility').then(game=>{
             Venue.findById({_id:game.bookings[0].venue_id}).then(venue =>{
+              Offers.find({}).then(offers=>{
+              let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(venue._id) !== -1)
+              venue["offers"] = filteredOffer
               let game1 = Object.assign({},game)
               game1["venue"] = venue
               game1["rating"] = venue.rating
@@ -96,6 +99,7 @@ function getGame(res,convo_id,refund_status,next){
             })
     }).catch(next);
   }).catch(next);
+}).catch(next);
 }
 
 function getRandomColor(){

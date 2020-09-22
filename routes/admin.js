@@ -278,15 +278,19 @@ router.post('/resetPassword',
 
 router.post('/admin_login',
 	(req, res, next) => {
-	Admin.findOne({username:req.body.username},{reset_password_hash:0,reset_password_expiry:0,activity_log:0},null).then(admin=>{
+	Admin.findOne({username:req.body.username},{reset_password_hash:0,reset_password_expiry:0,activity_log:0},null).populate("venue").then(admin=>{
 		if(admin){
 			if(admin.password){
 				if(admin.status){
 					bcrypt.compare(req.body.password, admin.password).then(function(response) {
 						if(response){
+							// Venue.find({_id:{$in:admin.venue}},{bank:0}).lean().then(venue=>{
+							// console.log("ssss",venue)
+							// admin["venue"] = venue
 							var token = jwt.sign({ id: admin._id, username:admin.username, role:admin.role, name:admin.name}, config.secret);
 							admin.password = undefined
 							res.send({status:"success", message:"login success", token:token, role:admin.role,id:admin._id,data:admin})
+							// })
 							// ActivityLog(admin._id, admin.role, 'login', admin.username +" logged-in successfully")
 						}else{
 							res.send({status:"failed", message:"password incorrect"})
@@ -302,6 +306,7 @@ router.post('/admin_login',
 			res.send({status:"failed", message:"admin doesn't exist"})
 		}
 	}).catch(next)
+// }).catch(next)
 })
 
 
@@ -584,7 +589,7 @@ router.post('/venue_manager',
 	verifyToken,
 	AccessControl('venue_manager', 'read'),
 	(req, res, next) => {
-	VenueManager.find({role:"venue_manager"},{activity_log:0}).lean().populate('venue','_id name venue type').then(venue=>{
+	VenueManager.find({role:"venue_manager"},{activity_log:0}).lean().populate('venue','_id name venue type').populate('staff','_id name').then(venue=>{
 		res.send({status:"success", message:"venue managers fetched", data:venue})
 	}).catch(next)
 })
@@ -644,6 +649,75 @@ router.post('/venue_manager',
 // 	}).catch(next)
 // })
 
+router.post('/add_admin',
+	verifyToken,
+	(req, res, next) => {
+	req.body.created_by = req.username
+	Admin.findOne({username:req.body.username}).then(admin=>{
+		if(admin){
+			res.send({status:"failure", message:"Email-id already exist"})
+		}else{
+			req.body.role = "admin";
+			req.body.reset_password_hash = mongoose.Types.ObjectId();
+			req.body.reset_password_expiry = moment().add(1,"days")
+			Admin.create(req.body).then(admin=>{
+				var id = mongoose.Types.ObjectId();
+				let reset_url = process.env.DOMAIN+"reset-password/"+req.body.reset_password_hash
+				let mailBody = {
+					name:data.name,
+					link:reset_url
+				}
+				// let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
+				// mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
+				// 	if(response){
+				// 	  res.send({status:"success"})
+				// 	}else{
+				// 	  res.send({status:"failed"})
+				// 	}
+				// })
+				VenueStaff.find({_id:{$in:admin.staff}},{_id:1, name:1, venue:1, type:1}).lean().then(staff=>{
+				Venue.find({_id:{$in:admin.venue}},{_id:1, name:1, venue:1, type:1}).lean().then(venue=>{
+					admin.venue = venue
+					admin.staff = staff
+					res.send({status:"success", message:"venue manager added", data:admin})
+				}).catch(next)
+			}).catch(next)
+		}).catch(next)
+		}
+	}).catch(next)
+})
+
+
+router.put('/edit_admin/:id',
+	verifyToken,
+	// AccessControl('venue_manager', 'update'),
+	(req, res, next) => {
+	req.body.modified_by = req.username
+	Admin.findByIdAndUpdate({_id:req.params.id},req.body).then(admin=>{
+		Admin.findById({_id:req.params.id}).lean().populate('venue','_id name venue type').populate('staff','_id name').populate('manager','_id name') .then(admin=>{
+			res.send({status:"success", message:"venue manager edited", data:admin})
+			// ActivityLog(req.userId, req.username, req.role, 'venue manager modified', req.name+" modified venue manager "+venueManager.name)
+		}).catch(next)
+	}).catch(next)
+})
+router.post('/get_super_managers',
+	verifyToken,
+	(req, res, next) => {
+		Admin.find({role:"admin"}).then(admin=>{
+			res.send({status:"success", message:"managers fetched", data:admin})
+	}).catch(next)
+})
+router.delete('/delete_admin/:id',
+	verifyToken,
+	(req, res, next) => {
+		Admin.findByIdAndRemove({_id:req.params.id}).then(deletedAdmin=>{
+			Admin.find({},{activity_log:0}).then(admin=>{
+			res.send({status:"success", message:"admin deleted", data:[]})
+			// ActivityLog(req.userId, req.username, req.role, 'venue manager deleted', req.name+" deleted venue manager "+deletedVenueManager.name)
+		}).catch(next)
+	}).catch(next)
+})
+
 
 router.post('/add_venue_manager',
 	verifyToken,
@@ -664,27 +738,14 @@ router.post('/add_venue_manager',
 					name:data.name,
 					link:reset_url
 				}
-				// ejs.renderFile('views/set_password/set_password.ejs',mailBody).then(html=>{search
-				// 	mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
-				// 		if(response){
-				// 			let body = {
-				// 			reset_password_expiry:moment().add(1,"days"),
-				// 			reset_password_hash:id
-				// 			}
-				// 			// res.send({status:"success"})
-				// 		}else{
-				// 			// res.send({status:"failed"});
-				// 		}
-				// 	})
-				// }).catch(next)
-				let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
-				mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
-					if(response){
-					  res.send({status:"success"})
-					}else{
-					  res.send({status:"failed"})
-					}
-				})
+				// let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
+				// mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
+				// 	if(response){
+				// 	  res.send({status:"success"})
+				// 	}else{
+				// 	  res.send({status:"failed"})
+				// 	}
+				// })
 				console.log("Venueee",venueManager)
 				VenueStaff.find({_id:{$in:venueManager.staff}},{_id:1, name:1, venue:1, type:1}).lean().then(staff=>{
 				Venue.find({_id:{$in:venueManager.venue}},{_id:1, name:1, venue:1, type:1}).lean().then(venue=>{
@@ -705,7 +766,7 @@ router.put('/edit_venue_manager/:id',
 	(req, res, next) => {
 	req.body.modified_by = req.username
 	VenueManager.findByIdAndUpdate({_id:req.params.id},req.body).then(venueManager=>{
-		VenueManager.findById({_id:req.params.id}).lean().populate('venue','_id name venue type').then(venueManager=>{
+		VenueManager.findById({_id:req.params.id}).lean().populate('venue','_id name venue type').populate('staff','_id name').then(venueManager=>{
 			res.send({status:"success", message:"venue manager edited", data:venueManager})
 			// ActivityLog(req.userId, req.username, req.role, 'venue manager modified', req.name+" modified venue manager "+venueManager.name)
 		}).catch(next)
@@ -749,15 +810,15 @@ router.post('/add_venue_staff',
 			req.body.reset_password_expiry = moment().add(1,"days")
 			VenueStaff.create(req.body).then(venueStaff=>{
 				var id = mongoose.Types.ObjectId();
-				let reset_url = process.env.DOMAIN+"reset-password/"+req.body.reset_password_hash
-				let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
-				mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
-					if(response){
-					  res.send({status:"success"})
-					}else{
-					  res.send({status:"failed"})
-					}
-				})
+				// let reset_url = process.env.DOMAIN+"reset-password/"+req.body.reset_password_hash
+				// let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
+				// mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
+				// 	if(response){
+				// 	  res.send({status:"success"})
+				// 	}else{
+				// 	  res.send({status:"failed"})
+				// 	}
+				// })
 				res.send({status:"success", message:"venue staff added", data:venueStaff})
 				// ActivityLog(req.userId, req.username, req.role, 'venue staff created', req.name+" created venue staff "+venueStaff.name)
 			}).catch(next)
@@ -772,7 +833,7 @@ router.put('/edit_venue_staff/:id',
 	(req, res, next) => {
 	req.body.modified_by = req.username
 	VenueStaff.findByIdAndUpdate({_id:req.params.id},req.body).then(venueStaff=>{
-		VenueStaff.findById({_id:req.params.id}).then(venueStaff=>{
+		VenueStaff.findById({_id:req.params.id}).populate('venue','_id name venue type').then(venueStaff=>{
 			res.send({status:"success", message:"venue staff edited", data:venueStaff})
 			// ActivityLog(req.userId, req.username, req.role, 'venue staff modified', req.name+" modified venue staff "+venueStaff.name)
 		}).catch(next)

@@ -23,7 +23,7 @@ const schema = new Schema({
   venue:[{ type: Schema.Types.ObjectId, ref: 'venue' }],
   activity_log:Array,
   staff:[{ type: Schema.Types.ObjectId, ref: 'venueStaff' }],
-  managers:[{ type: Schema.Types.ObjectId, ref: 'venueManager' }],
+  manager:[{ type: Schema.Types.ObjectId, ref: 'venueManager' }],
   status:{type:Boolean, default: true}
 });
 

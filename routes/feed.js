@@ -411,18 +411,22 @@ router.post('/get_more_alerts/', [
     // {$and:[{_id:{$nin:[req.userId]}},{ $or: [{"name":{ "$regex": req.body.search, "$options": "i" }}, {"handle":{ "$regex": req.body.search, "$options": "i" }}]}]}
 
   
-
-
+    User.findById({_id:req.params.id},{}).lean().then(user=> {
     Post.find({created_by:req.params.id}).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate({path:"event",populate:{path:"venue"}}).populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue'}] }).then((posts)=>{
+      let following = [user.following,req.params.id]
       let x = posts.map((s)=>{
-        if( s && s.shout_out && s.shout_out.length>0 && s.shout_out.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0){
+        if( s && s.shout_out && s.shout_out.length>0 && s.shout_out.filter((a)=>a._id.toString() === req.userId.toString()).length > 0){
             s['shout_out_status'] = true
             
           }else{
             s['shout_out_status'] = false
           }
-          var array3 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter((a)=>a._id.toString() !== req.params.id.toString()) : []
-          var string_array = array3.length > 0  ? array3.map((a)=>a.name_status ? a.name.trim() : a.handle.trim()):[]
+          // var array3 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter((a)=>a._id.toString() !== req.userId.toString()) : []
+          // var string_array = array3.length > 0  ? array3.map((a)=> a.handle.trim()):[]
+
+          var array3 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter((obj)=> following.filter(a=>a.toString() === obj._id.toString()).length > 0  ):[]
+          var string_array1 = array3.length > 0 && array3.filter((a)=>  a._id.toString() !== req.userId.toString() )
+          var string_array =  string_array1.length >= 0 ?  string_array1.map((a)=>a.handle):[]
           let x = ''
           if(string_array.length === 1){
             x = `Shoutout by ${string_array[0]}`
@@ -442,6 +446,7 @@ router.post('/get_more_alerts/', [
     let y = x.filter((key)=> key && key.game )
     let z = x.filter((key)=>key && key.event)
     let final = [...y,...z]
+    final.sort((a, b) => a.start_time <= b.start_time ? 1 : -1 )
     const client = req.redis()
     client.set('user_activity_'+req.userId, JSON.stringify(final), function(err, reply) {
       console.log('redis comeback',reply);
@@ -450,6 +455,7 @@ router.post('/get_more_alerts/', [
     const finalData = [...final]
       res.status(201).send({status: "success", message: "user post activity",data:finalData.slice(0,10)})
     }).catch(next);
+  }).catch(next);
   });
 
 
@@ -483,7 +489,9 @@ router.post('/get_more_alerts/', [
   router.post('/user_activity_friend/:id', [
     verifyToken,
   ], (req, res, next) => {
+    User.findById({_id:req.params.id},{}).lean().then(user=> {
     Post.find({created_by:req.params.id}).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate({path:"event",populate:{path:"venue",select:"venue"}}).populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then((posts)=>{
+      let following = user.following
       let x = posts.map((s)=>{
         if( s && s.shout_out && s.shout_out.length>0 && s.shout_out.filter((a)=>a._id.toString() === req.userId.toString()).length > 0){
             s['shout_out_status'] = true
@@ -492,7 +500,8 @@ router.post('/get_more_alerts/', [
             s['shout_out_status'] = false
           }
           var array3 = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.filter((obj)=> following.filter(a=>a.toString() === obj._id.toString()).length > 0  ):[]
-          var string_array = array3.length > 0  ? array3.map((a)=>a.name_status ? a.name.trim() : a.handle.trim()):[]
+          var string_array1 = array3.length > 0 && array3.filter((a)=>  a._id.toString() !== req.params.id.toString() )
+          var string_array =  string_array1.length >= 0 ?  string_array1.map((a)=>a.handle):[]
           let x = ''
           if(string_array.length === 1){
             x = `Shoutout by ${string_array[0]}`
@@ -514,6 +523,7 @@ router.post('/get_more_alerts/', [
     });
       res.status(201).send({status: "success", message: "coin history collected",data:x.slice(0,4)})
     }).catch(next);
+  }).catch(next);
   });
 
 

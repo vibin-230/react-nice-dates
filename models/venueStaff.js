@@ -17,6 +17,7 @@ const schema = new Schema({
   email:String,
   venue_manager:String,
   role:String,
+  status:{type:Boolean, default: true},
   venue:[{ type: Schema.Types.ObjectId, ref: 'venue' }]
 });
 

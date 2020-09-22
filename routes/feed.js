@@ -459,28 +459,28 @@ router.post('/get_more_alerts/', [
   });
 
 
-  router.post('/get_more_user_activity/', [
+  router.post('/get_more_user_activity/:id', [
     verifyToken,
   ], (req, res, next) => {
-      const client = req.redis()  
+    const client = req.redis()
       client.get('user_activity_'+req.userId, function(err, reply) { 
         if(err){
           console.log(err);
         }
         const data = JSON.parse(reply)
-        let index = data.findIndex(x => x._id.toString() ===req.body.user_activity._id.toString());
+        let index = data.findIndex(x => x._id.toString() === req.body.user_activity._id.toString());
        let final_data = []
-        console.log('data length',data.length);
+       let diff;
         if(index > 0){
-          let diff = data.length - index 
+          diff = data.length - index  > 10 ? 10 : data.length - index
           if(diff > 10){
-            final_data = data.slice(index+1,index+9)
-          }else if(diff < 10 && diff >= 1){
+            final_data = data.slice(index+1,index+10)
+          }else if(diff < 20 && diff >= 1){
             final_data = data.slice(index+1,index+diff)
           }else{
             final_data.push({type:'empty',data:'No data available'})
           }
-        } 
+        }
       res.status(201).send({status: "success", message: "posts collected",data:final_data})
     })
   

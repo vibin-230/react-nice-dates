@@ -667,14 +667,14 @@ router.post('/add_admin',
 					name:data.name,
 					link:reset_url
 				}
-				// let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
-				// mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
-				// 	if(response){
-				// 	  res.send({status:"success"})
-				// 	}else{
-				// 	  res.send({status:"failed"})
-				// 	}
-				// })
+				let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
+				mail("stage@turftown.in", req.body.username,"Reset Password","test",html,response=>{
+					if(response){
+					  res.send({status:"success"})
+					}else{
+					  res.send({status:"failed"})
+					}
+				})
 				VenueStaff.find({_id:{$in:admin.staff}},{_id:1, name:1, venue:1, type:1}).lean().then(staff=>{
 				Venue.find({_id:{$in:admin.venue}},{_id:1, name:1, venue:1, type:1}).lean().then(venue=>{
 					admin.venue = venue
@@ -700,6 +700,33 @@ router.put('/edit_admin/:id',
 		}).catch(next)
 	}).catch(next)
 })
+
+
+router.post('/get_admin_details',
+	verifyToken,
+	(req, res, next) => {
+		Admin.findById({_id:rq.body.id}).populate("managers").populate('staff').then(admin=>{
+			res.send({status:"success", message:"managers fetched", data:admin})
+	}).catch(next)
+})
+
+
+router.post('/get_manager_details',
+	verifyToken,
+	(req, res, next) => {
+		VenueManager.findById({_id:rq.body.id}).populate("venue").populate('staff').then(admin=>{
+			res.send({status:"success", message:"managers fetched", data:admin})
+	}).catch(next)
+})
+
+router.post('/get_staff_details',
+	verifyToken,
+	(req, res, next) => {
+		VenueStaff.findById({_id:rq.body.id}).populate("venue").then(admin=>{
+			res.send({status:"success", message:"managers fetched", data:admin})
+	}).catch(next)
+})
+
 router.post('/get_super_managers',
 	verifyToken,
 	(req, res, next) => {

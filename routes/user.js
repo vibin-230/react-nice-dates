@@ -833,7 +833,19 @@ router.post('/save_token_device', [
 ], (req, res, next) => {
       //Check if user exist
       User.findOne({_id: req.userId},{activity_log:0}).then(user=> {
-        User.findByIdAndUpdate({_id: req.userId},{device_token:req.body.device_token, os:req.body.os}).then(user1=>{
+        const device_token1 = user && user.device_id && user.device_id.length > 0 ? user.device_id.some(a=>a.device_id === req.body.device_id) 
+        ?
+        user.device_id.map(a=>{
+          if(a.device_id === req.body.device_id){
+            a['device_token'] = req.body.device_token
+            return a
+          }else{
+            return a
+          }
+        }):user.device_id.concat([{device_id:req.body.device_id,device_token:req.body.device_token,created_date:new Date()}]):[{device_id:req.body.device_id,device_token:req.body.device_token,created_date:new Date()}]
+        
+       
+        User.findByIdAndUpdate({_id: req.userId},{device_token:req.body.device_token, os:req.body.os,device_id:device_token1}).then(user1=>{
           // notify(user,`<i style=' background: url("/cat.png");
           // height: 20px;
           // width: 20px;

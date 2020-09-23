@@ -20,6 +20,7 @@ const redis = require("redis").createClient;
 const io = require('socket.io')(server,{
   pingInterval: 10000,
   pingTimeout: 5000,
+  autoConnect:false,
 })
 const port = 6379;
 const host = '127.0.0.1';

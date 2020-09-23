@@ -61,6 +61,7 @@ const schema = new Schema({
   }],
   mute:[{type:mongoose.Schema.Types.ObjectId, ref:'conversation'}],
   temporary:Boolean,
+  device_id:Array,
   sports_interest:Array,
   activity_log:Array,
   online_status:String,

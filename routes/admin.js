@@ -702,28 +702,34 @@ router.put('/edit_admin/:id',
 })
 
 
-router.post('/get_admin_details',
+router.post('/get_admin_details/:id',
 	verifyToken,
 	(req, res, next) => {
-		Admin.findById({_id:rq.body.id}).populate("managers").populate('staff').then(admin=>{
-			res.send({status:"success", message:"managers fetched", data:admin})
+		Admin.findById({_id:req.params.id}).populate({path:"manager",populate:{path:'venue'}}).populate({path:"staff",populate:{path:'venue'}}).then(admin=>{
+
+			// populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } })
+
+			let data ={}
+			data["staff"] = admin.staff
+			data['manager'] = admin.manager
+			res.send({status:"success", message:"admin data fetched", data:data})
 	}).catch(next)
 })
 
 
-router.post('/get_manager_details',
+router.post('/get_manager_details/:id',
 	verifyToken,
 	(req, res, next) => {
-		VenueManager.findById({_id:rq.body.id}).populate("venue").populate('staff').then(admin=>{
-			res.send({status:"success", message:"managers fetched", data:admin})
+		VenueManager.findById({_id:req.params.id}).populate("venue").populate('staff').then(venueManager=>{
+			res.send({status:"success", message:"managers fetched", data:venueManager})
 	}).catch(next)
 })
 
 router.post('/get_staff_details',
 	verifyToken,
 	(req, res, next) => {
-		VenueStaff.findById({_id:rq.body.id}).populate("venue").then(admin=>{
-			res.send({status:"success", message:"managers fetched", data:admin})
+		VenueStaff.findById({_id:req.params.id}).populate("venue").then(venueStaff=>{
+			res.send({status:"success", message:"staff data fetched", data:venueStaff})
 	}).catch(next)
 })
 
@@ -1291,6 +1297,13 @@ AccessControl('venue', 'create'),
 // }).catch(next);
 // })
 
+
+router.post('/get_venue_offer_value/:id',verifyToken,(req,res,next)=>{
+		Offers.find({venue:[req.params.id]}).then(offers=>{
+			res.send({status:"success", message:"offers fetched", data:offers})
+}).catch(next)
+
+})
 router.post('/search',
 	verifyToken,
 	AccessControl('venue', 'read'),

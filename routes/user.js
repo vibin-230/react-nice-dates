@@ -1401,7 +1401,6 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
         Conversation.updateMany({members:{$in:[req.params.id]}},{ $pull: { members: { $in: [req.params.id] }}},{multi:true}).then((c)=>{
       console.log('updage convos single by user',c)
         
-          
           Game.find({users:{$in:[req.params.id]},host:{$in:[req.params.id],}}).then((c)=>{
             console.log('find convos  by user',c)
             console.log('find convos  by user',c.length)
@@ -1418,7 +1417,7 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
                     Conversation.deleteMany({_id:{$in:x}}).then((c)=>{
 
                 console.log('updated game  by user',c)
-
+                Venue.updateMany({},{$pull:{rating:{user_id:req.params.id}}},{multi:true}).then((v)=>{
                 User.updateMany({followers:{$in:[req.params.id]}},{ $pull:{ followers: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
                   User.updateMany({requests:{$in:[req.params.id]}},{ $pull:{ requests: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
                     User.updateMany({sent_requests:{$in:[req.params.id]}},{ $pull:{ sent_requests: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
@@ -1457,7 +1456,7 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
 }).catch(next);
 }).catch(next);
 }).catch(next);
-
+}).catch(next);
 
 });
 
@@ -1498,11 +1497,16 @@ router.post('/send_invite',verifyToken, (req, res, next) => {
 
 
 
+
 router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
        getGame(res,req.params.conversation_id,false,next)
 });
 
-
+router.post('/review_user/:id',verifyToken, (req, res, next) => {
+   Venue.updateMany({},{$pull:{rating:{user_id:req.params.id}}},{multi:true}).then((convo)=>{
+    res.send({status:"sucess",message:"activity fetched"})  
+  }).catch(next)
+})
 
 router.post('/get_group_info',verifyToken, (req, res, next) => {
   Conversation.findById({_id:req.body.conversation_id}).lean().populate('members','_id name device_token profile_picture handle name_status visibility').populate('host','_id name profile_picture phone handle name_status visibility').then((convo)=>{

@@ -705,7 +705,7 @@ router.put('/edit_admin/:id',
 router.post('/get_admin_details',
 	verifyToken,
 	(req, res, next) => {
-		Admin.findById({_id:rq.body.id}).populate("mangers").populate('staff').then(admin=>{
+		Admin.findById({_id:rq.body.id}).populate("managers").populate('staff').then(admin=>{
 			res.send({status:"success", message:"managers fetched", data:admin})
 	}).catch(next)
 })

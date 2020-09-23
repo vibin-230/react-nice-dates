@@ -3238,10 +3238,24 @@ router.post('/accept_or_delete_requests', verifyToken, (req, res, next) => {
               }).catch(next)
               }
               else {
-                sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,type:'following',status_description:`${friend.handle} is following you`},'delete',next) 
-
-                res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1}})
-              }
+                // sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,type:'follow',status_description:`${friend.handle} is following you`},'delete',next) 
+                Alert.findOneAndDelete({user:req.userId,created_by:req.body.id,type:"follow"}).then((s)=>{
+                  Alert.find({user: req.userId,created_by:{$nin:[req.userId]}}).lean().populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'post', populate: { path: 'event' , populate :{path:'venue',select:'venue'} } }).populate({ path: 'post', populate: { path: 'game' , populate :{path:'venue',select:'venue'} } }).populate('created_by','name _id handle profile_picture').then(alert=> {
+                    let y = alert.filter((key)=>{
+                      if(key.type == "shoutout" && key.post.type == "game"){
+                        return (key.post.game !== null && key.created_by !== null ) 
+                      }
+                      else if(key.type == "shoutout" && key.post.type == "event"){
+                        return (key.post.event !== null && key.created_by !== null) 
+                      }
+                      else {
+                        return key.created_by !== null
+                      }
+                    } )
+                res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1,alert:alert}})
+              }).catch(next) 
+            }).catch(next) 
+            }
           }).catch(next)
         }).catch(next)
 
@@ -3820,9 +3834,12 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
 
   //req.role==="super_admin"?delete filter.created_by:null
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
+    Booking.find(cancel_filter).lean().populate('venue_data','venue').then(cancelledBookings=>{
     EventBooking.find(eventFilter).lean().populate({path:"event_id",populate:{path:"venue"}}).then(eventBooking=>{
+      EventBooking.find(cancel_filter).lean().populate({path:"event_id",populate:{path:"venue"}}).then(cancelledeventBooking=>{
       Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate('venue','venue'). populate("host","name _id handle name_status profile_picture").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
         result = Object.values(combineSlots(booking))
+        cancelled_bookings =  Object.values(combineSlots(cancelledBookings))
         game.map((key)=>{
          key["end_time"] = key.conversation && key.conversation.end_time ? key.conversation.end_time : key.bookings[key.bookings.length-1].end_time 
         })
@@ -3836,6 +3853,13 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
           a["end_time"] = a.event_id.start_date
           return a
         })
+        let cancelledeventBooking1 = cancelledeventBooking.filter(a => a.event_id).map((a)=>{
+          a['start_time'] = a.event_id.start_date
+          a['event'] = a.event_id
+          a["end_time"] = a.event_id.start_date
+          return a
+        })
+
          event_booking_data.reverse()
          booking_data = req.body.type && req.body.type === 'host' ?[...open_games,...event_booking_data,...result]:[...game,...event_booking_data,...result]
          var groupBy = (xs, key) => {
@@ -3849,13 +3873,16 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         const past = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') >= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
         const apresent = groupBy(present,'end_time')
         const apast = groupBy(past,'end_time')
+        const pastCancelled = [...cancelled_bookings,...cancelledeventBooking1]
+        const cancelledPast = groupBy(pastCancelled,'start_time')
         let qpresent =   Object.entries(apresent).map(([key,value])=>{return {title:key,data:value }})
         let qpast =   Object.entries(apast).map(([key,value])=>{return {title:key,data:value }})
+        let qcancelled = Object.entries(cancelledPast).map(([key,value])=>{return {title:key,data:value }})
         const today_empty = qpresent && qpresent.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpresent.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
         const today_empty1 = qpast && qpast.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpast.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
         qpresent.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
         qpast.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
-        let qpas = [...qpast]
+        let qpas = [...qpast,...qcancelled]
         let qprs = [...qpresent]
         res.send({status:"success", message:"booking history fetched", data:{past:qpas.slice(qpas.length-5,qpas.length),present:qprs.slice(0,5)}})
         req.redis().set('bookings_present_'+req.userId,JSON.stringify(qpresent))
@@ -3863,6 +3890,8 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
     }).catch(next)
   }).catch(next)
   }).catch(next)
+}).catch(next)
+}).catch(next)
 })
 
 
@@ -4351,7 +4380,7 @@ router.post('/check_booking', verifyToken, (req, res, next) => {
     if(event){
       res.send({status:"success", message:"Already Registered!", data:{event}})
     }else{
-      EventBooking.find({event_id:req.body.event_id}).lean().populate('event_id').then(bookingOrders=>{
+      EventBooking.find({event_id:req.body.event_id,booking_status:'booked'}).lean().populate('event_id').then(bookingOrders=>{
         if(bookingOrders.length<bookingOrders[0].event_id.format.noofteams){
           if(bookingOrders[0].event_id.status){
             res.send({status:"success", message:"no event found"})

@@ -256,17 +256,18 @@ router.post('/send_otp',[
 
   let phone = 91+req.body.phone;
   let otp   = Math.floor(999 + Math.random() * 9000);
-  console.log('pass hit')
   User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
     // axios.get(process.env.PHP_SERVER+'/textlocal/otp.php?otp='+otp+'&phone='+phone)
     // .then(response => {
-      send_message_otp(req.body.phone,"TRFTWN","Welcome to Turftown! Your OTP is "+otp ).then((a)=>{
+    send_message_otp(req.body.phone,"TRFTWN","Welcome to Turftown! Your OTP is "+otp ).then((a)=>{
         if(a.status === 'success')
         {
           if(user)
           {
             if(user.email)
             {
+              console.log('pass hit',user)
+
               User.findOneAndUpdate({phone: req.body.phone},{otp:otp}).then(user=> {
                 User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
                   res.status(201).send({status:"success",message:"existing user",otp:otp,data:user})
@@ -557,6 +558,9 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
    var result = Object.values(combineSlots([...values]))
 
     //Capture Payment
+  if(req.body[0].transaction_id && req.body[0].transaction_id !== 'free_slot'){
+
+  
     axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
       .then(response => {
         if(response.data.status === "captured")
@@ -568,7 +572,10 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         console.log(error.response)
         res.send({error:error.response});
       }).catch(next);
+    }else{
+      res.send({status:"success", message:"slot booked",data: result})
 
+    }
     //Send Sms
     Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
@@ -2172,7 +2179,7 @@ router.post('/check_booking', verifyToken, (req, res, next) => {
     if(event){
       res.send({status:"success", message:"Already Registered!", data:{event}})
     }else{
-      EventBooking.find({event_id:req.body.event_id}).lean().populate('event_id').then(bookingOrders=>{
+      EventBooking.find({event_id:req.body.event_id,booking_status:'booked'}).lean().populate('event_id').then(bookingOrders=>{
         if(bookingOrders.length<bookingOrders[0].event_id.format.noofteams){
           if(bookingOrders[0].event_id.status){
             res.send({status:"success", message:"no event found"})
@@ -2326,7 +2333,7 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
 //Event Booking
 router.post('/event_booking', verifyToken, (req, res, next) => {
   Event.findOne({_id: req.body.event_id}).then(event=>{
-    EventBooking.find({event_id:req.body.event_id}).lean().populate('event_id').then(bookingOrders=>{
+    EventBooking.find({event_id:req.body.event_id,booking_status:'booked'}).lean().populate('event_id').then(bookingOrders=>{
       if(bookingOrders.length<=event.format.noofteams){
           EventBooking.findOne({}, null, {sort: {$natural: -1}}).lean().populate('event_id').then(bookingOrder=>{
             let booking_id;

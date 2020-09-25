@@ -10,6 +10,8 @@ const schema = new Schema({
   modified_by:String,
   start_date:Date,
   end_date:Date,
+  full_payment:{type:Boolean, default:false},
+  full_payment_limit:{type:Number, default:10},
   status:{type:Boolean, default:true},
   status_text:String,
   // event_name:String,

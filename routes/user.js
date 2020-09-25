@@ -1805,6 +1805,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
     }
 
     //Capture Payment
+    if(req.body[0].transaction_id && req.body[0].transaction_id !== 'free_slot'){
     axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
       .then(response => {
         if(response.data.status === "captured")
@@ -1816,7 +1817,10 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         console.log(error.response)
         res.send({error:error.response});
       }).catch(next);
-
+    }
+    else {
+      res.send({status:"success", message:"slot booked",data: result})
+    }
     //Send Sms
     handleSlotAvailabilityForGames(values,req.socket)
     var result = Object.values(combineSlots([...values]))
@@ -2849,7 +2853,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
         let phone_numbers =admins.map((admin,index)=>"91"+admin.phone)
         let venue_phone = "91"+venue.venue.contact
         let manger_numbers = [...phone_numbers,venue_phone]
-        if(booking.booking_type === "app" && req.body.refund_status){
+        if(booking.booking_type === "app" && req.body.refund_status && booking.transaction_id !== 'free_slot'){
           axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
             console.log(response.data);
@@ -4550,7 +4554,7 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
 //Event Booking
 router.post('/event_booking', verifyToken, (req, res, next) => {
   Event.findOne({_id: req.body.event_id}).then(event=>{
-    EventBooking.find({event_id:req.body.event_id}).lean().populate('event_id').then(bookingOrders=>{
+    EventBooking.find({event_id:req.body.event_id,booking_status:"booked"}).lean().populate('event_id').then(bookingOrders=>{
       if(bookingOrders.length<=event.format.noofteams){
           EventBooking.findOne({}, null, {sort: {$natural: -1}}).lean().populate('event_id').then(bookingOrder=>{
             let booking_id;

@@ -1111,7 +1111,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
         let phone_numbers =admins.map((admin,index)=>"91"+admin.phone)
         let venue_phone = "91"+venue.venue.contact
         let manger_numbers = [...phone_numbers,venue_phone]
-        if(booking.booking_type === "app" && req.body.refund_status && booking.transaction_id !== 'free_slot '){
+        if(booking.booking_type === "app" && req.body.refund_status && booking.transaction_id !== 'free_slot'){
           axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
             if(response.data.entity === "refund") /// user cancellation with refund 

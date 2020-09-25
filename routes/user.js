@@ -256,7 +256,7 @@ router.post('/send_otp',[
 
   let phone = 91+req.body.phone;
   let otp   = Math.floor(999 + Math.random() * 9000);
-  User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
+  User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0,activity_log:0},null).then(user=> {
     // axios.get(process.env.PHP_SERVER+'/textlocal/otp.php?otp='+otp+'&phone='+phone)
     // .then(response => {
     send_message_otp(req.body.phone,"TRFTWN","Welcome to Turftown! Your OTP is "+otp ).then((a)=>{
@@ -266,7 +266,6 @@ router.post('/send_otp',[
           {
             if(user.email)
             {
-              console.log('pass hit',user)
 
               User.findOneAndUpdate({phone: req.body.phone},{otp:otp}).then(user=> {
                 User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {

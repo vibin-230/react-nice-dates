@@ -220,7 +220,7 @@ function findTime() {
 }
 
 
-router.post('/venue_list', verifyToken, (req, res, next) => {
+router.post('/venue_list', (req, res, next) => {
   function findDay() {
     var d = new Date();
     var weekday = new Array(7);

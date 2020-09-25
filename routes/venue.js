@@ -250,7 +250,9 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
         Offer.find({status:true}).then(offers=>{
           Coupon.find({status:true}).then(coupon=>{  
           var list = Object.values(venue).map((value,index)=>{
-              let distance = req.body.default_location ? getDistanceFromLatLonInKm(req.body.latLong[0],req.body.latLong[1],value.venue.latLong[0],value.venue.latLong[1]) : getDistanceFromLatLonInKm(13.078453,80.233927,value.venue.latLong[0],value.venue.latLong[1])
+              let distance = getDistanceFromLatLonInKm(req.body.latLong[0] ?req.body.latLong[0]:13.0828 ,req.body.latLong[1] ? req.body.latLong[1] :80.2417 ,value.venue.latLong[0],value.venue.latLong[1])
+
+              // let distance = req.body.default_location ? getDistanceFromLatLonInKm(req.body.latLong[0],req.body.latLong[1],value.venue.latLong[0],value.venue.latLong[1]) : getDistanceFromLatLonInKm(13.078453,80.233927,value.venue.latLong[0],value.venue.latLong[1])
               let featured = value.featured.filter(featured=>featured.zipcode==zipcode)
              
               let pricing = Object.values(value.configuration.pricing).filter(price=>price.day===findDay())

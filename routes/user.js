@@ -1267,6 +1267,7 @@ router.post('/verify_otp', (req, res, next) => {
       if(user.otp===req.body.otp){
           User.findOneAndUpdate({phone: req.body.phone},{last_login:moment()}).then(user=>{
             User.findOne({phone: req.body.phone},{__v:0,token:0,activity_log:0},null).then(user=> {
+              token = jwt.sign({ id: user._id, phone:user.phone, role:"user", name:user.name}, config.secret);
             if(user.password || user.email){
               req.userId = user._id
               var count  = 0
@@ -1330,7 +1331,7 @@ router.post('/verify_otp', (req, res, next) => {
                        user['refer_custom_value1'] = 50
                        user['coins'] =  coins && coins.length > 0 && coins[0].amount ? coins[0].amount : 0
                        user['level'] =  getLevel(250 * mvp_count + 100 * game_completed_count)
-                       res.status(201).send({status: "success", message: "existing user",data:user})
+                       res.status(201).send({status: "success", message: "existing user",data:user,token:token})
                       } else {
                         res.status(422).send({status: "failure", errors: {user:"force update failed"}});
                       }

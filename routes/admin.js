@@ -809,13 +809,11 @@ router.put('/edit_venue_manager/:id',
 
 router.delete('/delete_venue_manager/:id',
 	verifyToken,
-	AccessControl('venue_manager', 'delete'),
+	// AccessControl('venue_manager', 'delete'),
 	(req, res, next) => {
 		VenueManager.findByIdAndRemove({_id:req.params.id}).then(deletedVenueManager=>{
-			VenueManager.find({},{activity_log:0}).then(venueManager=>{
 			res.send({status:"success", message:"venue manager deleted", data:[]})
 			// ActivityLog(req.userId, req.username, req.role, 'venue manager deleted', req.name+" deleted venue manager "+deletedVenueManager.name)
-		}).catch(next)
 	}).catch(next)
 })
 
@@ -876,7 +874,7 @@ router.put('/edit_venue_staff/:id',
 
 router.delete('/delete_venue_staff/:id',
 	verifyToken,
-	AccessControl('venue_staff', 'delete'),
+	// AccessControl('venue_staff', 'delete'),
 	(req, res, next) => {
 		VenueStaff.findByIdAndRemove({_id:req.params.id},req.body).then(deletedVenueStaff=>{
 			VenueStaff.find({}).then(venueStaff=>{

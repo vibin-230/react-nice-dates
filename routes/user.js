@@ -1267,6 +1267,7 @@ router.post('/verify_otp', (req, res, next) => {
       if(user.otp===req.body.otp){
           User.findOneAndUpdate({phone: req.body.phone},{last_login:moment()}).then(user=>{
             User.findOne({phone: req.body.phone},{__v:0,token:0,activity_log:0},null).then(user=> {
+              token = jwt.sign({ id: user._id, phone:user.phone, role:"user", name:user.name}, config.secret);
             if(user.password || user.email){
               req.userId = user._id
               var count  = 0
@@ -1330,7 +1331,7 @@ router.post('/verify_otp', (req, res, next) => {
                        user['refer_custom_value1'] = 50
                        user['coins'] =  coins && coins.length > 0 && coins[0].amount ? coins[0].amount : 0
                        user['level'] =  getLevel(250 * mvp_count + 100 * game_completed_count)
-                       res.status(201).send({status: "success", message: "existing user",data:user})
+                       res.status(201).send({status: "success", message: "existing user",data:user,token:token})
                       } else {
                         res.status(422).send({status: "failure", errors: {user:"force update failed"}});
                       }
@@ -1401,7 +1402,6 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
         Conversation.updateMany({members:{$in:[req.params.id]}},{ $pull: { members: { $in: [req.params.id] }}},{multi:true}).then((c)=>{
       console.log('updage convos single by user',c)
         
-          
           Game.find({users:{$in:[req.params.id]},host:{$in:[req.params.id],}}).then((c)=>{
             console.log('find convos  by user',c)
             console.log('find convos  by user',c.length)
@@ -1418,7 +1418,7 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
                     Conversation.deleteMany({_id:{$in:x}}).then((c)=>{
 
                 console.log('updated game  by user',c)
-
+                Venue.updateMany({},{$pull:{rating:{user_id:req.params.id}}},{multi:true}).then((v)=>{
                 User.updateMany({followers:{$in:[req.params.id]}},{ $pull:{ followers: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
                   User.updateMany({requests:{$in:[req.params.id]}},{ $pull:{ requests: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
                     User.updateMany({sent_requests:{$in:[req.params.id]}},{ $pull:{ sent_requests: { $in: [req.params.id] }} },{multi:true}).then((c)=>{
@@ -1457,7 +1457,7 @@ router.delete('/delete_user/:id',verifyToken, AccessControl('users', 'delete'), 
 }).catch(next);
 }).catch(next);
 }).catch(next);
-
+}).catch(next);
 
 });
 
@@ -1498,11 +1498,16 @@ router.post('/send_invite',verifyToken, (req, res, next) => {
 
 
 
+
 router.post('/get_game/:conversation_id',verifyToken, (req, res, next) => {
        getGame(res,req.params.conversation_id,false,next)
 });
 
-
+router.post('/review_user/:id',verifyToken, (req, res, next) => {
+   Venue.updateMany({},{$pull:{rating:{user_id:req.params.id}}},{multi:true}).then((convo)=>{
+    res.send({status:"sucess",message:"activity fetched"})  
+  }).catch(next)
+})
 
 router.post('/get_group_info',verifyToken, (req, res, next) => {
   Conversation.findById({_id:req.body.conversation_id}).lean().populate('members','_id name device_token profile_picture handle name_status visibility').populate('host','_id name profile_picture phone handle name_status visibility').then((convo)=>{
@@ -1801,6 +1806,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
     }
 
     //Capture Payment
+    if(req.body[0].transaction_id && req.body[0].transaction_id !== 'free_slot'){
     axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
       .then(response => {
         if(response.data.status === "captured")
@@ -1812,7 +1818,10 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         console.log(error.response)
         res.send({error:error.response});
       }).catch(next);
-
+    }
+    else {
+      res.send({status:"success", message:"slot booked",data: result})
+    }
     //Send Sms
     handleSlotAvailabilityForGames(values,req.socket)
     var result = Object.values(combineSlots([...values]))
@@ -2845,7 +2854,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
         let phone_numbers =admins.map((admin,index)=>"91"+admin.phone)
         let venue_phone = "91"+venue.venue.contact
         let manger_numbers = [...phone_numbers,venue_phone]
-        if(booking.booking_type === "app" && req.body.refund_status){
+        if(booking.booking_type === "app" && req.body.refund_status && booking.transaction_id !== 'free_slot'){
           axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
             console.log(response.data);
@@ -4548,7 +4557,7 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
 //Event Booking
 router.post('/event_booking', verifyToken, (req, res, next) => {
   Event.findOne({_id: req.body.event_id}).then(event=>{
-    EventBooking.find({event_id:req.body.event_id}).lean().populate('event_id').then(bookingOrders=>{
+    EventBooking.find({event_id:req.body.event_id,booking_status:"booked"}).lean().populate('event_id').then(bookingOrders=>{
       if(bookingOrders.length<=event.format.noofteams){
           EventBooking.findOne({}, null, {sort: {$natural: -1}}).lean().populate('event_id').then(bookingOrder=>{
             let booking_id;

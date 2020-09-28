@@ -45,7 +45,9 @@ var objectId = mongoose.Types.ObjectId('569ed8269353e9f4c51617aa');
     Alert.findOne({user:body.user,created_by:body.created_by}).then(a=>{
       if(a){
         Alert.findOneAndUpdate({user:body.user,created_by:body.created_by},{$set:body}).then((s)=>{
-        }).catch(next) 
+    // body && body.status_description && body.status_description.includes('is following you') && NotifyUsers([body.created_by],body.status_description)
+  console.log(s)     
+  }).catch(next) 
       }else{
         Alert.create(body).then((a)=>{
           NotifyUsers([body.user],body.status_description)

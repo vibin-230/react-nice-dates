@@ -3233,7 +3233,7 @@ router.post('/accept_or_delete_requests', verifyToken, (req, res, next) => {
       let friend1 = type == "accept" ? { $addToSet: { following: { $each: [req.userId] } } ,$set:{sent_requests:sent_requests} } : {$set:{sent_requests:sent_requests} }
       let user_guy = type == "accept" ?  { $addToSet: { followers: { $each: [req.body.id] } } ,$set:{requests:requests} } : {$set:{requests:requests} }
       User.findByIdAndUpdate({ _id: req.body.id },friend1).then(user => {
-        User.findByIdAndUpdate({ _id: req.userId },user_guy).then(user2 => {
+        User.findByIdAndUpdate({ _id: req.userId },user_guy).then(asd => {
           User.findById({_id:req.userId},{activity_log:0}).populate('requests','name profile_picture handle name_status').then(user=>{ 
               let requested_user = user.requests
               User.find({ _id: { $in: requested_user }, status: true }, { activity_log: 0 }).lean().then(user1 => {
@@ -3245,6 +3245,7 @@ router.post('/accept_or_delete_requests', verifyToken, (req, res, next) => {
                     let alert = {...a,type:'following',status_description:`${friend.handle} is following you`}
                     res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1,alert:alert}})
                 sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,type:'following',status_description:`${friend.handle} is following you`},'addorupdate',next) 
+                sendAlert({created_at:new Date(),created_by:req.userId,user:req.body.id,type:'following',status_description:`${asd.handle} has accepted your request`},'create',next) 
                 
                }).catch(next)
               }).catch(next)
@@ -3288,7 +3289,7 @@ router.post('/accept_or_delete_requests_alert', verifyToken, (req, res, next) =>
       let friend1 = type == "accept" ? { $addToSet: { following: { $each: [req.userId] } } ,$set:{sent_requests:sent_requests} } : {$set:{sent_requests:sent_requests} }
       let user_guy = type == "accept" ?  { $addToSet: { followers: { $each: [req.body.id] } } ,$set:{requests:requests} } : {$set:{requests:requests} }
       User.findByIdAndUpdate({ _id: req.body.id },friend1).then(user => {
-        User.findByIdAndUpdate({ _id: req.userId },user_guy).then(user2 => {
+        User.findByIdAndUpdate({ _id: req.userId },user_guy).then(asd => {
           User.findById({_id:req.userId},{activity_log:0}).populate('requests','name profile_picture handle name_status').then(user=>{ 
               let requested_user = user.requests
               User.find({ _id: { $in: requested_user }, status: true }, { activity_log: 0 }).lean().then(user1 => {
@@ -3300,6 +3301,7 @@ router.post('/accept_or_delete_requests_alert', verifyToken, (req, res, next) =>
                       a["status_description"] = `${friend.handle} is following you`
                     res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1,alert:a}})
                 sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,type:'following',status_description:`${friend.handle} is following you`},'addorupdate',next) 
+                sendAlert({created_at:new Date(),created_by:req.userId,user:req.body.id,type:'following',status_description:`${asd.handle} has accepted your request`},'create',next) 
                 
               }).catch(next)
               }

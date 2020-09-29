@@ -657,7 +657,7 @@ router.post('/add_admin',
 		if(admin){
 			res.send({status:"failure", message:"Email-id already exist"})
 		}else{
-			req.body.role = "admin";
+			// req.body.role = "admin";
 			req.body.reset_password_hash = mongoose.Types.ObjectId();
 			req.body.reset_password_expiry = moment().add(1,"days")
 			Admin.create(req.body).then(admin=>{
@@ -675,14 +675,14 @@ router.post('/add_admin',
 					  res.send({status:"failed"})
 					}
 				})
-				VenueStaff.find({_id:{$in:admin.staff}},{_id:1, name:1, venue:1, type:1}).lean().then(staff=>{
+				// VenueStaff.find({_id:{$in:admin.staff}},{_id:1, name:1, venue:1, type:1}).lean().then(staff=>{
 				Venue.find({_id:{$in:admin.venue}},{_id:1, name:1, venue:1, type:1}).lean().then(venue=>{
 					admin.venue = venue
-					admin.staff = staff
+					// admin.staff = staff
 					res.send({status:"success", message:"venue manager added", data:admin})
 				}).catch(next)
 			}).catch(next)
-		}).catch(next)
+		// }).catch(next)
 		}
 	}).catch(next)
 })
@@ -694,12 +694,82 @@ router.put('/edit_admin/:id',
 	(req, res, next) => {
 	req.body.modified_by = req.username
 	Admin.findByIdAndUpdate({_id:req.params.id},req.body).then(admin=>{
-		Admin.findById({_id:req.params.id}).lean().populate('venue','_id name venue type').populate('staff','_id name').populate('manager','_id name') .then(admin=>{
+		Admin.findById({_id:admin._id}).lean().populate('venue','_id name venue type').populate('staff','_id name').populate('manager','_id name') .then(admin=>{
 			res.send({status:"success", message:"venue manager edited", data:admin})
 			// ActivityLog(req.userId, req.username, req.role, 'venue manager modified', req.name+" modified venue manager "+venueManager.name)
 		}).catch(next)
 	}).catch(next)
 })
+
+router.put('/edit_admin_manager/:id',
+	verifyToken,
+	// AccessControl('venue_manager', 'update'),
+	(req, res, next) => {
+	req.body.modified_by = req.username
+	Admin.findByIdAndUpdate({_id:req.params.id},req.body).then(admin=>{
+		Admin.updateMany({},{$pull:{"manager":req.params.id}},{multi:true}).then((v)=>{
+			Admin.updateMany({},{$push:{"staff":req.params.id}},{multi:true}).then((v)=>{
+		Admin.findById({_id:admin._id}).lean().populate('venue','_id name venue type').populate('staff','_id name').populate('manager','_id name') .then(admin=>{
+			res.send({status:"success", message:"venue manager edited", data:admin})
+			// ActivityLog(req.userId, req.username, req.role, 'venue manager modified', req.name+" modified venue manager "+venueManager.name)
+		}).catch(next)
+	}).catch(next)
+	}).catch(next)
+}).catch(next)
+
+})
+
+router.put('/edit_admin_staff/:id',
+	verifyToken,
+	// AccessControl('venue_manager', 'update'),
+	(req, res, next) => {
+	req.body.modified_by = req.username
+	Admin.findByIdAndUpdate({_id:req.params.id},req.body).then(admin=>{
+		Admin.updateMany({},{$pull:{"staff":req.params.id}},{multi:true}).then((v)=>{
+			Admin.updateMany({},{$push:{"manager":req.params.id}},{multi:true}).then((v)=>{
+		Admin.findById({_id:admin._id}).lean().populate('venue','_id name venue type').populate('staff','_id name').populate('manager','_id name') .then(admin=>{
+			res.send({status:"success", message:"venue manager edited", data:admin})
+			// ActivityLog(req.userId, req.username, req.role, 'venue manager modified', req.name+" modified venue manager "+venueManager.name)
+		}).catch(next)
+	}).catch(next)
+}).catch(next)
+}).catch(next)
+
+
+})
+
+router.put('/edit_admin_admin/:id',
+	verifyToken,
+	// AccessControl('venue_manager', 'update'),
+	(req, res, next) => {
+	req.body.modified_by = req.username
+	Admin.findByIdAndUpdate({_id:req.params.id},req.body).then(admin=>{
+		Admin.updateMany({},{$pull:{"staff":req.params.id}},{multi:true}).then((v)=>{
+			Admin.updateMany({},{$push:{"manager":req.params.id}},{multi:true}).then((v)=>{
+		Admin.findById({_id:admin._id}).lean().populate('venue','_id name venue type').populate('staff','_id name').populate('manager','_id name') .then(admin=>{
+			res.send({status:"success", message:"venue manager edited", data:admin})
+			// ActivityLog(req.userId, req.username, req.role, 'venue manager modified', req.name+" modified venue manager "+venueManager.name)
+		}).catch(next)
+	}).catch(next)
+}).catch(next)
+}).catch(next)
+
+
+})
+
+
+
+router.post('/admin_details',
+	verifyToken,
+	(req, res, next) => {
+		Admin.find({role:req.body.role}).populate("venue").populate({path:"manager",populate:{path:'venue'}}).populate({path:"staff",populate:{path:'venue'}}).then(admin=>{
+
+			// populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } })
+
+			res.send({status:"success", message:"admin data fetched", data:admin})
+	}).catch(next)
+})
+
 
 
 router.post('/get_admin_details/:id',
@@ -860,7 +930,7 @@ router.post('/add_venue_staff',
 
 router.put('/edit_venue_staff/:id',
 	verifyToken,
-	AccessControl('venue_staff', 'update'),
+	// AccessControl('venue_staff', 'update'),
 	(req, res, next) => {
 	req.body.modified_by = req.username
 	VenueStaff.findByIdAndUpdate({_id:req.params.id},req.body).then(venueStaff=>{

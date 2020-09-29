@@ -22,8 +22,8 @@ const schema = new Schema({
   access:String,
   venue:[{ type: Schema.Types.ObjectId, ref: 'venue' }],
   activity_log:Array,
-  staff:[{ type: Schema.Types.ObjectId, ref: 'venueStaff' }],
-  manager:[{ type: Schema.Types.ObjectId, ref: 'venueManager' }],
+  staff:[{ type: Schema.Types.ObjectId, ref: 'admin' }],
+  manager:[{ type: Schema.Types.ObjectId, ref: 'admin' }],
   status:{type:Boolean, default: true}
 });
 

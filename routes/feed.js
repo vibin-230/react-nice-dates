@@ -464,14 +464,16 @@ router.post('/get_more_alerts/', [
           console.log(err);
         }
         const data = JSON.parse(reply)
-        let index = data.findIndex(x => x._id.toString() === req.body.user_activity._id.toString());
+        let index =  req.body.user_activity && req.body.user_activity._id  ? data.findIndex(x => x._id.toString() === req.body.user_activity._id.toString()) : 0 ;
        let final_data = []
+
        let diff;
         if(index > 0){
           diff = data.length - index  > 10 ? 10 : data.length - index
+          console.log("index",index,"diff",diff,"data.length",data.length, )
           if(diff >= 10){
             final_data = data.slice(index+1,index+10)
-          }else if(diff < 10 && diff >= 1){
+          }else if(diff < 10 && diff > 1){
             final_data = data.slice(index+1,index+diff)
           }else{
             final_data.push({type:'empty',data:'No data available'})

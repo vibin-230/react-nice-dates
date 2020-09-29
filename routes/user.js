@@ -737,6 +737,19 @@ router.post('/get_chatrooms/:id', [
 });
 
 
+router.post('/get_chatrooms_for_share/:id', [
+  verifyToken,
+], (req, res, next) => {
+      Conversation.find({members: { $in: [req.params.id] },type:["single","group"] }).lean().populate("host","name profile_picture handle name_status").populate('to',' name _id profile_picture last_active online_status status handle name_status visibility').populate('members','name _id profile_picture last_active online_status status handle name_status visibility').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status visibility').populate('last_message').then(existingConversation=>{
+        Conversation.find({members: { $in: [req.params.id] },type:"game",end_time:{$gte:new Date()} }).lean().populate("host","name profile_picture handle name_status").populate('to',' name _id profile_picture last_active online_status status handle name_status visibility').populate('members','name _id profile_picture last_active online_status status handle name_status visibility').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status visibility').populate('last_message').then(existingConversation1=>{
+        let data = [...existingConversation,...existingConversation1]
+        const chatrooms = _.orderBy(data, ['last_updated', 'time','created_at'], ['desc', 'desc','desc'])
+       let finals = [...chatrooms]
+       res.status(201).send({status: "success", message: "user collected",data:finals})
+        }).catch(next)
+      }).catch(next)
+});
+
 router.post('/sync_contacts', [
   verifyToken,
 ], (req, res, next) => {
@@ -3899,7 +3912,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         let event_booking_data = eventBooking.filter(a => a.event_id).map((a)=>{
           a['start_time'] = a.event_id.start_date
           a['event'] = a.event_id
-          a["end_time"] = a.event_id.start_date
+          a["end_time"] = moment(a.event_id.start_date).add(330,"minutes").utc().format()
           return a
         })
         let cancelledeventBooking1 = cancelledeventBooking.filter(a => a.event_id).map((a)=>{

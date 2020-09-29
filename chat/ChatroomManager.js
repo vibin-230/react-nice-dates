@@ -778,19 +778,19 @@ module.exports = function () {
         conversation.host = conversation_host_filter.length > 0 ? conversation_host_filter : [conversation_filter[0]]
         game.host = game_host_filter.length > 0 ? game_host_filter : [users_filter[0]]
         conversation.exit_list = conversation.exit_list.concat({user_id:game1.user_id,timeStamp:new Date(),message:{ conversation: conversation._id, message: `${user.handle} has left the game`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() }})
-          client1.to(game.conversation._id).emit('unread',{message:game1.type == "game" ? `${game1.host} has removed ${user.handle}` : `${game1.host} has removed ${user.handle}`,type:"delete" })
-          return Game.findByIdAndUpdate({ _id: game1.game_id },{$set:game}).then(game2 => {
-             return Conversation.findByIdAndUpdate({ _id: conversation._id }, { $set: conversation }).then(conversation2 => {
-              return Conversation.findById({ _id: conversation._id }).lean().populate('members', '_id device_token handle name name_status').then(conversation2 => {
-                return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
-                  let message_formation = game1.type == "game" ? `${game1.host} has removed ${user.handle}` : `${game1.host} has removed ${user.handle}` 
-                  const save_message = { conversation: conversation2._id, message: message_formation, read_status: false, name: user.handle, author: game1.id, type: 'bot', created_at: new Date() }
-                  saveMessage(save_message)
-                 
+        return Game.findByIdAndUpdate({ _id: game1.game_id },{$set:game}).then(game2 => {
+          return Conversation.findByIdAndUpdate({ _id: conversation._id }, { $set: conversation }).then(conversation2 => {
+            return Conversation.findById({ _id: conversation._id }).lean().populate('members', '_id device_token handle name name_status').then(conversation2 => {
+              return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
+                let message_formation = game1.type == "game" ? `${game1.host} has removed ${user.handle}` : `${game1.host} has removed ${user.handle}` 
+                const save_message = { conversation: conversation2._id, message: message_formation, read_status: false, name: user.handle, author: game1.id, type: 'bot', created_at: new Date() }
+                saveMessage(save_message)
+                
                 const token_list  = conversation2.members.filter((key) => key._id.toString() !== game1.id.toString())
                 const device_token_list = token_list.map((e) => e.device_token)
                 const user_device_token_list = [user.device_token]
                 client.in(conversation2._id).emit('new',save_message)
+                //client1.to(game.conversation._id).emit('unread',{message:game1.type == "game" ? `${game1.host} has removed ${user.handle}` : `${game1.host} has removed ${user.handle}`,type:"delete" })
                 // client1.to(conversation2._id).emit('unread',{})
 
                 NotifyArray(device_token_list, message_formation, `Game Left`,conversation2)

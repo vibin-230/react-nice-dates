@@ -1020,6 +1020,37 @@ router.post('/share_post/:id', [
 
 });
 
+
+router.post('/edit_post/:id', [
+  verifyToken,
+], (req, res, next) => {
+  console.log("REse",req.body.message)
+      Post.findByIdAndUpdate({_id:req.params.id},{message:req.body.message}).lean().then(post=>{
+        Post.findById({_id:req.params.id}).lean().then(post=>{
+            res.status(201).send({status: "success", message: "Post edited",data:post})
+        }).catch(next);
+      }).catch(next);
+});
+
+
+router.post('/delete_post/:id', [
+  verifyToken,
+], (req, res, next) => {
+      //Check if user exist
+      Post.findById({_id:req.params.id}).lean().then(post=>{
+      if(post){
+        Post.findByIdAndRemove({_id:post._id}).lean().then(post1=>{
+        Alert.deleteMany({type:"shoutout",post:post._id}).then(alert=>{
+            res.status(201).send({status: "success", message: "post deleted"})
+      }).catch(next);
+    }).catch(next);
+  }
+  else {
+    res.status(201).send({status: "success", message:"post is not avaialble" });
+  }
+  }).catch(next);
+});
+
 router.post('/share_post_event/:id', [
   verifyToken,
 ], (req, res, next) => {
@@ -1331,7 +1362,7 @@ router.post('/verify_otp', (req, res, next) => {
                        user['refer_custom_value1'] = 50
                        user['coins'] =  coins && coins.length > 0 && coins[0].amount ? coins[0].amount : 0
                        user['level'] =  getLevel(250 * mvp_count + 100 * game_completed_count)
-                       res.status(201).send({status: "success", message: "existing user",data:user,token:token})
+                       res.status(201).send({status: "success", message: "existing user",data:user})
                       } else {
                         res.status(422).send({status: "failure", errors: {user:"force update failed"}});
                       }

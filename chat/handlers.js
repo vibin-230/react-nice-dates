@@ -62,6 +62,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
         //for single user
         //const y = await chatroomManager.checkIfUserExited({_id:chatroom.getId()})
         const x =  await chatroom.getChatHistory(chatroom.getId(),token)
+        console.log('getCHatHistory',chatroom.getId(),x.length);
         callback(chatroom.getId(),x.messages,x.conversation)
       })
       .catch(callback)
@@ -80,32 +81,43 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     //   })
     //   .catch(callback)  
     
-    console.log('type',chatroomName.type)
+    
+
+
     if(chatroomName.type === 'group'){
        x  = await chatroomManager.leaveChatroomGroup(chatroomName,io)
-
+       if(x.type !== 'single'){
+         const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
+         const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
+         chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, x,activeUsers)
+       }
     }
 
   else  if(chatroomName.type === 'delete'){
       x  = await chatroomManager.deleteChatroom(chatroomName,io)
-
    }
      else if(chatroomName.type === 'game_without_game_id'){
       x  = await chatroomManager.leaveChatroomWithConversationId(chatroomName,io)
-
+      if(x.type !== 'single'){
+        const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
+        const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
+        chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, x,activeUsers)
+      }
    }
    else if(chatroomName.type === 'kick_player'){
     x  = await chatroomManager.kickPlayer(chatroomName,io,client)
-    //client.to(chatroomName.convo_id).emit('unread',{})
-
  }
  else if(chatroomName.type === 'single'){
   x  = await chatroomManager.leaveChatroomSingle(chatroomName,client)
-  //client.to(chatroomName.convo_id).emit('unread',{})
-
 }
     else{
       x  = await chatroomManager.leaveChatroom(chatroomName,io)
+      if(x.type !== 'single'){
+        const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
+        const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
+        chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, x,activeUsers)
+
+      }
     }
     // x.forEach((clientId)=>{
     //   const client =  clientManager.getClient(clientId)
@@ -225,7 +237,8 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
     }else{
     const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
     const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
-    console.log('pass',chatroomName._id,io.sockets.adapter.rooms,activeUsers);
+    console.log('pass',chatroomName._id,io.sockets.adapter.rooms);
+    console.log('active Users',activeUsers)
        client.to(chatroomName._id).emit('new',message)
         client.to(chatroomName._id).emit('unread',message)
         chatroomManager.saveMessage(message) 

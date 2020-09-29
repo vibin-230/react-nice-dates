@@ -307,11 +307,9 @@ router.post('/delete_conversation_empty/:id', [verifyToken,], (req, res, next) =
 router.post('/mark_read/:id', [
   verifyToken,
 ], (req, res, next) => {
-  console.log('last activity',req.body.conversation_id);
   Conversation.findById({_id:req.body.conversation_id}).then((convo)=>{
       
     Message.updateMany({conversation:req.body.conversation_id,read_status:false},{ '$set': { "read_status" : true } },{multi:true}).then((user)=>{
-      console.log('last activity',convo.last_active);
       const a = convo.last_active && convo.last_active.length > 0 ? convo.last_active.map((con)=>{
             if(con.user_id.toString() === req.params.id.toString()){
               con['last_active'] = new Date()
@@ -319,7 +317,6 @@ router.post('/mark_read/:id', [
             }else 
             return con
           }) : [{user_id:req.params.id,last_active:new Date()}]
-      console.log('last act update',a)    
 
     Conversation.findByIdAndUpdate({_id:req.body.conversation_id},{last_active:a}).then(conversation=>{
       res.status(201).send({status: "success", message: "conversation updated"})
@@ -332,7 +329,6 @@ router.post('/mark_read/:id', [
 router.post('/show_more_messages/:id', [
   verifyToken,
 ], (req, res, next) => {
-  console.log('last activity',req.body.message);
     Message.find({conversation:req.params.id,created_at: { $lt: req.body.message.created_at }}).lean().populate('author', 'name _id').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({_id:-1}).limit(10).then(m => {
       res.status(201).send({status: "success", message: "Conversation messages success",data:m})
     }).catch(next); 
@@ -512,7 +508,6 @@ router.post('/get_user', [
            })
           User.findOne({_id: req.userId},{activity_log:0}).populate("requests","name _id profile_picture").lean().then(user=> {
             Coins.aggregate([ { $match: { user:user._id } },{ $group: { _id: "$user", amount: { $sum: "$amount" } } }]).then((coins)=>{
-              console.log('coins',coins,req.userId);
             if (user) {
              user['total'] = count
                const alerts1 = alert && alert.length > 0 ? alert.filter(a=>moment(a.created_at).isAfter(user.last_active)) : []   
@@ -574,7 +569,6 @@ router.post('/get_following/:id', [
   let game_completed_count = 0
   let mvp_count = 0
   User.findOne({_id:req.params.id},{activity_log:0}).populate("followers","name _id").populate("following","name _id").lean().then(user1 => {
-    console.log("uyserrr",user1)
     Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
       game_completed_count = game && game.length > 0 ? game.length : 0
       const aw = game && game.length > 0 && game.filter((a)=>{
@@ -640,7 +634,6 @@ router.post('/get_follow_following', [
           let all = [...user1.followers,...user1.following]
           let final_users = [... new Set(all)]
           User.find({_id: {$in :final_users}},{activity_log:0,followers:0,following:0,}).lean().then(user1=>{
-            console.log("finaaa",user1)
               res.status(201).send({status: "success", message: "user collected",data:user1})
 
     }).catch(next);
@@ -684,18 +677,20 @@ router.post('/get_chatrooms/:id', [
          Message.aggregate([{ $match: { $and: [  { conversation: {$in:exit_convo_list1.map((c)=>c._id)} } ] } },{"$group" : {"_id" : "$conversation", "time" : {"$push" : "$created_at"},"user" : {"$push" : "$author"}}}]).then((message)=>{
            const x =  existingConversation.map((c)=> {
             let user = {}
+            const status = c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0 ? false : true
             c['time'] = 0
             c['exit'] = false
-            c['exit2'] = c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0 ? false : true
+            c['exit2'] = status
             c['validity'] = c.type==='game' && moment().format('YYYYMMDDHHmm')  > moment(c.end_time).subtract(330,"minutes").format('YYYYMMDDHHmm')
             if( c.exit_list && c.exit_list.length > 0){
               const x =  c.exit_list
-                let user  =  x.length > 0 && x.filter((e)=>{ return e && e.user_id && e.user_id._id.toString() !== req.params.id.toString()})[0]
+                let user  =  x.length > 0 && x.filter((e)=>{ return e && e.user_id && e.user_id._id.toString() !== req.params.id.toString()})[x.length-1]
                 c.members =  user && c.type==='single' ? c.members.concat(user.user_id) : c.members
                 //c['exit'] = user && user.timeStamp ? c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0 ? false : true : false
                 c['exit'] = user && user.timeStamp && c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0
                 c['last_updated'] = user && user.timeStamp ? user.timeStamp : c.last_updated 
-             c['last_message'] = user && user.message ? c.type === 'single' ? c.last_message: user.message : c.last_message
+             c['last_message'] = user && user.message ? c.type === 'single' ? c.last_message:status ? user.message : c.last_message : c.last_message
+            
             }
             const filter = c && c.last_active ? c.last_active.filter((c)=> c && c.user_id && c.user_id.toString() === req.params.id.toString()) : []
             message.length > 0 && message.map((m)=>{

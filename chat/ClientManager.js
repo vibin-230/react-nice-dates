@@ -7,7 +7,7 @@ module.exports = function () {
   async function addClient(client,token) {
     const user = await verifyToken(token)
     //if(user !== 'error')
-    clients.set(user.id.toString(), { client })
+    clients.set(client.id, { client,user })
     User.findByIdAndUpdate({_id: user.id.toString()},{online_status:'online'}).then(user1=>{}).catch()
 
   }
@@ -31,11 +31,18 @@ module.exports = function () {
     //      x.push(key)
     //      console.log('adadadadadadad',key);
     // });
-  const a = Array.from(clients.keys()).filter(value => {
+    console.log('clients',clients.keys(),clients1)
+  const a = Array.from(clients.keys()).map(value => {
       if(clients1.indexOf(clients.get(value).client.id) !== -1){
-        return value
-      }})
-    return a
+        return clients.get(value).user.id
+      }
+      else{
+        return 'pass'
+
+      }
+    })
+    console.log('final',a)
+    return a.filter((s)=>s !== 'pass')
   }
 
  async function removeClient(client,token) {

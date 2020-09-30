@@ -292,6 +292,7 @@ module.exports = function () {
           return member
         }
       })
+      console.log('notify all users not in the chatroom',filter);
        User.find({_id: {$in : filter}},{activity_log:0}).lean().then(user=> {
           const final_user  = user.filter((u)=> u.mute.filter((u)=>u.toString() === chatroom._id.toString()).length <= 0)
         console.log(final_user.length,chatroom._id.toString());
@@ -710,12 +711,10 @@ module.exports = function () {
                   saveMessage(save_message)
                 const token_list  = conversation2.members.filter((key) => key._id.toString() !== game1.user_id.toString())
                 const device_token_list = token_list.map((e) => e.device_token)
-                NotifyArray(device_token_list, message_formation, `Game Left`,conversation2)
+                //NotifyArray(device_token_list, message_formation, `Game Left`,conversation2)
                 client.in(game1.convo_id).emit('new',save_message)
                 client.in(game1.convo_id).emit('unread',{})
-                console.log('conversation');
-
-                return conversation2.members.map((e) => e._id)
+                return {message : save_message , type : conversation2.type,conversation:game.conversation}
        }).catch(error => console.log(error))
   }).catch(error => console.log(error))
 }).catch(error => console.log(error))
@@ -786,12 +785,12 @@ module.exports = function () {
                 const device_token_list = token_list.map((e) => e.device_token)
                 const user_device_token_list = [user.device_token]
                 client.in(conversation2._id).emit('new',save_message)
-                //client1.to(game.conversation._id).emit('unread',{message:game1.type == "game" ? `${game1.host} has removed ${user.handle}` : `${game1.host} has removed ${user.handle}`,type:"delete" })
+                client1.to(game.conversation._id).emit('unread',{message:game1.type == "game" ? `${game1.host} has removed ${user.handle}` : `${game1.host} has removed ${user.handle}`,type:"delete" })
                 // client1.to(conversation2._id).emit('unread',{})
 
-                NotifyArray(device_token_list, message_formation, `Game Left`,conversation2)
-                NotifyArray(user_device_token_list, message_formation, `Game Left`,conversation2)
-                return conversation2.members.map((e) => e._id)
+                // NotifyArray(device_token_list, message_formation, `Game Left`,conversation2)
+                // NotifyArray(user_device_token_list, message_formation, `Game Left`,conversation2)
+                 return{ message : save_message ,type:conversation2.type , conversation:game.conversation}
        }).catch(error => console.log(error))
   }).catch(error => console.log(error))
 }).catch(error => console.log(error))
@@ -906,11 +905,8 @@ module.exports = function () {
   async function handleProfileAlerts(friend,client){
       // console.log("useree",user)
       // const device_token_list  = [user.device_token]
-      console.log(friend,'freind id')
       const x = await  Alert.find({user: friend,status:true},{}).lean().populate('user','_id name device_token last_active email').then(alert=> {
        return User.findOne({_id: friend},{activity_log:0}).lean().then((user)=>{
-        console.log('alerts',alert.length)
-       console.log('0000032423423423423423423423423423432',user.last_active)
         const alerts1 = alert && alert.length > 0 ? alert.filter(a=>moment(a.created_at).isAfter(user.last_active)) : []   
         // client.to(friend).emit('profile_handlers',{alert_count:alerts1.length,friend:friend})
         client.emit('profile_handlers',{alert_count:alerts1.length,friend:friend})
@@ -942,7 +938,7 @@ module.exports = function () {
               NotifyArray(device_token_list, `${user.handle} has left the game`, `Game Left`,conversation2)
               client.in(game1.convo_id).emit('new',save_message)
               client.in(game1.convo_id).emit('unread',{})
-            return {message : save_message , type : conversation2.type }
+            return {message : save_message , type : conversation2.type,conversation:conversation2 }
    }).catch(error => console.log(error))
 }).catch(error => console.log(error))
 }).catch(error => console.log(error))
@@ -968,7 +964,7 @@ return x
                 conversation.type !== 'single' && client.in(conversation2._id).emit('new',{ conversation: conversation2._id, message: `${user.handle} has left the club`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() })
                 client.in(game1.convo_id).emit('unread',{})
                 client.in(game1.convo_id).emit('new',{ conversation: conversation2._id,message: `${user.handle} ${game1 && game1.status && game1.status === 'terminate' ? 'has been removed':'has left the club'}`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() })
-                    return{ message : message ,type:conversation.type}
+                    return{ message : message ,type:conversation.type,conversation:conversation}
                   }).catch(error => console.log(error))
                 }).catch(error => console.log(error))
            }
@@ -990,7 +986,7 @@ return x
                    conversation2.type == 'single'  ? client.in(conversation2._id).emit('new',{type:'refresh',exit:true,conversation:conversation2._id}) : client.in(conversation2._id).emit('new',x)
 
                    //NotifyArray(device_token_list, `${user.name} has left the game`, `Game Left`)
-                   return message
+                   return{ message : message ,type:conversation.type,conversation:conversation2}
           }).catch(error => console.log(error))
    }).catch(error => console.log(error))
    }).catch(error => console.log(error))

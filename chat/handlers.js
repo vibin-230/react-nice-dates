@@ -86,10 +86,11 @@ module.exports = function (client, clientManager, chatroomManager,io) {
 
     if(chatroomName.type === 'group'){
        x  = await chatroomManager.leaveChatroomGroup(chatroomName,io)
+       console.log(x);
        if(x.type !== 'single'){
          const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
-         const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
-         chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, x,activeUsers)
+         const activeUsers = clientNumber  ? clientManager.filterClients(Object.keys(clientNumber.sockets)) : []
+         chatroomManager.notifyAllUsersNotInTheChatroom(x.conversation, x.message,activeUsers)
        }
     }
 
@@ -100,12 +101,17 @@ module.exports = function (client, clientManager, chatroomManager,io) {
       x  = await chatroomManager.leaveChatroomWithConversationId(chatroomName,io)
       if(x.type !== 'single'){
         const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
-        const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
-        chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, x,activeUsers)
+      const activeUsers = clientNumber  ? clientManager.filterClients(Object.keys(clientNumber.sockets)) : []
+        chatroomManager.notifyAllUsersNotInTheChatroom(x.conversation, x.message,activeUsers)
       }
    }
    else if(chatroomName.type === 'kick_player'){
     x  = await chatroomManager.kickPlayer(chatroomName,io,client)
+    if(x.type !== 'single'){
+      const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
+      const activeUsers = clientNumber  ? clientManager.filterClients(Object.keys(clientNumber.sockets)) : []
+      chatroomManager.notifyAllUsersNotInTheChatroom(x.conversation, x.message,activeUsers)
+    }
  }
  else if(chatroomName.type === 'single'){
   x  = await chatroomManager.leaveChatroomSingle(chatroomName,client)
@@ -114,8 +120,9 @@ module.exports = function (client, clientManager, chatroomManager,io) {
       x  = await chatroomManager.leaveChatroom(chatroomName,io)
       if(x.type !== 'single'){
         const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
-        const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
-        chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, x,activeUsers)
+      const activeUsers = clientNumber  ? clientManager.filterClients(Object.keys(clientNumber.sockets)) : []
+//      const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
+        chatroomManager.notifyAllUsersNotInTheChatroom(x.conversation, x.message,activeUsers)
 
       }
     }

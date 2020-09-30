@@ -101,6 +101,7 @@ module.exports = function () {
 
   async function checkIfUserExited(chatroomName){
     const filter  = chatroomName && chatroomName._id ? {_id:chatroomName._id,type:'single'} :{$or:[{members:chatroomName.members,type:'single'},{members:[chatroomName.members[1],chatroomName.members[0]],type:'single'}]}
+    console.log('filter',filter);
     const s = await Conversation.find(filter).limit(1).lean().then(ec=>{
       if(ec && ec.length > 0){
         const existingConversation = ec[0]
@@ -412,6 +413,7 @@ module.exports = function () {
        async function deleteChatroom(chatroomName,client){
       const x = await Conversation.findByIdAndDelete({_id:chatroomName.convo_id._id}).lean().then((conversation)=>{
         return Game.findByIdAndDelete({_id:chatroomName.game_id},conversation ).then(conversation=>{
+          
         return 'deleted'
       }).catch((e)=>{console.log(e)});
     }).catch((e)=>{console.log(e)});
@@ -958,8 +960,8 @@ return x
         conversation.host = conversation.host.filter((m)=> m.toString() !== game1.user_id.toString()).length > 0 ? conversation.host.filter((m)=> m.toString() !== game1.user_id.toString()) : [conversation.members[0]]
         conversation.exit_list = conversation && conversation.exit_list ?  conversation.exit_list.concat({user_id:game1.user_id,timeStamp:new Date(),message:{ conversation: conversation._id, message:  `${user.handle} ${game1 && game1.status && game1.status === 'terminate' ? 'has been removed':'has left the club'}`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() }}) :[{user_id:game1.user_id,timeStamp:new Date(),message:{ conversation: conversation._id, message: `${user.handle} ${game1 && game1.status && game1.status === 'terminate' ? 'has been removed':'has left the club'}`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() }}]
         if((conversation.type === 'single' || conversation.type === 'group') && conversation.members.length <= 0){
+          return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token').then(conversation2 => {
             return Conversation.findByIdAndDelete({ _id: game1.convo_id }).then(conversation2 => {
-              return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token').then(conversation2 => {
                 const message = { conversation: conversation2._id,message: `${user.handle} ${game1 && game1.status && game1.status === 'terminate' ? 'has been removed':'has left the club'}`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() }
                 conversation.type !== 'single' && saveMessage(message)
                 conversation.type !== 'single' && client.in(conversation2._id).emit('new',{ conversation: conversation2._id, message: `${user.handle} has left the club`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() })
@@ -1001,8 +1003,19 @@ return x
 
   async function leaveChatroomSingle(game1,client) {
     const x = await Conversation.findByIdAndDelete({ _id: game1.convo_id }).lean().then(conversation => {
-      //client.in(game1.convo_id).emit('unread',{})
+      return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
+          const x = user && user.past_convos.length > 0 ? user.past_convos.filter((c)=> c.conversation_id && c.conversation_id !== game1.convo_id) : []
+     if(user){
+      return User.findByIdAndUpdate({ _id: game1.user_id }, {$set:{past_convos:x}}).lean().then(user => {
+        //client.in(game1.convo_id).emit('unread',{})
+        return 'pass'
       }).catch(error => console.log(error))
+     }else{
+      return 'no user'
+     }
+         
+  }).catch(error => console.log(error))
+    }).catch(error => console.log(error))
     return x
   }
 

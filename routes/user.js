@@ -80,8 +80,8 @@ function ActivityLog(activity_log) {
 
 function getGame(res,convo_id,refund_status,next){
   Conversation.findById({_id:convo_id}).lean().populate('members','_id name device_token profile_picture handle name_status visibility').then((convo)=>{
-    // convo['exit2'] =  convo.members.filter((a)=>a._id.toString() === req.userId.toString()).length > 0 ? false : true
-    // convo['exit'] =  convo.members.filter((a)=>a._id.toString() === req.userId.toString()).length > 0 ? false : true
+    convo['exit2'] =  convo.members.filter((a)=>a._id.toString() === req.userId.toString()).length > 0 ? false : true
+    convo['exit'] =  convo.members.filter((a)=>a._id.toString() === req.userId.toString()).length > 0 ? false : true
 
     Game.findOne({conversation:convo_id}).lean().populate("conversation").populate('host','_id name profile_picture phone handle name_status visibility').populate('users','_id name profile_picture phone handle name_status visibility').populate('invites','_id name profile_picture phone handle visibility').then(game=>{
             Venue.findById({_id:game.bookings[0].venue_id}).then(venue =>{

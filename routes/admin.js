@@ -309,7 +309,41 @@ router.post('/admin_login',
 // }).catch(next)
 })
 
-
+router.post('/set_password',
+	check('password').exists().isLength({ min: 6}).withMessage('password length should be minimum 6 letters'),
+	(req, res, next) => {
+	const errors = validationResult(req);
+	if (!errors.isEmpty()) {
+		var result = {};
+		var errorsList = errors.array();
+		for(var i = 0; i < errorsList.length; i++)
+		{
+			result[errorsList[i].param] = errorsList[i].msg;
+		}
+		return res.status(422).json({ errors: result});
+	}
+	
+	Admin.findOne({_id:req.body.userId},{reset_password_hash:0,reset_password_expiry:0,activity_log:0},null).populate("venue").then(admin=>{
+		if(!admin){
+			res.send({status:"failure", message:"No admin set."})
+		}else{
+			bcrypt.hash(req.body.password, saltRounds).then(function(hash) {
+			//req.body.role = "user";
+			admin['password'] = hash;
+			var token = jwt.sign({ id: admin._id, username:admin.username, role:admin.role, name:admin.name}, config.secret);
+							//res.send({status:"success", message:"login success", token:token, role:admin.role,id:admin._id,data:admin})
+							admin['token'] =  token
+							Admin.findOneAndUpdate({_id:admin._id},admin).then(u=>{
+								Admin.findOne({_id:admin._id},{reset_password_hash:0,reset_password_expiry:0,activity_log:0},null).populate("venue").then(admin=>{
+					let lin = Object.assign({},admin)
+					lin['password'] = undefined
+				res.send({status:"success", message:"user added",data:lin})
+			}).catch(next)
+	}).catch(next)
+		})
+	}
+	}).catch(next)
+})
 router.post('/login', (req, res, next) => {
 	console.log('hit',req.body)
 User.findOne({ $or: [ { handle: req.body.username }, { phone: req.body.username } ] },{reset_password_hash:0,reset_password_expiry:0,activity_log:0}).then(user=>{
@@ -980,6 +1014,28 @@ router.post('/check_admin/:id',
 	}).catch(next)
 })
 
+
+
+router.post('/check_password/:id',
+	(req, res, next) => {
+	Admin.findOne({_id:req.params.id}).then(admin=>{
+		console.log("Admina",admin)
+		if(admin){
+			bcrypt.compare(req.body.password, admin.password).then(function(result) {
+				console.log("eee",result)
+				if(result){
+					res.send({status:"sucess", message:"password verified successfully"})
+				}
+				else {
+					res.send({status:"failed", message:"incorrect credentials"})
+				}
+			});
+		}
+		else{
+			res.send({status:"failed", message:"admin doesn't exist"})
+		}
+	}).catch(next)
+})
 
 //// Event
 router.post('/event',

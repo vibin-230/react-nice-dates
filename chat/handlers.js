@@ -87,7 +87,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     if(chatroomName.type === 'group'){
        x  = await chatroomManager.leaveChatroomGroup(chatroomName,io)
        console.log(x);
-       if(x.type !== 'single'){
+       if(x && x.type !== 'single'){
          const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
          const activeUsers = clientNumber  ? clientManager.filterClients(Object.keys(clientNumber.sockets)) : []
          chatroomManager.notifyAllUsersNotInTheChatroom(x.conversation, x.message,activeUsers)
@@ -99,7 +99,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
    }
      else if(chatroomName.type === 'game_without_game_id'){
       x  = await chatroomManager.leaveChatroomWithConversationId(chatroomName,io)
-      if(x.type !== 'single'){
+      if(x && x.type !== 'single'){
         const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
       const activeUsers = clientNumber  ? clientManager.filterClients(Object.keys(clientNumber.sockets)) : []
         chatroomManager.notifyAllUsersNotInTheChatroom(x.conversation, x.message,activeUsers)
@@ -107,7 +107,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
    }
    else if(chatroomName.type === 'kick_player'){
     x  = await chatroomManager.kickPlayer(chatroomName,io,client)
-    if(x.type !== 'single'){
+    if(x && x.type !== 'single'){
       const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
       const activeUsers = clientNumber  ? clientManager.filterClients(Object.keys(clientNumber.sockets)) : []
       chatroomManager.notifyAllUsersNotInTheChatroom(x.conversation, x.message,activeUsers)
@@ -118,7 +118,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
 }
     else{
       x  = await chatroomManager.leaveChatroom(chatroomName,io)
-      if(x.type !== 'single'){
+      if(x && x.type !== 'single'){
         const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
       const activeUsers = clientNumber  ? clientManager.filterClients(Object.keys(clientNumber.sockets)) : []
 //      const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))

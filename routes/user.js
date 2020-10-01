@@ -1256,29 +1256,35 @@ router.post('/edit_game_status', (req, res, next) => {
 
 
 router.post('/send_new_otp', (req, res, next) => {
-  
-  let phone = 91+req.body.user.phone;
-  let otp   = Math.floor(999 + Math.random() * 9000);
-      send_message_otp(phone,'TRFTWN',"Welcome to Turftown! Your OTP is "+otp).then((a)=>{
-      if(a.status === 'success')
-        {
-          User.find({phone:req.body.user.phone,handle:req.body.user.handle}).then((user)=>{
-          user && user.length > 0 ? 
-            res.status(400).send({status:"failiure", message:'user exists'})
-          :User.create({refer_id:'TURF',phone:req.body.user.phone,handle:req.body.user.handle,otp:otp,temporary:true}).then((user)=>{
-            res.status(201).send({status:"success", message:'new user', data:{phone:req.body.user.phone,otp:otp,handle:req.body.user.handle}})
-            setTimeout(()=>{
-              User.findOneAndDelete({phone:user.phone,temporary:true}).then(u=>console.log('user deleted'))
-            },300000)
-          })
-        }).catch(next)
 
+  User.find({"phone":{ "$regex": req.body.user.phone, "$options": "i" }}).then(user=>{
+    if(user && user.length > 0){
+          res.send({status:"success", message:"phone exists",data:{error:true,error_description:`The phone number +91 ${req.body.mobile} is not available.`}})
+        }else{
+          let phone = 91+req.body.user.phone;
+          let otp   = Math.floor(999 + Math.random() * 9000);
+              send_message_otp(phone,'TRFTWN',"Welcome to Turftown! Your OTP is "+otp).then((a)=>{
+              if(a.status === 'success')
+                {
+                  User.find({phone:req.body.user.phone,handle:req.body.user.handle}).then((user)=>{
+                  user && user.length > 0 ? 
+                    res.status(400).send({status:"failiure", message:'user exists'})
+                  :User.create({refer_id:'TURF',phone:req.body.user.phone,handle:req.body.user.handle,otp:otp,temporary:true}).then((user)=>{
+                    res.status(201).send({status:"success", message:'new user', data:{phone:req.body.user.phone,otp:otp,handle:req.body.user.handle}})
+                    setTimeout(()=>{
+                      User.findOneAndDelete({phone:user.phone,temporary:true}).then(u=>console.log('user deleted'))
+                    },300000)
+                  })
+                }).catch(next)
+        
+                }
+                else
+                  {
+                    res.status(422).send({status:"failure", errors:{template:"invalid template"}, data:a})
+                 }
+            }).catch(next)
         }
-        else
-          {
-            res.status(422).send({status:"failure", errors:{template:"invalid template"}, data:a})
-         }
-    }).catch(next)
+  }).catch(next)
 
 });
 

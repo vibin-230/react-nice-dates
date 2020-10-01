@@ -537,6 +537,8 @@ module.exports = function () {
                   const cids = m.map((entry)=>{
                     const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id :entry.conversation
                     client.to(id).emit('new',entry)
+                    client.to(id).emit('unread',entry)
+
                     return m.conversation
                   })
                   return Conversation.updateMany({_id:{ $in: group_ids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
@@ -581,6 +583,8 @@ module.exports = function () {
                     const cids = m.map((entry) => {
                       const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id : entry.conversation
                       client.to(id).emit('new', entry)
+                      client.to(id).emit('unread', entry)
+
                       return m.conversation
                     })
                     return Conversation.updateMany({ _id: { $in: group_ids } }, { $set: { last_message: message1[0]._id, last_updated: new Date() } }).then(message1 => {
@@ -633,7 +637,8 @@ module.exports = function () {
                     const cids = m.map((entry) => {
                       const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id : entry.conversation
                       client.to(id).emit('new', entry)
-                      console.log(m, 'pass');
+                      client.to(id).emit('unread', entry)
+
                       return entry.conversation
                     })
 

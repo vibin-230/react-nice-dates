@@ -464,6 +464,7 @@ module.exports = function () {
                                                 const cids = m.map((entry)=>{
                                                   const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id :entry.conversation
                                                   client.to(id).emit('new',entry)
+                                                  client.to(id).emit('unread',{})
                                                   return entry.conversation
                                                 })
 

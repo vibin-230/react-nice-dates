@@ -721,12 +721,15 @@ router.post('/get_chatrooms/:id', [
        // console.log(x);
        const chatrooms = _.orderBy(x, ['last_updated', 'time','created_at'], ['desc', 'desc','desc'])
        let finals = [...chatrooms]
-          res.status(201).send({status: "success", message: "user collected",data:finals.slice(0,10)})
+          res.status(201).send({status: "success", message: "user collected",data:finals})
           req.redis().set('chatroom_'+req.userId,JSON.stringify(chatrooms),(err,rep)=>{
             if(err) 
             console.log(err);
           })
 
+
+
+          
 
         }).catch(next)
       }).catch(next)

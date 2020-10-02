@@ -109,7 +109,7 @@ async function getChatHistory(id, user,final_date,message_id) {
       const filter  = x.length > 0 ?  date && date.length > 0 ? { _id:{$nin:[message_id]},conversation: id, created_at: { $lte: final_date } } : { conversation: id} :{ conversation: id, created_at: { $lte: moment(user1[user1.length-1].timeStamp).add(10,'seconds') } }
       conversation['exit'] = x.length > 0 ? false:true
       
-      return Message.find(filter).lean().populate('author', 'name _id handle').populate('user', 'name _id profile_picture phone handle').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({_id:-1}).limit(100).then(m => {
+      return Message.find(filter).lean().populate('author', 'name _id handle').populate('user', 'name _id profile_picture phone handle').populate({path:"event",populate:{path:"venue",select:"venue"}}).populate({ path: 'event', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({_id:-1}).limit(100).then(m => {
         // var groupBy = (xs, key) => {
         //     return xs.reduce((rv, x) =>{
         //       (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);

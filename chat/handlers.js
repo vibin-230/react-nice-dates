@@ -224,22 +224,20 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
         }
         const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
        const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
-        chatroomManager.saveMessage(message)
-        //chatroomManager.notifyAllUsers(chatroomName, message)
-        console.log(chatroomName._id,io.sockets.adapter.rooms);
-        client.to(chatroomName._id).emit('new',message)
-        client.to(chatroomName._id).emit('unread',message)
+       const y = await chatroomManager.saveAsyncMessage(message) 
+       client.to(chatroomName._id).emit('new',y)
+       client.to(chatroomName._id).emit('unread',y)
         chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
-        chatroomName.exit && chatroomName.type === 'single' ? callback({exit:false}):callback()
+        chatroomName.exit && chatroomName.type === 'single' ? callback({exit:false,message:y}):callback({message:y})
       }else{
          const x = await chatroomName && chatroomName.exit && chatroomManager.registerExitedUser(chatroomName,message)
-        client.to(chatroomName._id).emit('new',message)
-        client.to(chatroomName._id).emit('unread',message)
+         const y = await chatroomManager.saveAsyncMessage(message) 
+        client.to(chatroomName._id).emit('new',y)
+        client.to(chatroomName._id).emit('unread',y)
       
         //chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,[])
         //chatroomManager.notifyAllUsers(chatroomName, message)
-        chatroomManager.saveMessage(message) 
-        chatroomName.exit && chatroomName.type === 'single' ? callback({exit:false}):callback()
+        chatroomName.exit && chatroomName.type === 'single' ? callback({exit:false,message:y}):callback({message:y})
      }
     }else{
     const clientNumber = io.sockets.adapter.rooms[chatroomName._id];

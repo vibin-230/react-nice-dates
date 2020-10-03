@@ -9,6 +9,7 @@ const schema = new Schema({
   author : { type: Schema.Types.ObjectId, ref: 'user' },
   message: String,
   image : Array,
+  flag_id:String,
   video : String,
   name : String,
   read_status: {

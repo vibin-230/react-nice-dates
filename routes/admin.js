@@ -875,14 +875,14 @@ router.post('/add_venue_manager',
 					name:data.name,
 					link:reset_url
 				}
-				// let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
-				// mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
-				// 	if(response){
-				// 	  res.send({status:"success"})
-				// 	}else{
-				// 	  res.send({status:"failed"})
-				// 	}
-				// })
+				let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
+				mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
+					if(response){
+					  res.send({status:"success"})
+					}else{
+					  res.send({status:"failed"})
+					}
+				})
 				console.log("Venueee",venueManager)
 				VenueStaff.find({_id:{$in:venueManager.staff}},{_id:1, name:1, venue:1, type:1}).lean().then(staff=>{
 				Venue.find({_id:{$in:venueManager.venue}},{_id:1, name:1, venue:1, type:1}).lean().then(venue=>{

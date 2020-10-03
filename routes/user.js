@@ -2643,7 +2643,7 @@ router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
         const values = booking
         Game.findOne({"bookings.booking_id":booking[0].booking_id}).then((g)=>{
         if(g){
-          Game.findOneAndUpdate({"bookings.booking_id":booking[0].booking_id},{$set:{bookings:booking,completed:true}}).then((a)=>console.log(a))
+          Game.findOneAndUpdate({"bookings.booking_id":booking[0].booking_id},{$set:{bookings:booking,completed:true,booking_status:"completed"}}).then((a)=>console.log(a))
         }
         result = Object.values(combineSlots(booking))
         res.send({status:"success", message:"booking completed", data:result})

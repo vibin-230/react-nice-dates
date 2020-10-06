@@ -936,6 +936,22 @@ module.exports = function () {
       // NotifyArray(device_token_list, `following you`, `Turf Town`)
   return x
   }
+
+  async function handleProfileAccepted(friend,client){
+    // console.log("useree",user)
+    // const device_token_list  = [user.device_token]
+    const x = await  Alert.find({user: friend,status:true},{}).lean().populate('user','_id name device_token last_active email').then(alert=> {
+     return User.findOne({_id: friend},{activity_log:0}).lean().then((user)=>{
+      const alerts1 = alert && alert.length > 0 ? alert.filter(a=>moment(a.created_at).isAfter(user.last_active)) : []   
+      // client.to(friend).emit('profile_handlers',{alert_count:alerts1.length,friend:friend})
+      client.emit('profile_accepted_friend',{alert_count:alerts1.length,friend:friend})
+      return alerts1.length
+    }).catch(error => console.log(error))
+    }).catch(error => console.log(error))
+    // NotifyArray(device_token_list, `following you`, `Turf Town`)
+return x
+}
+
   async function leaveChatroomWithConversationId(game1,client) {
     const x = await Conversation.findById({ _id: game1.convo_id }).lean().then(conversation => {
       return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
@@ -1070,6 +1086,7 @@ return x
     deleteChatroom,
     handleProfileAlerts,
     sendEventInvites,
-    sendConvoEventInvites
+    sendConvoEventInvites,
+    handleProfileAccepted
   }
 }

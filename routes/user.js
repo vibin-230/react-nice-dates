@@ -650,7 +650,7 @@ router.post('/get_chatrooms/:id', [
                 //c['exit'] = user && user.timeStamp ? c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0 ? false : true : false
                 c['exit'] = user && user.timeStamp && c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0
                 c['last_updated'] = user && user.timeStamp ? user.timeStamp : c.last_updated 
-                c['last_message'] = user && user.message ? c.type=='single'? user.message :  c.last_message :  c.last_message
+                c['last_message'] = status ? user.last_message : c.last_message
               
             }
             const filter = c && c.last_active ? c.last_active.filter((c)=> c && c.user_id && c.user_id.toString() === req.params.id.toString()) : []

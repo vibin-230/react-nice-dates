@@ -544,7 +544,7 @@ router.post('/get_venue/:id',
 	verifyToken,
 	AccessControl('venue', 'read'),
 	(req, res, next) => {
-		Venue.findOne({_id:req.params.id},{bank:0}).lean().then(venue=>{
+		Venue.findOne({_id:req.params.id}).lean().then(venue=>{
 			res.status(201).send({status:"success", message:"venue fetched", data:venue})
 	}).catch(next)
 })

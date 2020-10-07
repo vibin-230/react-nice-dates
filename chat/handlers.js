@@ -188,6 +188,14 @@ async function handleProfileAlerts({friend} = {}, callback) {
   const y = await chatroomManager.handleProfileAlerts(friend,io)
   callback()
 }
+
+async function handleProfileAccepted({friend} = {}, callback) {
+  //const x  = await clientManager.getClient1(client,friend)
+  //console.log(x,friend);
+  const y = await chatroomManager.handleProfileAccepted(friend,io)
+  callback()
+}
+
 async function handleUpdateParams({ chatroomName, message,params } = {}, callback) {
   const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
   const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
@@ -350,5 +358,5 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
     return callback()
   }
 
-  return {handleSendBroadcast,handleSlotAvailabilityDueToCancellation,handleSlotAvailability,handleLeaveChatrooms,handleUpdateGroup,handleUpdateParams,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames,handleProfileAlerts,handleEventInvites,handleSendMultiple}
+  return {handleProfileAccepted,handleSendBroadcast,handleSlotAvailabilityDueToCancellation,handleSlotAvailability,handleLeaveChatrooms,handleUpdateGroup,handleUpdateParams,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames,handleProfileAlerts,handleEventInvites,handleSendMultiple}
 }

@@ -106,7 +106,8 @@ io.on('connection', function (client) {
     handleUpdateGroup,
     handleUpdateParams,
     handleProfileAlerts,
-    handleEventInvites
+    handleEventInvites,
+    handleProfileAccepted,
   } = makeHandlers(client, clientManager, chatroomManager,io)
 
   const token = client.handshake.query.token;
@@ -137,6 +138,7 @@ io.on('connection', function (client) {
   client.on('handleSlotAvailability',handleSlotAvailability)
   client.on('handleSlotAvailabilityCancel',handleSlotAvailabilityDueToCancellation)
   client.on('profile_alerts',handleProfileAlerts)
+  client.on('profile_accepted',handleProfileAccepted)
   client.on('disconnect', function () {
     console.log('client disconnect...', client.id)
     

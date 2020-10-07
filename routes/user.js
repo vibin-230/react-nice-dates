@@ -650,7 +650,7 @@ router.post('/get_chatrooms/:id', [
                 //c['exit'] = user && user.timeStamp ? c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0 ? false : true : false
                 c['exit'] = user && user.timeStamp && c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0
                 c['last_updated'] = user && user.timeStamp ? user.timeStamp : c.last_updated 
-                c['last_message'] = status ? user.message : c.last_message
+                c['last_message'] = user && user.message ? c.type === 'single' ? c.last_message:user.message  : c.last_message
               
             }
             const filter = c && c.last_active ? c.last_active.filter((c)=> c && c.user_id && c.user_id.toString() === req.params.id.toString()) : []
@@ -3179,8 +3179,7 @@ router.post('/unfollow_request/:friend', verifyToken, (req, res, next) => {
               console.log(user.following)
               Conversation.find({$or:[{members:[req.body.id,req.params.friend],type:'single'},{members:[req.params.friend,req.body.id],type:'single'}]}).limit(1).lean().then(ec=>{
                 ec.length > 0 && updateConvoStatus(ec[0],{invite_status : true})  
-                sendAlert({created_at:new Date(),created_by:req.body.id,user:req.params.friend,type:'following',status_description:`${friend.handle} is following you`},'delete',next)
-                sendAlert({created_at:new Date(),created_by:req.params.friend,user:req.body.id,type:'accepted',status_description:`${friend.handle} has accepted request`},'delete',next)  
+                sendAlert({created_at:new Date(),created_by:req.body.id,user:req.params.friend,type:'following',status_description:`${friend.handle} is following you`},'delete',next) 
               res.send({status:"success", message:"Unfollowed "+friend.handle, data:user})
   }).catch(next)
   }).catch(next)
@@ -3203,8 +3202,7 @@ router.post('/remove_request/:friend', verifyToken, (req, res, next) => {
             User.findById({_id:req.body.id},{activity_log:0}).populate('requests','name profile_picture handle name_status').then(user=>{ 
               Conversation.find({$or:[{members:[req.body.id,req.params.friend],type:'single'},{members:[req.params.friend,req.body.id],type:'single'}]}).limit(1).lean().then(ec=>{
                 ec.length > 0 && updateConvoStatus(ec[0],{invite_status : true})  
-                sendAlert({created_at:new Date(),created_by:req.params.friend,user:req.body.id,type:'following',status_description:`${friend.handle} is following you`},'delete',next)
-                sendAlert({created_at:new Date(),created_by:req.body.id,user:req.params.friend,type:'accepted',status_description:`${friend.handle} has accepted request`},'delete',next)                 
+                sendAlert({created_at:new Date(),created_by:req.params.friend,user:req.body.id,type:'following',status_description:`${friend.handle} is following you`},'delete',next) 
                 res.send({status:"success", message:"Removed "+friend.handle, data:user})
   }).catch(next)
   }).catch(next)
@@ -3265,7 +3263,7 @@ router.post('/accept_or_delete_requests', verifyToken, (req, res, next) => {
                     let alert = {...a,type:'following',status_description:`${friend.handle} is following you`}
                     res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1,alert:alert}})
                 sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,type:'following',status_description:`${friend.handle} is following you`},'addorupdate',next) 
-                sendAlert({created_at:new Date(),created_by:req.userId,user:req.body.id,type:'accepted',status_description:`${asd.handle} has accepted your request`},'create',next) 
+                sendAlert({created_at:new Date(),created_by:req.userId,user:req.body.id,type:'following',status_description:`${asd.handle} has accepted your request`},'create',next) 
                 
                }).catch(next)
               }).catch(next)
@@ -3300,7 +3298,6 @@ router.post('/accept_or_delete_requests', verifyToken, (req, res, next) => {
 
 
 router.post('/accept_or_delete_requests_alert', verifyToken, (req, res, next) => {
-  console.log("accepted",req.userId,"friend",req.body.id)
   User.findById({ _id: req.body.id }, { activity_log: 0 }).lean().then(friend => {
     User.findById({ _id: req.userId }, { activity_log: 0 }).lean().then(user => {
       let type = req.body.type
@@ -3322,7 +3319,7 @@ router.post('/accept_or_delete_requests_alert', verifyToken, (req, res, next) =>
                       a["status_description"] = `${friend.handle} is following you`
                     res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1,alert:a}})
                 sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,type:'following',status_description:`${friend.handle} is following you`},'addorupdate',next) 
-                sendAlert({created_at:new Date(),created_by:req.userId,user:req.body.id,type:'accepted',status_description:`${asd.handle} has accepted your request`},'create',next) 
+                sendAlert({created_at:new Date(),created_by:req.userId,user:req.body.id,type:'following',status_description:`${asd.handle} has accepted your request`},'create',next) 
                 
               }).catch(next)
               }
@@ -3907,7 +3904,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         const present = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') <= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
         const past = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') >= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
         const apresent = groupBy(present,'end_time')
-        const apast = groupBy([...past,...cancelled_bookings,...cancelledeventBooking1],'end_time')
+        const apast = groupBy(past,'end_time')
         const pastCancelled = [...cancelled_bookings,...cancelledeventBooking1]
         const cancelledPast = groupBy(pastCancelled,'start_time')
         let qpresent =   Object.entries(apresent).map(([key,value])=>{return {title:key,data:value }})
@@ -3917,7 +3914,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         const today_empty1 = qpast && qpast.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpast.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
         qpresent.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
         qpast.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
-        let qpas = [...qpast]
+        let qpas = [...qpast,...qcancelled]
         let qprs = [...qpresent]
         res.send({status:"success", message:"booking history fetched", data:{past:qpas.slice(qpas.length-5,qpas.length),present:qprs.slice(0,5)}})
         req.redis().set('bookings_present_'+req.userId,JSON.stringify(qpresent))

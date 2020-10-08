@@ -2465,7 +2465,7 @@ router.post('/update_invoice_amount', verifyToken, (req, res, next) => {
     if (invoice && invoice[0].repeat_id && invoice.length > 0) {
       let sum  = invoice[0].advance + req.body.total_advance
         console.log(sum)
-          Invoice.findOneAndUpdate({repeat_id: req.body.repeat_id},{advance:sum}).then(invoice=>{
+          Invoice.findOneAndUpdate({repeat_id: req.body.repeat_id},{advance:sum,cash:req.body.cash,card:req.body.card,upi:req.body.upi,image:req.body.image}).then(invoice=>{
             Invoice.findOne({repeat_id: req.body.repeat_id},{booking_data:0}).then(invoice=>{
             res.status(201).send({status: "success",data:invoice});
         }).catch(next);
@@ -3904,17 +3904,18 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         const present = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') <= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
         const past = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') >= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
         const apresent = groupBy(present,'end_time')
-        const apast = groupBy(past,'end_time')
-        const pastCancelled = [...cancelled_bookings,...cancelledeventBooking1]
-        const cancelledPast = groupBy(pastCancelled,'start_time')
+        const apast = groupBy([...past,...cancelled_bookings,...cancelledeventBooking1],'end_time')
+        // const pastCancelled = []
+        // const cancelledPast = groupBy(pastCancelled,'start_time')
+        // console.log("apaas",apast)
         let qpresent =   Object.entries(apresent).map(([key,value])=>{return {title:key,data:value }})
         let qpast =   Object.entries(apast).map(([key,value])=>{return {title:key,data:value }})
-        let qcancelled = Object.entries(cancelledPast).map(([key,value])=>{return {title:key,data:value }})
+        // let qcancelled = Object.entries(cancelledPast).map(([key,value])=>{return {title:key,data:value }})
         const today_empty = qpresent && qpresent.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpresent.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
         const today_empty1 = qpast && qpast.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpast.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
         qpresent.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
         qpast.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
-        let qpas = [...qpast,...qcancelled]
+        let qpas = [...qpast]
         let qprs = [...qpresent]
         res.send({status:"success", message:"booking history fetched", data:{past:qpas.slice(qpas.length-5,qpas.length),present:qprs.slice(0,5)}})
         req.redis().set('bookings_present_'+req.userId,JSON.stringify(qpresent))

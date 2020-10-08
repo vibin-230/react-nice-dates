@@ -56,9 +56,9 @@ var objectId = mongoose.Types.ObjectId('569ed8269353e9f4c51617aa');
   }
 
   else if(type === 'addorupdate'){
-    Alert.findOne({user:body.user,created_by:body.created_by}).then(a=>{
+    Alert.findOne({user:body.user,created_by:body.created_by,type:body.sent_type}).then(a=>{
       if(a){
-        Alert.findOneAndUpdate({user:body.user,created_by:body.created_by},{$set:body}).then((s)=>{
+        Alert.findOneAndUpdate({user:body.user,created_by:body.created_by,type:body.sent_type},{$set:body}).then((s)=>{
     // body && body.status_description && body.status_description.includes('is following you') && NotifyUsers([body.created_by],body.status_description)
   console.log(s)     
   }).catch(next) 

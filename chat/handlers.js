@@ -223,6 +223,7 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
 
  async function handleMessage({ chatroomName, message } = {}, callback) {
     if(chatroomName.type === 'single'){
+    console.log('client Number',io.sockets.adapter.rooms[chatroomName._id]);
       if(io.sockets.adapter.rooms[chatroomName._id] && io.sockets.adapter.rooms[chatroomName._id].length < 2){
         if(chatroomName && chatroomName.exit){
           chatroomManager.registerExitedUser(chatroomName,message)
@@ -246,6 +247,7 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
      }
     }else{
     const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
+    console.log('client Number',clientNumber);
     const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
     const y = await chatroomManager.saveAsyncMessage(message) 
         client.to(chatroomName._id).emit('new',message)
@@ -353,5 +355,13 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
     return callback()
   }
 
-  return {handleProfileAccepted,handleSendBroadcast,handleSlotAvailabilityDueToCancellation,handleSlotAvailability,handleLeaveChatrooms,handleUpdateGroup,handleUpdateParams,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames,handleProfileAlerts,handleEventInvites,handleSendMultiple}
+
+  async function handleSingleLeaveConnection({ conversation_id, user_id } = {}, callback) {
+    //client.to(chatroomName._id).emit('typing',message)
+    console.log('test',conversation_id,user_id);
+    client.leave(conversation_id)
+    return callback()
+  }
+
+  return {handleProfileAccepted,handleSendBroadcast,handleSlotAvailabilityDueToCancellation,handleSlotAvailability,handleSingleLeaveConnection,handleLeaveChatrooms,handleUpdateGroup,handleUpdateParams,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames,handleProfileAlerts,handleEventInvites,handleSendMultiple}
 }

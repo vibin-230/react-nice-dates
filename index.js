@@ -106,6 +106,7 @@ io.on('connection', function (client) {
     handleUpdateGroup,
     handleUpdateParams,
     handleProfileAlerts,
+    handleSingleLeaveConnection,
     handleEventInvites,
     handleProfileAccepted,
   } = makeHandlers(client, clientManager, chatroomManager,io)
@@ -132,7 +133,7 @@ io.on('connection', function (client) {
 
   client.on('invite', handleInvites)
   client.on('send_many', handleSendMultiple)
-
+  client.on('leave_single_connection',handleSingleLeaveConnection)
   client.on('event_invite', handleEventInvites)
   client.on('typing', handleTyping)
   client.on('handleSlotAvailability',handleSlotAvailability)

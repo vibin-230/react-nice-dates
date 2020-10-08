@@ -903,13 +903,16 @@ module.exports = function () {
 
 
   
-  async function handleProfileAlerts(friend,client){
+  async function handleProfileAlerts(friend,client,y){
+      // console.log("useree",user)
       // const device_token_list  = [user.device_token]
       const x = await  Alert.find({user: friend,status:true},{}).lean().populate('user','_id name device_token last_active email').then(alert=> {
        return User.findOne({_id: friend},{activity_log:0}).lean().then((user)=>{
         const alerts1 = alert && alert.length > 0 ? alert.filter(a=>moment(a.created_at).isAfter(user.last_active)) : []   
         // client.to(friend).emit('profile_handlers',{alert_count:alerts1.length,friend:friend})
-        client.emit('profile_handlers',{alert_count:alerts1.length,friend:friend})
+        if(y.length > 0){
+        client.to(y[y.length-1].client_id).emit('profile_handlers',{alert_count:alerts1.length,friend:friend})
+        }
         return alerts1.length
       }).catch(error => console.log(error))
       }).catch(error => console.log(error))

@@ -181,9 +181,8 @@ async function handleSlotAvailabilityDueToCancellation({ booking } = {}, callbac
 }
 
 async function handleProfileAlerts({friend} = {}, callback) {
-  //const x  = await clientManager.getClient1(client,friend)
-  //console.log(x,friend);
-  const y = await chatroomManager.handleProfileAlerts(friend,io)
+  const x  = await clientManager.getClient1(friend,client)
+  const y = await chatroomManager.handleProfileAlerts(friend,io,x)
   callback()
 }
 

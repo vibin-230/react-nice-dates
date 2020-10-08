@@ -17,6 +17,10 @@ const schema = new Schema({
   address2:{ type : String , default:''},
   address3:{ type : String , default:''},
   gst:{ type : String , default:''},
+  cash:String,
+  card:String,
+  upi:String,
+  image:Array
   
  
 },{ timestamps: { createdAt: 'created_at', updatedAt: 'modified_at' } });

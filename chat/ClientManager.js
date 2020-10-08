@@ -13,13 +13,23 @@ module.exports = function () {
   }
 
   function registerClient(client, user) {
-    clients.set(user._id.toString(), { client, user })
+    // clients.set(user._id.toString(), { client, user })
   }
 
- async function getClient1( user_id) {
-   const x = await clients.get(user_id)
-   return x
-  }
+//  async function getClient1( user_id) {
+//    const x = await clients.get(user_id)
+//    return x
+//   }
+
+  async function getClient1(user_id,client) {
+    let y = []
+     const x = await clients.forEach((value, key, map)=>{  
+          if(value.user.id === user_id){
+            y.push({client_id:key,user_id:user_id})
+          }
+     })
+     return y
+    }
 
 
 

@@ -31,7 +31,6 @@ module.exports = function () {
     //      x.push(key)
     //      console.log('adadadadadadad',key);
     // });
-    console.log('clients',clients.keys(),clients1)
   const a = Array.from(clients.keys()).map(value => {
       if(clients1.indexOf(clients.get(value).client.id) !== -1){
         return clients.get(value).user.id
@@ -41,7 +40,6 @@ module.exports = function () {
 
       }
     })
-    console.log('final',a)
     return a.filter((s)=>s !== 'pass')
   }
 
@@ -100,10 +98,7 @@ module.exports = function () {
 
   function getClient(clientId) {
       //console.log('clients',clients);
-      console.log(clientId);
-      console.log('clients--------------',clients);
       const x  = clients.get(clientId.toString())
-      console.log('gotclient---------------',x);
       //io.broadcast.to(x.id).emit('unread','pass')
       x && x.client && x.client.emit('unread','')
     return (x || {})

@@ -1949,9 +1949,9 @@ async function handleSlotAvailabilityForGames(booking1,client){
               promisesToRun.push(SlotsCheck1(booking_history[i],booking.venue_id))
             }
            return Promise.all(promisesToRun).then((values) => {
-             return Game.updateMany({"booking_date":booking.booking_date,"bookings.booking_status":'blocked',"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time },{$set:{status:false,status_description:'Sorry ! Slot has been booked by some other user'}}).lean().then(game1=>{
-               return Game.find({"booking_date":booking.booking_date,"bookings.booking_status":'blocked',"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time }).lean().populate('conversation').then(game=>{
-                console.log('length',game.length);
+             return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time },{$set:{status:false,status_description:'Sorry ! Slot has been booked by some other user'}}).lean().then(game1=>{
+               return Game.find({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time }).lean().populate('conversation').then(game=>{
+                console.log('length',game);
                 let messages =  game.map((nc)=>{ return {conversation:nc.conversation._id,created_at:new Date(),message:`Sorry ! Game ${nc.name} has been cancelled becuase the slot has been booked by some other user.Please choose another slot to host your game`,name:'bot',read_status:true,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot'}}) 
                 const members = _.flatten(game.map((g)=>g.conversation.members))
                 return   User.find({_id: { $in :members } },{activity_log:0}).lean().then(user=> {
@@ -2815,15 +2815,15 @@ function SlotsCheckReverse(body,id){
 async function handleSlotAvailabilityWithCancellation(booking1,client){
   let booking = booking1[0]
   const slot_time = { $in: booking1.map((b)=>b.slot_time) }
-  console.log(slot_time,booking.booking_date,booking.venue_id);
+  console.log('game');
   const x =  await  Booking.find({  venue_id:booking.venue_id, booking_date:booking.booking_date,slot_time:slot_time,booking_status:{$in:["blocked","booked","completed"]}}).lean().then(booking_history=>{
     let promisesToRun = [];
         for(let i=0;i<booking_history.length;i++){
               promisesToRun.push(SlotsCheckReverse(booking_history[i],booking.venue_id))
             }
            return Promise.all(promisesToRun).then((values) => {
-             return Game.updateMany({"booking_date":booking.booking_date,"bookings.booking_status":'blocked',"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time },{$set:{status:true,status_description:''}}).lean().then(game1=>{
-               return Game.find({"booking_date":booking.booking_date,"bookings.booking_status":'blocked',"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time }).lean().populate('conversation').then(game=>{
+             return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time },{$set:{status:true,status_description:''}}).lean().then(game1=>{
+               return Game.find({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time }).lean().populate('conversation').then(game=>{
                 console.log('game',game);
                 let messages =  game.map((nc)=>{ return {conversation:nc.conversation._id,message:`Hey ! Game ${nc.name} is available again . Please book your slot to confirm the game`,name:'bot',read_status:false,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot',created_at:new Date()}}) 
                 const members = _.flatten(game.map((g)=>g.conversation.members))

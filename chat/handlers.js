@@ -62,7 +62,6 @@ module.exports = function (client, clientManager, chatroomManager,io) {
         //for single user
         //const y = await chatroomManager.checkIfUserExited({_id:chatroom.getId()})
         const x =  await chatroom.getChatHistory(chatroom.getId(),token)
-        console.log('getCHatHistory',chatroom.getId(),x.length);
         callback(chatroom.getId(),x.messages,x.conversation)
       })
       .catch(callback)
@@ -86,7 +85,6 @@ module.exports = function (client, clientManager, chatroomManager,io) {
 
     if(chatroomName.type === 'group'){
        x  = await chatroomManager.leaveChatroomGroup(chatroomName,io)
-       console.log(x);
        if(x && x.type !== 'single'){
          const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
          const activeUsers = clientNumber  ? clientManager.filterClients(Object.keys(clientNumber.sockets)) : []
@@ -266,7 +264,6 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
     if(game.ids.length > 0  || game.convo_ids.length > 0){
      let x = game.ids.length > 0 && await chatroomManager.sendInvites(game.game._id,game.game.conversation,game.ids,game.user_id,game.town,client)
       let y = game.convo_ids.length > 0 && await chatroomManager.sendGroupInvites(game.game._id,game.game.conversation,game.convo_ids,game.user_id,game.game.name,game.town,client)
-      console.log('hit ',game.convo_ids)
       x && x.length > 0 && x.forEach((clientId)=>{
         const client =  clientManager.getClient(clientId)
        })
@@ -313,7 +310,6 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
   async function handleSendBroadcast(message,callback){
     
     const clientNumber = io.sockets.adapter.rooms[message.conversation];
-    console.log(message,io.sockets.adapter.rooms);
     const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
        io.in(message.conversation).emit('new',message)
         client.to(message.conversation).emit('unread',message)

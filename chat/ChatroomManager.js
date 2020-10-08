@@ -805,7 +805,7 @@ module.exports = function () {
                 const device_token_list = token_list.map((e) => e.device_token)
                 const user_device_token_list = [user.device_token]
                 client.in(conversation2._id).emit('new',save_message)
-                client1.to(game.conversation._id).emit('unread',{message:game1.type == "game" ? `${game1.host} has removed ${user.handle}` : `${game1.host} has removed ${user.handle}`,type:"delete" })
+                client1.to(game.conversation._id).emit('unread',{message:game1.type == "game" ? `${game1.host} has removed ${user.handle}` : `${game1.host} has removed ${user.handle}`,type:"delete",user_id:user._id })
                 // client1.to(conversation2._id).emit('unread',{})
 
                 // NotifyArray(device_token_list, message_formation, `Game Left`,conversation2)

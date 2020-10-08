@@ -3179,7 +3179,8 @@ router.post('/unfollow_request/:friend', verifyToken, (req, res, next) => {
               console.log(user.following)
               Conversation.find({$or:[{members:[req.body.id,req.params.friend],type:'single'},{members:[req.params.friend,req.body.id],type:'single'}]}).limit(1).lean().then(ec=>{
                 ec.length > 0 && updateConvoStatus(ec[0],{invite_status : true})  
-                sendAlert({created_at:new Date(),created_by:req.body.id,user:req.params.friend,type:'following',status_description:`${friend.handle} is following you`},'delete',next) 
+                sendAlert({created_at:new Date(),created_by:req.body.id,user:req.params.friend,type:'following',status_description:`${friend.handle} is following you`},'delete',next)
+                sendAlert({created_at:new Date(),created_by:req.params.friend,user:req.body.id,type:'accepted',status_description:`${friend.handle} has accepted request`},'delete',next)
               res.send({status:"success", message:"Unfollowed "+friend.handle, data:user})
   }).catch(next)
   }).catch(next)
@@ -3202,7 +3203,9 @@ router.post('/remove_request/:friend', verifyToken, (req, res, next) => {
             User.findById({_id:req.body.id},{activity_log:0}).populate('requests','name profile_picture handle name_status').then(user=>{ 
               Conversation.find({$or:[{members:[req.body.id,req.params.friend],type:'single'},{members:[req.params.friend,req.body.id],type:'single'}]}).limit(1).lean().then(ec=>{
                 ec.length > 0 && updateConvoStatus(ec[0],{invite_status : true})  
-                sendAlert({created_at:new Date(),created_by:req.params.friend,user:req.body.id,type:'following',status_description:`${friend.handle} is following you`},'delete',next) 
+                // sendAlert({created_at:new Date(),created_by:req.params.friend,user:req.body.id,type:'following',status_description:`${friend.handle} is following you`},'delete',next)
+                sendAlert({created_at:new Date(),created_by:req.params.friend,user:req.body.id,type:'following',status_description:`${friend.handle} is following you`},'delete',next)
+                sendAlert({created_at:new Date(),created_by:req.body.id,user:req.params.friend,type:'accepted',status_description:`${friend.handle} has accepted request`},'delete',next) 
                 res.send({status:"success", message:"Removed "+friend.handle, data:user})
   }).catch(next)
   }).catch(next)
@@ -3261,10 +3264,10 @@ router.post('/accept_or_delete_requests', verifyToken, (req, res, next) => {
                     Alert.findOne({user:req.userId,created_by:req.body.id}).populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'post', populate: { path: 'event' , populate :{path:'venue',select:'venue'} } }).populate({ path: 'post', populate: { path: 'game' , populate :{path:'venue',select:'venue'} } }).populate('created_by','name _id handle profile_picture').then(a=>{
                       console.log("aaa",a)
                     let alert = {...a,type:'following',status_description:`${friend.handle} is following you`}
-                    res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1,alert:alert}})
-                sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,type:'following',status_description:`${friend.handle} is following you`},'addorupdate',next) 
-                sendAlert({created_at:new Date(),created_by:req.userId,user:req.body.id,type:'following',status_description:`${asd.handle} has accepted your request`},'create',next) 
-                
+                sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,sent_type:"follow",type:'following',status_description:`${friend.handle} is following you`},'addorupdate',next) 
+                sendAlert({created_at:new Date(),created_by:req.userId,user:req.body.id,type:'accepted',status_description:`${asd.handle} has accepted your request`},'create',next)
+                res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1,alert:alert}})
+
                }).catch(next)
               }).catch(next)
               }
@@ -3317,10 +3320,10 @@ router.post('/accept_or_delete_requests_alert', verifyToken, (req, res, next) =>
                     ec.length > 0 && updateConvoStatus(ec[0],{invite_status : false})
                       a["type"] = "following"
                       a["status_description"] = `${friend.handle} is following you`
-                    res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1,alert:a}})
-                sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,type:'following',status_description:`${friend.handle} is following you`},'addorupdate',next) 
-                sendAlert({created_at:new Date(),created_by:req.userId,user:req.body.id,type:'following',status_description:`${asd.handle} has accepted your request`},'create',next) 
-                
+                sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,sent_type:"follow",type:'following',status_description:`${friend.handle} is following you`},'addorupdate',next) 
+                sendAlert({created_at:new Date(),created_by:req.userId,user:req.body.id,type:'accepted',status_description:`${asd.handle} has accepted your request`},'create',next) 
+                res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1,alert:a}})
+
               }).catch(next)
               }
               else {
@@ -3427,6 +3430,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
             if(response.data.entity === "refund")
             {
               Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true, refund_status:true,cancelled_by:req.body.cancelled_by}},{multi:true}).then(booking=>{
+               Game.updateMany({'bookings.booking_id':req.params.id},{$set:{bookings:booking,status:false,status_description:'slot cancelled by the user'}},{multi:true}).then(game=>{
                 Booking.find({booking_id:req.params.id}).lean().populate("venue_data").then(booking=>{
                   User.findById({_id:booking[0].user_id},{activity_log:0}).then(user=>{
                   res.send({status:"success", message:"booking cancelled"})
@@ -3443,6 +3447,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   let manager_phone = "91"+venue.venue.contact
                   let SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER = `Your Turf town booking ${booking_id} scheduled for ${datetime} at ${venue_name},${" "+venue_area}(${venue_type}) has been cancelled by the venue .\nStatus : Advance of Rs.${booking[0].booking_amount} will be refunded within 3-4 working days.\nPlease contact the venue ${venue.venue.contact} for more information.` //491317
                   let sender = "TRFTWN"
+                  handleSlotAvailabilityWithCancellation(booking,req.socket)
                   SendMessage(phone,sender,SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER)
                   //Send Mail
                   let obj = {
@@ -3482,6 +3487,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   ActivityLog(activity_log)
                 }).catch(next);
               }).catch(next);
+            }).catch(next);
             }).catch(next)
             }
           }).catch(error => {
@@ -3489,7 +3495,8 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
           }).catch(next);
         }else{
           Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refund_status:false,cancelled_by:req.body.cancelled_by}},{multi:true}).then(booking=>{
-                Booking.find({booking_id:req.params.id}).lean().populate("venue_data").then(booking=>{
+            Game.updateMany({'bookings.booking_id':req.params.id},{$set:{bookings:booking,status:false,status_description:'slot cancelled by the user'}},{multi:true}).then(game=>{
+            Booking.find({booking_id:req.params.id}).lean().populate("venue_data").then(booking=>{
                   User.findById({_id:booking[0].user_id},{"activity_log":0}).then(user=>{
                   res.send({status:"success", message:"booking cancelled"})
                   let booking_id = booking[0].booking_id
@@ -3512,6 +3519,8 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   // }).catch(error=>{
                   //   console.log(error.response)
                   // })
+                  handleSlotAvailabilityWithCancellation(booking,req.socket)
+
                   if(booking[0].booking_type === "app"){
                   let SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER = `Your Turf town booking ${booking_id} scheduled for ${datetime} at ${venue_name},${" "+venue_area} has been cancelled by the venue .\nStatus : Advance paid of Rs.${booking_amount} will be charged as a cancellation fee.\nPlease contact the venue ${venue.venue.contact} for more information.` //490759
                   let sender = "TRFTWN"
@@ -3571,6 +3580,8 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   ActivityLog(activity_log)
             }).catch(next);
           }).catch(next);
+        }).catch(next);
+
           }).catch(next);
         }
       })
@@ -3912,7 +3923,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         let qpast =   Object.entries(apast).map(([key,value])=>{return {title:key,data:value }})
         // let qcancelled = Object.entries(cancelledPast).map(([key,value])=>{return {title:key,data:value }})
         const today_empty = qpresent && qpresent.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpresent.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
-        const today_empty1 = qpast && qpast.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpast.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
+        // const today_empty1 = qpast && qpast.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpast.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
         qpresent.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
         qpast.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
         let qpas = [...qpast]

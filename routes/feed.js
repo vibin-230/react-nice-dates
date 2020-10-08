@@ -319,7 +319,7 @@ router.post('/get_more_alerts/', [
   router.post('/tt_users/', [
     verifyToken,
   ], (req, res, next) => {
-    User.find({_id:{$nin:[req.userId]}}).select("name profile_picture handle name_status _id").then(data=>{
+    User.find({_id:{$nin:[req.userId]},handle:{"$exists" : true, "$ne" : ""}}).select("name profile_picture handle name_status _id").then(data=>{
         res.status(201).send({status: "success", message: "user collected",data:data})
       }).catch(next)
   });

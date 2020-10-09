@@ -3262,7 +3262,6 @@ router.post('/accept_or_delete_requests', verifyToken, (req, res, next) => {
                   Conversation.find({$or:[{members:[req.body.id,req.userId],type:'single'},{members:[req.userId,req.body.id],type:'single'}]}).limit(1).lean().then(ec=>{
                     ec.length > 0 && updateConvoStatus(ec[0],{invite_status : false})
                     Alert.findOne({user:req.userId,created_by:req.body.id}).populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'post', populate: { path: 'event' , populate :{path:'venue',select:'venue'} } }).populate({ path: 'post', populate: { path: 'game' , populate :{path:'venue',select:'venue'} } }).populate('created_by','name _id handle profile_picture').then(a=>{
-                      console.log("aaa",a)
                     let alert = {...a,type:'following',status_description:`${friend.handle} is following you`}
                 sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,sent_type:"follow",type:'following',status_description:`${friend.handle} is following you`},'addorupdate',next) 
                 sendAlert({created_at:new Date(),created_by:req.userId,user:req.body.id,type:'accepted',status_description:`${asd.handle} has accepted your request`},'create',next)

@@ -3430,8 +3430,8 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
             if(response.data.entity === "refund")
             {
               Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true, refund_status:true,cancelled_by:req.body.cancelled_by}},{multi:true}).then(booking=>{
-               Game.updateMany({'bookings.booking_id':req.params.id},{$set:{bookings:booking,status:false,status_description:'slot cancelled by the user'}},{multi:true}).then(game=>{
                 Booking.find({booking_id:req.params.id}).lean().populate("venue_data").then(booking=>{
+               Game.updateMany({'bookings.booking_id':req.params.id},{$set:{bookings:booking,status:false,status_description:'slot cancelled by the user'}},{multi:true}).then(game=>{
                   User.findById({_id:booking[0].user_id},{activity_log:0}).then(user=>{
                   res.send({status:"success", message:"booking cancelled"})
                   let booking_id = booking[0].booking_id
@@ -3495,8 +3495,8 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
           }).catch(next);
         }else{
           Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refund_status:false,cancelled_by:req.body.cancelled_by}},{multi:true}).then(booking=>{
-            Game.updateMany({'bookings.booking_id':req.params.id},{$set:{bookings:booking,status:false,status_description:'slot cancelled by the user'}},{multi:true}).then(game=>{
             Booking.find({booking_id:req.params.id}).lean().populate("venue_data").then(booking=>{
+              Game.updateMany({'bookings.booking_id':req.params.id},{$set:{bookings:booking,status:false,status_description:'slot cancelled by the user'}},{multi:true}).then(game=>{
                   User.findById({_id:booking[0].user_id},{"activity_log":0}).then(user=>{
                   res.send({status:"success", message:"booking cancelled"})
                   let booking_id = booking[0].booking_id

@@ -3447,13 +3447,15 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   let SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER = `Your Turf town booking ${booking_id} scheduled for ${datetime} at ${venue_name},${" "+venue_area}(${venue_type}) has been cancelled by the venue .\nStatus : Advance of Rs.${booking[0].booking_amount} will be refunded within 3-4 working days.\nPlease contact the venue ${venue.venue.contact} for more information.` //491317
                   let sender = "TRFTWN"
                   if(booking[0].game){
-                    Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
-                      Message.create({conversation:game.conversation,message:`Hey ! Slot has been cancelled and refund has been initiated.Amount will be credited in 2 - 4 working days.Please book your slot to confirm the game`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
+                    Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted',status_description:'cancelled by venue manager'}}).then(game=>{
+                      Post.deleteMany({game:game._id}).then((a)=>{
+                      Message.create({conversation:game.conversation,message:`Hey ! Slot has been cancelled and refund has been initiated.Amount will be credited in 2 - 4 working days.Please book a new slot to confirm the game`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
                             //getGame(res,game.conversation,true,next,req)
                              handleSlotAvailabilityWithCancellation(booking,req.socket)
                       }).catch(next);
                       }).catch(next);
+                    }).catch(next);
                       }).catch(next);
                         }
                   SendMessage(phone,sender,SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER)
@@ -3526,13 +3528,15 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   //   console.log(error.response)
                   // })
                   if(booking[0].game){
-                    Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
-                      Message.create({conversation:game.conversation,message:`Hey ! Slot has been cancelled No Refund initiated.Please book your slot to confirm the game`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
+                    Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted',status_description:'cancelled by venue manager'}}).then(game=>{
+                      Post.deleteMany({game:game._id}).then((a)=>{
+                        Message.create({conversation:game.conversation,message:`Hey ! Slot has been cancelled No Refund initiated.Please book your slot to confirm the game`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
                             //getGame(res,game.conversation,true,next,req)
                              handleSlotAvailabilityWithCancellation(booking,req.socket)
                       }).catch(next);
                       }).catch(next);
+                    }).catch(next);
                       }).catch(next);
                         }
 

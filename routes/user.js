@@ -1960,7 +1960,7 @@ async function handleSlotAvailabilityForGames(booking1,client){
                   return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
                   const cids = m.map((entry)=>{
                     const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id :entry.conversation
-                    Conversation.findByIdAndUpdate({_id:id},{$set:{last_message:entry._id, last_updated:new Date()}}).then((m)=>console.log('pass'))
+                    Conversation.findByIdAndUpdate({_id:id},{$set:{last_message:entry._id}}).then((m)=>console.log('pass'))
                     //client && client.to(id).emit('new',entry)
                     return id
                   })

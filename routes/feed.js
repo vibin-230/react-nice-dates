@@ -258,10 +258,10 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
   ], (req, res, next) => {
     Alert.find({user: req.userId,created_by:{$nin:[req.userId]}}).lean().populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'post', populate: { path: 'event' , populate :{path:'venue',select:'venue'} } }).populate({ path: 'post', populate: { path: 'game' , populate :{path:'venue',select:'venue'} } }).populate('created_by','name _id handle profile_picture').then(alert=> {
       let y = alert.filter((key)=>{
-        if(key.type == "shoutout" && key.post.type == "game"){
+        if(key.type == "shoutout" && key.post !== null && key.post.type == "game"){
           return (key.post.game !== null && key.created_by !== null ) 
         }
-        else if(key.type == "shoutout" && key.post.type == "event"){
+        else if(key.type == "shoutout" && key.post !== null && key.post.type == "event"){
           return (key.post.event !== null && key.created_by !== null) 
         }
         else {
@@ -275,7 +275,6 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
       const finalData = [...y]
       res.status(201).send({status: "success", message: "alerts collected",data:finalData})
       }).catch(next)
-    //}).catch(next)
   
   });
 

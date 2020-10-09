@@ -984,6 +984,7 @@ router.post('/share_post/:id', [
         Game.findByIdAndUpdate({_id: req.params.id},game).then(user=>{
         Post.create(req.body).then(post=>{
           Post.findById({_id:post._id}).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then(post=>{
+            post['shout_out_status'] = false
           res.status(201).send({status: "success", message: "user collected",data:post})
         }).catch(next);
   }).catch(next);
@@ -1028,7 +1029,8 @@ router.post('/share_post_event/:id', [
 ], (req, res, next) => {
         Post.create(req.body).then(post=>{
           Post.findById({_id:post._id}).lean().populate({path:"event",populate:{path:"venue",select:"venue"}}).populate('shout_out','_id name profile_picture phone handle name_status').populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then(post=>{
-          res.status(201).send({status: "success", message: "user collected",data:post})
+          post["shout_out_status"] = false
+            res.status(201).send({status: "success", message: "user collected",data:post})
         }).catch(next);
       }).catch(next);
 });

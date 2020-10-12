@@ -953,7 +953,7 @@ router.post('/get_mvp_history', [
   verifyToken,
 ], (req, res, next) => {
       //Check if user exist
-      Game.find({users: {$in:[req.userId]},completed:true,"mvp.target_id":req.userId.toString()}).populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
+      Game.find({users: {$in:[req.userId]},completed:true,"mvp.target_id":req.userId.toString()}).populate("mvp.sender_id","name handle profile_picture _id").populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{
             (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
@@ -1647,7 +1647,8 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
               phone:body.phone,
               card:body.card,
               upi:body.upi,
-              cash:body.cash
+              cash:body.cash,
+              courts:body.courts
             }
             Booking.create(booking).then(booking=>{
               resolve(booking)
@@ -3321,7 +3322,7 @@ router.post('/accept_or_delete_requests_alert', verifyToken, (req, res, next) =>
                     ec.length > 0 && updateConvoStatus(ec[0],{invite_status : false})
                       a["type"] = "following"
                       a["status_description"] = `${friend.handle} is following you`
-                sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,sent_type:"follow",type:'following',status_description:`${friend.handle} is following you`},'addorupdate',next) 
+                sendAlert({created_by:req.body.id,user:req.userId,sent_type:"follow",type:'following',status_description:`${friend.handle} is following you`},'addorupdate',next) 
                 sendAlert({created_at:new Date(),created_by:req.userId,user:req.body.id,type:'accepted',status_description:`${asd.handle} has accepted your request`},'create',next) 
                 res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1,alert:a}})
 

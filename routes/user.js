@@ -65,7 +65,7 @@ const multer = require('multer')
 const sendAlert = require('./../scripts/sendAlert')
 var multer_upload = multer({ dest: 'uploads/' })
 var io = require('socket.io-emitter')("//127.0.0.1:6379")
-const rzp_key = require('../scripts/rzp')
+const rzp_key = require('../scripts/rzp');
 
 
  const indianRupeeComma = (value) => {
@@ -1840,7 +1840,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
 
     Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
-          req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id},next)
+          req.body[0].coins > 0 && createCoin({type:'booking',booking_id:values[0].booking_id,amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id},next)
         let booking_id = values[0].booking_id
         let phone = "91"+values[0].phone
         let venue_name = values[0].venue
@@ -2042,7 +2042,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
             res.send({status:"success", message:"slot booked",data: {game:game,convo:convo}})
             console.log('hit1',req.body[0]);
             
-          req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id},next)
+          req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,booking_id:values[0].booking_id,venue:values[0].venue_id},next)
           //createReport({venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,user:values[0].user_id,card:values[0].card?values[0].card:0,coins:(req.body[0].coins*req.body.length),cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
           var result = Object.values(combineSlots([...values]))
 
@@ -2194,7 +2194,7 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
             Message.create({conversation:game.conversation,message:`${req.name} has booked the slot for this game . Please be on time to the venue`,read_status:false,name:req.name,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : req.userId}},{activity_log:0,followers:0,following:0,}).then(users=> {
                 Conversation.findByIdAndUpdate({_id:message1.conversation},{last_message:message1._id,last_updated:new Date()}).then(conversation=>{
-                 req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id},next)
+                 req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id,booking_id:values[0].booking_id},next)
                 
                   Conversation.findById({_id:message1.conversation}).then(convo=>{
                     console.log('hit message',message1);
@@ -4311,6 +4311,12 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
 //   }).catch(next)
 // })
 
+router.post('/booking_id_history/:id', verifyToken, (req, res, next) => {
+  Booking.find({booking_id:req.params.id}).lean().populate('venue_data','venue').then(booking=>{
+      let result = Object.values(combineSlots(booking))
+        res.send({status:"success", message:"booking history fetched", data:result})
+  }).catch(next)
+})
 router.post('/booking_history_from_app_by_venue/:id', verifyToken, (req, res, next) => {
   Booking.find({booking_status:{$in:["completed"]}, venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, booking_type:"app"}).lean().populate('venue_data','venue').populate('collected_by','name').then(booking=>{
       result = Object.values(combineSlots(booking))

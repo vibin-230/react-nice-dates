@@ -567,14 +567,14 @@ Coins.create(Object.assign({from:req.userId},req.body)).then((s)=>{
 
   });
 
-router.post('/turf_coin_history', [
-  verifyToken,
-], (req, res, next) => {
-  Coins.find({ user: req.userId }).then((s) => {
-    res.status(201).send({ status: "success", message: "coin history collected", data: s })
-  }).catch(next);
+// router.post('/turf_coin_history', [
+//   verifyToken,
+// ], (req, res, next) => {
+//   Coins.find({ user: req.userId }).then((s) => {
+//     res.status(201).send({ status: "success", message: "coin history collected", data: s })
+//   }).catch(next);
 
-});
+// });
 
 
  

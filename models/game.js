@@ -33,7 +33,7 @@ const schema = new Schema({
   quits:Number,
   skipped:Array,
   completed:{ type : Boolean , default:false},
-  mvp:Array,
+  mvp:[{mvp:Boolean,sender_id:{type:mongoose.Schema.Types.ObjectId,ref:'user'},target_id:{type:mongoose.Schema.Types.ObjectId,ref:'user'} }],
   users:[{type:mongoose.Schema.Types.ObjectId, ref:'user'}],
   invites:[{type:mongoose.Schema.Types.ObjectId, ref:'user'}],
   host :[{ type: Schema.Types.ObjectId, ref: 'user' }],

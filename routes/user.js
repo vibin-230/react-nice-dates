@@ -65,7 +65,7 @@ const multer = require('multer')
 const sendAlert = require('./../scripts/sendAlert')
 var multer_upload = multer({ dest: 'uploads/' })
 var io = require('socket.io-emitter')("//127.0.0.1:6379")
-const rzp_key = require('../scripts/rzp')
+const rzp_key = require('../scripts/rzp');
 
 
  const indianRupeeComma = (value) => {
@@ -955,7 +955,7 @@ router.post('/get_mvp_history', [
   verifyToken,
 ], (req, res, next) => {
       //Check if user exist
-      Game.find({users: {$in:[req.userId]},completed:true,"mvp.target_id":req.userId.toString()}).populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
+      Game.find({users: {$in:[req.userId]},completed:true,"mvp.target_id":req.userId.toString()}).populate("mvp.sender_id","name handle profile_picture _id").populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{
             (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
@@ -986,6 +986,7 @@ router.post('/share_post/:id', [
         Game.findByIdAndUpdate({_id: req.params.id},game).then(user=>{
         Post.create(req.body).then(post=>{
           Post.findById({_id:post._id}).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then(post=>{
+            post['shout_out_status'] = false
           res.status(201).send({status: "success", message: "user collected",data:post})
         }).catch(next);
   }).catch(next);
@@ -1030,7 +1031,8 @@ router.post('/share_post_event/:id', [
 ], (req, res, next) => {
         Post.create(req.body).then(post=>{
           Post.findById({_id:post._id}).lean().populate({path:"event",populate:{path:"venue",select:"venue"}}).populate('shout_out','_id name profile_picture phone handle name_status').populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue',select:'venue'}] }).then(post=>{
-          res.status(201).send({status: "success", message: "user collected",data:post})
+          post["shout_out_status"] = false
+            res.status(201).send({status: "success", message: "user collected",data:post})
         }).catch(next);
       }).catch(next);
 });
@@ -1647,7 +1649,8 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
               phone:body.phone,
               card:body.card,
               upi:body.upi,
-              cash:body.cash
+              cash:body.cash,
+              courts:body.courts
             }
             Booking.create(booking).then(booking=>{
               resolve(booking)
@@ -1839,7 +1842,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
 
     Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
-          req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id},next)
+          req.body[0].coins > 0 && createCoin({type:'booking',booking_id:values[0].booking_id,amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id},next)
         let booking_id = values[0].booking_id
         let phone = "91"+values[0].phone
         let venue_name = values[0].venue
@@ -2041,7 +2044,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
             res.send({status:"success", message:"slot booked",data: {game:game,convo:convo}})
             console.log('hit1',req.body[0]);
             
-          req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id},next)
+          req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,booking_id:values[0].booking_id,venue:values[0].venue_id},next)
           //createReport({venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,user:values[0].user_id,card:values[0].card?values[0].card:0,coins:(req.body[0].coins*req.body.length),cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
           var result = Object.values(combineSlots([...values]))
 
@@ -2193,7 +2196,7 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
             Message.create({conversation:game.conversation,message:`${req.name} has booked the slot for this game . Please be on time to the venue`,read_status:false,name:req.name,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : req.userId}},{activity_log:0,followers:0,following:0,}).then(users=> {
                 Conversation.findByIdAndUpdate({_id:message1.conversation},{last_message:message1._id,last_updated:new Date()}).then(conversation=>{
-                 req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id},next)
+                 req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id,booking_id:values[0].booking_id},next)
                 
                   Conversation.findById({_id:message1.conversation}).then(convo=>{
                     console.log('hit message',message1);
@@ -3264,7 +3267,6 @@ router.post('/accept_or_delete_requests', verifyToken, (req, res, next) => {
                   Conversation.find({$or:[{members:[req.body.id,req.userId],type:'single'},{members:[req.userId,req.body.id],type:'single'}]}).limit(1).lean().then(ec=>{
                     ec.length > 0 && updateConvoStatus(ec[0],{invite_status : false})
                     Alert.findOne({user:req.userId,created_by:req.body.id}).populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'post', populate: { path: 'event' , populate :{path:'venue',select:'venue'} } }).populate({ path: 'post', populate: { path: 'game' , populate :{path:'venue',select:'venue'} } }).populate('created_by','name _id handle profile_picture').then(a=>{
-                      console.log("aaa",a)
                     let alert = {...a,type:'following',status_description:`${friend.handle} is following you`}
                 sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,sent_type:"follow",type:'following',status_description:`${friend.handle} is following you`},'addorupdate',next) 
                 sendAlert({created_at:new Date(),created_by:req.userId,user:req.body.id,type:'accepted',status_description:`${asd.handle} has accepted your request`},'create',next)
@@ -3322,7 +3324,7 @@ router.post('/accept_or_delete_requests_alert', verifyToken, (req, res, next) =>
                     ec.length > 0 && updateConvoStatus(ec[0],{invite_status : false})
                       a["type"] = "following"
                       a["status_description"] = `${friend.handle} is following you`
-                sendAlert({created_at:new Date(),created_by:req.body.id,user:req.userId,sent_type:"follow",type:'following',status_description:`${friend.handle} is following you`},'addorupdate',next) 
+                sendAlert({created_by:req.body.id,user:req.userId,sent_type:"follow",type:'following',status_description:`${friend.handle} is following you`},'addorupdate',next) 
                 sendAlert({created_at:new Date(),created_by:req.userId,user:req.body.id,type:'accepted',status_description:`${asd.handle} has accepted your request`},'create',next) 
                 res.send({ status: "success", message: "user requests updated", data: {"user":user,"requests_user":user1,alert:a}})
 
@@ -4311,6 +4313,12 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
 //   }).catch(next)
 // })
 
+router.post('/booking_id_history/:id', verifyToken, (req, res, next) => {
+  Booking.find({booking_id:req.params.id}).lean().populate('venue_data','venue').then(booking=>{
+      let result = Object.values(combineSlots(booking))
+        res.send({status:"success", message:"booking history fetched", data:result})
+  }).catch(next)
+})
 router.post('/booking_history_from_app_by_venue/:id', verifyToken, (req, res, next) => {
   Booking.find({booking_status:{$in:["completed"]}, venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, booking_type:"app"}).lean().populate('venue_data','venue').populate('collected_by','name').then(booking=>{
       result = Object.values(combineSlots(booking))

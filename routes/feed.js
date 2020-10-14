@@ -256,12 +256,12 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
   router.post('/get_alerts/', [
     verifyToken,
   ], (req, res, next) => {
-    Alert.find({user: req.userId,created_by:{$nin:[req.userId]}}).lean().populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'post', populate: { path: 'event' , populate :{path:'venue',select:'venue'} } }).populate({ path: 'post', populate: { path: 'game' , populate :{path:'venue',select:'venue'} } }).populate('created_by','name _id handle profile_picture').then(alert=> {
+    Alert.find({user: req.userId,created_by:{$nin:[req.userId]}}).sort({created_at: -1}).lean().populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'post', populate: { path: 'event' , populate :{path:'venue',select:'venue'} } }).populate({ path: 'post', populate: { path: 'game' , populate :{path:'venue',select:'venue'} } }).populate('created_by','name _id handle profile_picture').then(alert=> {
       let y = alert.filter((key)=>{
-        if(key.type == "shoutout" && key.post.type == "game"){
+        if(key.type == "shoutout" && key.post !== null && key.post.type == "game"){
           return (key.post.game !== null && key.created_by !== null ) 
         }
-        else if(key.type == "shoutout" && key.post.type == "event"){
+        else if(key.type == "shoutout" && key.post !== null && key.post.type == "event"){
           return (key.post.event !== null && key.created_by !== null) 
         }
         else {
@@ -273,9 +273,9 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
             console.log('redis comeback',reply);
           });
       const finalData = [...y]
-      res.status(201).send({status: "success", message: "alerts collected",data:finalData})
+      console.log("finalss",finalData.length)
+      res.status(201).send({status: "success", message: "alerts collected",data:finalData.slice(0,12)})
       }).catch(next)
-    //}).catch(next)
   
   });
 
@@ -288,20 +288,23 @@ router.post('/get_more_alerts/', [
           console.log(err);
         }
         const data = JSON.parse(reply)
-        let index = data.findIndex(x => x._id.toString() === req.body.alert.toString());
+
+        let index = req.body && req.body.alert && req.body.alert._id ?  data.findIndex(x => x._id.toString() ===req.body.alert._id.toString()) : -1 ;
        let final_data = []
 
-        let diff;
-        if(index > 0){
-          diff = data.length - index  > 4 ? 4 : data.length - index
-          if(diff > 4){
-            final_data = data.slice(index+1,index+4)
-          }else if(diff < 4 && diff >= 1){
-            final_data = data.slice(index+1,index+diff)
-          }else{
-            final_data.push({type:'empty',data:'No data available'})
-          }
-        }
+       let diff;
+       if(index > 0){
+         diff = data.length - index  > 12 ? 12 : data.length - index
+         console.log("index",index,"diff",diff,"data.length",data.length, )
+         if(diff >= 12){
+           final_data = data.slice(index+1,index+12)
+         }else if(diff < 12 && diff > 1){
+           final_data = data.slice(index+1,index+diff)
+         }else{
+           final_data.push({type:'empty',data:'No data available'})
+         }
+       }
+
       res.status(201).send({status: "success", message: "alerts collected",data:final_data})
     })
   
@@ -563,6 +566,15 @@ Coins.create(Object.assign({from:req.userId},req.body)).then((s)=>{
 }).catch(next);
 
   });
+
+// router.post('/turf_coin_history', [
+//   verifyToken,
+// ], (req, res, next) => {
+//   Coins.find({ user: req.userId }).then((s) => {
+//     res.status(201).send({ status: "success", message: "coin history collected", data: s })
+//   }).catch(next);
+
+// });
 
 
  

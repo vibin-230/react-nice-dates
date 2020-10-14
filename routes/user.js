@@ -646,11 +646,13 @@ router.post('/get_chatrooms/:id', [
             if( c.exit_list && c.exit_list.length > 0){
               const x =  c.exit_list
                 let user  =  x.length > 0 && x.filter((e)=>{ return e && e.user_id && e.user_id._id.toString() !== req.params.id.toString()})[x.length-1]
+                let user1  =  x.length > 0 && x.filter((e)=>{ return e && e.user_id && e.user_id._id.toString() === req.params.id.toString()})[x.length-1]
+
                 c.members =  user && c.type==='single' ? c.members.concat(user.user_id) : c.members
                 //c['exit'] = user && user.timeStamp ? c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0 ? false : true : false
                 c['exit'] = user && user.timeStamp && c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0
                 c['last_updated'] = user && user.timeStamp ? user.timeStamp : c.last_updated 
-                c['last_message'] = user && user.message ? c.type === 'single' ? c.last_message:user.message  : c.last_message
+                c['last_message'] = c.type === 'single' ? user && user.message ? c.type === 'single' ? c.last_message:user.message  : c.last_message : user1 && user1.message ? user1.message : c.last_message
               
             }
             const filter = c && c.last_active ? c.last_active.filter((c)=> c && c.user_id && c.user_id.toString() === req.params.id.toString()) : []
@@ -2869,7 +2871,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
             console.log(response.data);
             if(response.data.entity === "refund") /// user  with refund 
             {
-              Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true,refund_status:true}},{multi:true}).then(booking=>{
+              Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true,refund_status:true,game:false,description:'from_game_with_refund'}},{multi:true}).then(booking=>{
                 Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
                   
                   if(booking[0].game){
@@ -2974,7 +2976,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
             console.log(error.response.data)
           }).catch(next);
         }else{
-          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled"},refund_status:false},{multi:true}).then(booking=>{ ////user cancellation without refund
+          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true,refund_status:true,game:false,}},{multi:true}).then(booking=>{ ////user cancellation without refund
             Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
               if(booking[0].game){
                 Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
@@ -3530,7 +3532,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   if(booking[0].game){
                     Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted',status_description:'cancelled by venue manager'}}).then(game=>{
                       Post.deleteMany({game:game._id}).then((a)=>{
-                        Message.create({conversation:game.conversation,message:`Hey ! Slot has been cancelled No Refund initiated.Please book your slot to confirm the game`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
+                        Message.create({conversation:game.conversation,message:`Hey ! Slot has been cancelled No Refund initiated.Please host a new game.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
                             //getGame(res,game.conversation,true,next,req)
                              handleSlotAvailabilityWithCancellation(booking,req.socket)

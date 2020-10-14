@@ -66,6 +66,7 @@ const schema = new Schema({
   invoice_by:{ type: Schema.Types.ObjectId, ref: 'admin' },
   invoice_id:String,
   repeat_id:String,
+  description:String,
   refund_status:Boolean,
   refunded: {
     type: Boolean,

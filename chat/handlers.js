@@ -57,7 +57,9 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     handleEvent(chatroomName, createEntry)
       .then(async function (chatroom) {
         chatroom.addUser(client)
+
         client.join(chatroom.getId())
+        console.log('io sockets',io.sockets.adapter.rooms[chatroom.getId()])
         const token = client.handshake.query.token;
         //for single user
         //const y = await chatroomManager.checkIfUserExited({_id:chatroom.getId()})

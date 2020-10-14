@@ -3976,15 +3976,16 @@ router.post('/host_and_games', verifyToken, (req, res, next) => {
   }
   let booking_ids = []
       Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate('venue','venue'). populate("host","name _id handle name_status profile_picture").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
-        game.map((key)=>{
+       game.map((key)=>{
           key["venue"] = key.venue.venue
          })
-
         const open_games = game.filter((g)=>{
          return g.share_type === 'open' || (g.share_type === 'closed' && g.host.some(key=>key._id.toString() === req.userId.toString()))
         })     
-        booking_data = req.body.type && req.body.type === 'host' ?[...open_games]:[...game]
-
+       let booking_data = req.body.type && req.body.type === 'host' ?[...open_games]:[...game]
+       //console.log(booking_data.length);
+        booking_data = booking_data.filter((key) => key._id.toString() !== req.body.game.toString())
+       
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{
             (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);

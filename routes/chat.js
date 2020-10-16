@@ -106,15 +106,13 @@ async function getChatHistory(id, user,final_date,message_id) {
       let date = conversation.join_date.length > 0 ? conversation.join_date.filter((jd) => jd.user_id.toString() === user.id.toString()) : []
       const x = conversation.members.filter((a)=>a._id.toString() === user.id.toString())
       const user1 =   conversation.exit_list && conversation.exit_list.length > 0 && conversation.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === user.id.toString())
-      const filter  = x.length > 0 ?  date && date.length > 0 ? { _id:{$nin:[message_id]},conversation: id, created_at: { $lte: final_date } } : { conversation: id} :{ conversation: id, created_at: { $lte: moment(user1[user1.length-1].timeStamp).add(1,'seconds') } }
+      const filter  = x.length > 0 ?  date && date.length > 0 ? { _id:{$nin:[message_id]},conversation: id, created_at: { $lt: final_date } } : { conversation: id} :{ conversation: id, created_at: { $lte: moment(user1[user1.length-1].timeStamp).add(1,'seconds') } }
       conversation['exit'] = x.length > 0 ? false:true
-      
       return Message.find(filter).lean().populate('author', 'name _id handle').populate('user', 'name _id profile_picture phone handle').populate({path:"event",populate:{path:"venue",select:"venue"}}).populate({ path: 'event', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({_id:-1}).limit(100).then(m => {
         for(let i = 1 ;i <m.length; i++){
           if( moment(m[i].created_at).utc().format('MM-DD-YYYY') !== moment(m[i-1].created_at).utc().format('MM-DD-YYYY')){
               m.splice(i,0,{conversation:conversation._id,message:parseDate(moment(m[i-1].created_at).utc().format('MM-DD-YYYY')),name:'bot',read_status:false,read_by:user.id,author:user.id,type:'bot',created_at:m[i].created_at})
           }
-
         }
         return {messages:m,conversation:conversation}
       }).catch((e) => console.log(e))

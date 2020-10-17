@@ -389,13 +389,13 @@ router.post('/check_user_game', [
                       game1["rating"] = venue.rating
                       game1['final'] = _.xor(game1.users,game1.host)
                       game1["conversation"] = convo
-                      const x = user.following.concat(user.followers)
+                      const x = user.following.concat(user.followers).concat([req.userId])
                       if(x.filter(a=>a.toString() === req.userId.toString()).length > 0 ){
 
-                      if(game1.users.filter(a=>a._id.toString() === req.userId.toString()).length > 0 ){
+                      if(game1.users.filter(a=>a._id.toString() === req.userId.toString()).length > 0 || game1.host.filter(a=>a._id.toString() === req.userId.toString()).length > 0 ){
                         res.send({status:"success", message:"user exists",data:game1})
                       }else{
-                        res.send({status:"success", message:"no user",data:game1})
+                        res.send({status:"success", message:game1.share_type === 'closed'? "invalid user":'no user',data:game1})
                       }
                     }else{
                       res.send({status:"success", message:game1.share_type === 'closed'? "invalid user":'no user',data:game1})
@@ -615,6 +615,39 @@ router.post('/check_if_past_convo/:id', [
 
       }
     }).catch(next);
+});
+
+
+router.post('/user_suggest/:id', [
+  verifyToken,
+], (req, res, next) => {
+  User.findOne({_id: req.params.id},{}).lean().then(user=> {
+    Game.find({$or:[{host:{$in:[req.params.id]}},{users:{$in:[req.params.id]}}]}).then((game)=>{
+       const filter  = {$or:[{members:[req.params.id],type:'group'}]}
+      Conversation.find({$or:[{host:{$in:[req.params.id]}},{users:{$in:[req.params.id]}}]}).then((game)=>{
+       let all = [...user.followers,...user.following,...[req.params.id]]
+        console.log('as',user.followers);
+          console.log('bs',user.following);
+            var final_users = user.followers.filter(function(obj) { 
+              const x = user.following.filter((a)=>a.toString() === obj.toString()).length > 0 
+                 return !x
+                   });
+          //console.log(final_users.length,'final_users');
+    User.find({_id: {$nin :all}},{name:1,_id:1,profile_picture:1,}).lean().then(user=>{
+    User.find({_id: {$in :final_users}},{name:1,_id:1,profile_picture:1,}).lean().then(user1=>{
+          const yet_to_click_follow_users = user1.map((a)=> Object.assign(a,{zcode:20}))
+          const no_relation_users = user.map((a)=> Object.assign(a,{zcode:10}))
+         //club and game
+         //event
+          res.status(201).send({status: "success", message: "user suggestion list fetched",data:[...yet_to_click_follow_users,...no_relation_users]})
+}).catch(next)
+}).catch(next)
+}).catch(next)
+}).catch(next)
+}).catch(next)
+
+
+
 });
 
 router.post('/get_chatrooms/:id', [

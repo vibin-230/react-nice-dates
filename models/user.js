@@ -20,6 +20,7 @@ const schema = new Schema({
   last_active:Date,
   modified_at: Date,
   location:Array,
+  suggestion_reject:Array,
   location_status:{type:Boolean, default:false},
   phone:String,
   token:String,

@@ -55,8 +55,8 @@ const Experience = require('./../models/experience')
     verifyToken,
   ], (req, res, next) => {
       const body = req.body
-          Cashflow.find(body).populate('created_by').lean().then((a)=>{
-            Bookings.find({booking_id:{$in:a.filter(s=>s.booking_id).map(s=>s.booking_id)}}).lean().populate('collected_by','name _id email').then(booking=>{
+          Cashflow.find({venue_id:req.body.venue_id,created_at:{$gte:req.body.fromdate,$lt:req.body.todate} }).populate('created_by').lean().then((a)=>{
+            Bookings.find({booking_id:{$in:a.filter(s=>s.booking_id).map(s=>s.booking_id) },created_at:{$gte:req.body.fromdate, $lte:req.body.todate} }).lean().populate('collected_by','name _id email').then(booking=>{
             const x = a.map((l)=>{
                     if(l && booking && booking.filter((book)=>book.booking_id === l.booking_id).length >0){
                         l['booking_data'] = booking.filter((book)=>book.booking_id === l.booking_id)

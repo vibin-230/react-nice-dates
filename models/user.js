@@ -26,7 +26,7 @@ const schema = new Schema({
   profile_picture:String,
   os:String,
   dob:Date,
-  refer_id_1:{type:String},
+  refer_id:{type:String},
   email_status:{type:Boolean, default:false},
   name_status:{type:Boolean, default:false},
   gender_status:{type:Boolean, default:false},

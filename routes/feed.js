@@ -332,7 +332,7 @@ router.post('/get_more_alerts/', [
   router.post('/test/:id', [
     verifyToken,
   ], (req, res, next) => {
-    User.find({refer_id_1:'',},null, { getters: false }).select("name profile_picture handle name_status _id").then(data=>{
+    User.find({refer_id:'',},null, { getters: false }).select("name profile_picture handle name_status _id").then(data=>{
 
       res.status(201).send({status: "success", message: "user collected",data:data})
       }).catch(next)
@@ -388,7 +388,7 @@ router.post('/get_more_alerts/', [
     verifyToken,
   ], (req, res, next) => {
     User.findOne({user:req.userId}).then(user=> {
-      User.findOne({refer_id_1:req.body.id}).then(from_user=> {
+      User.findOne({refer_id:req.body.id}).then(from_user=> {
         Coins.findOne({type:'referal',referal:req.body.id,user:req.userId}).then((coin)=>{
             if(!coin){
               if (user && from_user && !user.temporary && !from_user.temporary) {

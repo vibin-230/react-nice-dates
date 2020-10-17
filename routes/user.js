@@ -624,6 +624,9 @@ router.post('/check_if_past_convo/:id', [
     }).catch(next);
 });
 
+function getZcode(game,location,venue,viewd,a,players,joins,friend){
+  return (50 * game) - (location*100)  + (50 * friend) - (2 * venue) - (viewd * 1) - players * 30
+}
 
 router.post('/user_suggest/:id', [
   verifyToken,
@@ -1204,7 +1207,15 @@ router.post('/change_passowrd', [
     }).catch(next);
 });
 
-
+function makeid(length) {
+  var result           = '';
+  var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  var charactersLength = characters.length;
+  for ( var i = 0; i < length; i++ ) {
+     result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+}
 //Send OTP
 router.post('/send_otp',[
   check('phone').isLength({ min: 10, max: 10 }).withMessage('phone number must be 10 digits long'),
@@ -1248,12 +1259,14 @@ router.post('/send_otp',[
             }
           }else{
             if(req.body.phone === '8136948537') {
-            User.create({phone:req.body.phone,refer_id:'TURF',otp:req.body.phone === '8136948537' ? '7484':otp}).then(user=>{
+            const x = 'TURF'+makeId(4)
+            User.create({phone:req.body.phone,refer_id_1:x,otp:req.body.phone === '8136948537' ? '7484':otp}).then(user=>{
               res.status(201).send({status:"success",message:"new user",otp:req.body.phone === '8136948537' ? '7484':user.otp})
             })
           }
             else{
-            User.create({phone:req.body.phone,otp:otp,refer_id:'TURF'}).then(user=>{
+              const x = 'TURF'+makeId(4)
+            User.create({phone:req.body.phone,otp:otp,refer_id_1:x}).then(user=>{
               res.status(201).send({status:"success",message:"new user",otp:req.body.phone === '8136948537' ? '7484':otp})
             })
           }
@@ -1307,7 +1320,7 @@ router.post('/send_new_otp', (req, res, next) => {
                   User.find({phone:req.body.user.phone,handle:req.body.user.handle}).then((user)=>{
                   user && user.length > 0 ? 
                     res.status(400).send({status:"failiure", message:'user exists'})
-                  :User.create({refer_id:'TURF',phone:req.body.user.phone,handle:req.body.user.handle,otp:otp,temporary:true}).then((user)=>{
+                  :User.create({refer_id_1:'TURF'+makeid(4),phone:req.body.user.phone,handle:req.body.user.handle,otp:otp,temporary:true}).then((user)=>{
                     res.status(201).send({status:"success", message:'new user', data:{phone:req.body.user.phone,otp:otp,handle:req.body.user.handle}})
                     setTimeout(()=>{
                       User.findOneAndDelete({phone:user.phone,temporary:true}).then(u=>console.log('user deleted'))
@@ -1330,8 +1343,9 @@ router.post('/send_new_user', (req, res, next) => {
   
           User.find({phone:req.body.user.phone}).then((user)=>{
           user && user.length > 0 ? 
+          
             res.status(400).send({status:"failiure", message:'user exists'})
-          :User.create({refer_id:'TURF',phone:req.body.user.phone,handle:req.body.user.handle,otp:req.body.user.otp,temporary:true}).then((user)=>{
+          :User.create({refer_id_1:'TURF'+this.makeId(5),phone:req.body.user.phone,handle:req.body.user.handle,otp:req.body.user.otp,temporary:true}).then((user)=>{
             res.status(201).send({status:"success", message:'new user', data:{phone:req.body.user.phone,otp:req.body.user.otp,handle:req.body.user.handle}})
             setTimeout(()=>{
               User.findOneAndDelete({phone:user.phone,temporary:true}).then(u=>console.log('user deleted'))

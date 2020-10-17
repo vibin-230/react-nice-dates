@@ -327,6 +327,16 @@ router.post('/get_more_alerts/', [
       }).catch(next)
   });
 
+
+  router.post('/test/:id', [
+    verifyToken,
+  ], (req, res, next) => {
+    User.find({refer_id_1:'',},null, { getters: false }).select("name profile_picture handle name_status _id").then(data=>{
+
+      res.status(201).send({status: "success", message: "user collected",data:data})
+      }).catch(next)
+  });
+
  
 
 
@@ -371,12 +381,13 @@ router.post('/get_more_alerts/', [
           }
       }).catch(next);
   });
+  
 
   router.post('/send_refferal_code/:id', [
     verifyToken,
   ], (req, res, next) => {
     User.findOne({user:req.userId}).then(user=> {
-      User.findOne({refer_id:req.params.id}).then(from_user=> {
+      User.findOne({refer_id_1:req.params.id}).then(from_user=> {
         Coins.findOne({type:'referal',referal:req.params.id,user:req.userId}).then((coin)=>{
             if(!coin && !user.request_status){
               if (user && from_user && !user.temporary && !from_user.temporary) {

@@ -463,6 +463,7 @@ router.post('/get_user', [
       var count  = 0
       let game_completed_count = 0
       let mvp_count = 0
+      let game_history = {football:{game:0,mvp:0},basketball:{game:0,mvp:0},cricket:{game:0,mvp:0},badminton:{game:0,mvp:0}}
       Alert.find({user: req.userId,status:true},{}).lean().then(alert=> {
         Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
           game_completed_count = game && game.length > 0 ? game.length : 0
@@ -471,6 +472,11 @@ router.post('/get_user', [
            mvp_count = mvp_count + f
            return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length>0
           })
+
+          const aq = game.map((a)=>{
+                game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0 }
+          })
+          console.log('ga',game_history);
           //mvp_count = aw && aw.length > 0 ? aw.length : 0
           User.findOne({_id: req.userId},{activity_log:0}).populate("requests","name _id profile_picture").lean().then(user=> {
             Coins.aggregate([ { $match: { user:user._id } },{ $group: { _id: "$user", amount: { $sum: "$amount" } } }]).then((coins)=>{
@@ -482,6 +488,7 @@ router.post('/get_user', [
                user['mvp_count'] = mvp_count
                user['refer_custom_value'] = 100
                user['refer_custom_value1'] = 50
+               user['game_history'] = game_history
                user['coins'] =  coins && coins.length > 0 && coins[0].amount ? coins[0].amount : 0
                user['level'] =  getLevel(250 * mvp_count + 100 * game_completed_count)
                res.status(201).send({status: "success", message: "user collected",data:user})
@@ -632,19 +639,46 @@ router.post('/user_suggest/:id', [
               const x = user.following.filter((a)=>a.toString() === obj.toString()).length > 0 
                  return !x
                    });
-          //console.log(final_users.length,'final_users');
-    User.find({_id: {$nin :all}},{name:1,_id:1,profile_picture:1,}).lean().then(user=>{
+                   var final_users1 = user.followers.filter(function(obj) { 
+                    const x = user.following.filter((a)=>a.toString() === obj.toString()).length > 0 
+                       return x
+                         });
+          console.log(final_users,'final_users');
+          console.log(final_users1,'final_users1');
+          User.find({_id: {$in :final_users1}},{name:1,_id:1,profile_picture:1,followers:1,following:1}).lean().then(userA=>{
+    User.find({_id: {$nin :all}},{name:1,_id:1,profile_picture:1,}).lean().then(userN=>{
     User.find({_id: {$in :final_users}},{name:1,_id:1,profile_picture:1,}).lean().then(user1=>{
-          const yet_to_click_follow_users = user1.map((a)=> Object.assign(a,{zcode:20}))
-          const no_relation_users = user.map((a)=> Object.assign(a,{zcode:10}))
-         //club and game
+          const yet_to_click_follow_users = user1.map((a)=> Object.assign(a,{zcode:40}))
+          const usersas = userA.map((a)=>{
+            return [...a.followers,...a.following]
+          }) 
+          let s = _.flatten(usersas)
+          //let s = _.uniqBy(y)
+          let final_users2 =  s.filter(function(obj) { 
+            const x = final_users1.filter((a)=>a.toString() === obj.toString()).length > 0 
+            return !x
+          });
+          User.find({_id: {$in :final_users2}},{name:1,_id:1,profile_picture:1,}).lean().then(userA=>{
+            const no_relation_users = userN.map((a)=> {
+                if(userA && userA.length > 0 && userA.filter((a1)=>a1._id.toString() === a._id.toString() > 0))
+                 return Object.assign(a,{zcode:20})
+                 else
+                 return Object.assign(a,{zcode:10})
+                })
+            
+             const final_list = [...yet_to_click_follow_users,...no_relation_users]   
+            //club and game
          //event
-          res.status(201).send({status: "success", message: "user suggestion list fetched",data:[...yet_to_click_follow_users,...no_relation_users]})
+          res.status(201).send({status: "success", message: "user suggestion list fetched",data:_.orderBy(final_list, ['zcode'], ['desc'])})
+}).catch(next)
+}).catch(next)
+}).catch(next)
+
 }).catch(next)
 }).catch(next)
 }).catch(next)
 }).catch(next)
-}).catch(next)
+
 
 
 
@@ -2177,11 +2211,24 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
   function BookSlot(body,id){
     return new Promise(function(resolve, reject){
       Booking.find({booking_id:body.booking_id}).then(booking=>{
-      Booking.updateMany({booking_id:body.booking_id},{booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount,coupon_amount:body.coupon_amount,coupons_used:body.coupons_used, multiple_id:id,game:true}).lean().then(booking=>{
+      Booking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
+        let booking_id
+        if(!bookingOrder){
+          booking_id = "TT000001"
+        }else{
+          booking_id = bookingOrder.booking_id
+            var numb = booking_id.match(/\d/g);
+            numb = numb.join("");
+            var str = "" + (parseInt(numb, 10) + 1)
+            var pad = "TT000000"
+            booking_id = pad.substring(0, pad.length - str.length) + str
+        }
+      Booking.updateMany({booking_id:body.booking_id},{booking_id:booking_id,booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount,coupon_amount:body.coupon_amount,coupons_used:body.coupons_used, multiple_id:id,game:true}).lean().then(booking=>{
         Booking.findById({_id:body._id}).lean().populate('venue_data').then(booking=>{
         resolve(booking)
       }).catch(next)
     }).catch(next)
+  }).catch(next)
   }).catch(next)
     }).catch(error=>{
       reject()

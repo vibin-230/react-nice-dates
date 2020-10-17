@@ -24,6 +24,7 @@ const Conversation = require('../models/conversation');
 const sendAlert = require('./../scripts/sendAlert')
 const Alert = require('./../models/alerts')
 const Experience = require('./../models/experience')
+var ObjectID = require('mongodb').ObjectID;
 
 
 
@@ -373,7 +374,7 @@ router.post('/get_more_alerts/', [
   router.post('/get_coin_history/', [
     verifyToken,
   ], (req, res, next) => {
-        Coins.find({user:req.userId}).then(exp=> {
+        Coins.find({user:req.userId}).populate("from","name profile_picture handle name _id").populate("user","name profile_picture handle name _id").then(exp=> {
               if (exp) {
             res.status(201).send({status: "success", message: "coin history collected",data:exp})
           } else {
@@ -383,23 +384,23 @@ router.post('/get_more_alerts/', [
   });
   
 
-  router.post('/send_refferal_code/:id', [
+  router.post('/send_refferal_code', [
     verifyToken,
   ], (req, res, next) => {
     User.findOne({user:req.userId}).then(user=> {
-      User.findOne({refer_id_1:req.params.id}).then(from_user=> {
-        Coins.findOne({type:'referal',referal:req.params.id,user:req.userId}).then((coin)=>{
-            if(!coin && !user.request_status){
+      User.findOne({refer_id_1:req.body.id}).then(from_user=> {
+        Coins.findOne({type:'referal',referal:req.body.id,user:req.userId}).then((coin)=>{
+            if(!coin){
               if (user && from_user && !user.temporary && !from_user.temporary) {
-                const x = {type:'referal',referal:req.params.id,comments:`${user.name_status?user.name:user.handle} has got ${100} coins by using ${from_user.name_status?from_user.name:from_user.handle}'s referral`,amount:100,user:req.userId,from:from_user._id}
+                const x = {type:'referal',referal:req.body.id,comments:`${user.name_status?user.name:user.handle} has got ${100} coins by using ${from_user.name_status?from_user.name:from_user.handle}'s referral`,amount:100,user:req.userId,from:from_user._id}
                 const y = {type:'redeem',user:from_user._id,amount:50,comments:`You have got 50 coins from ${user.name_status?user.name:user.handle} for using your referal code`,from:req.userId}
                 Coins.insertMany([x,y]).then((c)=>{
                   console.log(c)
                   Coins.aggregate([ { $match: { user:req.userId } },{ $group: { _id: "$user", amount: { $sum: "$amount" } } }]).then((a)=>{
-                   User.findByIdAndUpdate({user:req.userId},{$set:{request_status:true}}).then((u)=>{
+                  //  User.findByIdAndUpdate({user:req.userId},{$set:{request_status:true}}).then((u)=>{
                      console.log(a)
                      res.status(201).send({status: "success", message: "coin history collected",data:a[0]})
-                    }).catch(next);
+                    // }).catch(next);
                   }).catch(next);
                   }).catch(next);
                 }

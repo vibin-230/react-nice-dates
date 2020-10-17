@@ -82,6 +82,64 @@ function ActivityLog(id, user_type, activity, message) {
 	})
 }
 
+function findDay() {
+	var d = new Date();
+	var weekday = new Array(7);
+	weekday[0] = "sunday";
+	weekday[1] = "monday";
+	weekday[2] = "tuesday";
+	weekday[3] = "wednesday";
+	weekday[4] = "thursday";
+	weekday[5] = "friday";
+	weekday[6] = "saturday";
+	var n = weekday[d.getDay()];
+	return n
+  }
+
+function getValue(key,total,type){
+	if(key === '5s'){
+	  const index = type.indexOf("5s")
+	  return total[index]/5
+	}
+	else if(key === '7s'){
+	  const index = type.indexOf("7s")
+	  return total[index]/7
+	}
+	else if(key === '9s'){
+	  const index = type.indexOf("9s")
+	  return total[index]/9
+	}
+	else if(key === 'net'){ // 1hour pricing 
+	  const index = type.indexOf("net")
+	  return total[index]*2
+	}
+	else if(key === 'ac'){ // 1hour pricing 
+	  const index = type.indexOf("ac")
+	  return total[index]*2
+	}
+	else if(key === 'nonac'){ // 1hour pricing 
+	  const index= type.indexOf("nonac")
+	  return total[index]*2
+	}
+	else if(key === 'hc'){
+	  const index= type.indexOf("hc")
+	  return total[index]/3
+	}
+	else if(key === 'fc'){
+	  const index= type.indexOf("fc")
+	  return total[index]/5
+	}
+	else if(key === 'ground' || key === 'pitch'){
+	  const index= type.indexOf("ground")
+	  return total[index]*2
+	}
+  };
+
+  function getPrice(key){
+	const highestPricing = key.sort((a,b)=> Math.round(b.pricing[0]) > Math.round(a.pricing[0]) ?  1 : -1 )
+	return highestPricing[0].pricing
+  }
+
 Date.prototype.addHours= function(h,m){
   this.setHours(this.getHours()+h);
   this.setMinutes(this.getMinutes()+m);
@@ -1473,15 +1531,24 @@ router.post('/search_venue',
 	verifyToken,
 	AccessControl('venue', 'read'),
 	(req, res, next) => {
+		
+
 		Venue.find({"venue.name":{ "$regex": req.body.search, "$options": "i" }}).then(venue=>{
 			Offers.find({}).then(offers=>{
 			let combinedResult
 			if(venue){
+				
 					let list = Object.values(venue).map((value,index)=>{
 					let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
 					value.rating = value.rating
 					value.offers = filteredOffer
+					console.log("Aaa",value)
+					let pricing = Object.values(value.configuration.pricing).filter(price=>price.day===findDay())
+					let highestPricing = getPrice(pricing[0].rate)
+					let types = pricing[0].rate[0].types
+					value.pricing = Math.round(getValue(value.configuration.base_type,highestPricing,types))
 					return value
+
 				})
 				combinedResult = list;
 			}

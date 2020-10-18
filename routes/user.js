@@ -565,6 +565,7 @@ router.post('/friend_get_following/:id', [
 ], (req, res, next) => {
   let game_completed_count = 0
   let mvp_count = 0
+  let game_history ={}
   const filter  = {$or:[{members:[req.userId,req.params.id],type:'single'},{members:[req.params.id,req.userId],type:'single'}]}
   Conversation.find(filter).limit(1).lean().then(ec=>{
   User.findOne({_id:req.params.id},{activity_log:0}).populate("followers","name _id handle name_status profile_picture").populate("following","name _id handle name_status profile_picture").lean().then(user1 => {
@@ -576,10 +577,14 @@ router.post('/friend_get_following/:id', [
        mvp_count = mvp_count + f
        return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length>0
       })
+      const aq = game.map((a)=>{
+        game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0 }
+  })
       user1.game_completed = game_completed_count
       user1.mvp_count = mvp_count
       user1.level =  getLevel(250 * mvp_count + 100 * game_completed_count)
       user1.experience = exp
+      user1.game_history = game_history
       user1.past_conversation = ec && ec.length > 0
     if(user1){
     res.status(201).send({status: "success", message: "user collected",data:[user1]})

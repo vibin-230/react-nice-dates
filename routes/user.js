@@ -2238,7 +2238,7 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
             booking_id = pad.substring(0, pad.length - str.length) + str
         }
       Booking.updateMany({booking_id:body.booking_id},{booking_id:booking_id,booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount,coupon_amount:body.coupon_amount,coupons_used:body.coupons_used, multiple_id:id,game:true}).lean().then(booking=>{
-        Booking.findById({_id:body._id}).lean().populate('venue_data').then(booking=>{
+        Booking.findById({_id:booking_id}).lean().populate('venue_data').then(booking=>{
         resolve(booking)
       }).catch(next)
     }).catch(next)

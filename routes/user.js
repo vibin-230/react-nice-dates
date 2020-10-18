@@ -463,7 +463,7 @@ router.post('/get_user', [
       var count  = 0
       let game_completed_count = 0
       let mvp_count = 0
-      let game_history = {}
+      let game_history = {football:{game:0,mvp:0},basketball:{game:0,mvp:0},cricket:{game:0,mvp:0},badminton:{game:0,mvp:0}}
       Alert.find({user: req.userId,status:true},{}).lean().then(alert=> {
         Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
           game_completed_count = game && game.length > 0 ? game.length : 0
@@ -565,27 +565,21 @@ router.post('/friend_get_following/:id', [
 ], (req, res, next) => {
   let game_completed_count = 0
   let mvp_count = 0
-  let game_history = {}
   const filter  = {$or:[{members:[req.userId,req.params.id],type:'single'},{members:[req.params.id,req.userId],type:'single'}]}
   Conversation.find(filter).limit(1).lean().then(ec=>{
   User.findOne({_id:req.params.id},{activity_log:0}).populate("followers","name _id handle name_status profile_picture").populate("following","name _id handle name_status profile_picture").lean().then(user1 => {
     Experience.find({user:req.params.id}).then(exp=>{
-    Game.find({users: {$in:[req.params.id]},completed:true}).then(game=> {
+    Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
       game_completed_count = game && game.length > 0 ? game.length : 0
       const aw = game && game.length > 0 && game.filter((a)=>{
-       let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.params.id.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.params.id.toString()).length : 0
+       let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0
        mvp_count = mvp_count + f
-       return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.params.id.toString()).length>0
+       return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length>0
       })
-      const aq = game.map((a)=>{
-        game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0 }
-      })
-
       user1.game_completed = game_completed_count
       user1.mvp_count = mvp_count
       user1.level =  getLevel(250 * mvp_count + 100 * game_completed_count)
       user1.experience = exp
-      user1.game_history = game_history
       user1.past_conversation = ec && ec.length > 0
     if(user1){
     res.status(201).send({status: "success", message: "user collected",data:[user1]})
@@ -634,10 +628,6 @@ function getZcode(game,location,venue,viewd,a,players,joins,friend){
   return (50 * game) - (location*100)  + (50 * friend) - (2 * venue) - (viewd * 1) - players * 30
 }
 
-function getZcode(game,location,venue,viewd,a,players,joins,friend){
-  return (50 * game) - (location*100)  + (50 * friend) - (2 * venue) - (viewd * 1) - players * 30
-}
-
 router.post('/user_suggest/:id', [
   verifyToken,
 ], (req, res, next) => {
@@ -659,8 +649,8 @@ router.post('/user_suggest/:id', [
           console.log(final_users,'final_users');
           console.log(final_users1,'final_users1');
           User.find({_id: {$in :final_users1}},{name:1,_id:1,profile_picture:1,followers:1,following:1}).lean().then(userA=>{
-    User.find({_id: {$nin :all}},{name:1,_id:1,profile_picture:1,handle:1,name_status:1}).lean().then(userN=>{
-    User.find({_id: {$in :final_users}},{name:1,_id:1,profile_picture:1,handle:1,name_status:1}).lean().then(user1=>{
+    User.find({_id: {$nin :all}},{name:1,_id:1,profile_picture:1,}).lean().then(userN=>{
+    User.find({_id: {$in :final_users}},{name:1,_id:1,profile_picture:1,}).lean().then(user1=>{
           const yet_to_click_follow_users = user1.map((a)=> Object.assign(a,{zcode:40}))
           const usersas = userA.map((a)=>{
             return [...a.followers,...a.following]
@@ -1037,7 +1027,7 @@ router.post('/get_mvp_history', [
   verifyToken,
 ], (req, res, next) => {
       //Check if user exist
-      Game.find({users: {$in:[req.userId]},completed:true,sport:req.body.sport,"mvp.target_id":req.userId.toString()}).populate("mvp.sender_id","name handle profile_picture _id").populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
+      Game.find({users: {$in:[req.userId]},completed:true,"mvp.target_id":req.userId.toString()}).populate("mvp.sender_id","name handle profile_picture _id").populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{
             (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
@@ -1270,13 +1260,13 @@ router.post('/send_otp',[
           }else{
             if(req.body.phone === '8136948537') {
             const x = 'TURF'+makeId(4)
-            User.create({phone:req.body.phone,refer_id:x,otp:req.body.phone === '8136948537' ? '7484':otp}).then(user=>{
+            User.create({phone:req.body.phone,refer_id_1:x,otp:req.body.phone === '8136948537' ? '7484':otp}).then(user=>{
               res.status(201).send({status:"success",message:"new user",otp:req.body.phone === '8136948537' ? '7484':user.otp})
             })
           }
             else{
               const x = 'TURF'+makeId(4)
-            User.create({phone:req.body.phone,otp:otp,refer_id:x}).then(user=>{
+            User.create({phone:req.body.phone,otp:otp,refer_id_1:x}).then(user=>{
               res.status(201).send({status:"success",message:"new user",otp:req.body.phone === '8136948537' ? '7484':otp})
             })
           }
@@ -1330,7 +1320,7 @@ router.post('/send_new_otp', (req, res, next) => {
                   User.find({phone:req.body.user.phone,handle:req.body.user.handle}).then((user)=>{
                   user && user.length > 0 ? 
                     res.status(400).send({status:"failiure", message:'user exists'})
-                  :User.create({refer_id:'TURF'+makeid(4),phone:req.body.user.phone,handle:req.body.user.handle,otp:otp,temporary:true}).then((user)=>{
+                  :User.create({refer_id_1:'TURF'+makeid(4),phone:req.body.user.phone,handle:req.body.user.handle,otp:otp,temporary:true}).then((user)=>{
                     res.status(201).send({status:"success", message:'new user', data:{phone:req.body.user.phone,otp:otp,handle:req.body.user.handle}})
                     setTimeout(()=>{
                       User.findOneAndDelete({phone:user.phone,temporary:true}).then(u=>console.log('user deleted'))
@@ -1355,7 +1345,7 @@ router.post('/send_new_user', (req, res, next) => {
           user && user.length > 0 ? 
           
             res.status(400).send({status:"failiure", message:'user exists'})
-          :User.create({refer_id:'TURF'+this.makeId(5),phone:req.body.user.phone,handle:req.body.user.handle,otp:req.body.user.otp,temporary:true}).then((user)=>{
+          :User.create({refer_id_1:'TURF'+this.makeId(5),phone:req.body.user.phone,handle:req.body.user.handle,otp:req.body.user.otp,temporary:true}).then((user)=>{
             res.status(201).send({status:"success", message:'new user', data:{phone:req.body.user.phone,otp:req.body.user.otp,handle:req.body.user.handle}})
             setTimeout(()=>{
               User.findOneAndDelete({phone:user.phone,temporary:true}).then(u=>console.log('user deleted'))
@@ -2235,24 +2225,11 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
   function BookSlot(body,id){
     return new Promise(function(resolve, reject){
       Booking.find({booking_id:body.booking_id}).then(booking=>{
-      Booking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
-        let booking_id
-        if(!bookingOrder){
-          booking_id = "TT000001"
-        }else{
-          booking_id = bookingOrder.booking_id
-            var numb = booking_id.match(/\d/g);
-            numb = numb.join("");
-            var str = "" + (parseInt(numb, 10) + 1)
-            var pad = "TT000000"
-            booking_id = pad.substring(0, pad.length - str.length) + str
-        }
-      Booking.updateMany({booking_id:body.booking_id},{booking_id:booking_id,booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount,coupon_amount:body.coupon_amount,coupons_used:body.coupons_used, multiple_id:id,game:true}).lean().then(booking=>{
-        Booking.findById({_id:booking_id}).lean().populate('venue_data').then(booking=>{
+        Booking.updateMany({booking_id:body.booking_id},{booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount,coupon_amount:body.coupon_amount,coupons_used:body.coupons_used, multiple_id:id,game:true}).lean().then(booking=>{
+        Booking.findById({_id:body._id}).lean().populate('venue_data').then(booking=>{
         resolve(booking)
       }).catch(next)
     }).catch(next)
-  }).catch(next)
   }).catch(next)
     }).catch(error=>{
       reject()
@@ -3438,19 +3415,6 @@ function updateConvoStatus(conversation,body){
   }).catch((e)=>console.log(e))
 }
 
-
-// save_referal
-
-// router.post('/save_referal', verifyToken, (req, res, next) => {
-//   User.findById({refer_id:req.body.id},{activity_log:0}).lean().populate('following','name phone profile_picture handle name_status').then(user=>{
-//     const folloers = user.following.map((a)=>{
-//       a['select'] = false
-//       return a
-//   })
-//     res.send({status:"success", message:"followers fetched", data:folloers})
-//   }).catch(next)
-// })
-
 router.post('/send_friend_request/:friend', verifyToken, (req, res, next) => {
   User.findById({_id:req.params.friend},{activity_log:0}).lean().then(friend=>{
     User.findById({_id:req.body.id},{activity_log:0}).lean().then(user=>{    
@@ -4319,7 +4283,7 @@ router.post('/host_and_games', verifyToken, (req, res, next) => {
         })     
        let booking_data = req.body.type && req.body.type === 'host' ?[...open_games]:[...game]
        //console.log(booking_data.length);
-        booking_data = booking_data.filter((key) => key._id.toString() !== req.body.game.toString() && moment(key.start_time).format("YYYYMMDDHHmm") >  moment().format("YYYYMMDDHHmm")   )
+        booking_data = booking_data.filter((key) => key._id.toString() !== req.body.game.toString())
        
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{
@@ -4328,7 +4292,6 @@ router.post('/host_and_games', verifyToken, (req, res, next) => {
           }, {});
         };
         
-
         let finalResult = booking_data.sort((a, b) => moment(a.start_time).format("YYYYMMDDHmm") > moment(b.start_time).format("YYYYMMDDHmm") ? 1 : -1 )
         const a = groupBy(finalResult,'start_time')
         const q =   Object.entries(a).map(([key,value])=>{

@@ -1260,13 +1260,13 @@ router.post('/send_otp',[
           }else{
             if(req.body.phone === '8136948537') {
             const x = 'TURF'+makeId(4)
-            User.create({phone:req.body.phone,refer_id_1:x,otp:req.body.phone === '8136948537' ? '7484':otp}).then(user=>{
+            User.create({phone:req.body.phone,refer_id:x,otp:req.body.phone === '8136948537' ? '7484':otp}).then(user=>{
               res.status(201).send({status:"success",message:"new user",otp:req.body.phone === '8136948537' ? '7484':user.otp})
             })
           }
             else{
               const x = 'TURF'+makeId(4)
-            User.create({phone:req.body.phone,otp:otp,refer_id_1:x}).then(user=>{
+            User.create({phone:req.body.phone,otp:otp,refer_id:x}).then(user=>{
               res.status(201).send({status:"success",message:"new user",otp:req.body.phone === '8136948537' ? '7484':otp})
             })
           }
@@ -1320,7 +1320,7 @@ router.post('/send_new_otp', (req, res, next) => {
                   User.find({phone:req.body.user.phone,handle:req.body.user.handle}).then((user)=>{
                   user && user.length > 0 ? 
                     res.status(400).send({status:"failiure", message:'user exists'})
-                  :User.create({refer_id_1:'TURF'+makeid(4),phone:req.body.user.phone,handle:req.body.user.handle,otp:otp,temporary:true}).then((user)=>{
+                  :User.create({refer_id:'TURF'+makeid(4),phone:req.body.user.phone,handle:req.body.user.handle,otp:otp,temporary:true}).then((user)=>{
                     res.status(201).send({status:"success", message:'new user', data:{phone:req.body.user.phone,otp:otp,handle:req.body.user.handle}})
                     setTimeout(()=>{
                       User.findOneAndDelete({phone:user.phone,temporary:true}).then(u=>console.log('user deleted'))
@@ -1345,7 +1345,7 @@ router.post('/send_new_user', (req, res, next) => {
           user && user.length > 0 ? 
           
             res.status(400).send({status:"failiure", message:'user exists'})
-          :User.create({refer_id_1:'TURF'+this.makeId(5),phone:req.body.user.phone,handle:req.body.user.handle,otp:req.body.user.otp,temporary:true}).then((user)=>{
+          :User.create({refer_id:'TURF'+this.makeId(5),phone:req.body.user.phone,handle:req.body.user.handle,otp:req.body.user.otp,temporary:true}).then((user)=>{
             res.status(201).send({status:"success", message:'new user', data:{phone:req.body.user.phone,otp:req.body.user.otp,handle:req.body.user.handle}})
             setTimeout(()=>{
               User.findOneAndDelete({phone:user.phone,temporary:true}).then(u=>console.log('user deleted'))

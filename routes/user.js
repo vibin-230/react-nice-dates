@@ -463,7 +463,7 @@ router.post('/get_user', [
       var count  = 0
       let game_completed_count = 0
       let mvp_count = 0
-      let game_history = {football:{game:0,mvp:0},basketball:{game:0,mvp:0},cricket:{game:0,mvp:0},badminton:{game:0,mvp:0}}
+      let game_history = {}
       Alert.find({user: req.userId,status:true},{}).lean().then(alert=> {
         Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
           game_completed_count = game && game.length > 0 ? game.length : 0

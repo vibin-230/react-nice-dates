@@ -1343,7 +1343,6 @@ router.post('/send_new_user', (req, res, next) => {
   
           User.find({phone:req.body.user.phone}).then((user)=>{
           user && user.length > 0 ? 
-          
             res.status(400).send({status:"failiure", message:'user exists'})
           :User.create({refer_id:'TURF'+this.makeId(5),phone:req.body.user.phone,handle:req.body.user.handle,otp:req.body.user.otp,temporary:true}).then((user)=>{
             res.status(201).send({status:"success", message:'new user', data:{phone:req.body.user.phone,otp:req.body.user.otp,handle:req.body.user.handle}})

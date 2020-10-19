@@ -718,7 +718,7 @@ module.exports = function () {
                   saveMessage(save_message)
                 const token_list  = conversation2.members.filter((key) => key._id.toString() !== game1.user_id.toString())
                 const device_token_list = token_list.map((e) => e.device_token)
-                //NotifyArray(device_token_list, message_formation, `Game Left`,conversation2)
+                NotifyArray(device_token_list, message_formation, `Game Left`,conversation2)
                 client.in(conversation2._id).emit('unread',{})
                 client.in(conversation2._id).emit('new',save_message)
                 client1.to(game.conversation._id).emit('unread',{message:game1.type == "game" ? `${game1.host} has removed ${user.handle}` : `${game1.host} has removed ${user.handle}`,type:"delete" })
@@ -1003,7 +1003,7 @@ return x
                    client.in(conversation2._id).emit('unread',{})
                    conversation2.type == 'single'  ? client.in(conversation2._id).emit('new',{type:'refresh',exit:true,conversation:conversation2._id}) : client.in(conversation2._id).emit('new',x)
 
-                   //NotifyArray(device_token_list, `${user.name} has left the game`, `Game Left`)
+                   NotifyArray(device_token_list, `${user.name} has left the game`, `Game Left`)
                    return{ message : message ,type:conversation.type,conversation:conversation2}
           }).catch(error => console.log(error))
    }).catch(error => console.log(error))

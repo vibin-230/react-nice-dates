@@ -728,7 +728,7 @@ router.post('/get_chatrooms/:id', [
                 c.members =  user && c.type==='single' ? c.members.concat(user.user_id) : c.members
                 //c['exit'] = user && user.timeStamp ? c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0 ? false : true : false
                 c['exit'] = user && user.timeStamp && c.members.filter((a)=>a._id.toString() === req.params.id.toString()).length > 0
-                c['last_updated'] = c.exit ? user.timeStamp  : c.last_updated 
+                c['last_updated'] = c.type === 'single' ? user && user.message  ? c.type === 'single'? c.last_updated:user.timeStamp :c.last_updated : user1 && user1.timeStamp ? user1.timeStamp : c.last_updated
                 c['last_message'] = c.type === 'single' ? user && user.message ? c.type === 'single' ? c.last_message:user.message  : c.last_message : user1 && user1.message ? user1.message : c.last_message
               
             }

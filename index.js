@@ -18,8 +18,8 @@ const clientManager = ClientManager()
 const chatroomManager = ChatroomManager()
 const redis = require("redis").createClient;
 const io = require('socket.io')(server,{
-  pingInterval: 10000,
-  pingTimeout: 5000,
+  pingInterval: 25000,
+  pingTimeout: 60000,
   autoConnect:false,
 })
 const port = 6379;

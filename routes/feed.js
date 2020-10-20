@@ -399,7 +399,7 @@ router.post('/get_more_alerts/', [
                   console.log(c)
                   Coins.aggregate([ { $match: { user:user._id } },{ $group: { _id: "$user", amount: { $sum: "$amount" } } }]).then((a)=>{
                      let coins1  =  a && a.length > 0 && a[0].amount ? a[0].amount : 0
-                     console.log("coins1",a)
+                     sendAlert({created_at:new Date(),created_by:user._id,user:from_user._id,type:'referal',status_description:`Woohoo! ${user.handle} has joined Turf Town using your referral code. Here's ${50} Turf Coins as a reward`},'create',next)
                      res.status(201).send({status: "success", message: "coin history collected",data:100})
                   }).catch(next);
                   }).catch(next);

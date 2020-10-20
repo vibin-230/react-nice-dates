@@ -387,20 +387,20 @@ router.post('/get_more_alerts/', [
   router.post('/send_refferal_code', [
     verifyToken,
   ], (req, res, next) => {
-    User.findOne({user:req.userId}).then(user=> {
+    User.findOne({_id:req.userId}).then(user=> {
       User.findOne({refer_id:req.body.id}).then(from_user=> {
+        if(from_user){
         Coins.findOne({type:'referal',referal:req.body.id,user:req.userId}).then((coin)=>{
-            if(!coin){
+          if(!coin){
               if (user && from_user && !user.temporary && !from_user.temporary) {
                 const x = {type:'referal',referal:req.body.id,comments:`${user.name_status?user.name:user.handle} has got ${100} coins by using ${from_user.name_status?from_user.name:from_user.handle}'s referral`,amount:100,user:req.userId,from:from_user._id}
                 const y = {type:'redeem',user:from_user._id,amount:50,comments:`You have got 50 coins from ${user.name_status?user.name:user.handle} for using your referal code`,from:req.userId}
                 Coins.insertMany([x,y]).then((c)=>{
                   console.log(c)
-                  Coins.aggregate([ { $match: { user:req.userId } },{ $group: { _id: "$user", amount: { $sum: "$amount" } } }]).then((a)=>{
-                  //  User.findByIdAndUpdate({user:req.userId},{$set:{request_status:true}}).then((u)=>{
-                     console.log(a)
-                     res.status(201).send({status: "success", message: "coin history collected",data:a[0]})
-                    // }).catch(next);
+                  Coins.aggregate([ { $match: { user:user._id } },{ $group: { _id: "$user", amount: { $sum: "$amount" } } }]).then((a)=>{
+                     let coins1  =  a && a.length > 0 && a[0].amount ? a[0].amount : 0
+                     console.log("coins1",a)
+                     res.status(201).send({status: "success", message: "coin history collected",data:100})
                   }).catch(next);
                   }).catch(next);
                 }
@@ -409,6 +409,9 @@ router.post('/get_more_alerts/', [
               res.status(422).send({status: "failure", errors: {user:"sorry code already used"}});
           }
       }).catch(next);
+    }else{
+      res.status(422).send({status: "failure", errors: {user:"sorry code doesn't exit"}}); 
+    }
     }).catch(next);
     }).catch(next);
 
@@ -579,14 +582,17 @@ Coins.create(Object.assign({from:req.userId},req.body)).then((s)=>{
 
   });
 
-// router.post('/turf_coin_history', [
-//   verifyToken,
-// ], (req, res, next) => {
-//   Coins.find({ user: req.userId }).then((s) => {
-//     res.status(201).send({ status: "success", message: "coin history collected", data: s })
-//   }).catch(next);
+router.post('/turf_coin_history', [
+  verifyToken,
+], (req, res, next) => {
+  Coins.aggregate([{$group:{_id:"$user",
+  amount: { $sum: "$amount"},
+  data:{ $push: "$$ROOT" } 
+}}]).then((s) => {
+    res.status(201).send({ status: "success", message: "coin history collected", data: s })
+  }).catch(next);
 
-// });
+});
 
 
  

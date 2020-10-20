@@ -111,7 +111,7 @@ async function getChatHistory(id, user,final_date,message_id) {
       return Message.find(filter).lean().populate('author', 'name _id handle').populate('user', 'name _id profile_picture phone handle').populate({path:"event",populate:{path:"venue",select:"venue"}}).populate({ path: 'event', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({_id:-1}).limit(100).then(m => {
         for(let i = 1 ;i <m.length; i++){
           if( moment(m[i].created_at).utc().format('MM-DD-YYYY') !== moment(m[i-1].created_at).utc().format('MM-DD-YYYY')){
-              m.splice(i,0,{conversation:conversation._id,message:parseDate(moment(m[i-1].created_at).utc().format('MM-DD-YYYY')),name:'bot',read_status:false,read_by:user.id,author:user.id,type:'bot',created_at:m[i].created_at})
+              m.splice(i,0,{conversation:conversation._id,message:parseDate(moment(m[i-1].created_at).utc().format('MM-DD-YYYY')),name:'bot',read_status:false,read_by:user.id,author:user.id,type:'bot',created_at:m[i].created_at,time:true})
           }
         }
         return {messages:m,conversation:conversation}

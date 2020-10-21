@@ -1345,6 +1345,49 @@ router.post('/send_new_otp', (req, res, next) => {
 
 });
 
+router.post('/re_send_new_otp', (req, res, next) => {
+
+  User.find({"phone":{ "$regex": req.body.user.phone, "$options": "i" }}).then(user=>{
+    if(user && user.length > 0){
+      let phone = 91+req.body.user.phone;
+      let otp   = Math.floor(999 + Math.random() * 9000);
+      send_message_otp(phone,'TRFTWN',"Welcome to Turftown! Your OTP is "+otp).then((a)=>{
+        User.findOneAndUpdate({phone:req.body.user.phone},{otp:otp}).then(user=> {
+          User.find({phone:req.body.user.phone},{activity_log:0}).then(user=> {
+          console.log("use",user)
+          res.status(201).send({status:"success", message:'new user', data:{phone:req.body.user.phone,otp:otp,handle:req.body.user.handle}})
+        }).catch(next)
+      }).catch(next)
+      })  
+      }
+        else{
+          let phone = 91+req.body.user.phone;
+          let otp   = Math.floor(999 + Math.random() * 9000);
+              send_message_otp(phone,'TRFTWN',"Welcome to Turftown! Your OTP is "+otp).then((a)=>{
+              if(a.status === 'success')
+                {
+                  User.find({phone:req.body.user.phone,handle:req.body.user.handle}).then((user)=>{
+                  user && user.length > 0 ? 
+                    res.status(400).send({status:"failiure", message:'user exists'})
+                  :User.create({refer_id:'TURF'+makeid(4),phone:req.body.user.phone,handle:req.body.user.handle,otp:otp,temporary:true}).then((user)=>{
+                    res.status(201).send({status:"success", message:'new user', data:{phone:req.body.user.phone,otp:otp,handle:req.body.user.handle}})
+                    setTimeout(()=>{
+                      User.findOneAndDelete({phone:user.phone,temporary:true}).then(u=>console.log('user deleted'))
+                    },300000)
+                  })
+                }).catch(next)
+        
+                }
+                else
+                  {
+                    res.status(422).send({status:"failure", errors:{template:"invalid template"}, data:a})
+                 }
+            }).catch(next)
+        }
+  }).catch(next)
+
+});
+
 router.post('/send_new_user', (req, res, next) => {
   
           User.find({phone:req.body.user.phone}).then((user)=>{
@@ -2135,7 +2178,6 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
           req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,booking_id:values[0].booking_id,venue:values[0].venue_id},next)
           //createReport({venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,user:values[0].user_id,card:values[0].card?values[0].card:0,coins:(req.body[0].coins*req.body.length),cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
           var result = Object.values(combineSlots([...values]))
-
         let booking_id = values[0].booking_id
         let phone = "91"+values[0].phone
         let venue_name = values[0].venue
@@ -2155,11 +2197,11 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
         let phone_numbers =admins.map((admin,index)=>"91"+admin.phone)
         let manger_numbers = [...phone_numbers,manager_phone]
         let venue_discount_coupon = Math.round(result[0].commission+result[0].coupon_amount) == 0 ? "Venue Discount:0" : result[0].commission == 0 && result[0].coupon_amount !== 0 ? `TT Coupon:${result[0].coupon_amount}` : result[0].commission !== 0 && result[0].coupon_amount == 0 ? `Venue Discount:${result[0].commission}` : `Venue Discount:${result[0].commission}\nTT Coupon:${result[0].coupon_amount}`  
-        let balance = Math.round(result[0].amount)-Math.round(result[0].coupon_amount)-Math.round(result[0].booking_amount)-Math.round(result[0].commission)
+        let balance = Math.round(result[0].amount)-Math.round(result[0].coupon_amount)-Math.round(result[0].booking_amount)-Math.round(result[0].commission)-Math.round(result[0].coins)
         let SLOT_BOOKED_USER =`Hey ${values[0].name}! Thank you for using Turf Town!\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${Math.round(result[0].booking_amount)}\nBalance to be paid : ${Math.round(balance)}`
         let SLOT_BOOKED_MANAGER = `You have recieved a TURF TOWN booking from ${values[0].name} ( ${values[0].phone} ) \nBooking Id: ${booking_id}\nVenue: ${venue_name}, ${venue_area}\nSport: ${sport_name}(${venue_type})\nDate and Time: ${datetime}\nPrice: ${Math.round(result[0].amount)}\nAmount Paid: ${Math.round(result[0].booking_amount)}\nVenue Discount: ${Math.round(result[0].commission)}\nTT Coupon: ${Math.round(result[0].coupon_amount)}\nAmount to be collected: ${Math.round(balance)}` //490618
         let sender = "TRFTWN"
-        let SLOT_BOOKED_GAME_USER =`Hey ${values[0].name}! Thank you for using Turf Town! Your Game has been created .\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${Math.round(result[0].booking_amount)}\nBalance to be paid : ${Math.round(balance)}`
+        let SLOT_BOOKED_GAME_USER =`Hey ${values[0].name}! Thank you for using Turf Town! Your Game has been created .\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nTT Coins : ${Math.round(result[0].coins)}\nAmount Paid : ${Math.round(result[0].booking_amount)}\nBalance to be paid : ${Math.round(balance)}`
 
         // SendMessage(phone,sender,SLOT_BOOKED_USER) // sms to user
         notifyRedirect(user,SLOT_BOOKED_GAME_USER)

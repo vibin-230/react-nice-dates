@@ -407,13 +407,13 @@ router.post('/get_more_alerts/', [
         Coins.findOne({type:'referal',referal:req.body.id,user:req.userId}).then((coin)=>{
           if(!coin){
               if (user && from_user && !user.temporary && !from_user.temporary) {
-                const x = {type:'referal',referal:req.body.id,comments:`${user.name_status?user.name:user.handle} has got ${100} coins by using ${from_user.name_status?from_user.name:from_user.handle}'s referral`,amount:100,user:req.userId,from:from_user._id}
-                const y = {type:'redeem',user:from_user._id,amount:50,comments:`You have got 50 coins from ${user.name_status?user.name:user.handle} for using your referal code`,from:req.userId}
+                const x = {type:'referal',referal:req.body.id,comments:`${user.name_status?user.name:user.handle} has got ${100} coins by using ${from_user.name_status?from_user.name:from_user.handle}'s referral`,amount:100,user:req.userId,from:from_user._id,created_at:new Date()}
+                const y = {type:'redeem',user:from_user._id,amount:50,comments:`You have got 50 coins from ${user.name_status?user.name:user.handle} for using your referal code`,from:req.userId,created_at:new Date()}
                 Coins.insertMany([x,y]).then((c)=>{
                   console.log(c)
                   Coins.aggregate([ { $match: { user:user._id } },{ $group: { _id: "$user", amount: { $sum: "$amount" } } }]).then((a)=>{
                      let coins1  =  a && a.length > 0 && a[0].amount ? a[0].amount : 0
-                     console.log("coins1",a)
+                     sendAlert({created_at:new Date(),created_by:user._id,user:from_user._id,type:'referal',status_description:`Woohoo! ${user.handle} has joined Turf Town using your referral code. Here's ${50} Turf Coins as a reward`},'create',next)
                      res.status(201).send({status: "success", message: "coin history collected",data:100})
                   }).catch(next);
                   }).catch(next);

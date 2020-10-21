@@ -42,6 +42,7 @@ const combineSlots=(booking, users, admins)=>{
         result[value.multiple_id].coins = result[value.multiple_id].coins + value.coins
         result[value.multiple_id].booking_amount = result[value.multiple_id].booking_amount + value.booking_amount
         result[value.multiple_id].commission = result[value.multiple_id].commission + value.commission
+        result[value.multiple_id].coupon_amount = result[value.multiple_id].coupon_amount + value.coupon_amount
         ////Slot time combining
         let slot_time = result[value.multiple_id].slot_time.split("-")
         let value_slot_time = value.slot_time.split("-")

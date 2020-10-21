@@ -382,6 +382,20 @@ router.post('/get_more_alerts/', [
           }
       }).catch(next);
   });
+
+
+  router.post('/get_coin_history_admin/', [
+    verifyToken,
+  ], (req, res, next) => {
+        Coins.find({}).populate("from","name profile_picture handle name _id").populate("user","name profile_picture handle _id").then(exp=> {
+          console.log(exp);   
+          if (exp) {
+            res.status(201).send({status: "success", message: "coin history collected",data:exp})
+          } else {
+              res.status(422).send({status: "failure", errors: {user:"force update failed"}});
+          }
+      }).catch(next);
+  });
   
 
   router.post('/send_refferal_code', [

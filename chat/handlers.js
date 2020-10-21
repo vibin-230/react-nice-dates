@@ -235,8 +235,8 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
        const y = await chatroomManager.saveAsyncMessage(message) 
        client.to(chatroomName._id).emit('new',y)
        client.to(chatroomName._id).emit('unread',y)
-        chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
-        chatroomName.exit && chatroomName.type === 'single' ? callback({exit:false,message:y}):callback({message:y})
+       chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
+       chatroomName.exit && chatroomName.type === 'single' ? callback({exit:false,message:y}):callback({message:y})
       }else{
          const x = await chatroomName && chatroomName.exit && chatroomManager.registerExitedUser(chatroomName,message)
          const y = await chatroomManager.saveAsyncMessage(message) 
@@ -353,10 +353,8 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
   async function handleSendMultiple({ conversation_list, message,users } = {}, callback) {
     //client.to(chatroomName._id).emit('typing',message)
     const x = await chatroomManager.sendMessageOnetoMany(conversation_list,message,users,client)
-
     return callback()
   }
-
 
   async function handleSingleLeaveConnection({ conversation_id, user_id } = {}, callback) {
     //client.to(chatroomName._id).emit('typing',message)
@@ -365,5 +363,26 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
     return callback()
   }
 
-  return {handleProfileAccepted,handleSendBroadcast,handleSlotAvailabilityDueToCancellation,handleSlotAvailability,handleSingleLeaveConnection,handleLeaveChatrooms,handleUpdateGroup,handleUpdateParams,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames,handleProfileAlerts,handleEventInvites,handleSendMultiple}
+  async function handleMvp(message, callback) {
+    //client.to(chatroomName._id).emit('typing',message)
+    console.log('test',message);
+    if(message && message.message){
+      const id = message.message && message.message.conversation && message.message.conversation._id ?  message.message.conversation._id : message.message.conversation
+      //client.leave(conversation_id)
+      console.log(id);
+      const y = await chatroomManager.saveAsyncMessage(message.message) 
+          client.join(id)
+          client.to(id).emit('new',message.message.message)
+          client.to(id).emit('unread',message.message.message)
+          client.leave(id)
+  
+          //chatroomManager.saveMessage(message) 
+          chatroomManager.notifyAllUsersNotInTheChatroom1(id, message.message,[])
+          return   callback({message:y})
+    }else{
+      return callback()
+    }
+  }
+
+  return {handleProfileAccepted,handleMvp,handleSendBroadcast,handleSlotAvailabilityDueToCancellation,handleSlotAvailability,handleSingleLeaveConnection,handleLeaveChatrooms,handleUpdateGroup,handleUpdateParams,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames,handleProfileAlerts,handleEventInvites,handleSendMultiple}
 }

@@ -95,6 +95,7 @@ io.on('connection', function (client) {
     handleSendMultiple,
     handleGetAvailableUsers,
     handleMessageGames,
+    handleMvp,
     handleSlotAvailability,
     handleSlotAvailabilityDueToCancellation,
     handleDisconnect,
@@ -119,7 +120,7 @@ io.on('connection', function (client) {
   client.on('join_game', handleJoinGame)
   client.on('leave', handleLeave)
   client.on('send_broadcast',handleSendBroadcast)
-
+  client.on('handleMvp',handleMvp)
   client.on('message', handleMessage)
   client.on('games_message', handleMessageGames)
   client.on('update_messages', handleUpdateImage)

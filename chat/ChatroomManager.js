@@ -316,6 +316,39 @@ module.exports = function () {
 
     }
 
+    function notifyAllUsersNotInTheChatroom1(chatroom1,message,users){
+      console.log(chatroom1);
+      const x = Array.isArray(message)
+      Conversation.findOne({_id:chatroom1}).then((chatroom)=>{
+      const filter = chatroom.members.filter((member)=>{ 
+        const string  = member && member._id ? member._id.toString() : member.toString()
+        const user_id = x? message[0].author : message.author
+        users = users.concat([user_id])
+        if(!users.includes(string)){
+          return member
+        }
+      })
+       User.find({_id: {$in : filter}},{activity_log:0}).lean().then(user=> {
+          const final_user  = user.filter((u)=> u.mute.filter((u)=>u.toString() === chatroom._id.toString()).length <= 0)
+        if(Array.isArray(message)){
+          const s = message.length > 1 ?'s':''
+          const messages = message[0].type === 'image' ? `${message.length} image${s}` : message[0].type === 'game' ? `${message.length} game${s} has been shared`:`${message.length} townie${s} has been shared`
+          const messages1 = chatroom.type === 'single' ?  `${message[0].name} : ${messages}`:  `${message[0].name} @ ${chatroom.name} : ${messages}`
+          NotifyArray(final_user.map((u)=>u.device_token),messages1,'Turf Town',chatroom)
+        }else{
+          const s = message && message.image && message.image.length > 1 ?'s':''
+          const messages = message.type === 'image' ? `${message.image.length} image${s} has been shared`: `${message.message}`
+          const messages1 = chatroom.type === 'single' ?  `${message.name} : ${messages}`:  `${message.name} @ ${chatroom.name} : ${messages}`
+          NotifyArray(final_user.map((u)=>u.device_token),messages1,'Turf Town',chatroom)
+
+        }
+      }).catch((e)=>console.log(e))
+    }).catch((e)=>console.log(e))
+
+    
+
+    }
+
     function updateImage(message){
       Message.insertMany(message).then(message1=>{
         Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},{last_message:message1[message1.length-1]._id,last_updated:new Date(),display_picture:message.image}).then(conversation=>{
@@ -1058,6 +1091,7 @@ return x
     leaveChatroomWithConversationId,
     saveMessagesAndPopulate,
     notifyAllUsersNotInTheChatroom,
+    notifyAllUsersNotInTheChatroom1,
     sendGroupInvites,
     joinGame,
     updateImage,

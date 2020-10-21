@@ -486,6 +486,7 @@ router.post('/get_user', [
                user['alert_total'] = alerts1.length
                user['game_completed'] = game_completed_count
                user['mvp_count'] = mvp_count
+               user['handle'] = user && user.handle ? user.handle : 'new_user'
                user['refer_custom_value'] = 100
                user['refer_custom_value1'] = 50
                user['game_history'] = game_history

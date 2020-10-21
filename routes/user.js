@@ -1213,6 +1213,45 @@ router.post('/change_passowrd', [
     }).catch(next);
 });
 
+router.post('/change_password_username', [
+  verifyToken,
+], (req, res, next) => {
+      User.findOne({_id: req.userId}).then(user=> {
+        if (user) {
+              //req.body.modified_at = moment();
+              bcrypt.hash(req.body.password, saltRounds).then(function(hash) {
+                user['password'] = hash;
+                user['handle'] = req.body.handle
+                user['followers'] = []
+                user['following'] = []
+                user['requests'] = []
+                user['refer_id'] = 'TURF'+makeid(4)
+                user['bio'] = ''
+                user['sent_requests'] = []
+                user['token'] =  jwt.sign({ id: user._id, phone:user.phone, role:"user", name:user.handle }, config.secret);
+                User.findByIdAndUpdate({_id: req.userId},user).then(user1=>{
+                  User.findOne({phone:user.phone}).lean().then(user=>{
+                    let lin = Object.assign({},user)
+                    lin['alert_total'] = 0
+                    lin['mvp_count'] = 0
+                    lin['refer_custom_value'] = 100
+                    lin['refer_custom_value1'] = 50
+                    lin['coins'] = 0
+                    lin['total'] = 0
+                    lin['level'] =  getLevel(0)
+                    console.log('hit pass',lin)
+                    
+                  res.send({status:"success", message:"user added",data:lin})
+                }).catch(next)
+              })
+              })
+              
+        } else {
+            res.status(422).send({status: "failure", errors: {user:"user doesn't exist"}});
+        }
+    }).catch(next);
+});
+
 function makeid(length) {
   var result           = '';
   var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -1265,13 +1304,13 @@ router.post('/send_otp',[
             }
           }else{
             if(req.body.phone === '8136948537') {
-            const x = 'TURF'+makeId(4)
+            const x = 'TURF'+makeid(4)
             User.create({phone:req.body.phone,refer_id:x,otp:req.body.phone === '8136948537' ? '7484':otp}).then(user=>{
               res.status(201).send({status:"success",message:"new user",otp:req.body.phone === '8136948537' ? '7484':user.otp})
             })
           }
             else{
-              const x = 'TURF'+makeId(4)
+              const x = 'TURF'+makeid(4)
             User.create({phone:req.body.phone,otp:otp,refer_id:x}).then(user=>{
               res.status(201).send({status:"success",message:"new user",otp:req.body.phone === '8136948537' ? '7484':otp})
             })
@@ -1393,7 +1432,7 @@ router.post('/send_new_user', (req, res, next) => {
           User.find({phone:req.body.user.phone}).then((user)=>{
           user && user.length > 0 ? 
             res.status(400).send({status:"failiure", message:'user exists'})
-          :User.create({refer_id:'TURF'+this.makeId(5),phone:req.body.user.phone,handle:req.body.user.handle,otp:req.body.user.otp,temporary:true}).then((user)=>{
+          :User.create({refer_id:'TURF'+makeid(5),phone:req.body.user.phone,handle:req.body.user.handle,otp:req.body.user.otp,temporary:true}).then((user)=>{
             res.status(201).send({status:"success", message:'new user', data:{phone:req.body.user.phone,otp:req.body.user.otp,handle:req.body.user.handle}})
             setTimeout(()=>{
               User.findOneAndDelete({phone:user.phone,temporary:true}).then(u=>console.log('user deleted'))

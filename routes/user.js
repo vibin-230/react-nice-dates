@@ -84,7 +84,7 @@ function getGame(res,convo_id,refund_status,next,req){
     convo['exit2'] =  convo.members.filter((a)=>a._id.toString() === req.userId.toString()).length > 0 ? false : true
     convo['exit'] =  convo.members.filter((a)=>a._id.toString() === req.userId.toString()).length > 0 ? false : true
   
-    Game.findOne({conversation:convo_id}).lean().populate("conversation").populate('host','_id name profile_picture phone handle name_status visibility').populate('users','_id name profile_picture phone handle name_status visibility').populate('invites','_id name profile_picture phone handle visibility').then(game=>{
+    Game.findOne({conversation:convo_id}).lean().populate("mvp.target_id","name handle profile_picture _id").populate("conversation").populate('host','_id name profile_picture phone handle name_status visibility').populate('users','_id name profile_picture phone handle name_status visibility').populate('invites','_id name profile_picture phone handle visibility').then(game=>{
             Venue.findById({_id:game.bookings[0].venue_id}).then(venue =>{
               Offers.find({}).then(offers=>{
               let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(venue._id) !== -1)
@@ -569,7 +569,7 @@ router.post('/friend_get_following/:id', [
   let game_history ={}
   const filter  = {$or:[{members:[req.userId,req.params.id],type:'single'},{members:[req.params.id,req.userId],type:'single'}]}
   Conversation.find(filter).limit(1).lean().then(ec=>{
-  User.findOne({_id:req.params.id},{activity_log:0}).populate("followers","name _id handle name_status profile_picture").populate("following","name _id handle name_status profile_picture").lean().then(user1 => {
+  User.findOne({_id:req.params.id},{activity_log:0}).populate("followers","name _id handle name_status profile_picture visibilility").populate("following","name _id handle name_status profile_picture visibilility").lean().then(user1 => {
     Experience.find({user:req.params.id}).then(exp=>{
     Game.find({users: {$in:[req.params.id]},completed:true}).then(game=> {
       game_completed_count = game && game.length > 0 ? game.length : 0
@@ -999,6 +999,24 @@ router.post('/alter_user/:id', [
 
 
 router.post('/alter_game/:id', [
+  verifyToken,
+], (req, res, next) => {
+      //Check if user exist
+      Game.findOne({_id: req.params.id},{activity_log:0}).then(game=> {
+        Game.findByIdAndUpdate({_id: req.params.id},req.body).then(game=>{
+          Game.findOne({_id: req.params.id},{activity_log:0}).lean().populate("venue").populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(g1=> {
+            if (g1) {
+          res.status(201).send({status: "success", message: "game edited",data:g1})
+        } else {
+            res.status(422).send({status: "failure", errors: {game:"edit failed"}});
+        }
+    }).catch(next);
+  }).catch(next);
+
+  }).catch(next);
+});
+
+router.post('/update_game_mvp/:id', [
   verifyToken,
 ], (req, res, next) => {
       //Check if user exist
@@ -3754,7 +3772,7 @@ router.post('/accept_or_delete_requests_alert', verifyToken, (req, res, next) =>
 })
 
 router.post('/get_followers_and_following', verifyToken, (req, res, next) => {
-  User.findById({_id:req.userId},{activity_log:0}).lean().populate('following','name phone profile_picture handle name_status').populate('followers','name phone profile_picture handle name_status').then(user=>{
+  User.findById({_id:req.userId},{activity_log:0}).lean().populate('following','name phone profile_picture handle name_status visibilility').populate('followers','name phone profile_picture handle name_status visibilility').then(user=>{
     const following = user.following.map((a)=>{
       a['select'] = false
       return a
@@ -3768,7 +3786,7 @@ router.post('/get_followers_and_following', verifyToken, (req, res, next) => {
 })
 
 router.post('/get_followers_and_following_for_user', verifyToken, (req, res, next) => {
-  User.findById({_id:req.body.id},{activity_log:0}).lean().populate('following','name phone profile_picture handle name_status').populate('followers','name phone profile_picture handle name_status').then(user=>{
+  User.findById({_id:req.body.id},{activity_log:0}).lean().populate('following','name phone profile_picture handle name_status visibilility').populate('followers','name phone profile_picture handle name_status visibilility').then(user=>{
     const following = user.following.map((a)=>{
       a['select'] = false
       return a

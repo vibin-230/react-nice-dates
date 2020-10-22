@@ -63,6 +63,7 @@ const saltRounds = 10;
 const NotifyArray = require('../scripts/NotifyArray')
 const multer = require('multer')
 const sendAlert = require('./../scripts/sendAlert')
+const ModifyBookSlot = require('./../helper/modify_book')
 var multer_upload = multer({ dest: 'uploads/' })
 var io = require('socket.io-emitter')("//127.0.0.1:6379")
 const rzp_key = require('../scripts/rzp');
@@ -96,7 +97,6 @@ function getGame(res,convo_id,refund_status,next,req){
               game1["conversation"] = convo
               game1['refund'] = refund_status
               game1['validity'] = moment().format('YYYYMMDDHHmm')  > moment(game.start_time).subtract(300,"minutes").format('YYYYMMDDHHmm')
-             console.log(game1);
               res.send({status:"success", message:"game_fetched",data:game1})
             })
     }).catch(next);
@@ -1898,7 +1898,6 @@ router.post('/host_block_slot/:id', verifyToken, (req, res, next) => {
         }else{
           venue_id = [venue._id.toString()]
         }
-        console.log('pass2',body.booking_date,body.slot_time,body.venue_type)
         Booking.find({ venue:venue.venue.name, venue_id:{$in:venue_id}, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
           let conf = venue.configuration;
           let types = conf.types;
@@ -1924,13 +1923,10 @@ router.post('/host_block_slot/:id', verifyToken, (req, res, next) => {
             convertable = inventory[body.venue_type]<=booking_history.length
             console.log('con',convertable,booking_history,)
           }
-          console.log(convertable);
           if(convertable){
             res.status(201).send({status:"success", message:"slot already booked"})
           }else{
-            console.log('booking ',body);
               resolve(body)
-
               setTimeout(() => {
                 Booking.findById({_id:body.booking_id}).then(booking=>{
                   if(booking.booking_status==="blocked"){
@@ -1939,7 +1935,7 @@ router.post('/host_block_slot/:id', verifyToken, (req, res, next) => {
                     })
                   }
                 }).catch(next)
-              }, 135000);
+              }, 30000);
             
           }
         }).catch(next)
@@ -1947,14 +1943,16 @@ router.post('/host_block_slot/:id', verifyToken, (req, res, next) => {
     }).catch(next)
   }
   let promisesToRun = [];
+  
     for(let i=0;i<req.body.length;i++)
     {
       promisesToRun.push(BlockSlot(req.body[i],req.body[i]._id, req.body[i].booking_id))
     }
     Promise.all(promisesToRun).then(values => {
-      Booking.updateMany({booking_id:values[0].booking_id},{$set:{booking_status:"blocked"}}).then(booking=>{
       res.send({status:"success", message:"slot blocked", data:values})
-    }).catch(next)
+    //   Booking.updateMany({booking_id:values[0].booking_id},{$set:{booking_status:"blocked"}}).then(booking=>{
+    //   res.send({status:"success", message:"slot blocked", data:values})
+    // }).catch(next)
 
   })
   })
@@ -2312,24 +2310,34 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
 
 
 router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
-  function BookSlot(body,id){
-    return new Promise(function(resolve, reject){
-      Booking.find({booking_id:body.booking_id}).then(booking=>{
-        Booking.updateMany({booking_id:body.booking_id},{booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount,coupon_amount:body.coupon_amount,coupons_used:body.coupons_used, multiple_id:id,game:true,coins:body.coins}).lean().then(booking=>{
-        Booking.findById({_id:body._id}).lean().populate('venue_data').then(booking=>{
-        resolve(booking)
-      }).catch(next)
-    }).catch(next)
-  }).catch(next)
-    }).catch(error=>{
-      reject()
-    })
-  }
+  // function BookSlot(body,id){
+  //   return new Promise(function(resolve, reject){
+  //     Booking.find({booking_id:body.booking_id}).then(booking=>{
+  //       Booking.updateMany({booking_id:body.booking_id},{booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount,coupon_amount:body.coupon_amount,coupons_used:body.coupons_used, multiple_id:id,game:true,coins:body.coins}).lean().then(booking=>{
+  //       Booking.findById({_id:body._id}).lean().populate('venue_data').then(booking=>{
+  //       resolve(booking)
+  //     }).catch(next)
+  //   }).catch(next)
+  // }).catch(next)
+  //   }).catch(error=>{
+  //     reject()
+  //   })
+  // }
   let promisesToRun = [];
   var id = mongoose.Types.ObjectId();
+  Booking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
+    let booking_id
+    if(!bookingOrder){
+      booking_id = "TT000000"
+    }else{
+      booking_id = bookingOrder.booking_id
+      console.log(booking_id)
+    }
+    var id = mongoose.Types.ObjectId();
+    let promisesToRun = [];
   for(let i=0;i<req.body.length;i++)
   {
-    promisesToRun.push(BookSlot(req.body[i],id))
+    promisesToRun.push(ModifyBookSlot(req.body[i],id, booking_id,req.body[i].venue_id,req,res,next))
   }
   Promise.all(promisesToRun).then(values => {
     // Capture the payment
@@ -2359,12 +2367,11 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
       }).catch(next);
 
     //Send Sms
-    handleSlotAvailabilityForGames(values,req.socket)
 
     Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
         User.findById({_id:req.userId}).then(user=>{
-          Game.findOneAndUpdate({"bookings.booking_id":values[0].booking_id},{$set:{bookings:values,booking_status:'booked'}}).then(game=>{
+          Game.findOneAndUpdate({"bookings.booking_id":req.body[0].booking_id},{$set:{bookings:values,booking_status:'booked'}}).then(game=>{
             Game.findById({_id:game._id}).then(game=>{
             Message.create({conversation:game.conversation,message:`${req.name} has booked the slot for this game . Please be on time to the venue`,read_status:false,name:req.name,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : req.userId}},{activity_log:0,followers:0,following:0,}).then(users=> {
@@ -2376,7 +2383,9 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
                     convo['invite'] = false
                     //req && req.socket && req.socket.broadcast.emit('unread',{})
                   res.send({status:"success", message:"slot booked",data: {game:game,convo:convo}})                  
-        var result = Object.values(combineSlots([...values]))
+                 handleSlotAvailabilityForGames(values,req.socket)
+      
+                  var result = Object.values(combineSlots([...values]))
 
         let booking_id = values[0].booking_id
         let phone = "91"+values[0].phone
@@ -2458,6 +2467,7 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
       // ActivityLog(activity_log)
       }).catch(next)
     }).catch(next)
+  }).catch(next)
     }).catch(next)
   }).catch(next)
 }).catch(next)

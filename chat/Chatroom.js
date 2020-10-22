@@ -71,7 +71,7 @@ module.exports = function ({ _id, image }) {
 
     return x
   }
-
+  
 
   function addUser(client) {
     members.set(client.id, client)

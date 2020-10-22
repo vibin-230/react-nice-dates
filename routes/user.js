@@ -571,15 +571,15 @@ router.post('/friend_get_following/:id', [
   Conversation.find(filter).limit(1).lean().then(ec=>{
   User.findOne({_id:req.params.id},{activity_log:0}).populate("followers","name _id handle name_status profile_picture").populate("following","name _id handle name_status profile_picture").lean().then(user1 => {
     Experience.find({user:req.params.id}).then(exp=>{
-    Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
+    Game.find({users: {$in:[req.params.id]},completed:true}).then(game=> {
       game_completed_count = game && game.length > 0 ? game.length : 0
       const aw = game && game.length > 0 && game.filter((a)=>{
-       let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0
+       let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.params.id.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.params.id.toString()).length : 0
        mvp_count = mvp_count + f
-       return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length>0
+       return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.params.id.toString()).length>0
       })
       const aq = game.map((a)=>{
-        game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0 }
+        game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.params.id.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.params.id.toString()).length : 0 }
   })
       user1.game_completed = game_completed_count
       user1.mvp_count = mvp_count

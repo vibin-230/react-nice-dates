@@ -4315,12 +4315,12 @@ router.post('/past_bookings', verifyToken, (req, res, next) => {
 router.post('/bookings_and_games', verifyToken, (req, res, next) => {
   let past_date  = moment(req.body.todate).add(1,'month')
   let filter = {
-    booking_status:{$in:["booked","completed"]},
+    booking_status:{$in:["booked"]},
     created_by:req.userId,
     game:false,
   }
   let cancel_filter = {
-    booking_status:{$in:["cancelled"]},
+    booking_status:{$in:["cancelled","completed"]},
     created_by:req.userId,
   }
   let eventFilter = {

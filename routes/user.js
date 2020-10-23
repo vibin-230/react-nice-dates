@@ -924,6 +924,7 @@ router.post('/alter_user/:id', [
           var count  = 0
       let game_completed_count = 0
       let mvp_count = 0
+      let game_history = {}
       Alert.find({user: req.userId,status:true},{}).lean().then(alert=> {
           Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
           game_completed_count = game && game.length > 0 ? game.length : 0
@@ -931,6 +932,9 @@ router.post('/alter_user/:id', [
            let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc.target_id.toString() === req.userId.toString()).length : 0
            mvp_count = mvp_count + f
            return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc.target_id.toString() === req.userId.toString()).length>0
+          })
+          const aq = game.map((a)=>{
+            game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0,mv_data:a.mvp }
           })
           //mvp_count = aw && aw.length > 0 ? aw.length : 0
           Conversation.find({ $or: [ { members: { $in: [req.userId] } },{ exit_list: { $elemMatch: {user_id:req.userId} } }] }).lean().populate('to',' name _id profile_picture last_active online_status status handle name_status').populate('members','name _id profile_picture last_active online_status status handle name_status').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(existingConversation=>{
@@ -980,6 +984,7 @@ router.post('/alter_user/:id', [
                user['refer_custom_value1'] = 100
                user['coins'] =  coins && coins.length > 0 && coins[0].amount ? coins[0].amount : 0
                user['level'] =  getLevel(250 * mvp_count + 100 * game_completed_count)
+               user['game_history'] = game_history
                res.status(201).send({status: "success", message: "user collected",data:user})
               } else {
                 res.status(422).send({status: "failure", errors: {user:"force update failed"}});
@@ -4310,7 +4315,7 @@ router.post('/past_bookings', verifyToken, (req, res, next) => {
 router.post('/bookings_and_games', verifyToken, (req, res, next) => {
   let past_date  = moment(req.body.todate).add(1,'month')
   let filter = {
-    booking_status:{$in:["booked"]},
+    booking_status:{$in:["booked","completed"]},
     created_by:req.userId,
     game:false,
   }

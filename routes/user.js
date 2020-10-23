@@ -1060,7 +1060,7 @@ router.post('/get_mvp_history', [
   verifyToken,
 ], (req, res, next) => {
       //Check if user exist
-      Game.find({users: {$in:[req.userId]},completed:true,"mvp.target_id":req.userId.toString(),sport_name:req.body.sport}).populate("mvp.sender_id","name handle profile_picture _id").populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
+      Game.find({users: {$in:[req.userId]},completed:true,sport_name:req.body.sport}).populate("mvp.sender_id","name handle profile_picture _id").populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{
             (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);

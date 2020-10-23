@@ -1486,11 +1486,52 @@ router.post('/get_venue_offer_value/:id',verifyToken,(req,res,next)=>{
 }).catch(next)
 
 })
-router.post('/search',
+router.post('/search1',
 	verifyToken,
 	AccessControl('venue', 'read'),
 	(req, res, next) => {
 	User.find({$and:[{ $or: [{"name":{ "$regex": req.body.search, "$options": "i" }}, {"handle":{ "$regex": req.body.search, "$options": "i"}}]},{'handle':{$exists:true,$ne:null }} ]},{__v:0,token:0,otp:0,activity_log:0}).then(user=>{
+		Venue.find({"venue.name":{ "$regex": req.body.search, "$options": "i" }}).then(venue=>{
+		Event.find({"event.name":{ "$regex": req.body.search, "$options": "i" },"start_date":{$gte:new Date()}}).lean().populate('venue').then(event=>{
+			Offers.find({}).then(offers=>{
+			let combinedResult
+			let list = []
+			Object.values(event).map((key)=>{
+				Object.values(key.venue).map((value,index)=>{
+					let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
+					value.offers = filteredOffer
+					return value
+				})
+			})
+			if(venue){
+					list = Object.values(venue).map((value,index)=>{
+					let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
+					value.rating = value.rating
+					value.offers = filteredOffer
+					return value
+				})
+				combinedResult = list.concat(event);
+			}else{
+				combinedResult = event
+			}
+			let finalResult = [...combinedResult,...user]
+			if(finalResult && finalResult.length > 0){
+				res.send({status:"success", message:"venues and events fetched based on search", data:{error:false,error_description:'',venue:list,event:event,user:user}})
+			}else
+			res.send({status:"success", message:"empty list",data:{error:true,error_description:'No Results found'}})
+		}).catch(next)
+	}).catch(next)
+}).catch(next);
+}).catch(next)
+
+})
+
+
+router.post('/search',
+	verifyToken,
+	AccessControl('venue', 'read'),
+	(req, res, next) => {
+	User.find({$and:[{ $or: [{"name":{ "$regex": req.body.search, "$options": "i" }}]},{'name':{$exists:true,$ne:null }} ]},{__v:0,token:0,otp:0,activity_log:0}).then(user=>{
 		Venue.find({"venue.name":{ "$regex": req.body.search, "$options": "i" }}).then(venue=>{
 		Event.find({"event.name":{ "$regex": req.body.search, "$options": "i" },"start_date":{$gte:new Date()}}).lean().populate('venue').then(event=>{
 			Offers.find({}).then(offers=>{

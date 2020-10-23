@@ -4015,10 +4015,16 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
                             //getGame(res,game.conversation,true,next,req)
                              handleSlotAvailabilityWithCancellation(booking,req.socket)
+                             Coins.find({ booking_id: req.params.id }).lean().then(coins => {
+                              if (coins) {
+                                  Coins.deleteMany({ booking_id: req.params.id }).lean().then(coins => {
+                                  }).catch(next);
+                                }
                       }).catch(next);
                       }).catch(next);
                     }).catch(next);
                       }).catch(next);
+                    }).catch(next);
                         }
                   SendMessage(phone,sender,SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER)
                   //Send Mail
@@ -5234,7 +5240,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
             }
             EventBooking.create(booking_data).then(eventBooking=>{
               //EventBooking.findOne({'booking_id':eventBooking.booking_id})
-              EventBooking.findOne({'booking_id':eventBooking.booking_id}).lean().populate({path:"event_id",populate:{path:"venue"}}).then(bookingOrder=>{
+              EventBooking.findOne({'booking_id':eventBooking.booking_id}).populate({path:"event_id",populate:{path:"venue"}}).lean().then(bookingOrder=>{
                 if(req.body.free_event){
                   res.send({status:"success", message:"event booked", data:bookingOrder})
                 }else{
@@ -5242,7 +5248,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                   let data = {
                     amount:req.body.booking_amount*100
                   }
-                  if(req.body[0].transaction_id && req.body[0].transaction_id !== 'free_slot'){
+                  if(req.body.transaction_id && req.body.transaction_id !== 'free_slot'){
 
                   axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+req.body.transaction_id+'/capture',data)
                   .then(response => {

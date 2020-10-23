@@ -1046,14 +1046,12 @@ router.post('/check_completed_games', [
 ], (req, res, next) => {
       //Check if user exist
       Game.find({users: {$in:[req.userId]},completed:true,"mvp.sender_id":{$nin:[req.userId]},skipped:{$nin:[req.userId]},sport_name:["basketball","football"] }).populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
-        Game.find({users: {$in:[req.userId]},completed:true,"mvp.sender_id":{$nin:[req.userId]},skipped:{$nin:[req.userId]},sport_name:["badminton","cricket"] }).populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game1=> {
-        console.log("saasddsa",game,game1)
-          if (game.length > 0 || game1.length > 0) {
-          res.status(201).send({status: "success", message: "game collected",data:[...game,...game1]})
+          if (game.length > 0) {
+            let final_Game = game.filter((key)=>(key.sport_name == "cricket" || key.sport_name == "badminton") ? key.users.length >= 3 : key.users.length >=4 )
+          res.status(201).send({status: "success", message: "game collected",data:final_Game})
         } else {
             res.status(201).send({status: "failure",  message: "game collected",data:[]});
         }
-  }).catch(next);
 }).catch(next);
 
 });

@@ -474,7 +474,7 @@ router.post('/get_user', [
           })
 
           const aq = game.map((a)=>{
-                game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0 }
+                game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0,mv_data:a.mvp }
           })
           console.log('ga',game_history);
           //mvp_count = aw && aw.length > 0 ? aw.length : 0
@@ -924,6 +924,7 @@ router.post('/alter_user/:id', [
           var count  = 0
       let game_completed_count = 0
       let mvp_count = 0
+      let game_history = {}
       Alert.find({user: req.userId,status:true},{}).lean().then(alert=> {
           Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
           game_completed_count = game && game.length > 0 ? game.length : 0
@@ -931,6 +932,9 @@ router.post('/alter_user/:id', [
            let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc.target_id.toString() === req.userId.toString()).length : 0
            mvp_count = mvp_count + f
            return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc.target_id.toString() === req.userId.toString()).length>0
+          })
+          const aq = game.map((a)=>{
+            game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0,mv_data:a.mvp }
           })
           //mvp_count = aw && aw.length > 0 ? aw.length : 0
           Conversation.find({ $or: [ { members: { $in: [req.userId] } },{ exit_list: { $elemMatch: {user_id:req.userId} } }] }).lean().populate('to',' name _id profile_picture last_active online_status status handle name_status').populate('members','name _id profile_picture last_active online_status status handle name_status').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(existingConversation=>{
@@ -980,6 +984,7 @@ router.post('/alter_user/:id', [
                user['refer_custom_value1'] = 100
                user['coins'] =  coins && coins.length > 0 && coins[0].amount ? coins[0].amount : 0
                user['level'] =  getLevel(250 * mvp_count + 100 * game_completed_count)
+               user['game_history'] = game_history
                res.status(201).send({status: "success", message: "user collected",data:user})
               } else {
                 res.status(422).send({status: "failure", errors: {user:"force update failed"}});
@@ -1051,7 +1056,7 @@ router.post('/get_mvp_history', [
   verifyToken,
 ], (req, res, next) => {
       //Check if user exist
-      Game.find({users: {$in:[req.userId]},completed:true,"mvp.target_id":req.userId.toString()}).populate("mvp.sender_id","name handle profile_picture _id").populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
+      Game.find({users: {$in:[req.userId]},completed:true,"mvp.target_id":req.userId.toString(),sport_name:req.body.sport}).populate("mvp.sender_id","name handle profile_picture _id").populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{
             (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
@@ -1065,7 +1070,7 @@ router.post('/get_mvp_history', [
                 return {title:key,data:value }
           })
         if (game.length > 0) {
-          res.status(201).send({status: "success", message: "game collected",data:q})
+          res.status(201).send({status: "success", message: "game collected",data:{data:q,games:game}})
         } else {
             res.status(201).send({status: "failure",  message: "game collected",data:[]});
         }
@@ -2008,6 +2013,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
     var data = {
       amount:(req.body[0].booking_amount*req.body.length)*100
     }
+    var result = Object.values(combineSlots([...values]))
 
     //Capture Payment
     if(req.body[0].transaction_id && req.body[0].transaction_id !== 'free_slot'){
@@ -2028,7 +2034,6 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
     }
     //Send Sms
     handleSlotAvailabilityForGames(values,req.socket)
-    var result = Object.values(combineSlots([...values]))
 
     Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
@@ -2202,7 +2207,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
 
    console.log('razorpay api',process.env.RAZORPAY_API)
    console.log('transaction api',values)
-
+   if(req.body[0].transaction_id && req.body[0].transaction_id !== 'free_slot'){
     //Capture Payment
     axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
       .then(response => {
@@ -2217,7 +2222,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
         console.log(error.response)
         res.send({error:error.response});
       }).catch(next);
-
+    }
     //Send Sms
     handleSlotAvailabilityForGames(values,req.socket)
 
@@ -2371,6 +2376,7 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
    console.log('transaction api',data,req.body[0])
 
     //Capture Payment
+    if(req.body[0].transaction_id && req.body[0].transaction_id !== 'free_slot'){
     axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
       .then(response => {
         console.log(response.data);
@@ -2383,7 +2389,7 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
         console.log(error.response.data)
         res.send({error:error.response});
       }).catch(next);
-
+    }
     //Send Sms
 
     Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
@@ -4314,7 +4320,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
     game:false,
   }
   let cancel_filter = {
-    booking_status:{$in:["cancelled"]},
+    booking_status:{$in:["cancelled","completed"]},
     created_by:req.userId,
   }
   let eventFilter = {
@@ -4362,7 +4368,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         let finalResult = booking_data.sort((a, b) => moment(a.end_time).format("YYYYMMDDHmm") > moment(b.end_time).format("YYYYMMDDHmm") ? 1 : -1 )
         const present = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') <= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
         const past = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') >= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
-        const apresent = groupBy(present,'start_time')
+        const apresent = groupBy(present,'end_time')
         const apast = groupBy([...past,...cancelled_bookings,...cancelledeventBooking1],'end_time')
         // const pastCancelled = []
         // const cancelledPast = groupBy(pastCancelled,'start_time')
@@ -4744,9 +4750,19 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
 
 router.post('/booking_id_history/:id', verifyToken, (req, res, next) => {
   Booking.find({booking_id:req.params.id}).lean().populate('venue_data','venue').then(booking=>{
+  console.log("Reee",req.params.id)
+    if(booking.length >0){
       let result = Object.values(combineSlots(booking))
         res.send({status:"success", message:"booking history fetched", data:result})
+  }
+  else if(booking.length == 0){
+  EventBooking.find({booking_id:req.params.id}).lean().populate('event_id').then(eventBooking=>{
+    if(eventBooking){
+      res.send({status:"success", message:"booking history fetched", data:eventBooking})
+    }
   }).catch(next)
+}
+}).catch(next)
 })
 router.post('/booking_history_from_app_by_venue/:id', verifyToken, (req, res, next) => {
   Booking.find({booking_status:{$in:["completed"]}, venue_id:req.params.id, booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}, booking_type:"app"}).lean().populate('venue_data','venue').populate('collected_by','name').then(booking=>{
@@ -4923,10 +4939,17 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
     if(eventBooking.free_event){
       EventBooking.findOneAndUpdate({booking_id:req.params.id}, {booking_status: "cancelled"}).then(eventBooking1=>{
         EventBooking.find({booking_id:req.params.id}, {booking_status: "booked"}).then(bookings=>{
+          Coins.find({ booking_id: req.params.id }).lean().then(coins => {
+          if (coins) {
+              Coins.deleteMany({ booking_id: req.params.id }).lean().then(coins => {
+              }).catch(next);
+          }
           count = bookings.length
+          
           res.send({status:"success", message:"Event booking cancelled"})
       })
       })
+    })
     }else{
       if(req.body.refund_status){
         axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+eventBooking.transaction_id+'/refund')
@@ -4934,10 +4957,16 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
           if(response.data.entity === "refund"){
             EventBooking.findOneAndUpdate({booking_id:req.params.id}, {booking_status: "cancelled",refund_status:true}).then(eventBooking=>{
               EventBooking.find({booking_id:req.params.id}, {booking_status: "booked"}).then(bookings=>{
+                Coins.find({ booking_id: req.params.id }).lean().then(coins => {
+                if (coins) {
+                      Coins.deleteMany({ booking_id: req.params.id }).lean().then(coins => {
+                      }).catch(next);
+                  }
                 count = bookings.length
                 res.send({status:"success", message:"Event booking cancelled"})
             })
             })
+          })
           }
         }).catch(next =>{
           console.log('pass',next.response.data);
@@ -5088,6 +5117,8 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                   let data = {
                     amount:req.body.booking_amount*100
                   }
+                  if(req.body[0].transaction_id && req.body[0].transaction_id !== 'free_slot'){
+
                   axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+req.body.transaction_id+'/capture',data)
                   .then(response => {
                     console.log(response.data)
@@ -5101,9 +5132,12 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                     console.log(error.response)
                     res.send({error:error.response});
                   }).catch(next);
+                }else {
+                  res.send({status:"success", message:"event booked", data:bookingOrder})
+                }
                 }
               // Send SMS
-              req.body.coins > 0 && createCoin({type:'booking',amount:-(req.body.coins),transaction_id:req.body.transaction_id,user:req.userId,comments:`You have used ${req.body.coins} for this ${req.body.event_name}`},next)
+              req.body.coins > 0 && createCoin({type:'booking',amount:-(req.body.coins),transaction_id:req.body.transaction_id,user:req.userId,booking_id:eventBooking.booking_id,comments:`You have used ${req.body.coins} for this ${req.body.event_name}`},next)
               let booking_id = eventBooking.booking_id
               let phone = eventBooking.phone
               let event_name = req.body.event_name

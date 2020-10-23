@@ -639,7 +639,7 @@ function getZcode(game,location,venue,viewd,a,players,joins,friend){
 router.post('/user_suggest/:id', [
   verifyToken,
 ], (req, res, next) => {
-  User.findOne({_id: req.params.id},{}).lean().then(user=> {
+  User.findOne({_id: req.params.id},{'handle':{$exists:true,$ne:null }}).lean().then(user=> {
     Game.find({$or:[{host:{$in:[req.params.id]}},{users:{$in:[req.params.id]}}]}).then((game)=>{
        const filter  = {$or:[{members:[req.params.id],type:'group'}]}
       Conversation.find({$or:[{host:{$in:[req.params.id]}},{users:{$in:[req.params.id]}}]}).then((game)=>{
@@ -700,6 +700,7 @@ router.post('/get_chatrooms/:id', [
 ], (req, res, next) => {
       //Check if user existinvites:{$in:[req.params.id]}
       //Conversation.find({members:{$in:[req.params.id]}}).lean().populate('to',' name _id profile_picture last_active online_status status').populate('members','name _id profile_picture last_active online_status status').populate('last_message').then(existingConversation=>{
+        User.findOne({_id: req.params.id},{activity_log:0,followers:0,following:0}).then(user=> {
       Conversation.find({ $or: [ { members: { $in: [req.params.id] } },{ exit_list: { $elemMatch: {user_id:req.params.id} } }] }).lean().populate("host","name profile_picture handle name_status").populate('to',' name _id profile_picture last_active online_status status handle name_status visibility').populate('members','name _id profile_picture last_active online_status status handle name_status visibility').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status visibility').populate('last_message').then(existingConversation=>{
        existingConversation = existingConversation.filter((e)=>{
          return !(e.type == "single" && e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.params.id.toString()).length > 0 )
@@ -711,7 +712,6 @@ router.post('/get_chatrooms/:id', [
           return !(e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.params.id.toString()).length > 0)
           } )
 
-       User.findOne({_id: req.params.id},{activity_log:0,followers:0,following:0}).then(user=> {
           const date = user.last_active 
           const conversation  = req.body.conversation
 
@@ -1238,10 +1238,10 @@ router.post('/change_passowrd', [
     }).catch(next);
 });
 
-router.post('/change_password_username', [
-  verifyToken,
-], (req, res, next) => {
-      User.findOne({_id: req.userId}).then(user=> {
+router.post('/change_password_username/:id', (req, res, next) => {
+       console.log('hit pass',req.body)
+      User.findOne({_id: req.params.id}).then(user=> {
+        console.log('hit pass',user)
         if (user) {
               //req.body.modified_at = moment();
               bcrypt.hash(req.body.password, saltRounds).then(function(hash) {
@@ -1249,12 +1249,13 @@ router.post('/change_password_username', [
                 user['handle'] = req.body.handle
                 user['followers'] = []
                 user['following'] = []
+                user['activity_log'] = []
                 user['requests'] = []
                 user['refer_id'] = 'TURF'+makeid(4)
                 user['bio'] = ''
                 user['sent_requests'] = []
                 user['token'] =  jwt.sign({ id: user._id, phone:user.phone, role:"user", name:user.handle }, config.secret);
-                User.findByIdAndUpdate({_id: req.userId},user).then(user1=>{
+                User.findByIdAndUpdate({_id: req.params.id},user).then(user1=>{
                   User.findOne({phone:user.phone}).lean().then(user=>{
                     let lin = Object.assign({},user)
                     lin['alert_total'] = 0
@@ -1303,7 +1304,7 @@ router.post('/send_otp',[
 
   let phone = 91+req.body.phone;
   let otp   = Math.floor(999 + Math.random() * 9000);
-  User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
+  User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0,activity_log:0},null).then(user=> {
     send_message_otp(req.body.phone,"TRFTWN","Welcome to Turftown! Your OTP is "+otp ).then((a)=>{
       console.log(a)
         if(a.status === 'success')
@@ -3005,6 +3006,7 @@ router.post('/update_invoice/:id', verifyToken, (req, res, next) => {
 })
 
 router.post('/checkUserName', (req, res, next) => {
+  console.log('hit');
 	User.find({"handle":req.body.user_name}).then(user=>{
     console.log(req.body.user_name.match(/^[ A-Za-z0-9_@./#&+-]*$/),req.body.user_name);
         if(user && user.length > 0){
@@ -4452,7 +4454,6 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
   let filter = {
     booking_status:{$in:["booked"]},
     created_by:req.userId,
-    game:false,
   }
   let cancel_filter = {
     booking_status:{$in:["cancelled","completed"]},
@@ -4470,8 +4471,8 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
     EventBooking.find(eventFilter).lean().populate({path:"event_id",populate:{path:"venue"}}).then(eventBooking=>{
       EventBooking.find(cancel_filter).lean().populate({path:"event_id",populate:{path:"venue"}}).then(cancelledeventBooking=>{
       Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate('venue','venue'). populate("host","name _id handle name_status profile_picture").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
-        result = Object.values(combineSlots(booking))
-        cancelled_bookings =  Object.values(combineSlots(cancelledBookings))
+        result = Object.values(combineSlots1(booking))
+        cancelled_bookings =  Object.values(combineSlots1(cancelledBookings))
         game.map((key)=>{
          key["end_time"] = key.conversation && key.conversation.end_time ? key.conversation.end_time : key.bookings[key.bookings.length-1].end_time 
         })

@@ -217,6 +217,55 @@ function getLevel(x){
   }
 
 }
+function makeid(length) {
+  var result           = '';
+  var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  var charactersLength = characters.length;
+  for ( var i = 0; i < length; i++ ) {
+     result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+}
+
+router.post('/change_password_username/:id', (req, res, next) => {
+			console.log('hit pass',req.body)
+			 User.findOne({_id: req.params.id}).then(user=> {
+	 console.log('hit pass',user)
+	 if (user) {
+				 //req.body.modified_at = moment();
+				 bcrypt.hash(req.body.password, saltRounds).then(function(hash) {
+					 user['password'] = hash;
+					 user['handle'] = req.body.handle
+					 user['followers'] = []
+					 user['following'] = []
+					 user['activity_log'] = []
+					 user['requests'] = []
+					 user['refer_id'] = 'TURF'+makeid(4)
+					 user['bio'] = ''
+					 user['sent_requests'] = []
+					 user['token'] =  jwt.sign({ id: user._id, phone:user.phone, role:"user", name:user.handle }, config.secret);
+					 User.findByIdAndUpdate({_id: req.params.id},user).then(user1=>{
+						 User.findOne({phone:user.phone}).lean().then(user=>{
+							 let lin = Object.assign({},user)
+							 lin['alert_total'] = 0
+							 lin['mvp_count'] = 0
+							 lin['refer_custom_value'] = 100
+							 lin['refer_custom_value1'] = 50
+							 lin['coins'] = 0
+							 lin['total'] = 0
+							 lin['level'] =  getLevel(0)
+							 console.log('hit pass',lin)
+							 
+						 res.send({status:"success", message:"user added",data:lin})
+					 }).catch(next)
+				 })
+				 })
+				 
+	 } else {
+			 res.status(422).send({status: "failure", errors: {user:"user doesn't exist"}});
+	 }
+}).catch(next);
+});
 
 router.post('/savePassword',
 	check('password').exists().isLength({ min: 6}).withMessage('password length should be minimum 6 letters'),
@@ -1491,8 +1540,8 @@ router.post('/search1',
 	AccessControl('venue', 'read'),
 	(req, res, next) => {
 	User.find({$and:[{ $or: [{"name":{ "$regex": req.body.search, "$options": "i" }}, {"handle":{ "$regex": req.body.search, "$options": "i"}}]},{'handle':{$exists:true,$ne:null }} ]},{__v:0,token:0,otp:0,activity_log:0}).then(user=>{
-		Venue.find({"venue.name":{ "$regex": req.body.search, "$options": "i" }}).then(venue=>{
-		Event.find({"event.name":{ "$regex": req.body.search, "$options": "i" },"start_date":{$gte:new Date()}}).lean().populate('venue').then(event=>{
+		Venue.find({"venue.name":{ "$regex": req.body.search, "$options": "i" },status:true}).then(venue=>{
+		Event.find({"event.name":{ "$regex": req.body.search, "$options": "i" },status:true,"start_date":{$gte:new Date()}}).lean().populate('venue').then(event=>{
 			Offers.find({}).then(offers=>{
 			let combinedResult
 			let list = []
@@ -1595,10 +1644,11 @@ router.post('/search_users',
 	verifyToken,
 	AccessControl('venue', 'read'),
 	(req, res, next) => {
-	// User.find({$and:[{_id:{$nin:[req.userId]}},{ $or: [{"name":{ "$regex": req.body.search, "$options": "i" }},{"handle":{ "$regex": req.body.search, "$options": "i" }}]}]}).select("name handle _id name_status profile_picture following visibility").then(user=>{		
-		User.find({$and:[{_id:{$nin:[req.userId]}},{ $or: [{"name":{ "$regex": req.body.search, "$options": "i" }}, {"handle":{ "$regex": req.body.search, "$options": "i" }}]}]},{__v:0,token:0,otp:0,activity_log:0}).then(user=>{
-
-		let finalResult = [...user]
+	 User.find({$and:[{_id:{$nin:[req.userId]}},{ $or: [{"name":{ "$regex": req.body.search, "$options": "i" }},{"handle":{ "$regex": req.body.search, "$options": "i" }}]}, {'handle':{$exists:true,$ne:null }}]}).select("name handle _id name_status profile_picture following visibility").then(user=>{		
+		//User.find({$and:[{_id:{$nin:[req.userId]}},{ $or: [{"name":{ "$regex": req.body.search, "$options": "i" }}, {"handle":{ "$regex": req.body.search, "$options": "i" }},]}]},{__v:0,token:0,otp:0,activity_log:0}).then(user=>{
+			//User.find({$and:[{ $or: [{"name":{ "$regex": req.body.search, "$options": "i" }}, {"handle":{ "$regex": req.body.search, "$options": "i"}}]},{'handle':{$exists:true,$ne:null }} ]},{__v:0,token:0,otp:0,activity_log:0}).then(user=>{
+		let finalResult = user
+			console.log(finalResult.length)
 			res.send({status:"success", message:"venues and events fetched based on search", data:finalResult})
 		}).catch(next)
 })

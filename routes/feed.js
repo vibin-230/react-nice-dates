@@ -139,7 +139,8 @@ return Math.round(milliseconds / 36e5);
 }
 
 router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
-    User.findById({_id: req.userId},{activity_log:0}).lean().then(user=> {
+    User.findOne({_id: req.userId,'handle':{$exists:true,$ne:null }}).lean().then(user=> {
+      if(user && user.handle){
       let following = user.following
          following = following.concat(req.userId)
           // const date = moment().add(5,'hours').add(30,'minutes')
@@ -222,6 +223,7 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
   
         }).catch(next)
       }).catch(next)
+    }
     }).catch(next)
     //}).catch(next)
   

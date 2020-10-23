@@ -4378,8 +4378,8 @@ router.post('/booking_history', verifyToken, (req, res, next) => {
   Booking.find(cancel_filter).lean().populate('venue_data','venue').then(cancel_booking=>{
     EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
       EventBooking.find(cancel_filter).lean().populate('event_id').then(cancel_event_booking=>{
-        result = Object.values(combineSlots(booking))
-         result1 = Object.values(combineSlots(cancel_booking))
+        result = Object.values(combineSlots1(booking))
+         result1 = Object.values(combineSlots1(cancel_booking))
       //result = [...result,...eventBooking]
          result = [...result,...result1,...eventBooking,...cancel_event_booking]
         let finalResult = result.sort((a, b) => moment(a.start_time).format("YYYYMMDDHHmm") > moment(b.start_time).format("YYYYMMDDHHmm") ? 1 : -1 )
@@ -4414,8 +4414,8 @@ router.post('/past_bookings', verifyToken, (req, res, next) => {
   Booking.find(cancel_filter).lean().populate('venue_data','venue').then(cancel_booking=>{
     EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
       EventBooking.find(cancel_filter).lean().populate('event_id').then(cancel_event_booking=>{
-        result = Object.values(combineSlots(booking))
-        result1 = Object.values(combineSlots(cancel_booking))
+        result = Object.values(combineSlots1(booking))
+        result1 = Object.values(combineSlots1(cancel_booking))
         result = [...result,...result1]
         let event_result =[...eventBooking,...cancel_event_booking]
         let booking_data = result.filter((key)=>{
@@ -4617,7 +4617,7 @@ router.post('/upcoming_booking', verifyToken, (req, res, next) => {
   //req.role==="super_admin"?delete filter.created_by:null
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
     EventBooking.find(eventFilter).lean().populate('event_id').then(eventBooking=>{
-        result = Object.values(combineSlots(booking))
+        result = Object.values(combineSlots1(booking))
         let booking_data =result.filter((key)=>{
           if(key && Math.round(moment(key.end_time).utc().format("YYYYMMDDHHmm")) > Math.round(moment().add(330,"minutes").format("YYYYMMDDHHmm"))){
             return key

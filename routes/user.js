@@ -1987,8 +1987,10 @@ router.post('/host_block_slot/:id', verifyToken, (req, res, next) => {
     }).catch(next);
   }
 
+  
+
 //Slot Booked
-router.post('/book_slot', verifyToken, (req, res, next) => {
+router.post('/book_slot1', verifyToken, (req, res, next) => {
   function BookSlot(body,id){
     return new Promise(function(resolve, reject){
       Booking.findByIdAndUpdate({_id:body._id},{booking_status:"booked", transaction_id:body.transaction_id, booking_amount:body.booking_amount,coupon_amount:body.coupon_amount,coupons_used:body.coupons_used, multiple_id:id,coins:body.coins}).lean().then(booking=>{

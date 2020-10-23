@@ -284,7 +284,7 @@ router.post('/venue_list', verifyToken, (req, res, next) => {
             console.log('redis comeback',reply);
           });
 
-          res.status(201).send(list.slice(0,7));
+          res.status(201).send(list);
       }).catch(next);
     }).catch(next);
   }).catch(next)

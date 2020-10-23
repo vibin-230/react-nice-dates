@@ -20,6 +20,8 @@ const mail = require('../scripts/mail');
 const sh = require("shorthash");
 const _ = require('lodash');
 const combineSlots = require('../scripts/combineSlots')
+const combineSlots1 = require('../scripts/combineSlots1')
+
 const combineRepeatSlots = require('../scripts/combineRepeatedSlots')
 const upload = require("../scripts/aws-s3")
 const uploadPDF = require("../scripts/aws-s3-pdf")
@@ -2119,6 +2121,8 @@ router.post('/book_slot1', verifyToken, (req, res, next) => {
   })
 })
 
+
+//old migration users changed combineslot to combineslot1
 router.post('/book_slot', verifyToken, (req, res, next) => {
   function BookSlot(body,id){
     return new Promise(function(resolve, reject){
@@ -2143,7 +2147,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
     var data = {
       amount:req.body[0].booking_amount*100
     }
-   var result = Object.values(combineSlots([...values]))
+   var result = Object.values(combineSlots1([...values]))
     //Capture Payment
   if(req.body[0].transaction_id && req.body[0].transaction_id !== 'free_slot'){
   

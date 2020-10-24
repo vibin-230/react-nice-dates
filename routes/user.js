@@ -1548,10 +1548,41 @@ router.post('/send_new_user', (req, res, next) => {
           })
         }).catch(next)
 });
-
-
-//Verify OTP
 router.post('/verify_otp', (req, res, next) => {
+  User.findOne({phone: req.body.phone}).then(user=> {
+    // create a token
+    var token;
+      if(user.otp===req.body.otp){
+          User.findOneAndUpdate({phone: req.body.phone},{token,last_login:moment()}).then(user=>{
+            User.findOne({phone: req.body.phone},{__v:0,token:0,activity_log:0},null).then(user=> {
+            if(user.email){
+              token = jwt.sign({ id: user._id, phone:user.phone, role:"user", name:user.name }, config.secret);
+              res.status(201).send({status:"success", message:"existing user", token:token, data:user})
+              
+              //Activity Log
+              // let activity_log = {
+              //   datetime: new Date(),
+              //   id:req.userId,
+              //   user_type: "user",
+              //   activity: "login",
+              //   name:user.name,
+              //   message: user.name + " Logged in successfully",
+              // }
+              // ActivityLog(activity_log)
+            }else{
+              token = jwt.sign({ id: user._id, phone:user.phone, role:"user", name:user.name}, config.secret);
+              res.status(201).send({status:"success", message:"new user", token:token})
+            }
+          }).catch(next);
+        }).catch(next);
+      }else{
+        res.status(422).send({status:"failure", errors:{otp:"incorrect otp"}})
+      }
+  }).catch(next);
+});
+
+//Verify OTP new build
+router.post('/verify_otp1', (req, res, next) => {
   User.findOne({phone: req.body.phone}).then(user=> {
     // create a token
     var token;

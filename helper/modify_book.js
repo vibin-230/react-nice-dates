@@ -59,6 +59,7 @@ module.exports = function BookSlot(body,id,booking_id,params,req,res,next){
               user_id:body.user_id,
               transaction_id:body.transaction_id,
               game:true,
+              old_booking:false,
               sport_name:body.sport_name,
               venue_type:body.venue_type,
               amount:body.amount,

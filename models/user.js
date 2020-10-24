@@ -57,7 +57,7 @@ const schema = new Schema({
   sports_interest:Array,
   activity_log:Array,
   online_status:String,
-  handle:{type: String, unique: true },
+  handle:String,
   status:{type:Boolean, default:true}
 });
 

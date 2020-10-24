@@ -1369,7 +1369,7 @@ router.post('/send_otp',[
 
 
 
-
+//new build
 router.post('/send_otp1',[
   check('phone').isLength({ min: 10, max: 10 }).withMessage('phone number must be 10 digits long'),
 ], (req, res, next) => {

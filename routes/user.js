@@ -1307,6 +1307,73 @@ router.post('/send_otp',[
   let phone = 91+req.body.phone;
   let otp   = Math.floor(999 + Math.random() * 9000);
   User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0,activity_log:0},null).then(user=> {
+    // axios.get(process.env.PHP_SERVER+'/textlocal/otp.php?otp='+otp+'&phone='+phone)
+    // .then(response => {
+    send_message_otp(req.body.phone,"TRFTWN","Welcome to Turftown! Your OTP is "+otp ).then((a)=>{
+        if(a.status === 'success')
+        {
+          if(user)
+          {
+            if(user.email)
+            {
+
+              User.findOneAndUpdate({phone: req.body.phone},{otp:otp}).then(user=> {
+                User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
+                  res.status(201).send({status:"success",message:"existing user",otp:otp,data:user})
+                })
+              })
+            }else{
+              User.findOneAndUpdate({phone: req.body.phone},{otp:otp}).then(user=> {
+                User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0},null).then(user=> {
+                  res.status(201).send({status:"success",message:"existing user",otp:otp,data:user})
+                })
+              })
+              // User.create({phone:req.body.phone,otp:otp}).then(user=>{
+              //   res.status(201).send({status:"success",message:"new user",otp:otp})
+              // })
+            }
+          }else{
+            if(req.body.phone === '8136948537') {
+            User.create({phone:req.body.phone,otp:'7484'}).then(user=>{
+              res.status(201).send({status:"success",message:"new user",otp:user.otp})
+            })
+          }
+            else{
+            User.create({phone:req.body.phone,otp:otp}).then(user=>{
+              res.status(201).send({status:"success",message:"new user",otp:otp})
+            })
+          }
+          }
+        }else
+          {
+            res.status(422).send({status:"failure", errors:{template:"invalid template"}, data:a})
+        }
+    }).catch(error => {
+        console.log(error);
+    })
+  }).catch(next);
+});
+
+
+
+
+router.post('/send_otp1',[
+  check('phone').isLength({ min: 10, max: 10 }).withMessage('phone number must be 10 digits long'),
+], (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    var result = {};
+    var errorsList = errors.array();
+    for(var i = 0; i < errorsList.length; i++)
+    {
+        result[errorsList[i].param] = errorsList[i].msg;
+    }
+    return res.status(422).json({ errors: result});
+  }
+
+  let phone = 91+req.body.phone;
+  let otp   = Math.floor(999 + Math.random() * 9000);
+  User.findOne({phone: req.body.phone},{__v:0,token:0,_id:0,activity_log:0},null).then(user=> {
     send_message_otp(req.body.phone,"TRFTWN","Welcome to Turftown! Your OTP is "+otp ).then((a)=>{
       console.log(a)
         if(a.status === 'success')

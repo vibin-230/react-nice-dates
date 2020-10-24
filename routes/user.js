@@ -4567,17 +4567,19 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
   let filter = {
     booking_status:{$in:["booked"]},
     created_by:req.userId,
-    game:true
+    game:false
   }
 
-  let old_filter = {
-    booking_status:{$in:["booked"]},
-    created_by:req.userId,
+  // let old_filter = {
+  //   booking_status:{$in:["booked"]},
+  //   created_by:req.userId,
+  //   game:false
     
-  }
+  // }
   let cancel_filter = {
     booking_status:{$in:["cancelled","completed"]},
     created_by:req.userId,
+    game:false
   }
   let eventFilter = {
     booking_status:{$in:["booked"]},
@@ -4587,14 +4589,14 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
 
   //req.role==="super_admin"?delete filter.created_by:null
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
-    Booking.find(old_filter).lean().populate('venue_data','venue').then(old_booking=>{
+    // Booking.find(old_filter).lean().populate('venue_data','venue').then(old_booking=>{
     Booking.find(cancel_filter).lean().populate('venue_data','venue').then(cancelledBookings=>{
     EventBooking.find(eventFilter).lean().populate({path:"event_id",populate:{path:"venue"}}).then(eventBooking=>{
       EventBooking.find(cancel_filter).lean().populate({path:"event_id",populate:{path:"venue"}}).then(cancelledeventBooking=>{
       Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate('venue','venue'). populate("host","name _id handle name_status profile_picture").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
-        result = Object.values(combineSlots1(booking))
-        let result1 = Object.values(combineSlots1(old_booking))
-        cancelled_bookings =  Object.values(combineSlots1(cancelledBookings))
+        result = Object.values(combineSlots(booking))
+        // let result1 = Object.values(combineSlots1(old_booking))
+        cancelled_bookings =  Object.values(combineSlots(cancelledBookings))
         game.map((key)=>{
          key["end_time"] = key.conversation && key.conversation.end_time ? key.conversation.end_time : key.bookings[key.bookings.length-1].end_time 
         })
@@ -4616,7 +4618,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         })
 
          event_booking_data.reverse()
-         booking_data = req.body.type && req.body.type === 'host' ?[...open_games,...event_booking_data,...result,...result1]:[...game,...event_booking_data,...result,...result1]
+         booking_data = req.body.type && req.body.type === 'host' ?[...open_games,...event_booking_data,...result]:[...game,...event_booking_data,...result]
          var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{
             (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
@@ -4648,7 +4650,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
   }).catch(next)
 }).catch(next)
 
-}).catch(next)
+// }).catch(next)
 }).catch(next)
 })
 

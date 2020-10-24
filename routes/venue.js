@@ -220,7 +220,74 @@ function findTime() {
 }
 
 
-router.post('/venue_list', verifyToken, (req, res, next) => {
+
+router.post('/venue_list', (req, res, next) => {
+  function findDay() {
+    var d = new Date();
+    var weekday = new Array(7);
+    weekday[0] = "sunday";
+    weekday[1] = "monday";
+    weekday[2] = "tuesday";
+    weekday[3] = "wednesday";
+    weekday[4] = "thursday";
+    weekday[5] = "friday";
+    weekday[6] = "saturday";
+    var n = weekday[d.getDay()];
+    return n
+  }
+  let zipcode;
+  // axios.get('https://maps.googleapis.com/maps/api/geocode/json?latlng='+req.body.latLong[0]+','+req.body.latLong[1]+'&key=AIzaSyAJUmuoOippG_r1aw3e32kW1ceIA3yexHQ').then(response=>{
+  //     console.log(response);
+  //   if(response.data.error_message){
+  //     zipcode = "600017"
+  //   }else{
+  //     zipcode = Object.values(response.data.results[0].address_components).filter(value=>value.types[0]==='postal_code')
+  //     zipcode = zipcode[0].long_name
+  //   }
+  //   if(parseInt(zipcode, 10) > 700000 || parseInt(zipcode, 10) < 600000){
+  //     res.status(409).send({status:"failed", message: "No venues available at this location"})
+  //   }else{
+      Venue.find({type:req.body.sport_type, "configuration.types":{$in:[req.body.venue_type]},status:true},{bank:0, offers:0, access:0}).lean().then(venue=>{
+        Offer.find({status:true}).then(offers=>{
+          Coupon.find({status:true}).then(coupon=>{  
+          var list = Object.values(venue).map((value,index)=>{
+              let distance = getDistanceFromLatLonInKm(req.body.latLong[0] ?req.body.latLong[0]:13.0828 ,req.body.latLong[1] ? req.body.latLong[1] :80.2417 ,value.venue.latLong[0],value.venue.latLong[1])
+              let featured = value.featured.filter(featured=>featured.zipcode==zipcode)
+             
+              let pricing = Object.values(value.configuration.pricing).filter(price=>price.day===findDay())
+              let highestPricing = getPrice(pricing[0].rate)
+              let price = pricing[0].rate[0].pricing
+              let types = pricing[0].rate[0].types
+              let rating = Object.values(value.rating).reduce((a,b)=>{
+                let c = a+b.rating.rating
+                return c
+              },0)
+              rating = rating/value.rating.length
+              let zCode = (featured.length>0?featured[0].type*20:0)+(value.exclusive?1*3:0)+(value.new?1*0.5:0)+(price?price*0.5:0)-(distance?distance*1:0)+(rating?rating*2:0)
+              value.z_code = zCode
+              value.rating = value.rating
+              value.distance = distance.toFixed(2)
+              value.displacement = distance
+              value.pricing = Math.round(getValue(req.body.venue_type,highestPricing,types))
+              let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
+              let filteredCoupon = Object.values(coupon).filter(coupon=>coupon.venue.indexOf(value._id)!== -1)
+              value.offers = filteredOffer
+              value.coupon = filteredCoupon
+              return value
+          })
+          list.sort(function(a, b) {
+              return a.displacement - b.displacement;
+          });
+          res.status(201).send(list);
+      }).catch(next);
+    }).catch(next);
+  }).catch(next)
+  //   }
+  // }).catch(next);
+});
+
+
+router.post('/venue_list1', verifyToken, (req, res, next) => {
   function findDay() {
     var d = new Date();
     var weekday = new Array(7);

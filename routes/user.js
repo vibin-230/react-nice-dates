@@ -454,11 +454,24 @@ function getLevel(x){
   }
 
 }
-
-
-
-
 router.post('/get_user', [
+  verifyToken,
+], (req, res, next) => {
+      //Check if user exist
+      User.findOne({_id: req.userId},{activity_log:0}).then(user=> {
+        User.findByIdAndUpdate({_id: req.userId},{version:'26'}).then(user1=>{
+        if (user) {
+          res.status(201).send({status: "success", message: "user collected",data:user})
+        } else {
+            res.status(422).send({status: "failure", errors: {user:"force update failed"}});
+        }
+    }).catch(next);
+  }).catch(next);
+});
+
+
+
+router.post('/get_user1', [
   verifyToken,
 ], (req, res, next) => {
       //Check if user exist

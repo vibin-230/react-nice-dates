@@ -652,7 +652,8 @@ function getZcode(game,location,venue,viewd,a,players,joins,friend){
 router.post('/user_suggest/:id', [
   verifyToken,
 ], (req, res, next) => {
-  User.findOne({_id: req.params.id},{'handle':{$exists:true,$ne:null }}).lean().then(user=> {
+  User.findOne({_id: req.params.id,'handle':{$exists:true,$ne:null }}).lean().then(user=> {
+    if(user){
     Game.find({$or:[{host:{$in:[req.params.id]}},{users:{$in:[req.params.id]}}]}).then((game)=>{
        const filter  = {$or:[{members:[req.params.id],type:'group'}]}
       Conversation.find({$or:[{host:{$in:[req.params.id]}},{users:{$in:[req.params.id]}}]}).then((game)=>{
@@ -701,6 +702,11 @@ router.post('/user_suggest/:id', [
 }).catch(next)
 }).catch(next)
 }).catch(next)
+
+}
+else {
+  res.status(201).send({status: "success", message: "user suggestion list fetched",data:[]})
+}
 }).catch(next)
 
 

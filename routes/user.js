@@ -1439,8 +1439,18 @@ router.post('/send_otp1',[
 
 
 router.post('/remove_temp_user', (req, res, next) => {
-      User.findOneAndDelete({phone:req.body.phone,temporary:true}).then(u=>{console.log('user deleted')
-    }).catch(next)
+  User.findOne({phone:req.body.phone,temporary:true}).then(g=>{
+    if(g){
+      User.findOneAndDelete({phone:req.body.phone,temporary:true}).then(u=>{
+        console.log('user deleted')
+        res.send({status:"success", message:"user deleted"})
+
+       }).catch(next)
+    }
+    else {
+      res.send({status:"success", message:"user didn't found"})
+    }  
+  }).catch(next)
 });
 
 router.post('/edit_game_status', (req, res, next) => {

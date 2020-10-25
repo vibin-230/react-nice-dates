@@ -1439,7 +1439,8 @@ router.post('/send_otp1',[
 
 
 router.post('/remove_temp_user', (req, res, next) => {
-      User.findOneAndDelete({phone:req.body.phone,temporary:true}).then(u=>console.log('user deleted'))
+      User.findOneAndDelete({phone:req.body.phone,temporary:true}).then(u=>{console.log('user deleted')
+    }).catch(next)
 });
 
 router.post('/edit_game_status', (req, res, next) => {

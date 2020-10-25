@@ -25,6 +25,10 @@ const schema = new Schema({
     type:Boolean,
     default:false
   },
+  old_booking:{
+    type:Boolean,
+    default:false
+  },
   no_charge:Boolean,
   group_id:String,
   group_name:String,

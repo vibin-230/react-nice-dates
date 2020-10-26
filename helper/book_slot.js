@@ -67,7 +67,7 @@ module.exports = function BookSlot(body,id,booking_id,params,req,res,next){
               start_time:body.start_time,
               end_time:body.end_time,
               slot_time:body.slot_time,
-              booking_amount:body.booking_amount,
+              booking_amount:body.booking_amount/(req.body.length),
               multiple_id:id,
               name:body.name,
               email:body.email,

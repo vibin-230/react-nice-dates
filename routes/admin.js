@@ -730,12 +730,85 @@ router.post('/venue_manager',
 	verifyToken,
 	AccessControl('venue_manager', 'read'),
 	(req, res, next) => {
-	VenueManager.find({role:"venue_manager"},{activity_log:0}).lean().populate('venue','_id name venue type').populate('staff','_id name').then(venue=>{
+	Admin.find({role:"venue_manager"},{activity_log:0}).lean().populate('venue','_id name venue type').then(venue=>{
 		res.send({status:"success", message:"venue managers fetched", data:venue})
 	}).catch(next)
 })
 
+router.post('/add_venue_manager',
+	verifyToken,
+	AccessControl('venue_manager', 'create'),
+	(req, res, next) => {
+	req.body.created_by = req.username
+	Admin.findOne({username:req.body.username}).then(venueManager=>{
+		if(venueManager){
+			res.send({status:"failure", message:"Email-id already exist"})
+		}else{
+			req.body.role = "venue_manager";
+			req.body.reset_password_hash = mongoose.Types.ObjectId();
+			req.body.reset_password_expiry = moment().add(1,"days")
+			Admin.create(req.body).then(venueManager=>{
+				var id = mongoose.Types.ObjectId();
+				let reset_url = process.env.DOMAIN+"reset-password/"+req.body.reset_password_hash
+				let mailBody = {
+					name:data.name,
+					link:reset_url
+				}
+				// ejs.renderFile('views/set_password/set_password.ejs',mailBody).then(html=>{search
+				// 	mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
+				// 		if(response){
+				// 			let body = {
+				// 			reset_password_expiry:moment().add(1,"days"),
+				// 			reset_password_hash:id
+				// 			}
+				// 			// res.send({status:"success"})
+				// 		}else{
+				// 			// res.send({status:"failed"});
+				// 		}
+				// 	})
+				// }).catch(next)
+				let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
+				mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
+					if(response){
+					  res.send({status:"success"})
+					}else{
+					  res.send({status:"failed"})
+					}
+				})
+				Venue.find({_id:{$in:venueManager.venue}},{_id:1, name:1, venue:1, type:1}).lean().then(venue=>{
+					venueManager.venue = venue
+					res.send({status:"success", message:"venue manager added", data:venueManager})
+					ActivityLog(req.userId, req.username, req.role, 'venue manager created', req.name+" created venue manager "+venueManager.name)
+				}).catch(next)
+			}).catch(next)
+		}
+	}).catch(next)
+})
 
+router.put('/edit_venue_manager/:id',
+	verifyToken,
+	AccessControl('venue_manager', 'update'),
+	(req, res, next) => {
+	req.body.modified_by = req.username
+	Admin.findByIdAndUpdate({_id:req.params.id},req.body).then(venueManager=>{
+		Admin.findById({_id:req.params.id}).lean().populate('venue','_id name venue type').then(venueManager=>{
+			res.send({status:"success", message:"venue manager edited", data:venueManager})
+			ActivityLog(req.userId, req.username, req.role, 'venue manager modified', req.name+" modified venue manager "+venueManager.name)
+		}).catch(next)
+	}).catch(next)
+})
+
+router.delete('/delete_venue_manager/:id',
+	verifyToken,
+	AccessControl('venue_manager', 'delete'),
+	(req, res, next) => {
+		Admin.findByIdAndRemove({_id:req.params.id}).then(deletedVenueManager=>{
+			Admin.find({},{activity_log:0}).then(venueManager=>{
+			res.send({status:"success", message:"venue manager deleted", data:[]})
+			ActivityLog(req.userId, req.username, req.role, 'venue manager deleted', req.name+" deleted venue manager "+deletedVenueManager.name)
+		}).catch(next)
+	}).catch(next)
+})
 // router.post('/add_venue_manager',
 // 	verifyToken,
 // 	AccessControl('venue_manager', 'create'),
@@ -968,6 +1041,55 @@ router.post('/add_venue_manager',
 	AccessControl('venue_manager', 'create'),
 	(req, res, next) => {
 	req.body.created_by = req.username
+	Admin.findOne({username:req.body.username}).then(venueManager=>{
+		if(venueManager){
+			res.send({status:"failure", message:"Email-id already exist"})
+		}else{
+			req.body.role = "venue_manager";
+			req.body.reset_password_hash = mongoose.Types.ObjectId();
+			req.body.reset_password_expiry = moment().add(1,"days")
+			Admin.create(req.body).then(venueManager=>{
+				var id = mongoose.Types.ObjectId();
+				let reset_url = process.env.DOMAIN+"reset-password/"+req.body.reset_password_hash
+				let mailBody = {
+					name:data.name,
+					link:reset_url
+				}
+				// ejs.renderFile('views/set_password/set_password.ejs',mailBody).then(html=>{search
+				// 	mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
+				// 		if(response){
+				// 			let body = {
+				// 			reset_password_expiry:moment().add(1,"days"),
+				// 			reset_password_hash:id
+				// 			}
+				// 			// res.send({status:"success"})
+				// 		}else{
+				// 			// res.send({status:"failed"});
+				// 		}
+				// 	})
+				// }).catch(next)
+				let html = "<h4>Please click here to reset your password</h4><a href="+reset_url+">Reset Password</a>"
+				mail("support@turftown.in", req.body.username,"Reset Password","test",html,response=>{
+					if(response){
+					  res.send({status:"success"})
+					}else{
+					  res.send({status:"failed"})
+					}
+				})
+				Venue.find({_id:{$in:venueManager.venue}},{_id:1, name:1, venue:1, type:1}).lean().then(venue=>{
+					venueManager.venue = venue
+					res.send({status:"success", message:"venue manager added", data:venueManager})
+					ActivityLog(req.userId, req.username, req.role, 'venue manager created', req.name+" created venue manager "+venueManager.name)
+				}).catch(next)
+			}).catch(next)
+		}
+	}).catch(next)
+})
+router.post('/add_venue_manager1',
+	verifyToken,
+	AccessControl('venue_manager', 'create'),
+	(req, res, next) => {
+	req.body.created_by = req.username
 	VenueManager.findOne({username:req.body.username}).then(venueManager=>{
 		if(venueManager){
 			res.send({status:"failure", message:"Email-id already exist"})
@@ -1004,7 +1126,7 @@ router.post('/add_venue_manager',
 	}).catch(next)
 })
 
-router.put('/edit_venue_manager/:id',
+router.put('/edit_venue_manager1/:id',
 	verifyToken,
 	// AccessControl('venue_manager', 'update'),
 	(req, res, next) => {
@@ -1018,7 +1140,7 @@ router.put('/edit_venue_manager/:id',
 })
 
 
-router.delete('/delete_venue_manager/:id',
+router.delete('/delete_venue_manager1/:id',
 	verifyToken,
 	// AccessControl('venue_manager', 'delete'),
 	(req, res, next) => {

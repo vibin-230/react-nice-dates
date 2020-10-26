@@ -671,8 +671,8 @@ router.post('/user_suggest/:id', [
           console.log(final_users,'final_users');
           console.log(final_users1,'final_users1');
           User.find({_id: {$in :final_users1}},{name:1,_id:1,profile_picture:1,followers:1,following:1}).lean().then(userA=>{
-    User.find({_id: {$nin :all}},{name:1,_id:1,profile_picture:1,handle:1,name_status:1}).lean().then(userN=>{
-    User.find({_id: {$in :final_users}},{name:1,_id:1,profile_picture:1,handle:1,name_status:1}).lean().then(user1=>{
+    User.find({_id: {$nin :all}},{name:1,_id:1,profile_picture:1,handle:1,name_status:1,visibility:1}).lean().then(userN=>{
+    User.find({_id: {$in :final_users}},{name:1,_id:1,profile_picture:1,handle:1,name_status:1,visibility:1}).lean().then(user1=>{
           const yet_to_click_follow_users = user1.map((a)=> Object.assign(a,{zcode:40}))
           const usersas = userA.map((a)=>{
             return [...a.followers,...a.following]
@@ -818,7 +818,7 @@ router.post('/get_chatrooms_for_share/:id', [
 router.post('/sync_contacts', [
   verifyToken,
 ], (req, res, next) => {
-  User.findById({_id: req.userId},{activity_log:0}).lean().then(user=> {
+  User.findById({_id: req.userId,'handle':{$exists:true,$ne:null }},{activity_log:0}).lean().then(user=> {
 
     if(user.handle && user.sync_contacts){
       Contacts.findOne({user_id:req.userId}).then((c)=>{
@@ -900,6 +900,9 @@ router.post('/sync_contacts', [
         
     }).catch(next)
       }).catch(next)
+    }
+    else {
+      res.status(201).send({status: "success", message: "common users collected",data:[]}) 
     }
   }).catch(next)
 });
@@ -4598,6 +4601,10 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
     created_by:req.userId,
     game:false
   }
+  let cancel_filter1 = {
+    booking_status:{$in:["cancelled","completed"]},
+    created_by:req.userId,
+  }
   let eventFilter = {
     booking_status:{$in:["booked"]},
     created_by:req.userId,
@@ -4609,7 +4616,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
     // Booking.find(old_filter).lean().populate('venue_data','venue').then(old_booking=>{
     Booking.find(cancel_filter).lean().populate('venue_data','venue').then(cancelledBookings=>{
     EventBooking.find(eventFilter).lean().populate({path:"event_id",populate:{path:"venue"}}).then(eventBooking=>{
-      EventBooking.find(cancel_filter).lean().populate({path:"event_id",populate:{path:"venue"}}).then(cancelledeventBooking=>{
+      EventBooking.find(cancel_filter1).lean().populate({path:"event_id",populate:{path:"venue"}}).then(cancelledeventBooking=>{
       Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate('venue','venue'). populate("host","name _id handle name_status profile_picture").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
         result = Object.values(combineSlots(booking))
         // let result1 = Object.values(combineSlots1(old_booking))
@@ -4630,7 +4637,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         let cancelledeventBooking1 = cancelledeventBooking.filter(a => a.event_id).map((a)=>{
           a['start_time'] = a.event_id.start_date
           a['event'] = a.event_id
-          a["end_time"] = a.event_id.start_date
+          a["end_time"] = moment(a.event_id.start_date).utc().format()
           return a
         })
 

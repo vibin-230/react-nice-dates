@@ -2693,11 +2693,11 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
         let phone_numbers =admins.map((admin,index)=>"91"+admin.phone)
         let manger_numbers = [...phone_numbers,manager_phone]
         let venue_discount_coupon = Math.round(result[0].commission+result[0].coupon_amount) == 0 ? "Venue Discount:0" : result[0].commission == 0 && result[0].coupon_amount !== 0 ? `TT Coupon:${result[0].coupon_amount}` : result[0].commission !== 0 && result[0].coupon_amount == 0 ? `Venue Discount:${result[0].commission}` : `Venue Discount:${result[0].commission}\nTT Coupon:${result[0].coupon_amount}`  
-        let balance = Math.round(result[0].amount)-Math.round(result[0].coupon_amount)-Math.round(result[0].booking_amount)-Math.round(result[0].commission)
+        let balance = Math.round(result[0].amount)-Math.round(result[0].coupon_amount)-Math.round(result[0].booking_amount)-Math.round(result[0].commission)-Math.round(result[0].coins)
         let SLOT_BOOKED_USER =`Hey ${values[0].name}! Thank you for using Turf Town!\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${Math.round(result[0].booking_amount)}\nBalance to be paid : ${Math.round(balance)}`
         let SLOT_BOOKED_MANAGER = `You have recieved a TURF TOWN booking from ${values[0].name} ( ${values[0].phone} ) \nBooking Id: ${booking_id}\nVenue: ${venue_name}, ${venue_area}\nSport: ${sport_name}(${venue_type})\nDate and Time: ${datetime}\nPrice: ${Math.round(result[0].amount)}\nAmount Paid: ${Math.round(result[0].booking_amount)}\nVenue Discount: ${Math.round(result[0].commission)}\nTT Coupon: ${Math.round(result[0].coupon_amount)}\nAmount to be collected: ${Math.round(balance)}` //490618
         let sender = "TRFTWN"
-        let SLOT_BOOKED_GAME_USER =`Hey ${values[0].name}! Thank you for using Turf Town! Your Game has been created .\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${Math.round(result[0].booking_amount)}\nBalance to be paid : ${Math.round(balance)}`
+        let SLOT_BOOKED_GAME_USER =`Hey ${values[0].name}! Thank you for using Turf Town! Your Game has been created .\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${Math.round(result[0].booking_amount)}\nTT Coins : ${Math.round(result[0].coins)}\nBalance to be paid : ${Math.round(balance)}`
 
         // SendMessage(phone,sender,SLOT_BOOKED_USER) // sms to user
        notifyRedirect(user,SLOT_BOOKED_GAME_USER)

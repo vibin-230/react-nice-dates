@@ -2698,7 +2698,7 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
         let SLOT_BOOKED_MANAGER = `You have recieved a TURF TOWN booking from ${values[0].name} ( ${values[0].phone} ) \nBooking Id: ${booking_id}\nVenue: ${venue_name}, ${venue_area}\nSport: ${sport_name}(${venue_type})\nDate and Time: ${datetime}\nPrice: ${Math.round(result[0].amount)}\nAmount Paid: ${Math.round(result[0].booking_amount)}\nVenue Discount: ${Math.round(result[0].commission)}\nTT Coupon: ${Math.round(result[0].coupon_amount)}\nAmount to be collected: ${Math.round(balance)}` //490618
         let sender = "TRFTWN"
         let SLOT_BOOKED_GAME_USER =`Hey ${values[0].name}! Thank you for using Turf Town! Your Game has been created .\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${Math.round(result[0].booking_amount)}\nTT Coins : ${Math.round(result[0].coins)}\nBalance to be paid : ${Math.round(balance)}\n`
-
+        console.log("Sdsds",SLOT_BOOKED_GAME_USER)
         // SendMessage(phone,sender,SLOT_BOOKED_USER) // sms to user
        notifyRedirect(user,SLOT_BOOKED_GAME_USER)
 
@@ -3035,6 +3035,9 @@ router.post('/modify_booking/:id', verifyToken, (req, res, next) => {
     }
     if(req.body.commission){
       req.body.commission = req.body.commission/booking.length
+    }
+    if(req.body.booking_amount){
+      req.body.booking_amount = req.body.booking_amount/booking.length
     }
     Booking.updateMany({booking_id:req.params.id},req.body,{multi:true}).then(booking=>{
       Booking.find({booking_id:req.params.id}).then(booking=>{
@@ -3453,7 +3456,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
             console.log(error.response.data)
           }).catch(next);
         }else{
-          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true,refund_status:true,game:false,}},{multi:true}).then(booking=>{ ////user cancellation without refund
+          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled",refund_status:false,game:false,}},{multi:true}).then(booking=>{ ////user cancellation without refund
             Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
               if(booking[0].game){
                 Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
@@ -3681,7 +3684,7 @@ router.post('/cancel_game_booking/:id', verifyToken, (req, res, next) => {
             console.log(error.response.data)
           }).catch(next);
         }else{
-          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true,refund_status:true,game:false,}},{multi:true}).then(booking=>{ ////user cancellation without refund
+          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled",refund_status:false,game:false,}},{multi:true}).then(booking=>{ ////user cancellation without refund
             Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
                 Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
                   Message.create({conversation:game.conversation,message:`Hey ! slot has been cancelled .No refund for this slot. Please book your slot to confirm the game`,name:'bot',read_status:false,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{

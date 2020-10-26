@@ -1,35 +1,65 @@
 const aws = require('aws-sdk')
 const fs = require('fs');
 const path = require('path');
+// Enter copied or downloaded access ID and secret key here
+const ID = '';
+const SECRET = '';
 
-aws.config.update({
-    secretAccessKey: "9SkVgIrzjl+PoiOZ5AVMDSHxkQzuS+qt4gYG8BS+",
-    accessKeyId: "AKIAJCWCKO7WP7A6PPYQ",
-    region: "ap-south-1"
+// The name of the bucket that you have created
+const BUCKET_NAME = 'test-bucket';
+const sharp = require('sharp');
+
+
+const s3 = new aws.S3({
+  secretAccessKey: "avHeiNwn0HtgdCBsazJ6I2NK8xFQOD7NXzV3yt5T",
+  accessKeyId: "AKIAIYDNYTYVGSDGQ2QA",
+  region: "ap-south-1"
 })
 
-const s3 = new aws.S3()
+const paramsToCreateBucket = {
+  Bucket: 'totalnewone',
+  CreateBucketConfiguration: {
+      // Set your region here
+      LocationConstraint: "ap-south-1"
+  }
+};
 
-const upload = (filename,folder,message,res) =>{
-    var filePath = "./assets/"+filename;
-    //configuring parameters
-    var params = {
-    Bucket: 'turftown',
-    Body : fs.createReadStream(filePath),
-    Key : folder+"/"+Date.now()+"_"+path.basename(filePath)
+
+
+
+
+const createBucket = () =>{
+  s3.createBucket(paramsToCreateBucket, function(err, data) {
+    if (err) console.log(err, err.stack);
+    else console.log('Bucket Created Successfully', data.Location);
+});
+}
+
+ async function upload(req,folderName){
+  console.log(__dirname,req)
+  
+  // const semiTransparentRedPng = await sharp(req.data)
+  // .resize(200, 200, {
+  //   fit: sharp.fit.inside,
+  //   withoutEnlargement: true
+  // })
+  //   .toBuffer();
+
+    const params = {
+      Bucket: "turftown",
+      Key: folderName+'/tt-'+Date.now()+'.png', // File name you want to save as in S3
+      Body: req.data
+    };  
+
+ const y = await s3.upload(params, async function(err, data) {
+    if (err) console.log(err, err.stack);
+    else {
+      console.log('File Uploaded Successfully', data.Location)
+      return data
     };
-    console.log(fs.createReadStream(filePath))
-    s3.upload(params, function (err, data) {
-        //handle error
-        if (err) {
-          res.send({status:"failed", message: "failded to upload image to s3"})
-        }
-        console.log('test')
-        //success
-        if (data) {
-            res.send({status:"success", message, imageurl:data.Location})
-        }
-      });
+});
+const z = await y.promise()
+return z
 }
 
 

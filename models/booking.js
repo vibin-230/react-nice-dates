@@ -17,10 +17,17 @@ const schema = new Schema({
   venue:String,
   venue_id:String,
   venue_data: { type: Schema.Types.ObjectId, ref: 'venue' },
-  invoice_id: { type: Schema.Types.ObjectId, ref: 'invoice' },
   repeat_booking: {
     type: Boolean,
     default: false
+  },
+  alternate:{
+    type:Boolean,
+    default:false
+  },
+  old_booking:{
+    type:Boolean,
+    default:false
   },
   no_charge:Boolean,
   group_id:String,
@@ -30,6 +37,10 @@ const schema = new Schema({
   sport_name:String,
   venue_type:String,
   amount:Number,
+  images:Array,
+  coins:Number,
+  coin_id:[{ type: Schema.Types.ObjectId, ref: 'coin' }],
+  game:{type:Boolean, default:false},
   coupons_used:String,
   coupon_amount:Number,
   offer_amount:Number,
@@ -45,24 +56,29 @@ const schema = new Schema({
   start_time:Date,
   end_time:Date,
   due:Number,
-  venue_advance:Number,
-  turftown_offer:Number,
-  venue_offer:Number,
-  no_show:Boolean,
   card:Number,
   comments:String,
   cash:Number,
   upi:Number,
+  invoice_start_date:Date,
   invoice_date:Date,
+  invoice_end_date:Date,
   academy:Boolean,
   cancelled_by:{ type: Schema.Types.ObjectId, ref: 'admin' },
   membership:Boolean,
   collected_by:{ type: Schema.Types.ObjectId, ref: 'admin' },
   invoice_by:{ type: Schema.Types.ObjectId, ref: 'admin' },
+  invoice_id:String,
+  repeat_id:String,
+  description:String,
   refund_status:Boolean,
   refunded: {
     type: Boolean,
     default: false
+  },
+  courts: {
+    type:Number,
+    default: 1
   },
   invoice: {
     type: Boolean,

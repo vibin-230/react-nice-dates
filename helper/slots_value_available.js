@@ -14,20 +14,20 @@ module.exports =  function slotsValueAvailable(venue,booking_history,body){
       stock[types[i]] = conf[types[i]];
     }
     if(booking_history.length>0){
-      console.log('hit');
       let total_map = body.map((requestObject,index)=>{
         let requestDate =   moment(requestObject.booking_date).format('YYYY-MM-DD')
         slots_available[requestDate] = {}  
 
       let available_inventory = Object.values(booking_history).map(booking =>{
         requestObject.timeRepresentation.map((representation)=>{
-          if(representation === booking.slot_time && requestObject.timeRepresentation.includes(booking.slot_time)){
+          if(representation === booking.slot_time && requestObject.timeRepresentation.includes(booking.slot_time) && requestDate === moment(booking.booking_date).format('YYYY-MM-DD')){
               if(!slots_available[requestDate][booking.slot_time]){
               inventory = Object.assign({}, stock);
               }else{
               inventory = slots_available[requestDate][booking.slot_time]
               }
-              inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.venue_type])
+              console.log("confratio",conf.ratio[booking.venue_type])
+              inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.venue_type]*((booking.courts == null || booking.courts == undefined) ? 1 : booking.courts ) )
               for(let i=0;i<types.length-1; i++){
               inventory[types[i]] = parseInt(inventory[base_type] / conf.ratio[types[i]])
               }
@@ -36,7 +36,6 @@ module.exports =  function slotsValueAvailable(venue,booking_history,body){
             }
       })
     })
-      console.log(slots_available);
     })
       venue.slots_available = slots_available
       return venue
@@ -77,11 +76,10 @@ module.exports =  function slotsValueAvailable(venue,booking_history,body){
                     if(!slots_available[requestDate][booking.slot_time]){
                                     console.log('slot_time hit',booking.slot_time, inventory,requestObject.timeRepresentation)
                                                         slots_available[requestDate][booking.slot_time] = inventory
-                                                        slots_available[requestDate][booking.slot_time][booking.venue_type] =  parseInt(inventory[booking.venue_type] - 1)
+                                                        slots_available[requestDate][booking.slot_time][booking.venue_type] =  parseInt(inventory[booking.venue_type] - 1*((booking.courts == null || booking.courts == undefined) ? 1 : booking.courts ))
                                                     }else{
-
                                                       console.log('slot_time pass',slots_available[requestDate][booking.slot_time])
-                                                        slots_available[requestDate][booking.slot_time][booking.venue_type] = parseInt(slots_available[requestDate][booking.slot_time][booking.venue_type] - 1)
+                                                        slots_available[requestDate][booking.slot_time][booking.venue_type] = parseInt(slots_available[requestDate][booking.slot_time][booking.venue_type] - (1*(booking.courts == null || booking.courts == undefined) ? 1 : booking.courts ))
 
                                                     }
                                                     

@@ -19,6 +19,7 @@ const Access = {
         coupon:['read','create','update','delete'],
         support:['read', 'create'],
         booking:['read', 'create','update','delete'],
+        users:['read', 'create','update','delete'],
         ads:['read', 'create','update','delete'],
         offers:['read', 'create','update','delete'],
     },

@@ -16,7 +16,9 @@ const schema = new Schema({
   gst:String,
   email:String,
   venue_manager:String,
-  venue:String
+  role:String,
+  status:{type:Boolean, default: true},
+  venue:[{ type: Schema.Types.ObjectId, ref: 'venue' }]
 });
 
 //Model

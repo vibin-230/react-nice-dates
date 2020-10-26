@@ -60,8 +60,10 @@ module.exports = function BookSlot(body,id,booking_id,params,req,res,next){
               sport_name:body.sport_name,
               venue_type:body.venue_type,
               amount:body.amount,
+              images:body.images,
               coupons_used:body.coupons_used,
               commission:body.commission,
+              coins:body.coins,
               start_time:body.start_time,
               end_time:body.end_time,
               slot_time:body.slot_time,
@@ -76,7 +78,8 @@ module.exports = function BookSlot(body,id,booking_id,params,req,res,next){
               venue_discount:body.venue_discount,
               academy:body.academy,
               membership:body.membership,
-              comments:body.comments
+              comments:body.comments,
+              courts:body.courts
             }
             Booking.create(booking_data).then(booking=>{
               resolve(booking)

@@ -863,7 +863,7 @@ router.post('/sync_contacts', [
         //  console.log(contacts1.filter((c)=>c === '9941883205'))
          // console.log(contacts1);
 
-          User.find({phone: { $in :finalcontacts },status:true }).lean().then(user=> {
+          User.find({phone: { $in :finalcontacts },status:true,'handle':{$exists:true,$ne:null } }).lean().then(user=> {
             res.status(201).send({status: "success", message: "common users collected",data:user})
           }).catch(next)
         }
@@ -892,7 +892,7 @@ router.post('/sync_contacts', [
               }
           }
         })
-          User.find({phone: { $in :finalcontacts } },{activity_log:0}).lean().then(user=> {
+          User.find({phone: { $in :finalcontacts },'handle':{$exists:true,$ne:null } },{activity_log:0}).lean().then(user=> {
             User.findByIdAndUpdate({_id: req.userId},{sync_contacts:true}).then(user1=>{
               res.status(201).send({status: "success", message: "common users collected",data:user})
         })

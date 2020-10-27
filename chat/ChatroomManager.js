@@ -860,7 +860,7 @@ module.exports = function () {
                 client1.to(game.conversation._id).emit('unread',{message:game1.type == "game" ? `${game1.host} has removed ${user.handle}` : `${game1.host} has removed ${user.handle}`,type:"delete",user_id:user._id,created_at:new Date() })
                 // client1.to(conversation2._id).emit('unread',{})
 
-                 //NotifyArray(device_token_list, message_formation, `Game Left`,conversation2)
+                 NotifyArray(device_token_list, message_formation, `Game Left`,conversation2)
                 //NotifyArray(user_device_token_list, message_formation, `Game Left`,conversation2)
                  return{ message : save_message ,type:conversation2.type , conversation:game.conversation}
        }).catch(error => console.log(error))

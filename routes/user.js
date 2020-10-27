@@ -491,7 +491,6 @@ router.post('/get_user1', [
           const aq = game.map((a)=>{
                 game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0,mv_data:a.mvp }
           })
-          console.log('ga',game_history);
           //mvp_count = aw && aw.length > 0 ? aw.length : 0
           User.findOne({_id: req.userId},{activity_log:0}).populate("requests","name _id profile_picture").lean().then(user=> {
             Coins.aggregate([ { $match: { user:user._id } },{ $group: { _id: "$user", amount: { $sum: "$amount" } } }]).then((coins)=>{
@@ -1082,7 +1081,8 @@ router.post('/get_mvp_history', [
   verifyToken,
 ], (req, res, next) => {
       //Check if user exist
-      Game.find({users: {$in:[req.userId]},completed:true,sport_name:req.body.sport}).populate("mvp.sender_id","name handle profile_picture _id").populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
+      Game.find({users: {$in:[req.userId]},completed:true,sport_name:req.body.sport,"mvp.target_id":req.userId.toString()}).populate("mvp.sender_id","name handle profile_picture _id").populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
+      Game.find({users: {$in:[req.userId]},completed:true,sport_name:req.body.sport}).populate("mvp.sender_id","name handle profile_picture _id").populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game1=> {
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{
             (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
@@ -1095,12 +1095,13 @@ router.post('/get_mvp_history', [
         const q =   Object.entries(a).map(([key,value])=>{
                 return {title:key,data:value }
           })
-        if (game.length > 0) {
-          res.status(201).send({status: "success", message: "game collected",data:{data:q,games:game}})
+        if (game1.length > 0) {
+          res.status(201).send({status: "success", message: "game collected",data:{data:q,games:game1}})
         } else {
             res.status(201).send({status: "failure",  message: "game collected",data:[]});
         }
   }).catch(next);
+}).catch(next);
 });
 
 router.post('/share_post/:id', [

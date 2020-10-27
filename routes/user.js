@@ -3044,7 +3044,7 @@ router.post('/modify_booking/:id', verifyToken, (req, res, next) => {
       Booking.find({booking_id:req.params.id}).then(booking=>{
         const values = booking
         result = Object.values(combineSlots(booking))
-          createReport({type:'booking',comments:values[0].comments ? values[0].comments:'',venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,user:values[0].user_id,card:values[0].card?values[0].card:0,coins:0,cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
+          createReport({type:'booking',comments:values[0].comments ? values[0].comments:'',venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,user:values[0].user_id,card:values[0].card?values[0].card:0,coins:0,cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'addorupdate',next)
 
         res.send({status:"success", message:"booking modified", data:result})
         let booking_id = booking[0].booking_id

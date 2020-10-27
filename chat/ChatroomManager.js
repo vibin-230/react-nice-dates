@@ -2,6 +2,7 @@ const Chatroom = require('./Chatroom')
 const chatroomTemplates = require('./config/chatrooms')
 const Conversation = require('../models/conversation');
 const Alert = require('../models/alerts');
+const Post =  require('../models/post')
 const Game = require('../models/game');
 const Message = require('../models/message');
 const User = require('../models/user');
@@ -771,7 +772,8 @@ module.exports = function () {
           game.host = game_host_filter.length > 0 ? game_host_filter : [users_filter[0]]
           conversation.exit_list = conversation.exit_list.concat({user_id:game1.user_id,timeStamp:new Date(),message:{ conversation: conversation._id, message: `${user.handle} has left the game`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() }})
           return Game.findByIdAndUpdate({ _id: game1.game_id }, { $set: game }).then(game2 => {
-             return Conversation.findByIdAndUpdate({ _id: conversation._id }, { $set: conversation }).then(conversation2 => {
+            return  Post.deleteMany({created_by:game1.user_id,game:game1.game_id}).then(posts=> {
+            return Conversation.findByIdAndUpdate({ _id: conversation._id }, { $set: conversation }).then(conversation2 => {
               return Conversation.findById({ _id: conversation._id }).lean().populate('members', '_id device_token handle name name_status').then(conversation2 => {
                 return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
                   let message_formation = game1.type == "game" ? `${user.handle} has left the game` : `${game1.host} has removed ${user.handle}` 
@@ -788,6 +790,8 @@ module.exports = function () {
   }).catch(error => console.log(error))
 }).catch(error => console.log(error))
 }).catch(error => console.log(error))
+}).catch(error => console.log(error))
+
 }).catch(error => console.log(error))
 }).catch(error => console.log(error))
     return x
@@ -830,7 +834,9 @@ module.exports = function () {
   async function kickPlayer(game1,client,client1) {
     const x = await Game.findById({ _id: game1.game_id }).lean().populate('conversation').then(game => {
                  return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
-      const conversation = Object.assign({},game.conversation)
+                  return  Post.deleteMany({created_by:game1.user_id,game:game1.game_id}).then(posts=> {
+     
+                  const conversation = Object.assign({},game.conversation)
       const users_filter = game.users.filter((m)=> m.toString() !== game1.user_id.toString())
       const conversation_filter = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())
       const game_host_filter =  game.host.filter((m)=> m.toString() !== game1.user_id.toString())
@@ -841,6 +847,7 @@ module.exports = function () {
         game.host = game_host_filter.length > 0 ? game_host_filter : [users_filter[0]]
         conversation.exit_list = conversation.exit_list.concat({user_id:game1.user_id,timeStamp:new Date(),message:{ conversation: conversation._id, message: `${user.handle} has left the game`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() }})
         return Game.findByIdAndUpdate({ _id: game1.game_id },{$set:game}).then(game2 => {
+
           return Conversation.findByIdAndUpdate({ _id: conversation._id }, { $set: conversation }).then(conversation2 => {
             return Conversation.findById({ _id: conversation._id }).lean().populate('members', '_id device_token handle name name_status').then(conversation2 => {
               return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
@@ -860,6 +867,7 @@ module.exports = function () {
                  return{ message : save_message ,type:conversation2.type , conversation:game.conversation}
        }).catch(error => console.log(error))
   }).catch(error => console.log(error))
+}).catch(error => console.log(error))
 }).catch(error => console.log(error))
 }).catch(error => console.log(error))
 }).catch(error => console.log(error))
@@ -1005,6 +1013,7 @@ return x
       return Game.findOne({ conversation: game1.convo_id }).then(game => {
         game.users = game.users.filter((m)=> m.toString() !== game1.user_id.toString())
         game.host = conversation.host
+       return  Post.deleteMany({created_by:game1.user_id,game:game._id}).then(posts=> {
         return Game.findOneAndUpdate({ conversation: game1.convo_id }, { $set: game }).then(conversation2 => {
          return Conversation.findByIdAndUpdate({ _id: game1.convo_id }, { $set: conversation }).then(conversation2 => {
           return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token handle name name_status').then(conversation2 => {
@@ -1018,6 +1027,7 @@ return x
               client.in(game1.convo_id).emit('unread',{})
             return {message : save_message , type : conversation2.type,conversation:conversation2 }
    }).catch(error => console.log(error))
+}).catch(error => console.log(error))
 }).catch(error => console.log(error))
 }).catch(error => console.log(error))
 }).catch(error => console.log(error))

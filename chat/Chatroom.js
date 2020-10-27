@@ -64,7 +64,9 @@ module.exports = function ({ _id, image }) {
             m.splice(i,0,{conversation:conversation._id,message:parseDate(moment(m[i-1].created_at).utc().format('MM-DD-YYYY')),name:'bot',read_status:false,read_by:user.id,author:user.id,type:'bot',created_at:m[i].created_at,time:true})
           }
         }
-        m.push({conversation:conversation._id,message:parseDate(moment(m[m.length-1].created_at).utc().format('MM-DD-YYYY')),name:'bot',read_status:false,read_by:user.id,author:user.id,type:'bot',created_at:m[m.length-1].created_at,time:true})
+        if(m.length > 0){
+          m.push({conversation:conversation._id,message:parseDate(moment(m[m.length-1].created_at).utc().format('MM-DD-YYYY')),name:'bot',read_status:false,read_by:user.id,author:user.id,type:'bot',created_at:m[m.length-1].created_at,time:true})
+        }
         return {messages:m.reverse(),conversation:conversation}
       }).catch((e) => console.log(e))
     }).catch((e) => console.log(e))

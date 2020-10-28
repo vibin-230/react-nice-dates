@@ -726,6 +726,8 @@ module.exports = function () {
       return Conversation.findById({ _id: game1.conversation }).lean().then(conversation1 => {
         const conversation = Object.assign({}, conversation1)
         const game = Object.assign({}, game1)
+        if(game && game.users &&  game.users.length > 0 && game.users.length < game.limit){
+          if(!game.users.some((key) => key.toString() == userId.toString())){
         game.invites = game.invites.filter((key) => key.toString() !== userId.toString())
         game.users = game.users.some((key) => key.toString() == userId.toString()) ? game.users : game.users.concat(userId)
         conversation.invites = conversation.invites.filter((key) => key.toString() !== userId.toString())
@@ -753,7 +755,14 @@ module.exports = function () {
             }).catch((e) => console.log(e));
           }).catch(error => console.log(error))
         }).catch(error => console.log(error))
+     }else{
+       return 'error_user_already_exists'
+     }
+    }else{
+        return 'error_by_limit'
+      }
       }).catch(error => console.log(error))
+      
     }).catch(error => console.log(error))
     return x
   }

@@ -304,10 +304,12 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
 
   async function handleJoinGame(game,callback){
     const x = await chatroomManager.joinGame(game.game_id,game.id,io)
-    x.forEach((clientId)=>{
+    console.log(x);
+      x && Object.keys(x).length > 0 && !x.includes('error') 
+     && x.forEach((clientId)=>{
      const client =  clientManager.getClient(clientId)
     })
-    callback()
+    x && x.includes('error') ? callback(x) : callback()
   }
 
   async function handleSendBroadcast(message,callback){

@@ -1098,10 +1098,10 @@ return x
       return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
           const x = user && user.past_convos.length > 0 ? user.past_convos.filter((c)=> c.conversation_id && c.conversation_id !== game1.convo_id) : []
      if(user){
-      return User.findByIdAndUpdate({ _id: game1.user_id }, {$set:{past_convos:x}}).lean().then(user => {
+      //return User.findByIdAndUpdate({ _id: game1.user_id }, {$set:{past_convos:x}}).lean().then(user => {
         //client.in(game1.convo_id).emit('unread',{})
         return 'pass'
-      }).catch(error => console.log(error))
+      //}).catch(error => console.log(error))
      }else{
       return 'no user'
      }

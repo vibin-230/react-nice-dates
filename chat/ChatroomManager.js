@@ -1079,7 +1079,7 @@ return x
                    const token_list  = conversation2.members.filter((key) => key._id.toString() !== game1.user_id.toString())
                    const device_token_list = token_list.map((e) => e.device_token)
                    client.in(conversation2._id).emit('unread',{})
-                   conversation2.type !== 'single'  && client.in(conversation2._id).emit('new',x)
+                   conversation2.type !== 'single'  ? client.in(conversation2._id).emit('new',{type:'',exit:true,conversation:conversation2._id}) : client.in(conversation2._id).emit('new',x)
                    conversation2.type == 'single'  ?  client1.leave(conversation2._id) : null
                    
                    //conversation2.type !== 'single' && NotifyArray(device_token_list, `${user.name} has left the club`, `Club Left`)

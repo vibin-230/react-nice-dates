@@ -1044,17 +1044,18 @@ return x
 return x
   }
 
-  async function leaveChatroomGroup(game1,client) {
+  async function leaveChatroomGroup(game1,client,client1) {
     const x = await Conversation.findById({ _id: game1.convo_id }).lean().then(conversation => {
       return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
         const tot  = conversation.host.filter((m)=> m.toString() == game1.user_id.toString()).length > 0 ? true : false
         conversation.members = conversation.members.filter((m)=> m.toString() !== game1.user_id.toString())
         conversation.host = conversation.host.filter((m)=> m.toString() !== game1.user_id.toString()).length > 0 ? conversation.host.filter((m)=> m.toString() !== game1.user_id.toString()) : [conversation.members[0]]
         conversation.exit_list = conversation && conversation.exit_list ?  conversation.exit_list.concat({user_id:game1.user_id,timeStamp:new Date(),message:{ conversation: conversation._id, message:  `${user.handle} ${game1 && game1.status && game1.status === 'terminate' ? 'has been removed':'has left the club'}`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() }}) :[{user_id:game1.user_id,timeStamp:new Date(),message:{ conversation: conversation._id, message: `${user.handle} ${game1 && game1.status && game1.status === 'terminate' ? 'has been removed':'has left the club'}`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() }}]
-        if((conversation.type === 'single' || conversation.type === 'group') && conversation.members.length <= 0){
+        if((conversation.type === 'single' || conversation.type === 'group') && conversation.members.length <= 1){
           return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token').then(conversation2 => {
             return Conversation.findByIdAndDelete({ _id: game1.convo_id }).then(conversation2 => {
                 const message = { conversation: conversation2._id,message: `${user.handle} ${game1 && game1.status && game1.status === 'terminate' ? 'has been removed':'has left the club'}`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() }
+               
                 conversation.type !== 'single' && saveMessage(message)
                 conversation.type !== 'single' && client.in(conversation2._id).emit('new',{ conversation: conversation2._id, message: `${user.handle} has left the club`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() })
                 client.in(game1.convo_id).emit('unread',{})
@@ -1079,7 +1080,9 @@ return x
                    const device_token_list = token_list.map((e) => e.device_token)
                    client.in(conversation2._id).emit('unread',{})
                    conversation2.type == 'single'  ? client.in(conversation2._id).emit('new',{type:'refresh',exit:true,conversation:conversation2._id}) : client.in(conversation2._id).emit('new',x)
-                   return{ message : message ,type:conversation.type,conversation:conversation2}
+                   conversation2.type == 'single' &&  client1.leave(conversation2._id)
+                   //conversation2.type !== 'single' && NotifyArray(device_token_list, `${user.name} has left the club`, `Club Left`)
+                   return { message : message ,type:conversation.type,conversation:conversation2}
           }).catch(error => console.log(error))
    }).catch(error => console.log(error))
    }).catch(error => console.log(error))
@@ -1096,10 +1099,10 @@ return x
       return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
           const x = user && user.past_convos.length > 0 ? user.past_convos.filter((c)=> c.conversation_id && c.conversation_id !== game1.convo_id) : []
      if(user){
-      //return User.findByIdAndUpdate({ _id: game1.user_id }, {$set:{past_convos:x}}).lean().then(user => {
+      return User.findByIdAndUpdate({ _id: game1.user_id }, {$set:{past_convos:x}}).lean().then(user => {
         //client.in(game1.convo_id).emit('unread',{})
         return 'pass'
-      //}).catch(error => console.log(error))
+      }).catch(error => console.log(error))
      }else{
       return 'no user'
      }

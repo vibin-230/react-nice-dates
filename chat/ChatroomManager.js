@@ -1055,7 +1055,6 @@ return x
           return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token').then(conversation2 => {
             return Conversation.findByIdAndDelete({ _id: game1.convo_id }).then(conversation2 => {
                 const message = { conversation: conversation2._id,message: `${user.handle} ${game1 && game1.status && game1.status === 'terminate' ? 'has been removed':'has left the club'}`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() }
-               
                 conversation.type !== 'single' && saveMessage(message)
                 conversation.type !== 'single' && client.in(conversation2._id).emit('new',{ conversation: conversation2._id, message: `${user.handle} has left the club`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() })
                 client.in(game1.convo_id).emit('unread',{})
@@ -1080,7 +1079,7 @@ return x
                    const device_token_list = token_list.map((e) => e.device_token)
                    client.in(conversation2._id).emit('unread',{})
                    conversation2.type == 'single'  ? client.in(conversation2._id).emit('new',{type:'refresh',exit:true,conversation:conversation2._id}) : client.in(conversation2._id).emit('new',x)
-                   conversation2.type == 'single' && client.leave(conversation2._id)   
+                   //conversation2.type == 'single' && client.leave(conversation2._id) 
                    //conversation2.type !== 'single' && NotifyArray(device_token_list, `${user.name} has left the club`, `Club Left`)
                    return{ message : message ,type:conversation.type,conversation:conversation2}
           }).catch(error => console.log(error))

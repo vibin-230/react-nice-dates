@@ -91,6 +91,10 @@ module.exports = function (client, clientManager, chatroomManager,io) {
          const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
          const activeUsers = clientNumber  ? clientManager.filterClients(Object.keys(clientNumber.sockets)) : []
          chatroomManager.notifyAllUsersNotInTheChatroom(x.conversation, x.message,activeUsers)
+       }else if(x && x.type == 'single'){
+         client.leave(x.conversation._id,()=>{
+           
+         })
        }
     }
 

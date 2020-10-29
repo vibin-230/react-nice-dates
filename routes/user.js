@@ -4800,12 +4800,14 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
   Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
     // Booking.find(old_filter).lean().populate('venue_data','venue').then(old_booking=>{
     Booking.find(cancel_filter).lean().populate('venue_data','venue').then(cancelledBookings=>{
+      //console.log(cancelledBookings)
     EventBooking.find(eventFilter).lean().populate({path:"event_id",populate:{path:"venue"}}).then(eventBooking=>{
       EventBooking.find(cancel_filter1).lean().populate({path:"event_id",populate:{path:"venue"}}).then(cancelledeventBooking=>{
       Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate('venue','venue'). populate("host","name _id handle name_status profile_picture").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
         result = Object.values(combineSlots(booking))
         // let result1 = Object.values(combineSlots1(old_booking))
         cancelled_bookings =  Object.values(combineSlots(cancelledBookings))
+        console.log('canceled booking',cancelled_bookings);
         game.map((key)=>{
          key["end_time"] = key.conversation && key.conversation.end_time ? key.conversation.end_time : key.bookings[key.bookings.length-1].end_time 
         })
@@ -4834,11 +4836,15 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
             return rv;
           }, {});
         };
+        
         let finalResult = booking_data.sort((a, b) => moment(a.end_time).format("YYYYMMDDHmm") > moment(b.end_time).format("YYYYMMDDHmm") ? 1 : -1 )
         const present = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') <= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
         const past = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') >= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
         const apresent = groupBy(present,'end_time')
+        console.log('past',past);
         const apast = groupBy([...past,...cancelled_bookings,...cancelledeventBooking1],'end_time')
+        //console.log('apast',apast);
+
         // const pastCancelled = []
         // const cancelledPast = groupBy(pastCancelled,'start_time')
         // console.log("apaas",apast)
@@ -4849,9 +4855,10 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         // const today_empty1 = qpast && qpast.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpast.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
         qpresent.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
         qpast.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
-        let qpas = [...qpast]
+        let qpas = [...qpast].reverse()
         let qprs = [...qpresent]
-        res.send({status:"success", message:"booking history fetched", data:{past:qpas.slice(qpas.length-5,qpas.length),present:qprs.slice(0,5)}})
+        //console.log(qpas);
+        res.send({status:"success", message:"booking history fetched", data:{past:qpas.slice(0,6),present:qprs.slice(0,5)}})
         req.redis().set('bookings_present_'+req.userId,JSON.stringify(qpresent))
         req.redis().set('bookings_past_'+req.userId,JSON.stringify(qpast))
     }).catch(next)

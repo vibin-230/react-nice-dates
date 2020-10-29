@@ -2766,6 +2766,106 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
   })
 })
 
+router.post('/book_slot_for_admin1/:id', verifyToken, AccessControl('booking', 'create'), (req, res, next) => {
+  let params = req.params.id
+  //Check of Slot Exist
+  function SlotsCheck(body,id){
+    return new Promise((resolve,reject)=>{
+      Venue.findById({_id:id},{bank:0,access:0}).lean().then(venue=>{
+        let venue_id;
+        if(venue.secondary_venue){
+          venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
+        }else{
+          venue_id = [venue._id.toString()]
+        }
+        Booking.find({ venue:body.venue, venue_id:{$in:venue_id}, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
+        // Booking.find({$and:[{venue:body.venue, venue_id:id, booking_date:{$gte:body.booking_date,$lt:moment(body.booking_date).add(1,"days")}}],booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
+          let slots_available = SlotsAvailable(venue,booking_history)
+          if(slots_available.slots_available[body.slot_time][body.venue_type]>0){
+            resolve()
+          }else{
+            reject()
+          }
+        }).catch(next)
+      }).catch(next)
+    })
+  }
+
+  let promisesToRun = [];
+  for(let i=0;i<req.body.length;i++){
+    promisesToRun.push(SlotsCheck(req.body[i],req.params.id))
+  }
+
+  Promise.all(promisesToRun).then(values => {
+    
+    Booking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
+      let booking_id
+      if(!bookingOrder){
+        booking_id = "TT000000"
+      }else{
+        booking_id = bookingOrder.booking_id
+        console.log(booking_id)
+      }
+      var id = mongoose.Types.ObjectId();
+      let promisesToRun = [];
+      for(let i=0;i<req.body.length;i++)
+      {
+        promisesToRun.push(BookSlot(req.body[i],id, booking_id,params,req,res,next))
+      } 
+  
+      Promise.all(promisesToRun).then(values => {
+        values = {...values}
+        var result = Object.values(combineSlots(values))
+        res.send({status:"success", message:"slot booked", data:values})
+        Venue.findById({_id:values[0].venue_id}).then(venue=>{
+          // Send SMS
+          handleSlotAvailabilityForGames(values,req.socket)
+          createReport({type:'booking',comments:values[0].comments ? values[0].comments:'',venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,created_by:values[0].user_id,card:values[0].card?values[0].card:0,coins:0,cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
+          let booking_id = values[0].booking_id
+          let phone = "91"+values[0].phone
+          let venue_name = values[0].venue
+          let venue_type = SetKeyForSport(req.body[0].venue_type) 
+          let venue_area = venue.venue.area
+          let sport_name = SetKeyForSport(values[0].sport_name)
+          let date = moment(values[0].booking_date).format("MMMM Do YYYY")
+          let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
+          let end_time = Object.values(values).reduce((total,value)=>{return total>value.end_time?total:value.end_time},values[0].end_time)
+          let datetime = date + " " + moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
+          let directions = "https://www.google.com/maps/dir/"+venue.venue.latLong[0]+","+venue.venue.latLong[1]
+          let total_amount = Math.round(values[0].amount-values[0].commission-values[0].booking_amount)
+          let venue_discount_coupon = result[0].commission == 0 ? "Venue Discount:0" : `Venue Discount:${Math.round(result[0].commission)}`
+          let SLOT_BOOKED_USER =`Hey ${values[0].name}! Thank you for using Turf Town!\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${result[0].booking_amount}\nBalance to be paid : ${total_amount}`
+          let sender = "TRFTWN"
+          SendMessage(phone,sender,SLOT_BOOKED_USER)
+          // axios.get(process.env.PHP_SERVER+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount)
+          // .then(response => {
+          //   console.log(response.data)
+          // }).catch(error=>{
+          //   console.log(error.response)
+          // })
+          
+          //Activity Log
+          let activity_log = {
+            datetime: new Date(),
+            id:req.userId,
+            user_type: req.role?req.role:"user",
+            activity: 'slot booked',
+            name:req.name,
+            booking_id:booking_id,
+            venue_id:values[0].venue_id,
+            message: "Slot "+booking_id+" booked at "+venue_name+" "+datetime+" "+venue_type,
+          }
+          ActivityLog(activity_log)
+  
+        }).catch(next)
+      }).catch(next)
+    }).catch(next)
+  }).catch(error=>{
+    res.send({status:"failed", message:"slots not available"})
+  })
+})
+
+
 router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'create'), (req, res, next) => {
   let params = req.params.id
   //Check of Slot Exist
@@ -2819,6 +2919,8 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
         res.send({status:"success", message:"slot booked", data:values})
         Venue.findById({_id:values[0].venue_id}).then(venue=>{
           // Send SMS
+          //comment out after test**********
+          handleSlotAvailabilityForGames(values,req.socket)
           createReport({type:'booking',comments:values[0].comments ? values[0].comments:'',venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,created_by:values[0].user_id,card:values[0].card?values[0].card:0,coins:0,cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
           let booking_id = values[0].booking_id
           let phone = "91"+values[0].phone

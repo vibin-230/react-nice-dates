@@ -756,10 +756,7 @@ router.post('/get_chatrooms/:id', [
             const filter = c && c.last_active ? c.last_active.filter((c)=> c && c.user_id && c.user_id.toString() === req.params.id.toString()) : []
             message.length > 0 && message.map((m)=>{
                if(m._id.toString() === c._id.toString() && conversation.indexOf(c._id.toString()) === -1  ) { 
-                console.log(filter[filter.length-1],c.name);
                  const time = m.time.filter((timestamp,index)=>{ 
-                   console.log(timestamp,c.name);
-                   //&& m.user[index].toString() !== req.params.id.toString()
                   if( filter.length > 0 &&  moment(filter[filter.length-1].last_active).isSameOrBefore(timestamp) ) {
                     return timestamp
                   }

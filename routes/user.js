@@ -2408,7 +2408,6 @@ async function handleSlotAvailabilityForGames(booking1,client){
   let booking = booking1[0]
   const slot_time = { $in: booking1.map((b)=>b.slot_time) }
   const x =  await  Booking.find({  venue_id:booking.venue_id, booking_date:booking.booking_date,slot_time:slot_time,booking_status:{$in:["blocked","booked","completed"]}}).lean().then(booking_history=>{
-   
     let promisesToRun = [];
         for(let i=0;i<booking_history.length;i++){
               promisesToRun.push(SlotsCheck1(booking_history[i],booking.venue_id))
@@ -3438,9 +3437,10 @@ function SlotsCheckReverse(body,id){
 }
 
 async function handleSlotAvailabilityWithCancellation(booking1,client){
+  console.log(booking1);
   let booking = booking1[0]
                   let start_time = Object.values(booking1).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking1[0].start_time)
-                  let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking1[0].end_time)
+                  let end_time = Object.values(booking1).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking1[0].end_time)
                   let time = moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
   const slot_time = { $in: booking1.map((b)=>b.slot_time) }
   const x =  await  Booking.find({  venue_id:booking.venue_id, booking_date:booking.booking_date,slot_time:slot_time,booking_status:{$in:["blocked","booked","completed"]}}).lean().then(booking_history=>{
@@ -3453,7 +3453,7 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
                return Game.find({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time }).lean().populate('conversation').populate('users','name _id device_token').then(game=>{
                 let messages =  game && game.length > 0 &&  game.map((nc)=>{ 
                   const device_token = nc && nc.users.length > 0 && nc.users.map((e)=>e.device_token)
-                  NotifyArray(device_token,`Hey! The slot ${time} is available again in ${nc.name}. Please book this slot to confirm your game.`,'Turftown Slot Availability')
+                  NotifyArray(device_token,`Hey! The slot ${time} is available again. Please book this slot to confirm your game.`,'Turftown Slot Availability')
                   return {conversation:nc.conversation._id,message:`Hey! The slot ${time} is available again. Please book this slot to confirm your game`,name:'bot',read_status:false,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot',created_at:new Date()}
                 }) 
                 const members = _.flatten(game.map((g)=>g.conversation.members))
@@ -4333,8 +4333,8 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                     Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted',status_description:'cancelled by venue manager'}}).then(game=>{
                       Post.deleteMany({game:game._id}).then((a)=>{
                       Message.create({conversation:game.conversation,message:`Hey ! Slot has been cancelled and refund has been initiated.Amount will be credited in 2 - 4 working days.Please book a new slot to confirm the game`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
-                        const device_token_list=user.map((e)=>e.device_token)
-                        NotifyArray(device_token_list,'Hey ! Slot has been cancelled and refund has been initiated.Amount will be credited in 2 - 4 working days.Please book a new slot to confirm the game','Turftown Game Cancellation')
+                       // const device_token_list=user.map((e)=>e.device_token)
+                       // NotifyArray(device_token_list,'Hey ! Slot has been cancelled and refund has been initiated.Amount will be credited in 2 - 4 working days.Please book a new slot to confirm the game','Turftown Game Cancellation')
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
                             //getGame(res,game.conversation,true,next,req)
                              handleSlotAvailabilityWithCancellation(booking,req.socket)

@@ -3562,6 +3562,12 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
             Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
               if(booking[0].game){
                 Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
+                  Coins.find({ booking_id: req.params.id }).lean().then(coins => {
+                    if (coins) {
+                        Coins.deleteMany({ booking_id: req.params.id }).lean().then(coins => {
+                        }).catch(next);
+                      }
+
                   Message.create({conversation:game.conversation,message:`Hey ! slot has been cancelled .No refund for this slot. Please book your slot to confirm the game`,name:'bot',read_status:false,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                     Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
                       getGame(res,game.conversation,true,next,req)
@@ -3569,6 +3575,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                         }).catch(next);
                       }).catch(next);
                   }).catch(next);
+                }).catch(next);
                   }else{
                     res.send({status:"success", message:"booking cancelled"})
                     

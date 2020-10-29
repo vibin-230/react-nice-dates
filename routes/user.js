@@ -3622,13 +3622,15 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
         }else{
           Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled",refund_status:false,game:false,}},{multi:true}).then(booking=>{ ////user cancellation without refund
             Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
+              Coins.find({ booking_id: req.params.id }).lean().then(coins => {
+                if (coins) {
+                    Coins.deleteMany({ booking_id: req.params.id }).lean().then(coins => {
+                    }).catch(next);
+                  }
+
               if(booking[0].game){
                 Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
-                  Coins.find({ booking_id: req.params.id }).lean().then(coins => {
-                    if (coins) {
-                        Coins.deleteMany({ booking_id: req.params.id }).lean().then(coins => {
-                        }).catch(next);
-                      }
+                  
 
                   Message.create({conversation:game.conversation,message:`Hey ! slot has been cancelled .No refund for this slot. Please book your slot to confirm the game`,name:'bot',read_status:false,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                     Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
@@ -3637,7 +3639,6 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                         }).catch(next);
                       }).catch(next);
                   }).catch(next);
-                }).catch(next);
                   }else{
                     
                     res.send({status:"success", message:"booking cancelled"})
@@ -3725,7 +3726,8 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   // ActivityLog(activity_log)
             }).catch(next);
           }).catch(next);
-       
+        }).catch(next);
+
 
 
         }
@@ -3861,6 +3863,12 @@ router.post('/cancel_game_booking/:id', verifyToken, (req, res, next) => {
         }else{
           Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled",refund_status:false,game:false,}},{multi:true}).then(booking=>{ ////user cancellation without refund
             Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
+              Coins.find({ booking_id: req.params.id }).lean().then(coins => {
+                if (coins) {
+                    Coins.deleteMany({ booking_id: req.params.id }).lean().then(coins => {
+                    }).catch(next);
+                  }
+
                 Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
                   Message.create({conversation:game.conversation,message:`Hey ! slot has been cancelled .No refund for this slot. Please book your slot to confirm the game`,name:'bot',read_status:false,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                     Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
@@ -3948,7 +3956,8 @@ router.post('/cancel_game_booking/:id', verifyToken, (req, res, next) => {
                   // ActivityLog(activity_log)
             }).catch(next);
           }).catch(next);
-       
+                 }).catch(next);
+
 
 
         }
@@ -5457,8 +5466,14 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
         EventBooking.findOneAndUpdate({booking_id:req.params.id}, {booking_status: "cancelled",refund_status:false}).then(eventBookingNew=>{
           EventBooking.find({booking_id:req.params.id}, {booking_status: "booked"}).then(bookings=>{
             count = bookings.length
+            Coins.find({ booking_id: req.params.id }).lean().then(coins => {
+              if (coins) {
+                    Coins.deleteMany({ booking_id: req.params.id }).lean().then(coins => {
+                    }).catch(next);
+                }
             res.send({status:"success", message:"Event booking cancelled"})
         }) })
+      })
       }
      
     }

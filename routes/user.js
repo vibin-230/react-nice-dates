@@ -1049,7 +1049,9 @@ router.post('/update_game_mvp/:id', [
 ], (req, res, next) => {
       //Check if user exist
       Game.findOne({_id: req.params.id},{activity_log:0}).then(game=> {
-        Game.findByIdAndUpdate({_id: req.params.id},req.body).then(game=>{
+        let new_body = game.mvp
+        new_body.push(req.body.mvp)
+        Game.findByIdAndUpdate({_id: req.params.id},{mvp:new_body}).then(game=>{
           Game.findOne({_id: req.params.id},{activity_log:0}).lean().populate("venue").populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(g1=> {
             if (g1) {
           res.status(201).send({status: "success", message: "game edited",data:g1})

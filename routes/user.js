@@ -3352,7 +3352,6 @@ router.post('/update_version', verifyToken, (req, res, next) => {
 
 router.post('/get_version', verifyToken, (req, res, next) => {
   Version.findOne({}).then(version=>{
-    console.log(version)
     res.send({status:"success", message:"Version Log",data:version})
   }).catch(next)
 })
@@ -3459,9 +3458,7 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
                 }) 
                 const members = _.flatten(game.map((g)=>g.conversation.members))
                 return   User.find({_id: { $in :members } },{activity_log:0}).lean().then(user=> {
-                    const device_tokens = user.map((a)=>{
-                        return { device_token:a && a.device_token ?a.device_token:'', game:game && game.filter((g)=>g.users && g.users.length > 0 && g.users.some((m)=>m.toString() === a._id.toString())) }
-                    })
+                   
                   return Message.insertMany(messages).then(message1=>{
                   const message_ids = message1.map((m)=>m._id)
                   return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
@@ -4332,7 +4329,6 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   let manager_phone = "91"+venue.venue.contact
                   let SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER = `Your Turf town booking ${booking_id} scheduled for ${datetime} at ${venue_name},${" "+venue_area}(${venue_type}) has been cancelled by the venue .\nStatus : Advance of Rs.${booking[0].booking_amount} will be refunded within 3-4 working days.\nPlease contact the venue ${venue.venue.contact} for more information.` //491317
                   let sender = "TRFTWN"
-                  console.log('cancel',booking);
                   if(booking[0].game){
                     Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted',status_description:'cancelled by venue manager'}}).then(game=>{
                       Post.deleteMany({game:game._id}).then((a)=>{
@@ -4427,10 +4423,8 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   // }).catch(error=>{
                   //   console.log(error.response)
                   // })
-                  console.log('cancel',booking);
                   if(booking[0].game){
                     Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted',status_description:'cancelled by venue manager'}}).then(game=>{
-                      console.log(game);
                       Post.deleteMany({game:game._id}).then((a)=>{
                         Message.create({conversation:game.conversation,message:`Hey ! Slot has been cancelled No Refund initiated.Please host a new game.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
@@ -4458,16 +4452,6 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                     let sender = "TRFTWN"
                     SendMessage(phone,sender,SLOT_CANCELLED_BY_VENUE_MANAGER)
                   }
-                  console.log(user.name)
-                  console.log(venue.venue.name)
-                  console.log(date)
-                  console.log(venue.venue.contact)
-                  console.log(time)
-                  console.log(booking_id)
-                  console.log(venue_type)
-                  console.log(venue_name)
-                  console.log(venue_area)
-                  console.log(booking[0].booking_amount)
 
                   let obj = {
                     name:user.name,

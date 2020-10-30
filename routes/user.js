@@ -3445,6 +3445,7 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
                   let end_time = Object.values(booking1).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking1[0].end_time)
                   let time = moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
   const slot_time = { $in: booking1.map((b)=>b.slot_time) }
+  console.log('booking',slot_time);
   const x =  await  Booking.find({  venue_id:booking.venue_id, booking_date:booking.booking_date,slot_time:slot_time,booking_status:{$in:["blocked","booked","completed"]}}).lean().then(booking_history=>{
     let promisesToRun = [];
     console.log('booking',booking_history);
@@ -3490,6 +3491,7 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
             //res.send({status:"failed", message:"slots not available"})
           })
         }else{
+          console.log('pass');
           return  Booking.updateMany({booking_id:booking.booking_id},{$set:{game:false}},{multi:true}).then(booking=>{
             return 'pass'
           })
@@ -3519,7 +3521,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                       Coins.deleteMany({ booking_id: req.params.id }).lean().then(coins => {
                       }).catch(next);
                     }
-                 console.log('pass5');
+                 console.log('pass5',booking[0].game);
                   if(booking[0].game){
                     Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
                       Message.create({conversation:game.conversation,message:`Hey ! Slot has been cancelled and refund has been initiated.Amount will be credited in 2 - 4 working days.Please book your slot to confirm the game`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
@@ -3534,7 +3536,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                         }else{
                           console.log('pass2');
                           res.send({status:"success", message:"booking cancelled"})
-                          handleSlotAvailabilityWithCancellation(booking,req.socket)
+                          handleSlotAvailabilityWithCancellation(booking,'null')
 
                         }
                   

@@ -117,7 +117,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
   x  = await chatroomManager.leaveChatroomSingle(chatroomName,client)
 }
     else{
-      x  = await chatroomManager.leaveChatroom(chatroomName,io)
+      x  = await chatroomManager.leaveChatroom(chatroomName,io,client)
       if(x && x.type !== 'single'){
         const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
       const activeUsers = clientNumber  ? clientManager.filterClients(Object.keys(clientNumber.sockets)) : []

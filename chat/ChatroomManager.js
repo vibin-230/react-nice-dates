@@ -767,7 +767,7 @@ module.exports = function () {
     return x
   }
 
-  async function leaveChatroom(game1,client) {
+  async function leaveChatroom(game1,client,client1) {
     const x = await Game.findById({ _id: game1.game_id }).lean().populate('conversation').then(game => {
       return User.findById({ _id: game1.user_id }, { activity_log: 0, }).lean().then(user => {
         const conversation = Object.assign({},game.conversation)

@@ -3509,7 +3509,6 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
         if(booking.booking_type === "app" && req.body.refund_status && booking.transaction_id && booking.transaction_id !== 'free_slot'){
           axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
-            console.log(response.data);
             if(response.data.entity === "refund") /// user  with refund 
             console.log('pass1');
             {

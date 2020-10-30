@@ -2302,6 +2302,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
     }else{
       res.send({status:"success", message:"slot booked",data: result})
     }
+    handleSlotAvailabilityForGames(values,req.socket)
     //Send Sms
     Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
       Venue.findById({_id:values[0].venue_id}).then(venue=>{

@@ -669,9 +669,9 @@ router.post('/user_suggest/:id', [
                          });
           console.log(final_users,'final_users');
           console.log(final_users1,'final_users1');
-          User.find({_id: {$in :final_users1}},{name:1,_id:1,profile_picture:1,followers:1,following:1}).lean().then(userA=>{
-    User.find({_id: {$nin :all}},{name:1,_id:1,profile_picture:1,handle:1,name_status:1,visibility:1}).lean().then(userN=>{
-    User.find({_id: {$in :final_users}},{name:1,_id:1,profile_picture:1,handle:1,name_status:1,visibility:1}).lean().then(user1=>{
+          User.find({_id: {$in :final_users1},'handle':{$exists:true,$ne:null }},{name:1,_id:1,profile_picture:1,followers:1,following:1}).lean().then(userA=>{
+            User.find({_id: {$nin :all},'handle':{$exists:true,$ne:null }},{name:1,_id:1,profile_picture:1,handle:1,name_status:1,visibility:1}).lean().then(userN=>{
+            User.find({_id: {$in :final_users},'handle':{$exists:true,$ne:null }},{name:1,_id:1,profile_picture:1,handle:1,name_status:1,visibility:1}).lean().then(user1=>{
           const yet_to_click_follow_users = user1.map((a)=> Object.assign(a,{zcode:40}))
           const usersas = userA.map((a)=>{
             return [...a.followers,...a.following]
@@ -3467,8 +3467,6 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
                   const cids = m.map((entry)=>{
                     const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id :entry.conversation
                     Conversation.findByIdAndUpdate({_id:id},{$set:{last_message:entry._id, last_updated:new Date()}}).then((m)=>console.log('pass'))
-                    // client && client.to(id).emit('new',entry)
-                  client && client.emit('unread',{})
                     return id
                   })
 

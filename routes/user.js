@@ -3533,8 +3533,8 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                       }).catch(next);
                         }else{
                           console.log('pass2');
-                          handleSlotAvailabilityWithCancellation(booking,req.socket)
                           res.send({status:"success", message:"booking cancelled"})
+                          handleSlotAvailabilityWithCancellation(booking,req.socket)
 
                         }
                   

@@ -3439,7 +3439,6 @@ function SlotsCheckReverse(body,id){
 }
 
 async function handleSlotAvailabilityWithCancellation(booking1,client){
-  console.log(booking1);
   let booking = booking1[0]
                   let start_time = Object.values(booking1).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking1[0].start_time)
                   let end_time = Object.values(booking1).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking1[0].end_time)
@@ -3469,9 +3468,10 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
                     Conversation.findByIdAndUpdate({_id:id},{$set:{last_message:entry._id, last_updated:new Date()}}).then((m)=>console.log('pass'))
                     return id
                   })
-
+                  console.log('laskd');
                 return  Booking.updateMany({booking_id:booking.booking_id},{$set:{game:false}},{multi:true}).then(booking=>{
-                    //const device_token_list=user.map((e)=>e.device_token)
+                    console.log('final_booking',booking);
+                  //const device_token_list=user.map((e)=>e.device_token)
                                                   //NotifyArray(device_token_list,'Hey ! Your previously hosted game is available again . Please book your slot ASAP to confirm the game','Turftown Game Availability')
                                                     return user.map((e)=>e._id)
                  }).catch((e)=>console.log(e));
@@ -3624,8 +3624,6 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
 
               if(booking[0].game){
                 Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
-                  
-
                   Message.create({conversation:game.conversation,message:`Hey ! slot has been cancelled .No refund for this slot. Please book your slot to confirm the game`,name:'bot',read_status:false,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                     Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
                       getGame(res,game.conversation,true,next,req)

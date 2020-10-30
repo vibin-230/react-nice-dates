@@ -86,7 +86,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
 
 
     if(chatroomName.type === 'group'){
-       x  = await chatroomManager.leaveChatroomGroup(chatroomName,io)
+       x  = await chatroomManager.leaveChatroomGroup(chatroomName,io,client)
        if(x && x.type !== 'single'){
          const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
          const activeUsers = clientNumber  ? clientManager.filterClients(Object.keys(clientNumber.sockets)) : []
@@ -304,10 +304,11 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
 
   async function handleJoinGame(game,callback){
     const x = await chatroomManager.joinGame(game.game_id,game.id,io)
-    x.forEach((clientId)=>{
+      x && Object.keys(x).length > 0 && !x.includes('error') 
+     && x.forEach((clientId)=>{
      const client =  clientManager.getClient(clientId)
     })
-    callback()
+    x && x.includes('error') ? callback(x) : callback()
   }
 
   async function handleSendBroadcast(message,callback){

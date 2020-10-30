@@ -302,6 +302,7 @@ router.post('/get_more_alerts/', [
          if(diff >= 12){
            final_data = data.slice(index+1,index+12)
          }else if(diff < 12 && diff > 1){
+           console.log("alert")
            final_data = data.slice(index+1,index+diff)
          }else{
            final_data.push({type:'empty',data:'No data available'})

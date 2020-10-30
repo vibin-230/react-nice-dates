@@ -61,9 +61,11 @@ module.exports = function ({ _id, image }) {
       return Message.find(filter).lean().populate('author', 'name _id handle').populate('user', 'name _id profile_picture phone handle visibility').populate({path:"event",populate:{path:"venue",select:"venue"}}).populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({_id:-1}).limit(20).then(m => {
         for(let i = 1 ;i <m.length; i++){
           if( moment(m[i].created_at).utc().format('MM-DD-YYYY') !== moment(m[i-1].created_at).utc().format('MM-DD-YYYY')){
-              m.splice(i,0,{conversation:conversation._id,message:parseDate(moment(m[i-1].created_at).utc().format('MM-DD-YYYY')),name:'bot',read_status:false,read_by:user.id,author:user.id,type:'bot',created_at:m[i].created_at,time:true})
+            m.splice(i,0,{conversation:conversation._id,message:parseDate(moment(m[i-1].created_at).utc().format('MM-DD-YYYY')),name:'bot',read_status:false,read_by:user.id,author:user.id,type:'bot',created_at:m[i].created_at,time:true})
           }
-
+        }
+        if(m && m.length > 0 && m.length < 20){
+          m.push({conversation:conversation._id,message:parseDate(moment(m[m.length-1].created_at).utc().format('MM-DD-YYYY')),name:'bot',read_status:false,read_by:user.id,author:user.id,type:'bot',created_at:m[m.length-1].created_at,time:true})
         }
         return {messages:m.reverse(),conversation:conversation}
       }).catch((e) => console.log(e))

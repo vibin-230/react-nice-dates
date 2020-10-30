@@ -8,5 +8,5 @@ module.exports = function SendMessage(numbers,sender,message){
     }).catch(error=>{
         console.log(error)
       })
-	//   }
-}
+	  }
+// }

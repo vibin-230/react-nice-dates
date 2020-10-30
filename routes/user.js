@@ -3441,15 +3441,16 @@ function SlotsCheckReverse(body,id){
 
 async function handleSlotAvailabilityWithCancellation(booking1,client){
   let booking = booking1[0]
-    //console.log(booking);
+    console.log('booking',booking);
                   let start_time = Object.values(booking1).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking1[0].start_time)
                   let end_time = Object.values(booking1).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking1[0].end_time)
                   let time = moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
   const slot_time = { $in: booking1.map((b)=>b.slot_time) }
   const x =  await  Booking.find({  venue_id:booking.venue_id, booking_date:booking.booking_date,slot_time:slot_time,booking_status:{$in:["blocked","booked","completed"]}}).lean().then(booking_history=>{
     let promisesToRun = [];
+    console.log('booking',booking_history);
     if(booking_history.length > 0){
-
+        
         for(let i=0;i<booking_history.length;i++){
               promisesToRun.push(SlotsCheckReverse(booking_history[i],booking.venue_id))
             }

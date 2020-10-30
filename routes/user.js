@@ -3448,7 +3448,6 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
   const slot_time = { $in: booking1.map((b)=>b.slot_time) }
   const x =  await  Booking.find({  venue_id:booking.venue_id, booking_date:booking.booking_date,slot_time:slot_time,booking_status:{$in:["blocked","booked","completed"]}}).lean().then(booking_history=>{
     let promisesToRun = [];
-    console.log('booking',booking_history);
     if(booking_history.length > 0){
 
         for(let i=0;i<booking_history.length;i++){
@@ -3512,6 +3511,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
           .then(response => {
             console.log(response.data);
             if(response.data.entity === "refund") /// user  with refund 
+            console.log('pass1');
             {
               Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true,refund_status:true,game:false,description:'from_game_with_refund'}},{multi:true}).then(booking=>{
                 Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
@@ -3520,16 +3520,20 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                       Coins.deleteMany({ booking_id: req.params.id }).lean().then(coins => {
                       }).catch(next);
                     }
+                 console.log('pass5');
                   if(booking[0].game){
                     Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
                       Message.create({conversation:game.conversation,message:`Hey ! Slot has been cancelled and refund has been initiated.Amount will be credited in 2 - 4 working days.Please book your slot to confirm the game`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
+            console.log('pass6');
+                         
                           handleSlotAvailabilityWithCancellation(booking,req.socket)
                             getGame(res,game.conversation,true,next,req)
                       }).catch(next);
                       }).catch(next);
                       }).catch(next);
                         }else{
+                          console.log('pass2');
                           handleSlotAvailabilityWithCancellation(booking,req.socket)
                           res.send({status:"success", message:"booking cancelled"})
 
@@ -3587,7 +3591,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   }).catch(next)
                   let manager_mail = ''
                    admins.map((admin,index)=>{manager_mail+=(admin.length-1) === index ?admin.email :admin.email + ','})
-                  console.log(manager_mail);
+                  //console.log(manager_mail);
                    ejs.renderFile('views/event_manager/venue_cancel_manager.ejs',obj).then(html=>{
                     //let to_emails = `${req.body.email}, rajasekar@turftown.in`
                     mail("support@turftown.in", manager_mail,booking_id+" has been cancelled","Slot Cancellation",html,response=>{

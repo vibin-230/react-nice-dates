@@ -738,15 +738,15 @@ module.exports = function () {
         conversation.exit_list = conversation.exit_list && conversation.exit_list.length > 0 ?conversation.exit_list.filter((key) => key.user_id.toString() !== userId.toString()) : []
         return Game.findByIdAndUpdate({ _id: game_id }, { $set: game }).then(game2 => {
           return User.findById({ _id: userId }, { activity_log: 0, }).lean().then(user => {
-          return Conversation.findByIdAndUpdate({ _id: game1.conversation }, { $set: conversation }).then(conversation2 => {
+          return Conversation.findByIdAndUpdate({ _id: game1.conversation }, { $set: conversation }).then(conversation3 => {
             return Conversation.findById({ _id: game.conversation }).lean().populate('members', '_id device_token handle name name_status').then(conversation2 => {
               const message_save ={ conversation: conversation2._id, message: `${user.handle} has joined the game`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() }
               saveMessage(message_save)
                 client.in(conversation2._id).emit('new',message_save)
                 client.in(conversation2._id).emit('unread',message_save)
-                const token_list  = conversation2.members
+                const token_list  = conversation2.members.filter((a)=>a._id.toString() !== userId.toString())
                 const device_token_list = token_list.map((e) => e.device_token)
-                NotifyArray(device_token_list, `${user.handle} has joined ${game1.name}`, `Turf Town`,conversation2)
+                NotifyArray(device_token_list, `${user.handle} has joined ${game1.name}`, `Turf Town`,conversation1)
                 return conversation2.members.map((e) => e._id)
 
                 //res.send({status:"success", message:"invitation sent"})

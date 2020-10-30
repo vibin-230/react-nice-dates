@@ -3524,8 +3524,8 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                     Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
                       Message.create({conversation:game.conversation,message:`Hey ! Slot has been cancelled and refund has been initiated.Amount will be credited in 2 - 4 working days.Please book your slot to confirm the game`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
+                          handleSlotAvailabilityWithCancellation(booking,req.socket)
                             getGame(res,game.conversation,true,next,req)
-                             handleSlotAvailabilityWithCancellation(booking,req.socket)
                       }).catch(next);
                       }).catch(next);
                       }).catch(next);
@@ -3598,9 +3598,6 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                       }
                     })
                   }).catch(next)
-
-
-
     
                   //Activity Log
                   let activity_log = {
@@ -3642,7 +3639,6 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                       }).catch(next);
                   }).catch(next);
                   }else{
-                    
                     res.send({status:"success", message:"booking cancelled"})
                     handleSlotAvailabilityWithCancellation(booking,req.socket)
 

@@ -3441,7 +3441,6 @@ function SlotsCheckReverse(body,id){
 
 async function handleSlotAvailabilityWithCancellation(booking1,client){
   let booking = booking1[0]
-    console.log('booking',booking);
                   let start_time = Object.values(booking1).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking1[0].start_time)
                   let end_time = Object.values(booking1).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking1[0].end_time)
                   let time = moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")

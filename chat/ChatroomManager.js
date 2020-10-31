@@ -746,7 +746,7 @@ module.exports = function () {
                 client.in(conversation2._id).emit('unread',message_save)
                 const token_list  = conversation2.members.filter((a)=>a._id.toString() !== userId.toString())
                 const device_token_list = token_list.map((e) => e.device_token)
-                NotifyArray(device_token_list, `${user.handle} has joined ${game1.name}`, `Turf Town`,conversation1)
+                NotifyArray(device_token_list, `${user.handle} has joined ${game1.name}.`, `Turf Town`,conversation1)
                 return conversation2.members.map((e) => e._id)
 
                 //res.send({status:"success", message:"invitation sent"})

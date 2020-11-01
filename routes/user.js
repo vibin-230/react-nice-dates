@@ -478,7 +478,7 @@ router.post('/get_user1', [
       var count  = 0
       let game_completed_count = 0
       let mvp_count = 0
-      let game_history = {}
+      let game_history = {football:{game:0,mvp:0},basketball:{game:0,mvp:0},cricket:{game:0,mvp:0},badminton:{game:0,mvp:0}}
       Alert.find({user: req.userId,status:true},{}).lean().then(alert=> {
         Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
           game_completed_count = game && game.length > 0 ? game.length : 0
@@ -489,7 +489,8 @@ router.post('/get_user1', [
           })
 
           const aq = game.map((a)=>{
-                game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0,mv_data:a.mvp }
+            game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? game_history[a.sport_name].mvp+ a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : game_history[a.sport_name].mvp
+  }
           })
           //mvp_count = aw && aw.length > 0 ? aw.length : 0
           User.findOne({_id: req.userId},{activity_log:0}).populate("requests","name _id profile_picture").lean().then(user=> {
@@ -580,7 +581,7 @@ router.post('/friend_get_following/:id', [
 ], (req, res, next) => {
   let game_completed_count = 0
   let mvp_count = 0
-  let game_history ={}
+  let game_history = {football:{game:0,mvp:0},basketball:{game:0,mvp:0},cricket:{game:0,mvp:0},badminton:{game:0,mvp:0}}
   const filter  = {$or:[{members:[req.userId,req.params.id],type:'single'},{members:[req.params.id,req.userId],type:'single'}]}
   Conversation.find(filter).limit(1).lean().then(ec=>{
   User.findOne({_id:req.params.id},{activity_log:0}).populate("followers","name _id handle name_status profile_picture visibilility").populate("following","name _id handle name_status profile_picture visibilility").lean().then(user1 => {
@@ -593,8 +594,9 @@ router.post('/friend_get_following/:id', [
        return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.params.id.toString()).length>0
       })
       const aq = game.map((a)=>{
-        game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.params.id.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.params.id.toString()).length : 0 }
-  })
+        game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.params.id.toString()).length > 0 ? game_history[a.sport_name].mvp+ a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.params.id.toString()).length : game_history[a.sport_name].mvp
+        }
+      })
       user1.game_completed = game_completed_count
       user1.mvp_count = mvp_count
       user1.level =  getLevel(250 * mvp_count + 100 * game_completed_count)
@@ -947,7 +949,7 @@ router.post('/alter_user/:id', [
           var count  = 0
       let game_completed_count = 0
       let mvp_count = 0
-      let game_history = {}
+      let game_history = {football:{game:0,mvp:0},basketball:{game:0,mvp:0},cricket:{game:0,mvp:0},badminton:{game:0,mvp:0}}
       Alert.find({user: req.userId,status:true},{}).lean().then(alert=> {
           Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
           game_completed_count = game && game.length > 0 ? game.length : 0
@@ -957,7 +959,8 @@ router.post('/alter_user/:id', [
            return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc.target_id.toString() === req.userId.toString()).length>0
           })
           const aq = game.map((a)=>{
-            game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0,mv_data:a.mvp }
+            game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.params.id.toString()).length > 0 ? game_history[a.sport_name].mvp+ a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.params.id.toString()).length : game_history[a.sport_name].mvp
+  }
           })
           //mvp_count = aw && aw.length > 0 ? aw.length : 0
           Conversation.find({ $or: [ { members: { $in: [req.userId] } },{ exit_list: { $elemMatch: {user_id:req.userId} } }] }).lean().populate('to',' name _id profile_picture last_active online_status status handle name_status').populate('members','name _id profile_picture last_active online_status status handle name_status').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(existingConversation=>{

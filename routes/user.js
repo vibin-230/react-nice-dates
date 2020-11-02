@@ -834,12 +834,12 @@ router.post('/get_chatrooms/:id', [
               
                 c['time'] = user && user.message ? time.length : time.length 
                 c['has_counter'] = time.length > 0 ? true :false
-              c['invite_status'] = c.invite_status 
+              c['invite_status'] = false 
               if(c.invite_status){
                 if(req.userId.toString() == c.created_by.toString()){
                   c['actual_invite_status'] = false
                 }else{
-                  c['actual_invite_status'] = true
+                  c['actual_invite_status'] = false
                 }
               }else{
                 c['actual_invite_status'] = false

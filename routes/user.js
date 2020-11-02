@@ -3583,7 +3583,11 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
          }).catch(error => console.log(error))
        }).catch(error => console.log(error))
       }else{
-        return 'pass'
+        return  Booking.updateMany({booking_id:booking.booking_id},{$set:{game:false}},{multi:true}).then(booking=>{
+          //const device_token_list=user.map((e)=>e.device_token)
+                                          //NotifyArray(device_token_list,'Hey ! Your previously hosted game is available again . Please book your slot ASAP to confirm the game','Turftown Game Availability')
+                                            return 'pass'
+         }).catch((e)=>console.log(e));
       }
        }).catch(error => console.log(error))
        

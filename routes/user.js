@@ -3461,17 +3461,15 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
                 }) 
                 const members = _.flatten(game.map((g)=>g.conversation.members))
                 return   User.find({_id: { $in :members } },{activity_log:0}).lean().then(user=> {
-                   
                   return Message.insertMany(messages).then(message1=>{
                   const message_ids = message1.map((m)=>m._id)
                   return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
-                  const cids = m.map((entry)=>{
+                  const cids = m.forEach((entry)=>{
                     const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id :entry.conversation
                     Conversation.findByIdAndUpdate({_id:id},{$set:{last_message:entry._id, last_updated:new Date()}}).then((m)=>console.log('pass'))
                     return id
                   })
                 return  Booking.updateMany({booking_id:booking.booking_id},{$set:{game:false}},{multi:true}).then(booking=>{
-                    console.log('final_booking',booking);
                   //const device_token_list=user.map((e)=>e.device_token)
                                                   //NotifyArray(device_token_list,'Hey ! Your previously hosted game is available again . Please book your slot ASAP to confirm the game','Turftown Game Availability')
                                                     return user.map((e)=>e._id)
@@ -3489,7 +3487,8 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
         }else{
           return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time },{$set:{status:true,status_description:''}}).lean().then(game1=>{
             return Game.find({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time }).lean().populate('conversation').populate('users','name _id device_token').then(game=>{
-             let messages =  game && game.length > 0 &&  game.map((nc)=>{ 
+              if(game && game.length > 0){
+              let messages =  game && game.length > 0 &&  game.map((nc)=>{ 
                const device_token = nc && nc.users.length > 0 && nc.users.map((e)=>e.device_token)
                NotifyArray(device_token,`Hey! The ${time} slot is available again. Please book this slot to confirm your game.`,'Turftown Slot Availability')
                return {conversation:nc.conversation._id,message:`Hey! The ${time} slot is available again. Please book this slot to confirm your game`,name:'bot',read_status:false,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot',created_at:new Date()}
@@ -3512,7 +3511,11 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
            }).catch(error => console.log(error))
          }).catch(error => console.log(error))
        }).catch(error => console.log(error))
+      }else{
+        return 'pass'
+      }
        }).catch(error => console.log(error))
+       
          }).catch(error => console.log(error))
           }
         }).catch(error => console.log(error))
@@ -3540,12 +3543,10 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                       Coins.deleteMany({ booking_id: req.params.id }).lean().then(coins => {
                       }).catch(next);
                     }
-                 console.log('pass5',booking[0].game);
                   if(booking[0].game){
                     Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
                       Message.create({conversation:game.conversation,message:`Hey!This slot has been cancelled and refund has been initiated. The amount will be credited in 2-4 business days.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
-            console.log('pass6');
                          
                             getGame(res,game.conversation,true,next,req)
                       }).catch(next);
@@ -3623,17 +3624,17 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   }).catch(next)
     
                   //Activity Log
-                  let activity_log = {
-                    datetime: new Date(),
-                    id:req.userId,
-                    user_type: req.role?req.role:"user",
-                    activity: 'slot booking cancelled',
-                    name:req.name,
-                    venue_id:booking[0].venue_id,
-                    booking_id:booking_id,
-                    message: "Slot "+booking_id+" booking cancelled at "+venue_name+" "+datetime+" "+venue_type,
-                  }
-                  ActivityLog(activity_log)
+                  // let activity_log = {
+                  //   datetime: new Date(),
+                  //   id:req.userId,
+                  //   user_type: req.role?req.role:"user",
+                  //   activity: 'slot booking cancelled',
+                  //   name:req.name,
+                  //   venue_id:booking[0].venue_id,
+                  //   booking_id:booking_id,
+                  //   message: "Slot "+booking_id+" booking cancelled at "+venue_name+" "+datetime+" "+venue_type,
+                  // }
+                  // ActivityLog(activity_log)
                
             }).catch(next);
           }).catch(next);
@@ -4836,7 +4837,6 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         result = Object.values(combineSlots(booking))
         // let result1 = Object.values(combineSlots1(old_booking))
         cancelled_bookings =  Object.values(combineSlots(cancelledBookings))
-        console.log('canceled booking',cancelled_bookings);
         game.map((key)=>{
          key["end_time"] = key.conversation && key.conversation.end_time ? key.conversation.end_time : key.bookings[key.bookings.length-1].end_time 
         })
@@ -4870,7 +4870,6 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         const present = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') <= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
         const past = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') >= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
         const apresent = groupBy(present,'end_time')
-        console.log('past',past);
         const apast = groupBy([...past,...cancelled_bookings,...cancelledeventBooking1],'end_time')
         //console.log('apast',apast);
 

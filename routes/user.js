@@ -478,7 +478,7 @@ router.post('/get_user1', [
       var count  = 0
       let game_completed_count = 0
       let mvp_count = 0
-      let game_history = {}
+      let game_history = {football:{game:0,mvp:0},basketball:{game:0,mvp:0},cricket:{game:0,mvp:0},badminton:{game:0,mvp:0}}
       Alert.find({user: req.userId,status:true},{}).lean().then(alert=> {
         Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
           game_completed_count = game && game.length > 0 ? game.length : 0
@@ -489,7 +489,8 @@ router.post('/get_user1', [
           })
 
           const aq = game.map((a)=>{
-                game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0,mv_data:a.mvp }
+            game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? game_history[a.sport_name].mvp+ a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : game_history[a.sport_name].mvp
+  }
           })
           //mvp_count = aw && aw.length > 0 ? aw.length : 0
           User.findOne({_id: req.userId},{activity_log:0}).populate("requests","name _id profile_picture").lean().then(user=> {
@@ -515,6 +516,74 @@ router.post('/get_user1', [
          }).catch(next)
       }).catch(next)
        
+
+});
+
+
+router.post('/combine_profile_api', [
+  verifyToken,
+], (req, res, next) => {
+      //Check if user exist
+      var count  = 0
+      let game_completed_count = 0
+      let mvp_count = 0
+      let game_history = {football:{game:0,mvp:0},basketball:{game:0,mvp:0},cricket:{game:0,mvp:0},badminton:{game:0,mvp:0}}
+      Experience.find({user:req.userId}).then(exp=> {
+        Alert.find({user: req.userId,created_by:{$nin:[req.userId]}}).sort({created_at: -1}).lean().populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'post', populate: { path: 'event' , populate :{path:'venue',select:'venue'} } }).populate({ path: 'post', populate: { path: 'game' , populate :{path:'venue',select:'venue'} } }).populate('created_by','name _id handle profile_picture').then(alert=> {
+          let y = alert.filter((key)=>{
+            if(key.type == "shoutout" && key.post !== null && key.post.type == "game"){
+              return (key.post.game !== null && key.created_by !== null ) 
+            }
+            else if(key.type == "shoutout" && key.post !== null && key.post.type == "event"){
+              return (key.post.event !== null && key.created_by !== null) 
+            }
+            else {
+              return key.created_by !== null
+            }
+          })
+          Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
+          game_completed_count = game && game.length > 0 ? game.length : 0
+          const aw = game && game.length > 0 && game.filter((a)=>{
+           let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0
+           mvp_count = mvp_count + f
+           return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length>0
+          })
+
+          const aq = game.map((a)=>{
+            game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? game_history[a.sport_name].mvp+ a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : game_history[a.sport_name].mvp
+  }
+          })
+
+          
+          //mvp_count = aw && aw.length > 0 ? aw.length : 0
+          User.findOne({_id: req.userId},{activity_log:0}).populate("requests","name _id profile_picture").lean().then(user=> {
+            Coins.aggregate([ { $match: { user:user._id } },{ $group: { _id: "$user", amount: { $sum: "$amount" } } }]).then((coins)=>{
+            if (user) {
+             user['total'] = 0
+               const alerts1 = alert && alert.length > 0 ? alert.filter(a=>moment(a.created_at).isAfter(user.last_active)) : []   
+               user['alert_total'] = alerts1.length
+               user['game_completed'] = game_completed_count
+               user['mvp_count'] = mvp_count
+               user['handle'] = user && user.handle ? user.handle : 'new_user'
+               user['refer_custom_value'] = 50
+               user['refer_custom_value1'] = 100
+               user['game_history'] = game_history
+               user['coins'] =  coins && coins.length > 0 && coins[0].amount ? coins[0].amount : 0
+               user['level'] =  getLevel(250 * mvp_count + 100 * game_completed_count)
+               const client = req.redis()
+               client.set('alerts_'+req.userId, JSON.stringify(y), function(err, reply) {
+                });
+               const finalData = [...y]
+               res.status(201).send({status: "success", message: "user collected",data:{user:user,alerts:finalData.slice(0,12),exp:exp}})
+              
+              } else {
+                res.status(422).send({status: "failure", errors: {user:"force update failed"}});
+              }
+            }).catch(next);
+          }).catch(next)
+         }).catch(next)
+      }).catch(next)
+    }).catch(next)
 
 });
 
@@ -580,7 +649,7 @@ router.post('/friend_get_following/:id', [
 ], (req, res, next) => {
   let game_completed_count = 0
   let mvp_count = 0
-  let game_history ={}
+  let game_history = {football:{game:0,mvp:0},basketball:{game:0,mvp:0},cricket:{game:0,mvp:0},badminton:{game:0,mvp:0}}
   const filter  = {$or:[{members:[req.userId,req.params.id],type:'single'},{members:[req.params.id,req.userId],type:'single'}]}
   Conversation.find(filter).limit(1).lean().then(ec=>{
   User.findOne({_id:req.params.id},{activity_log:0}).populate("followers","name _id handle name_status profile_picture visibilility").populate("following","name _id handle name_status profile_picture visibilility").lean().then(user1 => {
@@ -593,8 +662,9 @@ router.post('/friend_get_following/:id', [
        return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.params.id.toString()).length>0
       })
       const aq = game.map((a)=>{
-        game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.params.id.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.params.id.toString()).length : 0 }
-  })
+        game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.params.id.toString()).length > 0 ? game_history[a.sport_name].mvp+ a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.params.id.toString()).length : game_history[a.sport_name].mvp
+        }
+      })
       user1.game_completed = game_completed_count
       user1.mvp_count = mvp_count
       user1.level =  getLevel(250 * mvp_count + 100 * game_completed_count)
@@ -947,7 +1017,7 @@ router.post('/alter_user/:id', [
           var count  = 0
       let game_completed_count = 0
       let mvp_count = 0
-      let game_history = {}
+      let game_history = {football:{game:0,mvp:0},basketball:{game:0,mvp:0},cricket:{game:0,mvp:0},badminton:{game:0,mvp:0}}
       Alert.find({user: req.userId,status:true},{}).lean().then(alert=> {
           Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
           game_completed_count = game && game.length > 0 ? game.length : 0
@@ -957,7 +1027,8 @@ router.post('/alter_user/:id', [
            return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc.target_id.toString() === req.userId.toString()).length>0
           })
           const aq = game.map((a)=>{
-            game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0,mv_data:a.mvp }
+            game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? game_history[a.sport_name].mvp+ a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : game_history[a.sport_name].mvp
+  }
           })
           //mvp_count = aw && aw.length > 0 ? aw.length : 0
           Conversation.find({ $or: [ { members: { $in: [req.userId] } },{ exit_list: { $elemMatch: {user_id:req.userId} } }] }).lean().populate('to',' name _id profile_picture last_active online_status status handle name_status').populate('members','name _id profile_picture last_active online_status status handle name_status').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(existingConversation=>{

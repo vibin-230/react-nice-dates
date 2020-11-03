@@ -430,14 +430,16 @@ module.exports = function () {
 
          conversation.exit_list = conversation.exit_list.filter((a)=>a.user_id.toString() !== user_id.toString())
          return Conversation.findByIdAndUpdate({_id:message.conversation},conversation ).then(conversation=>{
+         return Conversation.findById({_id:message.conversation},conversation ).populate('members','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(conversation=>{
          return User.findById({_id:user_id}).then(user=>{
           client.in(conversation._id).emit('new',message)
            client.in(conversation._id).emit('unread',{})
            saveMessage(message)
            NotifyArray([user.device_token],message.message,'New Club Added',conversation)
-
            return conversation
         }).catch((e)=>{console.log(e)});
+      }).catch((e)=>{console.log(e)});
+
       }).catch((e)=>{console.log(e)});
       }).catch((e)=>{console.log(e)});
 
@@ -744,7 +746,55 @@ module.exports = function () {
               saveMessage(message_save)
                 client.in(conversation2._id).emit('new',message_save)
                 client.in(conversation2._id).emit('unread',message_save)
+
                 const token_list  = conversation2.members.filter((a)=>a._id.toString() !== userId.toString())
+                const device_token_list = token_list.map((e) => e.device_token)
+                NotifyArray(device_token_list, `${user.handle} has joined ${game1.name}.`, `Turf Town`,conversation1)
+                return conversation2.members.map((e) => e._id)
+
+                //res.send({status:"success", message:"invitation sent"})
+
+              }).catch((e) => console.log(e));
+            }).catch((e) => console.log(e));
+          }).catch(error => console.log(error))
+        }).catch(error => console.log(error))
+     }else{
+       return 'error_user_already_exists'
+     }
+    }else{
+        return 'error_by_limit'
+      }
+      }).catch(error => console.log(error))
+      
+    }).catch(error => console.log(error))
+    return x
+  }
+
+  async function joinGame1(game_id, userId,client) {
+    let colors = getColors([userId])
+    const x = await Game.findById({ _id: game_id }).lean().then(game1 => {
+      return Conversation.findById({ _id: game1.conversation }).lean().then(conversation1 => {
+        const conversation = Object.assign({}, conversation1)
+        const game = Object.assign({}, game1)
+        if(game && game.users &&  game.users.length > 0 && game.users.length < game.limit){
+          if(!game.users.some((key) => key.toString() == userId.toString())){
+        game.invites = game.invites.filter((key) => key.toString() !== userId.toString())
+        game.users = game.users.some((key) => key.toString() == userId.toString()) ? game.users : game.users.concat(userId)
+        conversation.invites = conversation.invites.filter((key) => key.toString() !== userId.toString())
+        conversation.colors = conversation.members.some((key) => key.toString() == userId.toString()) ? conversation.colors : conversation.colors.concat(colors)
+        conversation.members = conversation.members.some((key) => key.toString() == userId.toString()) ? conversation.members : conversation.members.concat(userId)
+        conversation.last_active = conversation.last_active.some((key) => key.user_id.toString() == userId.toString()) ? conversation.last_active : conversation.last_active.concat({ "user_id": userId, last_active: new Date() })
+        conversation.join_date = conversation.join_date.some((key) => key.user_id.toString() == userId.toString()) ? conversation.join_date : conversation.join_date.concat({ "user_id": userId, join_date: new Date() })
+        conversation.exit_list = conversation.exit_list && conversation.exit_list.length > 0 ?conversation.exit_list.filter((key) => key.user_id.toString() !== userId.toString()) : []
+        return Game.findByIdAndUpdate({ _id: game_id }, { $set: game }).then(game2 => {
+          return User.findById({ _id: userId }, { activity_log: 0, }).lean().then(user => {
+          return Conversation.findByIdAndUpdate({ _id: game1.conversation }, { $set: conversation }).then(conversation3 => {
+            return Conversation.findById({ _id: game.conversation }).lean().populate('members', '_id device_token handle name name_status').then(conversation2 => {
+              const message_save ={ conversation: conversation2._id, message: `${user.handle} has joined the game`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() }
+                 saveMessage(message_save)
+                client.in(conversation2._id).emit('new',message_save)
+                client.in(conversation2._id).emit('unread',message_save)
+                const token_list  = conversation2.members.filter((a)=>a._id.toString() == userId.toString())
                 const device_token_list = token_list.map((e) => e.device_token)
                 NotifyArray(device_token_list, `${user.handle} has joined ${game1.name}.`, `Turf Town`,conversation1)
                 return conversation2.members.map((e) => e._id)
@@ -1140,6 +1190,7 @@ return x
     notifyAllUsersNotInTheChatroom1,
     sendGroupInvites,
     joinGame,
+    joinGame1,
     updateImage,
     setTownTrue,
     updateGroup,

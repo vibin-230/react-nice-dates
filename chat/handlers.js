@@ -310,6 +310,14 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
     })
     x && x.includes('error') ? callback(x) : callback()
   }
+  async function handleAcceptGame(game,callback){
+    const x = await chatroomManager.joinGame1(game.game_id,game.id,io)
+      x && Object.keys(x).length > 0 && !x.includes('error') 
+     && x.forEach((clientId)=>{
+     const client =  clientManager.getClient(clientId)
+    })
+    x && x.includes('error') ? callback(x) : callback()
+  }
 
   async function handleSendBroadcast(message,callback){
     
@@ -385,5 +393,5 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
     }
   }
 
-  return {handleProfileAccepted,handleMvp,handleSendBroadcast,handleSlotAvailabilityDueToCancellation,handleSlotAvailability,handleSingleLeaveConnection,handleLeaveChatrooms,handleUpdateGroup,handleUpdateParams,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames,handleProfileAlerts,handleEventInvites,handleSendMultiple}
+return {handleProfileAccepted,handleAcceptGame,handleMvp,handleSendBroadcast,handleSlotAvailabilityDueToCancellation,handleSlotAvailability,handleSingleLeaveConnection,handleLeaveChatrooms,handleUpdateGroup,handleUpdateParams,handleUpdateImage,handleRegister, handleJoin, handleLeave, handleMessage, handleGetChatrooms, handleGetAvailableUsers, handleDisconnect, handleInvites, handleJoinGame,handleTyping,handleMessageGames,handleProfileAlerts,handleEventInvites,handleSendMultiple}
 }

@@ -427,19 +427,16 @@ module.exports = function () {
           conversation.last_message = message._id
           //kumar ji line
           conversation.colors = conversation.colors.length > 0 ?  conversation.colors.concat(colors) : colors
-
          conversation.exit_list = conversation.exit_list.filter((a)=>a.user_id.toString() !== user_id.toString())
          return Conversation.findByIdAndUpdate({_id:message.conversation},conversation ).then(conversation=>{
-         return Conversation.findById({_id:message.conversation},conversation ).populate('members','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(conversation=>{
          return User.findById({_id:user_id}).then(user=>{
           client.in(conversation._id).emit('new',message)
            client.in(conversation._id).emit('unread',{})
            saveMessage(message)
            NotifyArray([user.device_token],message.message,'New Club Added',conversation)
+
            return conversation
         }).catch((e)=>{console.log(e)});
-      }).catch((e)=>{console.log(e)});
-
       }).catch((e)=>{console.log(e)});
       }).catch((e)=>{console.log(e)});
 

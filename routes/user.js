@@ -3293,13 +3293,12 @@ router.post('/modify_booking/:id', verifyToken, (req, res, next) => {
 
 //Booking completed
 router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
-  console.log('request',req.body)
-  Booking.find({booking_id:req.params.id}).then(booking=>{
+  Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id}).then(booking=>{
     if(req.body.commission){
       req.body.commission = req.body.commission/booking.length
     }
-    Booking.updateMany({booking_id:req.params.id},req.body,{multi:true}).then(booking=>{
-      Booking.find({booking_id:req.params.id}).then(booking=>{
+    Booking.updateMany({booking_id:req.params.id,venue_id:req.body.venue_id},req.body,{multi:true}).then(booking=>{
+      Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id}).then(booking=>{
         const values = booking
         Game.findOne({"bookings.booking_id":booking[0].booking_id}).then((g)=>{
         if(g){
@@ -4958,10 +4957,10 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         // const today_empty1 = qpast && qpast.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpast.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
         qpresent.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
         qpast.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
-        let qpas = [...qpast].reverse()
+        let qpas = [...qpast]
         let qprs = [...qpresent]
         //console.log(qpas);
-        res.send({status:"success", message:"booking history fetched", data:{past:qpas.slice(0,6),present:qprs.slice(0,5)}})
+        res.send({status:"success", message:"booking history fetched", data:{past:qpas,present:qprs}})
         req.redis().set('bookings_present_'+req.userId,JSON.stringify(qpresent))
         req.redis().set('bookings_past_'+req.userId,JSON.stringify(qpast))
     }).catch(next)
@@ -5155,8 +5154,8 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
           booking_ids.push(booking.booking_id)
         }
       })
-      Booking.find({booking_id:{$in:booking_ids},repeat_booking:false}).lean().populate('collected_by','name').then(bookings=>{
-        Booking.find({booking_id:{$in:booking_ids},repeat_booking:true}).lean().populate('collected_by','name').then(booking=>{
+      Booking.find({booking_id:{$in:booking_ids},repeat_booking:false,venue_id:req.params.id}).lean().populate('collected_by','name').then(bookings=>{
+        Booking.find({booking_id:{$in:booking_ids},repeat_booking:true,venue_id:req.params.id}).lean().populate('collected_by','name').then(booking=>{
           result = Object.values(combineSlots(bookings))
          result1 = Object.values(combineRepeatSlots(booking))
          let final =  result.concat(result1)

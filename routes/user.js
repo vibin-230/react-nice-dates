@@ -2372,7 +2372,8 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
     }else{
       res.send({status:"success", message:"slot booked",data: result})
     }
-    handleSlotAvailabilityForGames(values,req.socket)
+    //***uncomment before release */
+    //handleSlotAvailabilityForGames(values,req.socket)
     //Send Sms
     Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
@@ -3038,7 +3039,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
         Venue.findById({_id:values[0].venue_id}).then(venue=>{
           // Send SMS
           //comment out after test**********
-          handleSlotAvailabilityForGames1(values,req.socket)
+          //handleSlotAvailabilityForGames1(values,req.socket)
           createReport({type:'booking',comments:values[0].comments ? values[0].comments:'',venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,created_by:values[0].user_id,card:values[0].card?values[0].card:0,coins:0,cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
           let booking_id = values[0].booking_id
           let phone = "91"+values[0].phone
@@ -3249,7 +3250,7 @@ router.post('/check_event_coupon/:id', verifyToken, (req, res, next) => {
 
 //Modify booking
 router.post('/modify_booking/:id', verifyToken, (req, res, next) => {
-  Booking.find({booking_id:req.params.id}).then(booking=>{
+  Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id}).then(booking=>{
     const amount = req.body.amount
     if(req.body.amount){
       req.body.amount = req.body.amount/booking.length
@@ -3260,8 +3261,8 @@ router.post('/modify_booking/:id', verifyToken, (req, res, next) => {
     if(req.body.booking_amount){
       req.body.booking_amount = req.body.booking_amount/booking.length
     }
-    Booking.updateMany({booking_id:req.params.id},req.body,{multi:true}).then(booking=>{
-      Booking.find({booking_id:req.params.id}).then(booking=>{
+    Booking.updateMany({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id},req.body,{multi:true}).then(booking=>{
+      Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id}).then(booking=>{
         const values = booking
         result = Object.values(combineSlots(booking))
           createReport({type:'booking',comments:values[0].comments ? values[0].comments:'',venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,user:values[0].user_id,card:values[0].card?values[0].card:0,coins:0,cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
@@ -3292,12 +3293,12 @@ router.post('/modify_booking/:id', verifyToken, (req, res, next) => {
 
 //Booking completed
 router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
-  Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id}).then(booking=>{
+  Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id}).then(booking=>{
     if(req.body.commission){
       req.body.commission = req.body.commission/booking.length
     }
-    Booking.updateMany({booking_id:req.params.id,venue_id:req.body.venue_id},req.body,{multi:true}).then(booking=>{
-      Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id}).then(booking=>{
+    Booking.updateMany({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id},req.body,{multi:true}).then(booking=>{
+      Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id}).then(booking=>{
         const values = booking
         Game.findOne({"bookings.booking_id":booking[0].booking_id}).then((g)=>{
         if(g){
@@ -3523,6 +3524,10 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
            return Promise.all(promisesToRun).then((values) => {
              return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time },{$set:{status:true,status_description:''}}).lean().then(game1=>{
                return Game.find({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time }).lean().populate('conversation').populate('users','name _id device_token').then(game=>{
+               
+                if(game && game.length > 0){
+
+               
                 let messages =  game && game.length > 0 &&  game.map((nc)=>{ 
                   const device_token = nc && nc.users.length > 0 && nc.users.map((e)=>e.device_token)
                   NotifyArray(device_token,`Hey! The ${time} slot is available again. Please book this slot to confirm your game.`,'Turftown Slot Availability')
@@ -3538,7 +3543,7 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
                     Conversation.findByIdAndUpdate({_id:id},{$set:{last_message:entry._id, last_updated:new Date()}}).then((m)=>console.log('pass'))
                     return id
                   })
-                return  Booking.updateMany({booking_id:booking.booking_id},{$set:{game:false}},{multi:true}).then(booking=>{
+                return  Booking.updateMany({booking_id:booking.booking_id,user_id:booking.user_id},{$set:{game:false}},{multi:true}).then(booking=>{
                   //const device_token_list=user.map((e)=>e.device_token)
                                                   //NotifyArray(device_token_list,'Hey ! Your previously hosted game is available again . Please book your slot ASAP to confirm the game','Turftown Game Availability')
                                                     return user.map((e)=>e._id)
@@ -3546,7 +3551,15 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
               }).catch(error => console.log(error))
             }).catch(error => console.log(error))
           }).catch(error => console.log(error))
+        }else{
+          return  Booking.updateMany({booking_id:booking.booking_id,user_id:booking.user_id},{$set:{game:false}},{multi:true}).then(booking=>{
+            //const device_token_list=user.map((e)=>e.device_token)
+                                            //NotifyArray(device_token_list,'Hey ! Your previously hosted game is available again . Please book your slot ASAP to confirm the game','Turftown Game Availability')
+                                              return 'pass'
+           }).catch((e)=>console.log(e));
+        }
           }).catch(error => console.log(error))
+        
             }).catch(error => console.log(error))
           }).catch(error=>{
             console.log('hit error',error);
@@ -3572,7 +3585,7 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
                  Conversation.findByIdAndUpdate({_id:id},{$set:{last_message:entry._id, last_updated:new Date()}}).then((m)=>console.log('pass'))
                  return id
                })
-             return  Booking.updateMany({booking_id:booking.booking_id},{$set:{game:false}},{multi:true}).then(booking=>{
+             return  Booking.updateMany({booking_id:booking.booking_id,user_id:booking.user_id},{$set:{game:false}},{multi:true}).then(booking=>{
                //const device_token_list=user.map((e)=>e.device_token)
                                                //NotifyArray(device_token_list,'Hey ! Your previously hosted game is available again . Please book your slot ASAP to confirm the game','Turftown Game Availability')
                                                  return user.map((e)=>e._id)
@@ -3581,7 +3594,7 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
          }).catch(error => console.log(error))
        }).catch(error => console.log(error))
       }else{
-        return  Booking.updateMany({booking_id:booking.booking_id},{$set:{game:false}},{multi:true}).then(booking=>{
+        return  Booking.updateMany({booking_id:booking.booking_id,user_id:booking.user_id},{$set:{game:false}},{multi:true}).then(booking=>{
           //const device_token_list=user.map((e)=>e.device_token)
                                           //NotifyArray(device_token_list,'Hey ! Your previously hosted game is available again . Please book your slot ASAP to confirm the game','Turftown Game Availability')
                                             return 'pass'
@@ -3595,7 +3608,7 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
 }
 
 router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
-  Booking.findOne({booking_id:req.params.id}).then(booking=>{
+  Booking.findOne({booking_id:req.params.id,user_id:req.userId}).then(booking=>{
     User.findById({_id:req.userId}).then(user=>{
       Venue.findById({_id:booking.venue_id}).then(venue=>{
       Admin.find({venue:{$in:[booking.venue_id]},notify:true},{activity_log:0}).then(admins=>{
@@ -3609,8 +3622,8 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
             if(response.data.entity === "refund") /// user  with refund 
             console.log('pass1');
             {
-              Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true,refund_status:true,game:false,description:'from_game_with_refund'}},{multi:true}).then(booking=>{
-                Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
+              Booking.updateMany({booking_id:req.params.id,user_id:req.userId},{$set:{booking_status:"cancelled", refunded: true,refund_status:true,game:false,description:'from_game_with_refund'}},{multi:true}).then(booking=>{
+                Booking.find({booking_id:req.params.id,user_id:req.userId}).lean().populate('venue_data').then(booking=>{
                   Coins.find({ booking_id: req.params.id }).lean().then(coins => {
                   if (coins) {
                       Coins.deleteMany({ booking_id: req.params.id }).lean().then(coins => {
@@ -3718,8 +3731,8 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
             console.log(error.response.data)
           }).catch(next);
         }else{
-          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled",refund_status:false,game:false,}},{multi:true}).then(booking=>{ ////user cancellation without refund
-            Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
+          Booking.updateMany({booking_id:req.params.id,user_id:req.userId},{$set:{booking_status:"cancelled",refund_status:false,game:false,}},{multi:true}).then(booking=>{ ////user cancellation without refund
+            Booking.find({booking_id:req.params.id,user_id:req.userId}).lean().populate('venue_data').then(booking=>{
               Coins.find({ booking_id: req.params.id }).lean().then(coins => {
                 if (coins && req.body.refund_status) {
                     Coins.deleteMany({ booking_id: req.params.id }).lean().then(coins => {
@@ -4401,7 +4414,7 @@ router.post('/booking_history_from_app_event_bookings', verifyToken, (req, res, 
 })
 
 router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
-  Booking.findOne({booking_id:req.params.id}).then(booking=>{
+  Booking.findOne({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id}).then(booking=>{
     Venue.findById({_id:booking.venue_id}).then(venue=>{  
       Admin.findById({_id:req.userId}).then(admin=>{
       let role = req.role === "venue_staff" || req.role === "venue_manager"
@@ -4412,8 +4425,8 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
           .then(response => {
             if(response.data.entity === "refund")
             {
-              Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true, refund_status:true,cancelled_by:req.body.cancelled_by}},{multi:true}).then(booking=>{
-                Booking.find({booking_id:req.params.id}).lean().populate("venue_data").then(booking=>{
+              Booking.updateMany({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id},{$set:{booking_status:"cancelled", refunded: true, refund_status:true,cancelled_by:req.body.cancelled_by}},{multi:true}).then(booking=>{
+                Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id}).lean().populate("venue_data").then(booking=>{
                   User.findById({_id:booking[0].user_id},{activity_log:0}).then(user=>{
                     Coins.find({ booking_id: req.params.id }).lean().then(coins => {
                       if (coins) {
@@ -4502,8 +4515,8 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
             console.log(error)
           }).catch(next);
         }else{
-          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refund_status:false,cancelled_by:req.body.cancelled_by}},{multi:true}).then(booking=>{
-            Booking.find({booking_id:req.params.id}).lean().populate("venue_data").then(booking=>{
+          Booking.updateMany({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id},{$set:{booking_status:"cancelled", refund_status:false,cancelled_by:req.body.cancelled_by}},{multi:true}).then(booking=>{
+            Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id}).lean().populate("venue_data").then(booking=>{
                   User.findById({_id:booking[0].user_id},{"activity_log":0}).then(user=>{
                   res.send({status:"success", message:"booking cancelled"})
                   let booking_id = booking[0].booking_id
@@ -5102,8 +5115,9 @@ router.post('/cancelled_booking_history_by_time/:id', verifyToken, (req, res, ne
           booking_ids.push(booking.booking_id)
         }
       })
-      Booking.find({booking_id:{$in:booking_ids},repeat_booking:false}).lean().populate('cancelled_by','name').then(booking=>{
-      Booking.find({booking_id:{$in:booking_ids},repeat_booking:true}).lean().populate('cancelled_by','name').then(bookings=>{
+
+      Booking.find({booking_id:{$in:booking_ids},venue_id:req.params.id,repeat_booking:false,booking_status:{$in:["cancelled"]}}).lean().populate('cancelled_by','name').then(booking=>{
+      Booking.find({booking_id:{$in:booking_ids},venue_id:req.params.id,repeat_booking:true,booking_status:{$in:["cancelled"]}}).lean().populate('cancelled_by','name').then(bookings=>{
         result = Object.values(combineSlots(booking))
         result1 = Object.values(combineRepeatSlots(bookings))
         let final =  result.concat(result1)
@@ -5153,8 +5167,8 @@ router.post('/booking_history_by_time/:id', verifyToken, (req, res, next) => {
           booking_ids.push(booking.booking_id)
         }
       })
-      Booking.find({booking_id:{$in:booking_ids},repeat_booking:false,venue_id:req.params.id}).lean().populate('collected_by','name').then(bookings=>{
-        Booking.find({booking_id:{$in:booking_ids},repeat_booking:true,venue_id:req.params.id}).lean().populate('collected_by','name').then(booking=>{
+      Booking.find({booking_status:{$in:["booked","completed"]},booking_id:{$in:booking_ids},repeat_booking:false,venue_id:req.params.id}).lean().populate('collected_by','name').then(bookings=>{
+        Booking.find({booking_status:{$in:["booked","completed"]},booking_id:{$in:booking_ids},repeat_booking:true,venue_id:req.params.id}).lean().populate('collected_by','name').then(booking=>{
           result = Object.values(combineSlots(bookings))
          result1 = Object.values(combineRepeatSlots(booking))
          let final =  result.concat(result1)

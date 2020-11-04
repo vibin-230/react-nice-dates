@@ -1968,6 +1968,15 @@ router.post('/offers_list',
 	}).catch(next)
 })
 
+router.post('/offers_list_by_venue',
+	verifyToken,
+	AccessControl('offers', 'read'),
+	(req, res, next) => {
+	Offers.find({"venue":{$in:[req.body.id]}}).lean().populate('event','_id event type').populate('venue','_id name venue type').then(offers=>{
+		res.send({status:"success", message:"offers fetched", data:offers})
+	}).catch(next)
+})
+
 
 router.post('/offers/:id',
 	verifyToken,

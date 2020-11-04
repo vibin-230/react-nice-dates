@@ -19,8 +19,7 @@ const combineSlots=(booking, users, admins)=>{
             user_array = userValue
           }
         })
-        admins.map(userValue=>{
-          console.log(value.collected_by)
+        admins && admins.map(userValue=>{
           if((value.collected_by?value.collected_by.toString():"") === userValue._id.toString()){
               collected_by = userValue
             }

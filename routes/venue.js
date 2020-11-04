@@ -220,7 +220,6 @@ function findTime() {
 }
 
 
-
 router.post('/venue_list', (req, res, next) => {
   function findDay() {
     var d = new Date();

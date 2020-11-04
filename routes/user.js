@@ -3610,8 +3610,8 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
             if(response.data.entity === "refund") /// user  with refund 
             console.log('pass1');
             {
-              Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled", refunded: true,refund_status:true,game:false,description:'from_game_with_refund'}},{multi:true}).then(booking=>{
-                Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
+              Booking.updateMany({booking_id:req.params.id,user_id:req.userId},{$set:{booking_status:"cancelled", refunded: true,refund_status:true,game:false,description:'from_game_with_refund'}},{multi:true}).then(booking=>{
+                Booking.find({booking_id:req.params.id,user_id:req.userId}).lean().populate('venue_data').then(booking=>{
                   Coins.find({ booking_id: req.params.id }).lean().then(coins => {
                   if (coins) {
                       Coins.deleteMany({ booking_id: req.params.id }).lean().then(coins => {
@@ -3719,8 +3719,8 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
             console.log(error.response.data)
           }).catch(next);
         }else{
-          Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"cancelled",refund_status:false,game:false,}},{multi:true}).then(booking=>{ ////user cancellation without refund
-            Booking.find({booking_id:req.params.id}).lean().populate('venue_data').then(booking=>{
+          Booking.updateMany({booking_id:req.params.id,user_id:req.userId},{$set:{booking_status:"cancelled",refund_status:false,game:false,}},{multi:true}).then(booking=>{ ////user cancellation without refund
+            Booking.find({booking_id:req.params.id,user_id:req.userId}).lean().populate('venue_data').then(booking=>{
               Coins.find({ booking_id: req.params.id }).lean().then(coins => {
                 if (coins && req.body.refund_status) {
                     Coins.deleteMany({ booking_id: req.params.id }).lean().then(coins => {

@@ -3306,7 +3306,7 @@ router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
         }
         result = Object.values(combineSlots(booking))
         res.send({status:"success", message:"booking completed", data:result})
-
+        
         let booking_id = booking[0].booking_id
         let venue_name = booking[0].venue
         let venue_type = booking[0].venue_type
@@ -4420,7 +4420,8 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
       let role = req.role === "venue_staff" || req.role === "venue_manager"
       let date = new Date().addHours(8,30)
       let refund = req.body.refund_status
-        if(booking.booking_type === "app" && (refund)){
+      console.log(booking.transaction_id)
+        if(booking.booking_type === "app" && (refund) && booking.transaction_id !== 'free_slot'){
           axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
             if(response.data.entity === "refund")

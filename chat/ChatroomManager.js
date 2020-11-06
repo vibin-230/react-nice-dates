@@ -575,7 +575,7 @@ module.exports = function () {
 
 
     async function sendGroupInvites(game_id,conversation,group_ids,user_id,name,town,client){
-    const convo = typeof(conversation) == "string" ? conversation : conversation._id
+      const convo = typeof(conversation) == "string" ? conversation : conversation._id
     const x = await Conversation.find({_id: {$in : group_ids}}).populate('members','_id name device_token handle name_status').lean().then(conversation1=> {
       return  Game.findById({_id: game_id}).then(ac_game=> {
       
@@ -586,7 +586,8 @@ module.exports = function () {
         },[])
         const flatten_ids = _.flatten(c)
         const game_players = ac_game.users.length > 0 && ac_game.users.map((g)=>g._id.toString())
-        const result = flatten_ids.filter(word => word.toString() !== user_id.toString() || game_players.indexOf(word.toString()) === -1);
+        const result1 = flatten_ids.filter(word => word.toString() !== user_id.toString() || game_players.indexOf(word.toString()) === -1);
+        const result = result1.filter((a) => a.toString() !== user_id.toString())
         return  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: result } } ,$set:{town:town,town_date:new Date()} } ).then(game=> {
           return Conversation.findByIdAndUpdate({_id: convo},{ $addToSet: { invites: { $each: result } } }).then(conversation12=> {
             return   User.findOne({_id: user_id },{activity_log:0}).lean().then(sender=> {
@@ -604,7 +605,7 @@ module.exports = function () {
                   })
                   return Conversation.updateMany({_id:{ $in: group_ids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
                     const device_token_list=user.map((e)=>e.device_token)
-                                                  NotifyArray(device_token_list,`Game (${name}) from ${sender.name}`,'Turftown Game Request')
+                                                  NotifyArray(device_token_list,`Game (${name}) from ${sender.name}`,'Turftown Game Request',conversation1)
                                                     return user.map((e)=>e._id)
                  // const x = await  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: ids } } }).then(game=> {
       //  }).catch((e)=>console.log(e));

@@ -429,6 +429,7 @@ module.exports = function () {
           conversation.colors = conversation.colors.length > 0 ?  conversation.colors.concat(colors) : colors
          conversation.exit_list = conversation.exit_list.filter((a)=>a.user_id.toString() !== user_id.toString())
          return Conversation.findByIdAndUpdate({_id:message.conversation},conversation ).then(conversation=>{
+        return Conversation.findById({_id:chatroomName._id}).lean().populate('members','name _id handle profile_picture name_status').then((conversation)=>{
          return User.findById({_id:user_id}).then(user=>{
           client.in(conversation._id).emit('new',message)
            client.in(conversation._id).emit('unread',{})
@@ -437,6 +438,8 @@ module.exports = function () {
 
            return conversation
         }).catch((e)=>{console.log(e)});
+      }).catch((e)=>{console.log(e)});
+
       }).catch((e)=>{console.log(e)});
       }).catch((e)=>{console.log(e)});
 

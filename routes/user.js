@@ -2780,7 +2780,7 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
         User.findById({_id:req.userId}).then(user=>{
           Game.findOneAndUpdate({"bookings.booking_id":req.body[0].booking_id},{$set:{bookings:values,booking_status:'booked'}}).then(game=>{
             Game.findById({_id:game._id}).then(game=>{
-            Message.create({conversation:game.conversation,message:`Game on! ${req.name} has booked the slot. Please be on time to the venue.`,read_status:false,name:req.name,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
+            Message.create({conversation:game.conversation,message:`Game on! ${user && user.handle ? user.handle : user.name} has booked the slot. Please be on time to the venue.`,read_status:false,name:req.name,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : req.userId}},{activity_log:0,followers:0,following:0,}).then(users=> {
                 Conversation.findByIdAndUpdate({_id:message1.conversation},{last_message:message1._id,last_updated:new Date()}).then(conversation=>{
                  req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id,booking_id:values[0].booking_id},next)

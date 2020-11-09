@@ -1311,6 +1311,28 @@ router.post('/add_event',
 	}).catch(next)
 })
 
+router.post('/get_event',
+	verifyToken,
+	(req, res, next) => {
+	Event.findById({_id:req.body.id,status:true}).populate('venue').then(event=>{
+		console.log(event)
+		Offers.find({event:{$in:[req.body.id]}}).then((f)=>{
+			if(f.length > 0){
+				event['offer'] = f
+			}
+			if(moment(event.start_date).format('YYYYMMDD') > moment().format('YYYYMMDD')){
+				res.send({status:"success", message:"event fetched", data:event})
+			}else{
+				res.send({status:"success", message:"event passed"})
+
+			}
+
+		// ActivityLog(req.userId, req.role, 'event created', req.name+" created event "+event.event.name)
+	}).catch(next)
+}).catch(next)
+
+})
+
 
 router.put('/edit_event/:id',
 	verifyToken,

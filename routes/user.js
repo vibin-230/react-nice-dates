@@ -2490,6 +2490,7 @@ async function handleSlotAvailabilityForGames(booking1,client){
              return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time },{$set:{status:false,status_description:'Sorry ! Slot has been booked by some other user'}}).lean().then(game1=>{
                return Game.find({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time }).lean().populate('conversation').then(game=>{
                 console.log('length',game);
+                if(game.length > 0){
                 let messages =  game.map((nc)=>{ return {conversation:nc.conversation._id,created_at:new Date(),message:`Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.`,name:'bot',read_status:true,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot'}}) 
                 const members = _.flatten(game.map((g)=>g.conversation.members))
                 return   User.find({_id: { $in :members } },{activity_log:0}).lean().then(user=> {
@@ -2508,6 +2509,9 @@ async function handleSlotAvailabilityForGames(booking1,client){
                  }).catch((e)=>console.log(e));
               }).catch(error => console.log(error))
             }).catch(error => console.log(error))
+          }else{
+
+          }
           }).catch(error => console.log(error))
             }).catch(error => console.log(error))
           }).catch(error=>{
@@ -2762,7 +2766,6 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
     if(req.body[0].transaction_id && req.body[0].transaction_id !== 'free_slot'){
     axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+req.body[0].transaction_id+'/capture',data)
       .then(response => {
-        console.log(response.data);
         if(response.data.status === "captured")
         {
           
@@ -2786,7 +2789,6 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
                  req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id,booking_id:values[0].booking_id},next)
                 
                   Conversation.findById({_id:message1.conversation}).then(convo=>{
-                    console.log('hit message',message1);
                     convo['invite'] = false
                     //req && req.socket && req.socket.broadcast.emit('unread',{})
                   res.send({status:"success", message:"slot booked",data: {game:game,convo:convo}})                  
@@ -2818,7 +2820,6 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
         let SLOT_BOOKED_MANAGER = `You have recieved a TURF TOWN booking from ${values[0].name} ( ${values[0].phone} ) \nBooking Id: ${booking_id}\nVenue: ${venue_name}, ${venue_area}\nSport: ${sport_name}(${venue_type})\nDate and Time: ${datetime}\nPrice: ${Math.round(result[0].amount)}\nAmount Paid: ${Math.round(result[0].booking_amount)}\nVenue Discount: ${Math.round(result[0].commission)}\nTT Coupon: ${Math.round(result[0].coupon_amount)}\nAmount to be collected: ${Math.round(balance)}` //490618
         let sender = "TRFTWN"
         let SLOT_BOOKED_GAME_USER =`Hey ${values[0].name}! Thank you for using Turf Town! Your Game has been created .\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${Math.round(result[0].booking_amount)}\nTT Coins : ${Math.round(result[0].coins)}\nBalance to be paid : ${Math.round(balance)}\n`
-        console.log("Sdsds",SLOT_BOOKED_GAME_USER)
         // SendMessage(phone,sender,SLOT_BOOKED_USER) // sms to user
        notifyRedirect(user,SLOT_BOOKED_GAME_USER)
 
@@ -3517,6 +3518,7 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
   const slot_time = { $in: booking1.map((b)=>b.slot_time) }
   const x =  await  Booking.find({  venue_id:booking.venue_id, booking_date:booking.booking_date,slot_time:slot_time,booking_status:{$in:["blocked","booked","completed"]}}).lean().then(booking_history=>{
     let promisesToRun = [];
+    console.log('bh',booking_history);
     if(booking_history.length > 0){
         for(let i=0;i<booking_history.length;i++){
               promisesToRun.push(SlotsCheckReverse(booking_history[i],booking.venue_id))
@@ -3567,42 +3569,47 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
             //res.send({status:"failed", message:"slots not available"})
           })
         }else{
-          return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time },{$set:{status:true,status_description:''}}).lean().then(game1=>{
-            return Game.find({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time }).lean().populate('conversation').populate('users','name _id device_token').then(game=>{
-              if(game && game.length > 0){
-              let messages =  game && game.length > 0 &&  game.map((nc)=>{ 
-               const device_token = nc && nc.users.length > 0 && nc.users.map((e)=>e.device_token)
-               NotifyArray(device_token,`Hey! The ${time} slot is available again. Please book this slot to confirm your game.`,'Turftown Slot Availability')
-               return {conversation:nc.conversation._id,message:`Hey! The ${time} slot is available again. Please book this slot to confirm your game`,name:'bot',read_status:false,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot',created_at:new Date()}
-             }) 
-             const members = _.flatten(game.map((g)=>g.conversation.members))
-             return   User.find({_id: { $in :members } },{activity_log:0}).lean().then(user=> {
-               return Message.insertMany(messages).then(message1=>{
-               const message_ids = message1.map((m)=>m._id)
-               return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
-               const cids = m.map((entry)=>{
-                 const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id :entry.conversation
-                 Conversation.findByIdAndUpdate({_id:id},{$set:{last_message:entry._id, last_updated:new Date()}}).then((m)=>console.log('pass'))
-                 return id
-               })
-             return  Booking.updateMany({booking_id:booking.booking_id,user_id:booking.user_id},{$set:{game:false}},{multi:true}).then(booking=>{
-               //const device_token_list=user.map((e)=>e.device_token)
-                                               //NotifyArray(device_token_list,'Hey ! Your previously hosted game is available again . Please book your slot ASAP to confirm the game','Turftown Game Availability')
-                                                 return user.map((e)=>e._id)
-              }).catch((e)=>console.log(e));
-           }).catch(error => console.log(error))
-         }).catch(error => console.log(error))
-       }).catch(error => console.log(error))
-      }else{
-        return  Booking.updateMany({booking_id:booking.booking_id,user_id:booking.user_id},{$set:{game:false}},{multi:true}).then(booking=>{
-          //const device_token_list=user.map((e)=>e.device_token)
-                                          //NotifyArray(device_token_list,'Hey ! Your previously hosted game is available again . Please book your slot ASAP to confirm the game','Turftown Game Availability')
-                                            return 'pass'
-         }).catch((e)=>console.log(e));
-      }
-       }).catch(error => console.log(error))
+          return  Booking.updateMany({booking_id:booking.booking_id,user_id:booking.user_id},{$set:{game:false}},{multi:true}).then(booking=>{
+            //const device_token_list=user.map((e)=>e.device_token)
+                                            //NotifyArray(device_token_list,'Hey ! Your previously hosted game is available again . Please book your slot ASAP to confirm the game','Turftown Game Availability')
+                                              return 'pass'
+           }).catch((e)=>console.log(e));
+      //     return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time },{$set:{status:true,status_description:''}}).lean().then(game1=>{
+      //       return Game.find({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time }).lean().populate('conversation').populate('users','name _id device_token').then(game=>{
+      //         if(game && game.length > 0){
+      //         let messages =  game && game.length > 0 &&  game.map((nc)=>{ 
+      //          const device_token = nc && nc.users.length > 0 && nc.users.map((e)=>e.device_token)
+      //          NotifyArray(device_token,`Hey! The ${time} slot is available again. Please book this slot to confirm your game.`,'Turftown Slot Availability')
+      //          return {conversation:nc.conversation._id,message:`Hey! The ${time} slot is available again. Please book this slot to confirm your game`,name:'bot',read_status:false,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot',created_at:new Date()}
+      //        }) 
+      //        const members = _.flatten(game.map((g)=>g.conversation.members))
+      //        return   User.find({_id: { $in :members } },{activity_log:0}).lean().then(user=> {
+      //          return Message.insertMany(messages).then(message1=>{
+      //          const message_ids = message1.map((m)=>m._id)
+      //          return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
+      //          const cids = m.map((entry)=>{
+      //            const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id :entry.conversation
+      //            Conversation.findByIdAndUpdate({_id:id},{$set:{last_message:entry._id, last_updated:new Date()}}).then((m)=>console.log('pass'))
+      //            return id
+      //          })
+      //        return  Booking.updateMany({booking_id:booking.booking_id,user_id:booking.user_id},{$set:{game:false}},{multi:true}).then(booking=>{
+      //          //const device_token_list=user.map((e)=>e.device_token)
+      //                                          //NotifyArray(device_token_list,'Hey ! Your previously hosted game is available again . Please book your slot ASAP to confirm the game','Turftown Game Availability')
+      //                                            return user.map((e)=>e._id)
+      //         }).catch((e)=>console.log(e));
+      //      }).catch(error => console.log(error))
+      //    }).catch(error => console.log(error))
+      //  }).catch(error => console.log(error))
+      // }else{
+      //   return  Booking.updateMany({booking_id:booking.booking_id,user_id:booking.user_id},{$set:{game:false}},{multi:true}).then(booking=>{
+      //     //const device_token_list=user.map((e)=>e.device_token)
+      //                                     //NotifyArray(device_token_list,'Hey ! Your previously hosted game is available again . Please book your slot ASAP to confirm the game','Turftown Game Availability')
+      //                                       return 'pass'
+      //    }).catch((e)=>console.log(e));
+      // }
+      //  }).catch(error => console.log(error))
        
-         }).catch(error => console.log(error))
+      //    }).catch(error => console.log(error))
           }
         }).catch(error => console.log(error))
 }
@@ -3743,6 +3750,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                 Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
                   Message.create({conversation:game.conversation,message:`${user && user.handle ? user.handle:user.name} has cancelled this slot. There will be no refund as it is less than 6 hours to the scheduled time.`,name:'bot',read_status:false,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                     Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
+                      console.log(game.conversation,res,'pass');
                       getGame(res,game.conversation,true,next,req)
                       handleSlotAvailabilityWithCancellation(booking,req.socket)
                         }).catch(next);

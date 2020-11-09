@@ -298,6 +298,8 @@ module.exports = function () {
           return member
         }
       })
+      if(filter.length > 0){
+
        User.find({_id: {$in : filter}},{activity_log:0}).lean().then(user=> {
           const final_user  = user.filter((u)=> u.mute.filter((u)=>u.toString() === chatroom._id.toString()).length <= 0)
         if(Array.isArray(message)){
@@ -313,7 +315,9 @@ module.exports = function () {
 
         }
       }).catch((e)=>console.log(e))
-    
+      }else{
+        console.log('all active');
+      }
 
     }
 

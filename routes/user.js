@@ -3500,6 +3500,7 @@ function SlotsCheckReverse(body,id){
       // Booking.find({$and:[{venue:body.venue, venue_id:id, booking_date:{$gte:body.booking_date,$lt:moment(body.booking_date).add(1,"days")}}],booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
         let slots_available = SlotsAvailable(venue,booking_history)
         if(slots_available.slots_available[body.slot_time][body.venue_type]>0){
+          console.log(slots_available.slots_available[body.slot_time][body.venue_type]);
           resolve(body.booking_id)
         }else{
           console.log('slot time selected',body.slot_time);

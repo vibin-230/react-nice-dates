@@ -2819,7 +2819,7 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
         let SLOT_BOOKED_USER =`Hey ${values[0].name}! Thank you for using Turf Town!\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${Math.round(result[0].booking_amount)}\nBalance to be paid : ${Math.round(balance)}`
         let SLOT_BOOKED_MANAGER = `You have recieved a TURF TOWN booking from ${values[0].name} ( ${values[0].phone} ) \nBooking Id: ${booking_id}\nVenue: ${venue_name}, ${venue_area}\nSport: ${sport_name}(${venue_type})\nDate and Time: ${datetime}\nPrice: ${Math.round(result[0].amount)}\nAmount Paid: ${Math.round(result[0].booking_amount)}\nVenue Discount: ${Math.round(result[0].commission)}\nTT Coupon: ${Math.round(result[0].coupon_amount)}\nAmount to be collected: ${Math.round(balance)}` //490618
         let sender = "TRFTWN"
-        let SLOT_BOOKED_GAME_USER =`Hey ${values[0].name}! Thank you for using Turf Town! Your Game has been created .\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nAmount Paid : ${Math.round(result[0].booking_amount)}\nTT Coins : ${Math.round(result[0].coins)}\nBalance to be paid : ${Math.round(balance)}\n`
+        let SLOT_BOOKED_GAME_USER =`Hey ${values[0].name}! Thank you for using Turf Town! Your Game has been created .\nBooking Id: ${booking_id}\nVenue: ${venue_name}, ${venue_area}\nSport: ${sport_name}(${venue_type})\nDate and Time: ${datetime}\n${venue_discount_coupon}\nAmount Paid: ${Math.round(result[0].booking_amount)}\nTT Coins: ${Math.round(result[0].coins)}\nBalance to be paid: ${Math.round(balance)}`
         // SendMessage(phone,sender,SLOT_BOOKED_USER) // sms to user
        notifyRedirect(user,SLOT_BOOKED_GAME_USER)
 
@@ -4956,7 +4956,8 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
          booking_data = req.body.type && req.body.type === 'host' ?[...open_games,...event_booking_data,...result]:[...game,...event_booking_data,...result]
          var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{
-            (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);
+            let key1 = moment(x.start_time).utc().format("YYYYMMDD") !== moment(x.end_time).utc().format() ? "start_time" : "end_time"; 
+            (rv[moment(x[key1]).utc().format('MM-DD-YYYY')] = rv[moment(x[key1]).utc().format('MM-DD-YYYY')] || []).push(x);
             return rv;
           }, {});
         };

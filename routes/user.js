@@ -3499,8 +3499,7 @@ function SlotsCheckReverse(body,id){
       Booking.find({ venue:body.venue, venue_id:{$in:venue_id}, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
       // Booking.find({$and:[{venue:body.venue, venue_id:id, booking_date:{$gte:body.booking_date,$lt:moment(body.booking_date).add(1,"days")}}],booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
         let slots_available = SlotsAvailable(venue,booking_history)
-        if(slots_available.slots_available[body.slot_time][body.venue_type]>0){
-          console.log(slots_available.slots_available[body.slot_time][body.venue_type]);
+        if(slots_available.slots_available[body.slot_time][body.venue_type] === 1){
           resolve(body.booking_id)
         }else{
           console.log('slot time selected',body.slot_time);
@@ -4983,8 +4982,8 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         let qprs = [...qpresent]
         //console.log(qpas);
         res.send({status:"success", message:"booking history fetched", data:{past:qpas,present:qprs}})
-        req.redis().set('bookings_present_'+req.userId,JSON.stringify(qpresent))
-        req.redis().set('bookings_past_'+req.userId,JSON.stringify(qpast))
+        //req.redis().set('bookings_present_'+req.userId,JSON.stringify(qpresent))
+       // req.redis().set('bookings_past_'+req.userId,JSON.stringify(qpast))
     }).catch(next)
   }).catch(next)
   }).catch(next)

@@ -595,7 +595,9 @@ module.exports = function () {
           return Conversation.findByIdAndUpdate({_id: convo},{ $addToSet: { invites: { $each: result } } }).then(conversation12=> {
             return   User.findOne({_id: user_id },{activity_log:0}).lean().then(sender=> {
               return   User.find({_id: { $in :result } },{activity_log:0}).lean().then(user=> {
-                 let finalMessages = conversation1.map((nc)=>{ return {conversation:nc._id,game:game_id,message:` Game invite`,name:sender.name,read_status:false,read_by:group_ids[0],author:user_id,type:'game',created_at:new Date()}}) 
+                 let finalMessages = conversation1.map((nc)=>{ 
+                  return {conversation:nc._id,game:game_id,message:` Game invite`,name:sender.name,read_status:false,read_by:group_ids[0],author:user_id,type:'game',created_at:new Date()}
+                  }) 
                  return Message.insertMany(finalMessages).then(message1=>{
                   const message_ids = message1.map((m)=>m._id)
                   return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id handle name_status').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
@@ -608,7 +610,7 @@ module.exports = function () {
                   })
                   return Conversation.updateMany({_id:{ $in: group_ids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
                     const device_token_list=user.map((e)=>e.device_token)
-                                                  NotifyArray(device_token_list,`Game (${name}) from ${sender.name}`,'Turftown Game Request',conversation1)
+                                                  NotifyArray(device_token_list,`Game (${name}) from ${sender.name}`,'Turftown Game Request')
                                                     return user.map((e)=>e._id)
                  // const x = await  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: ids } } }).then(game=> {
       //  }).catch((e)=>console.log(e));

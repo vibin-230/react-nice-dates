@@ -468,8 +468,8 @@ User.findOne({ $or: [ { handle: req.body.username }, { phone: req.body.username 
 			let mvp_count = 0
 			req.userId = user._id
       Alert.find({user: req.userId,status:true},{}).lean().then(alert=> {
-        Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
-          game_completed_count = game && game.length > 0 ? game.length : 0
+        Game.find({users: {$in:[req.userId]},completed:true}).lean().then(game=> {
+					game_completed_count = game && game.length > 0 ? game.length : 0
           const aw = game && game.length > 0 && game.filter((a)=>{
             console.log(a.mvp)
            let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0

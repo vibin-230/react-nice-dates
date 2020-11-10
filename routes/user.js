@@ -168,6 +168,7 @@ router.post('/get_more_past_bookings/', [
     const client = req.redis() 
     console.log(req.body); 
     client.get('bookings_past_'+req.userId, function(err, reply) { 
+      if(data){
       if(err){
         console.log(err);
       }
@@ -185,6 +186,8 @@ router.post('/get_more_past_bookings/', [
           final_data.push({type:'empty',data:'No data available',_id:'no-id'})
         }
       } 
+      
+    }
     res.status(201).send({status: "success", message: "venues collected",data:final_data})
   })
 
@@ -200,8 +203,10 @@ router.post('/get_more_present_bookings/', [
         console.log(err);
       }
       const data = JSON.parse(reply)
-      let index = data.findIndex(x => x.title.toString() ===req.body.id.toString());
-     let final_data = []
+      let final_data = []
+      if(data){
+
+      let index = data && data.findIndex(x => x.title.toString() ===req.body.id.toString());
       console.log('data length',data.length,index);
       if(index > 0){
         let diff = data.length - index 
@@ -213,6 +218,7 @@ router.post('/get_more_present_bookings/', [
           //final_data.push({type:'empty',data:'No data available',_id:'no-id'})
         }
       } 
+    }
     res.status(201).send({status: "success", message: "present collected",data:final_data})
   })
 

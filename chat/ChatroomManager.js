@@ -306,12 +306,23 @@ module.exports = function () {
           const s = message.length > 1 ?'s':''
           const messages = message[0].type === 'image' ? `${message.length} image${s}` : message[0].type === 'game' ? `${message.length} game${s} has been shared`:`${message.length} townie${s} has been shared`
           const messages1 = chatroom.type === 'single' ?  `${message[0].name} : ${messages}`:  `${message[0].name} @ ${chatroom.name} : ${messages}`
-          NotifyArray(final_user.map((u)=>u.device_token),messages1,'Turf Town',chatroom)
+          let chatroom1 = Object.assign({},chatroom)
+          chatroom1['exit_list'] = []
+          chatroom1['join_date'] = []
+          chatroom1['last_active'] = []
+          chatroom1['last_message'] = {}
+          NotifyArray(final_user.map((u)=>u.device_token),messages1,'Turf Town',chatroom1)
         }else{
           const s = message && message.image && message.image.length > 1 ?'s':''
           const messages = message.type === 'image' ? `${message.image.length} image${s} has been shared`: `${message.message}`
           const messages1 = chatroom.type === 'single' ?  `${message.name} : ${messages}`:  `${message.name} @ ${chatroom.name} : ${messages}`
-          NotifyArray(final_user.map((u)=>u.device_token),messages1,'Turf Town',chatroom)
+         let chatroom1 = Object.assign({},chatroom)
+         chatroom1['exit_list'] = []
+         chatroom1['join_date'] = []
+         chatroom1['last_active'] = []
+         chatroom1['last_message'] = {}
+
+          NotifyArray(final_user.map((u)=>u.device_token),messages1,'Turf Town',chatroom1)
 
         }
       }).catch((e)=>console.log(e))
@@ -339,12 +350,22 @@ module.exports = function () {
           const s = message.length > 1 ?'s':''
           const messages = message[0].type === 'image' ? `${message.length} image${s}` : message[0].type === 'game' ? `${message.length} game${s} has been shared`:`${message.length} townie${s} has been shared`
           const messages1 = chatroom.type === 'single' ?  `${message[0].name} : ${messages}`:  `${message[0].name} @ ${chatroom.name} : ${messages}`
-          NotifyArray(final_user.map((u)=>u.device_token),messages1,'Turf Town',chatroom)
+          let chatroom1 = Object.assign({},chatroom)
+          chatroom1['exit_list'] = []
+          chatroom1['join_date'] = []
+          chatroom1['last_active'] = []
+          chatroom1['last_message'] = {}
+          NotifyArray(final_user.map((u)=>u.device_token),messages1,'Turf Town',chatroom1)
         }else{
           const s = message && message.image && message.image.length > 1 ?'s':''
           const messages = message.type === 'image' ? `${message.image.length} image${s} has been shared`: `${message.message}`
           const messages1 = chatroom.type === 'single' ?  `${message.name} : ${messages}`:  `${message.name} @ ${chatroom.name} : ${messages}`
-          NotifyArray(final_user.map((u)=>u.device_token),messages1,'Turf Town',chatroom)
+          let chatroom1 = Object.assign({},chatroom)
+          chatroom1['exit_list'] = []
+          chatroom1['join_date'] = []
+          chatroom1['last_active'] = []
+          chatroom1['last_message'] = {}
+          NotifyArray(final_user.map((u)=>u.device_token),messages1,'Turf Town',chatroom1)
 
         }
       }).catch((e)=>console.log(e))

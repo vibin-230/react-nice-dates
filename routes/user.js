@@ -1544,16 +1544,7 @@ router.post('/remove_temp_user', (req, res, next) => {
 
 router.post('/edit_game_status', (req, res, next) => {
   Game.findByIdAndUpdate({_id:req.body.game_id},{$set:{share_type:req.body.status}}).then(g=>{
-    Game.findById({_id:req.body.game_id}).lean().populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=>{
-      Venue.findById({_id:game.bookings[0].venue_id}).then(venue =>{
-        let game1 = Object.assign({},game)
-        game1["venue"] = venue
-        game1["rating"] = venue.rating
-        game1['final'] = _.xor(game1.users,game1.host)
-        res.send({status:"success", message:"game_fetched",data:game1})
-
-      }).catch(next)
-    }).catch(next)
+    getGame(res,req.body.convo_id,false,next,req)
   }).catch(next)
 
 });
@@ -3532,7 +3523,7 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
               promisesToRun.push(SlotsCheckReverse(booking_history[i],booking.venue_id))
             }
            return Promise.all(promisesToRun).then((values) => {
-             return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time },{$set:{status:true,status_description:''}}).lean().then(game1=>{
+             return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time ,status:false},{$set:{status:true,status_description:''}}).lean().then(game1=>{
                return Game.find({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time }).lean().populate('conversation').populate('users','name _id device_token').then(game=>{
                  console.log('values',values[0],game.length);
                  if(game && game.length > 0 && values[0] <= game.length && values[0] === 1){
@@ -3571,7 +3562,6 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
           }).catch((e)=>console.log(e));
         }
           }).catch(error => console.log(error))
-        
             }).catch(error => console.log(error))
           }).catch(error=>{
             console.log('hit error',error);
@@ -3583,7 +3573,7 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
             let config = venue.configuration.ratio[booking.venue_type]
             console.log('config',config);
             if(config === 1){
-              return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time },{$set:{status:true,status_description:''}}).lean().then(game1=>{
+              return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:false },{$set:{status:true,status_description:''}}).lean().then(game1=>{
                 return Game.find({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time }).lean().populate('conversation').populate('users','name _id device_token').then(game=>{
                  if(game && game.length > 0){
                  let messages =  game && game.length > 0 &&  game.map((nc)=>{ 
@@ -3667,7 +3657,7 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
       //  }).catch(error => console.log(error))
        
       //    }).catch(error => console.log(error))
-          }
+    }
         }).catch(error => console.log(error))
 }
 
@@ -4014,17 +4004,17 @@ router.post('/cancel_game_booking/:id', verifyToken, (req, res, next) => {
 
     
                   //Activity Log
-                  let activity_log = {
-                    datetime: new Date(),
-                    id:req.userId,
-                    user_type: req.role?req.role:"user",
-                    activity: 'slot booking cancelled',
-                    name:req.name,
-                    venue_id:booking[0].venue_id,
-                    booking_id:booking_id,
-                    message: "Slot "+booking_id+" booking cancelled at "+venue_name+" "+datetime+" "+venue_type,
-                  }
-                  ActivityLog(activity_log)
+                  // let activity_log = {
+                  //   datetime: new Date(),
+                  //   id:req.userId,
+                  //   user_type: req.role?req.role:"user",
+                  //   activity: 'slot booking cancelled',
+                  //   name:req.name,
+                  //   venue_id:booking[0].venue_id,
+                  //   booking_id:booking_id,
+                  //   message: "Slot "+booking_id+" booking cancelled at "+venue_name+" "+datetime+" "+venue_type,
+                  // }
+                  // ActivityLog(activity_log)
                
             }).catch(next);
           }).catch(next);

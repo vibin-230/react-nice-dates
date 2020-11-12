@@ -806,6 +806,8 @@ router.post('/get_chatrooms/:id', [
           return !(e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.params.id.toString()).length > 0)
           } )
 
+          existingConversation = existingConversation.filter((a)=>a.type === 'single' || a.type === 'group' || (a.type === 'game' && moment().startOf('days').diff(moment(a.start_time).startOf('days'),'days') < 6))
+
           const date = user.last_active 
           const conversation  = req.body.conversation
 
@@ -3524,9 +3526,8 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
             }
            return Promise.all(promisesToRun).then((values) => {
              return Game.find({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:false }).lean().populate('conversation').populate('users','name _id device_token').then(game=>{
-             return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time ,status:false},{$set:{status:true,status_description:''}}).lean().then(game1=>{
-                 console.log('values',values[0],game.length);
-                 if(game && game.length > 0 && values[0] <= game.length && values[0] === 1){
+              return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time ,status:false},{$set:{status:true,status_description:''}}).lean().then(game1=>{
+              if(game && game.length > 0 && values[0] <= game.length && values[0] === 1){
                    let messages =  game && game.length > 0 &&  game.map((nc)=>{ 
                      const device_token = nc && nc.users.length > 0 && nc.users.map((e)=>e.device_token)
                       let start_time = Object.values(nc.bookings).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking1[0].start_time)
@@ -4551,17 +4552,17 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   }).catch(next)
     
                   //Activity Log
-                  let activity_log = {
-                    datetime: new Date(),
-                    id:req.userId,
-                    user_type: req.role?req.role:"user",
-                    activity: 'slot booking cancelled',
-                    name:req.name,
-                    venue_id:booking[0].venue_id,
-                    booking_id:booking_id,
-                    message: "Slot "+booking_id+" booking cancelled at "+venue_name+" "+datetime+" "+venue_type,
-                  }
-                  ActivityLog(activity_log)
+                  // let activity_log = {
+                  //   datetime: new Date(),
+                  //   id:req.userId,
+                  //   user_type: req.role?req.role:"user",
+                  //   activity: 'slot booking cancelled',
+                  //   name:req.name,
+                  //   venue_id:booking[0].venue_id,
+                  //   booking_id:booking_id,
+                  //   message: "Slot "+booking_id+" booking cancelled at "+venue_name+" "+datetime+" "+venue_type,
+                  // }
+                  // ActivityLog(activity_log)
                 }).catch(next);
               }).catch(next);
             }).catch(next)
@@ -4572,9 +4573,13 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
             console.log(error)
           }).catch(next);
         }else{
-          Booking.updateMany({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id},{$set:{booking_status:"cancelled", refund_status:false,cancelled_by:req.body.cancelled_by}},{multi:true}).then(booking=>{
-            Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id}).lean().populate("venue_data").then(booking=>{
-                  User.findById({_id:booking[0].user_id},{"activity_log":0}).then(user=>{
+
+          Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id}).lean().populate("venue_data").then(booking=>{
+            handleSlotAvailabilityWithCancellation(booking,req.socket)
+            Booking.updateMany({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id},{$set:{booking_status:"cancelled", refund_status:false,cancelled_by:req.body.cancelled_by}},{multi:true}).then(booking=>{
+              Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id}).lean().populate("venue_data").then(booking=>{
+              
+              User.findById({_id:booking[0].user_id},{"activity_log":0}).then(user=>{
                   res.send({status:"success", message:"booking cancelled"})
                   let booking_id = booking[0].booking_id
                   let venue_name = booking[0].venue
@@ -4600,14 +4605,14 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                     Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted',status_description:'cancelled by venue manager'}}).then(game=>{
                         Message.create({conversation:game.conversation,message:`Venue has cancelled this slot. There will be no refund as it is less than 6 hours to the scheduled time.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
-                          handleSlotAvailabilityWithCancellation(booking,req.socket)
                           
                           //getGame(res,game.conversation,true,next,req)
                       }).catch(next);
+
                     }).catch(next);
                       }).catch(next);
                         }else{
-                          handleSlotAvailabilityWithCancellation(booking,req.socket)
+                         // handleSlotAvailabilityWithCancellation(booking,req.socket)
 
                         }
 
@@ -4649,20 +4654,22 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
 
     
                   //Activity Log
-                  let activity_log = {
-                    datetime: new Date(),
-                    id:req.userId,
-                    user_type: req.role?req.role:"user",
-                    activity: 'slot booking cancelled',
-                    name:req.name,
-                    venue_id:booking[0].venue_id,
-                    booking_id:booking_id,
-                    message: "Slot "+booking_id+" booking cancelled at "+venue_name+" "+datetime+" "+venue_type,
-                  }
-                  ActivityLog(activity_log)
+                  // let activity_log = {
+                  //   datetime: new Date(),
+                  //   id:req.userId,
+                  //   user_type: req.role?req.role:"user",
+                  //   activity: 'slot booking cancelled',
+                  //   name:req.name,
+                  //   venue_id:booking[0].venue_id,
+                  //   booking_id:booking_id,
+                  //   message: "Slot "+booking_id+" booking cancelled at "+venue_name+" "+datetime+" "+venue_type,
+                  // }
+                  // ActivityLog(activity_log)
             }).catch(next);
           }).catch(next);
         }).catch(next);
+      }).catch(next);
+
         }
       })
       

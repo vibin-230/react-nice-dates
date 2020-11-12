@@ -3575,7 +3575,8 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
             if(config === 1){
               return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:false },{$set:{status:true,status_description:''}}).lean().then(game1=>{
                 return Game.find({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:true  }).lean().populate('conversation').populate('users','name _id device_token').then(game=>{
-                 if(game && game.length > 0){
+                  console.log('game',game);
+                  if(game && game.length > 0){
                  let messages =  game && game.length > 0 &&  game.map((nc)=>{ 
                    const device_token = nc && nc.users.length > 0 && nc.users.map((e)=>e.device_token)
                    let start_time = Object.values(nc.bookings).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking1[0].start_time)

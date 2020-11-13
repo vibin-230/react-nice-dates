@@ -5034,7 +5034,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         const today_empty = qpresent && qpresent.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpresent.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
         // const today_empty1 = qpast && qpast.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpast.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
         qpresent.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
-        qpast.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
+        qpast.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? -1 : 1)
         let qpas = [...qpast]
         let qprs = [...qpresent]
         //console.log(qpas);

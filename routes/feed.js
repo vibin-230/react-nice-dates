@@ -159,7 +159,7 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
         // c is req.userId  
 
 
-        let x = posts.filter(a=>a && a.game || a && a.event).map((s)=>{
+        let x = posts.filter(a=>a && a.game && a.game.status || a && a.event).map((s)=>{
           const hours_bfore_game = getTimeToGame(s.start_time)-5
           const share = user && user.following && user.following.some((a)=> a.toString() === s.created_by._id.toString()) ? 1 : 0
           const shout_out_count = s && s.shout_out && s.shout_out.length>0 ? s.shout_out.length : 0

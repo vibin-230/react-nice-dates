@@ -1546,7 +1546,7 @@ router.post('/remove_temp_user', (req, res, next) => {
 
 router.post('/edit_game_status', (req, res, next) => {
   Game.findByIdAndUpdate({_id:req.body.game_id},{$set:{share_type:req.body.status}}).then(g=>{
-    getGame(res,req.body.convo_id,false,next,req)
+    getGame(res,g.conversation,false,next,{userId:req.body.user_id})
   }).catch(next)
 
 });

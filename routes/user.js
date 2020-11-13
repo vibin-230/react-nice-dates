@@ -3906,8 +3906,10 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
 
 
 router.post('/cancel_game_booking/:id', verifyToken, (req, res, next) => {
-  Booking.findOne({booking_id:req.params.id,created_by:req.userId}).then(booking=>{
-    User.findById({_id:req.userId}).then(user=>{
+  Booking.findOne({booking_id:req.params.id,created_by:req.body.user_id}).then(booking=>{
+    User.findById({_id:req.body.user_id}).then(user=>{
+    User.findById({_id:req.userId}).then(user_who_cancelled_it=>{
+
       Venue.findById({_id:booking.venue_id}).then(venue=>{
       Admin.find({venue:{$in:[booking.venue_id]},notify:true},{activity_log:0}).then(admins=>{
         // const phone_numbers = admins.map((key)=>"91"+key.phone)
@@ -3920,8 +3922,8 @@ router.post('/cancel_game_booking/:id', verifyToken, (req, res, next) => {
             console.log(response.data);
             if(response.data.entity === "refund") /// user  with refund 
             {
-              Booking.updateMany({booking_id:req.params.id,created_by:req.userId},{$set:{booking_status:"cancelled", refunded: true,refund_status:true,game:false,description:'from_game_with_refund'}},{multi:true}).then(booking=>{
-                Booking.find({booking_id:req.params.id,created_by:req.userId}).lean().populate('venue_data').then(booking=>{
+              Booking.updateMany({booking_id:req.params.id,created_by:req.body.user_id},{$set:{booking_status:"cancelled", refunded: true,refund_status:true,game:false,description:'from_game_with_refund'}},{multi:true}).then(booking=>{
+                Booking.find({booking_id:req.params.id,created_by:req.body.user_id}).lean().populate('venue_data').then(booking=>{
 
                   Coins.find({ booking_id: req.params.id }).lean().then(coins => {
                      if (coins) {
@@ -3930,7 +3932,7 @@ router.post('/cancel_game_booking/:id', verifyToken, (req, res, next) => {
                     }
 
                     Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
-                      Message.create({conversation:game.conversation,message:`${user && user.handle ? user.handle:user.name} has cancelled this slot and a refund has been initiated.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
+                      Message.create({conversation:game.conversation,message:`${user_who_cancelled_it && user_who_cancelled_it.handle ? user_who_cancelled_it.handle:user_who_cancelled_it.name} has cancelled this slot and a refund has been initiated.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
                             getGame(res,game.conversation,true,next,req)
                              handleSlotAvailabilityWithCancellation(booking,req.socket)
@@ -4027,8 +4029,8 @@ router.post('/cancel_game_booking/:id', verifyToken, (req, res, next) => {
             console.log(error.response.data)
           }).catch(next);
         }else{
-          Booking.updateMany({booking_id:req.params.id,created_by:req.userId},{$set:{booking_status:"cancelled",refund_status:false,game:false,}},{multi:true}).then(booking=>{ ////user cancellation without refund
-            Booking.find({booking_id:req.params.id,created_by:req.userId}).lean().populate('venue_data').then(booking=>{
+          Booking.updateMany({booking_id:req.params.id,created_by:req.body.user_id},{$set:{booking_status:"cancelled",refund_status:false,game:false,}},{multi:true}).then(booking=>{ ////user cancellation without refund
+            Booking.find({booking_id:req.params.id,created_by:req.body.user_id}).lean().populate('venue_data').then(booking=>{
               Coins.find({ booking_id: req.params.id }).lean().then(coins => {
                 if (coins && req.body.refund_status) {
                     Coins.deleteMany({ booking_id: req.params.id }).lean().then(coins => {
@@ -4036,7 +4038,7 @@ router.post('/cancel_game_booking/:id', verifyToken, (req, res, next) => {
                   }
 
                 Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted'}}).then(game=>{
-                  Message.create({conversation:game.conversation,message:`${user && user.handle ? user.handle:user.name} has cancelled this slot. There will be no refund as there is less than 6 hours to the scheduled time.`,name:'bot',read_status:false,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
+                  Message.create({conversation:game.conversation,message:`${user_who_cancelled_it && user_who_cancelled_it.handle ? user_who_cancelled_it.handle:user_who_cancelled_it.name} has cancelled this slot. There will be no refund as there is less than 6 hours to the scheduled time.`,name:'bot',read_status:false,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                     Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
                       getGame(res,game.conversation,true,next,req)
                       handleSlotAvailabilityWithCancellation(booking,req.socket)
@@ -4133,6 +4135,7 @@ router.post('/cancel_game_booking/:id', verifyToken, (req, res, next) => {
     
   }).catch(next)
   }).catch(next)
+}).catch(next)
 }).catch(next)
 })
 

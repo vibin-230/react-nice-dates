@@ -1052,6 +1052,7 @@ module.exports = function () {
     const x = await Conversation.findById({ _id: string }).populate('last_message').lean().then(conversation => {
       client.in(string).emit('new',conversation.last_message)
          client.in(string).emit('unread',conversation.last_message)
+         notifyAllUsersNotInTheChatroom(conversation, conversation.last_message,[])
           }).catch(error => console.log(error))
   }
 

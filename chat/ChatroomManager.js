@@ -1052,12 +1052,18 @@ module.exports = function () {
     const x = await Conversation.findById({ _id: string }).populate('last_message').lean().then(conversation => {
       client.in(string).emit('new',conversation.last_message)
          client.in(string).emit('unread',conversation.last_message)
-         notifyAllUsersNotInTheChatroom(conversation, conversation.last_message,[])
+         const io = client
+         const clientNumber = io.sockets.adapter.rooms[game.conversation];
+        const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
+         //const clientNumber = io.sockets.adapter.rooms[message.conversation];
+    //const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
+         notifyAllUsersNotInTheChatroom(conversation, conversation.last_message,activeUsers)
           }).catch(error => console.log(error))
   }
 
 
   async function getChatroomAndNotify(convo_id,message){
+    
     const string  = convo_id && convo_id._id ? convo_id._id.toString() : convo_id.toString()
     const x = await Conversation.findById({ _id: string }).populate('last_message').lean().then(conversation => {
       // client.in(string).emit('new',conversation.last_message)
@@ -1067,7 +1073,6 @@ module.exports = function () {
           }).catch(error => console.log(error))
           return x
   }
-  getChatroomAndNotify
 
   
   async function handleProfileAlerts(friend,client,y){

@@ -1052,12 +1052,10 @@ module.exports = function () {
     const x = await Conversation.findById({ _id: string }).populate('last_message').lean().then(conversation => {
       client.in(string).emit('new',conversation.last_message)
          client.in(string).emit('unread',conversation.last_message)
-         const io = client
-         const clientNumber = io.sockets.adapter.rooms[game.conversation];
-        const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
+         //const io = client
          //const clientNumber = io.sockets.adapter.rooms[message.conversation];
     //const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
-         notifyAllUsersNotInTheChatroom(conversation, conversation.last_message,activeUsers)
+         notifyAllUsersNotInTheChatroom(conversation, conversation.last_message,[])
           }).catch(error => console.log(error))
   }
 

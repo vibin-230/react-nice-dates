@@ -1057,6 +1057,18 @@ module.exports = function () {
   }
 
 
+  async function getChatroomAndNotify(convo_id,message){
+    const string  = convo_id && convo_id._id ? convo_id._id.toString() : convo_id.toString()
+    const x = await Conversation.findById({ _id: string }).populate('last_message').lean().then(conversation => {
+      // client.in(string).emit('new',conversation.last_message)
+      //    client.in(string).emit('unread',conversation.last_message)
+         notifyAllUsersNotInTheChatroom(conversation, message,[])
+         return 'pass'
+          }).catch(error => console.log(error))
+          return x
+  }
+  getChatroomAndNotify
+
   
   async function handleProfileAlerts(friend,client,y){
       // console.log("useree",user)
@@ -1225,6 +1237,7 @@ return x
     updateGroup,
     leaveChatroomSingle,
     updateParams,
+    getChatroomAndNotify,
     deleteChatroom,
     handleProfileAlerts,
     sendEventInvites,

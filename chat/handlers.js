@@ -321,12 +321,12 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
 
   async function handleSendBroadcast(message,callback){
     
-    const clientNumber = io.sockets.adapter.rooms[message.conversation];
-    const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
+    //const clientNumber = io.sockets.adapter.rooms[message.conversation];
+    //const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
        io.in(message.conversation).emit('new',message)
         client.to(message.conversation).emit('unread',message)
         chatroomManager.saveMessage(message) 
-       // chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
+        chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,[])
         callback()
   }
 

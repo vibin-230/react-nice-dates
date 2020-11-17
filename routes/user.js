@@ -2465,8 +2465,13 @@ function SlotsCheck1(body,id){
       }
       Booking.find({ venue:body.venue, venue_id:{$in:venue_id}, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
       // Booking.find({$and:[{venue:body.venue, venue_id:id, booking_date:{$gte:body.booking_date,$lt:moment(body.booking_date).add(1,"days")}}],booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
-        let slots_available = SlotsAvailable(venue,booking_history)
-        if(slots_available.slots_available[body.slot_time][body.venue_type]>0){
+       
+      let slots_available = SlotsAvailable(venue,booking_history)
+        console.log(slots_available.slots_available);
+        if(slots_available.slots_available[body.slot_time][body.venue_type]>0 && !Object.values(slots_available.slots_available[body.slot_time]).filter(a=> a<=0).length>0){
+          let s = false
+          const availablility = 
+          console.log('Availability',availablility);
           reject()
         }else{
           console.log('slot time selected',body.slot_time);

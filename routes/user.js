@@ -82,11 +82,11 @@ function ActivityLog(activity_log) {
 }
 
 function getGame(res,convo_id,refund_status,next,req){
-  Conversation.findById({_id:convo_id}).lean().populate('members','_id name device_token profile_picture handle name_status visibility').then((convo)=>{
+  Conversation.findById({_id:convo_id}).lean().populate('members','_id name device_token profile_picture handle name_status visibility sports_interest').then((convo)=>{
     convo['exit2'] =  convo.members.filter((a)=>a._id.toString() === req.userId.toString()).length > 0 ? false : true
     convo['exit'] =  convo.members.filter((a)=>a._id.toString() === req.userId.toString()).length > 0 ? false : true
   
-    Game.findOne({conversation:convo_id}).lean().populate("mvp.target_id","name handle profile_picture _id").populate("conversation").populate('host','_id name profile_picture phone handle name_status visibility').populate('users','_id name profile_picture phone handle name_status visibility').populate('invites','_id name profile_picture phone handle visibility').then(game=>{
+    Game.findOne({conversation:convo_id}).lean().populate("mvp.target_id","name handle profile_picture _id").populate("conversation").populate('host','_id name profile_picture phone handle name_status visibility sports_interest').populate('users','_id name profile_picture phone handle name_status visibility sports_interest').populate('invites','_id name profile_picture phone handle visibility sports_interest').then(game=>{
             Venue.findById({_id:game.bookings[0].venue_id}).then(venue =>{
               Offers.find({}).then(offers=>{
               let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(venue._id) !== -1)
@@ -389,8 +389,8 @@ router.post('/check_user_game', [
       //Check if user exist
       User.findOne({_id: req.userId}).then(user=> {
         if (user) {
-          Game.findOne({_id:req.body.id}).lean().populate("conversation").populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=>{
-            Conversation.findById({_id:game.conversation._id}).populate('members','_id name device_token profile_picture handle name_status').then((convo)=>{
+          Game.findOne({_id:req.body.id}).lean().populate("conversation").populate('host','_id name profile_picture phone handle name_status visibility').populate('users','_id name profile_picture phone handle name_status visibility').populate('invites','_id name profile_picture phone handle visibility').then(game=>{
+            Conversation.findById({_id:game.conversation._id}).populate('members','_id name device_token profile_picture handle name_status visibility').then((convo)=>{
                     Venue.findById({_id:game.bookings[0].venue_id}).then(venue =>{
                       let game1 = Object.assign({},game)
                       game1["venue"] = venue
@@ -1162,8 +1162,8 @@ router.post('/get_mvp_history', [
   verifyToken,
 ], (req, res, next) => {
       //Check if user exist
-      Game.find({users: {$in:[req.userId]},completed:true,sport_name:req.body.sport,"mvp.target_id":req.userId.toString()}).populate("mvp.sender_id","name handle profile_picture _id").populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
-      Game.find({users: {$in:[req.userId]},completed:true,sport_name:req.body.sport}).populate("mvp.sender_id","name handle profile_picture _id").populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game1=> {
+      Game.find({users: {$in:[req.userId]},completed:true,sport_name:req.body.sport,"mvp.target_id":req.userId.toString()}).populate("conversation").populate("mvp.sender_id","name handle profile_picture _id").populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=> {
+      Game.find({users: {$in:[req.userId]},completed:true,sport_name:req.body.sport}).populate("mvp.sender_id","name handle profile_picture _id").populate("conversation").populate("venue",'venue').populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game1=> {
         var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{
             (rv[moment(x[key]).utc().format('MM-DD-YYYY')] = rv[moment(x[key]).utc().format('MM-DD-YYYY')] || []).push(x);

@@ -2469,8 +2469,6 @@ function SlotsCheck1(body,id){
       let slots_available = SlotsAvailable(venue,booking_history)
         console.log(slots_available.slots_available);
         if(slots_available.slots_available[body.slot_time][body.venue_type]>0 && !Object.values(slots_available.slots_available[body.slot_time]).filter(a=> a<=0).length>0){
-          let s = false
-          const availablility = 
           console.log('Availability',availablility);
           reject()
         }else{

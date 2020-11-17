@@ -2487,8 +2487,8 @@ async function handleSlotAvailabilityForGames(booking1,client){
             }
            return Promise.all(promisesToRun).then((values) => {
              return Game.find({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:true }).lean().populate('conversation').then(game=>{
-             return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:true },{$set:{status:false,status_description:'Sorry ! Slot has been booked by some other user'}}).lean().then(game1=>{
-                console.log('length',game);
+               console.log('length',game);
+               return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:true },{$set:{status:false,status_description:'Sorry ! Slot has been booked by some other user'}}).lean().then(game1=>{
                 if(game.length > 0){
                 let messages =  game.map((nc)=>{ return {conversation:nc.conversation._id,created_at:new Date(),message:`Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.`,name:'bot',read_status:true,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot'}}) 
                 const members = _.flatten(game.map((g)=>g.conversation.members))

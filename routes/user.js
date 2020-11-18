@@ -3306,9 +3306,9 @@ router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
         Game.findOne({"bookings.booking_id":booking[0].booking_id}).then((g)=>{
         if(g){
           Game.findOneAndUpdate({"bookings.booking_id":booking[0].booking_id},{$set:{bookings:booking,completed:true,booking_status:"completed"}}).populate("users","name handle device_token").then((a)=>{
-            Message.create({conversation:game.conversation,message:`Game has been completed please pick an MVP for this game.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
-               Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{ 
-                Conversation.findById({_id:game.conversation}).then((m)=>{                      
+            Message.create({conversation:a.conversation,message:`Game completed! please pick an MVP for this game.`,name:'bot',read_status:true,read_by:a.host[0],author:a.host[0],type:'bot',created_at:new Date()}).then(message1=>{
+               Conversation.findByIdAndUpdate({_id:a.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{ 
+                Conversation.findById({_id:a.conversation}).then((m)=>{                      
                 const device_token_list=a.users.map((e)=>e.device_token)
                 NotifyArray(device_token_list,`Please pick an MVP`,'Turf Town',m)
                   return user.map((e)=>e._id)
@@ -4464,7 +4464,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   let sender = "TRFTWN"
                   if(booking[0].game){
                     Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted',status_description:'cancelled by venue manager'}}).then(game=>{
-                      Message.create({conversation:game.conversation,message:`Venue has cancelled this slot and a refund has been initiated.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
+                      Message.create({conversation:game.conversation,message:`Venue has cancelled this slot and a refund has been initiated.`,name:'bot',read_status:true,read_by:game.host[0],author:game.host[0],type:'bot',created_at:new Date()}).then(message1=>{
                        // const device_token_list=user.map((e)=>e.device_token)
                        // NotifyArray(device_token_list,'Hey ! Slot has been cancelled and refund has been initiated.Amount will be credited in 2 - 4 working days.Please book a new slot to confirm the game','Turftown Game Cancellation')
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
@@ -4557,7 +4557,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   // })
                   if(booking[0].game){
                     Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted',status_description:'cancelled by venue manager'}}).then(game=>{
-                        Message.create({conversation:game.conversation,message:`Venue has cancelled this slot. There will be no refund as it is less than 6 hours to the scheduled time.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
+                        Message.create({conversation:game.conversation,message:`Venue has cancelled this slot. There will be no refund as it is less than 6 hours to the scheduled time.`,name:'bot',read_status:true,read_by:game.host[0],author:game.host[0],type:'bot',created_at:new Date()}).then(message1=>{
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
                           
                           //getGame(res,game.conversation,true,next,req)

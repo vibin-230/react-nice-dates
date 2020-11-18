@@ -4458,7 +4458,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   let sender = "TRFTWN"
                   if(booking[0].game){
                     Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted',status_description:'cancelled by venue manager'}}).then(game=>{
-                      Message.create({conversation:game.conversation,message:`Venue has cancelled this slot and a refund has been initiated.`,name:'bot',read_status:true,read_by:game.host[0],author:game.host[0],type:'bot',created_at:new Date()}).then(message1=>{
+                      Message.create({conversation:game.conversation,message:`Venue has cancelled this slot and a refund has been initiated.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                        // const device_token_list=user.map((e)=>e.device_token)
                        // NotifyArray(device_token_list,'Hey ! Slot has been cancelled and refund has been initiated.Amount will be credited in 2 - 4 working days.Please book a new slot to confirm the game','Turftown Game Cancellation')
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
@@ -4551,7 +4551,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   // })
                   if(booking[0].game){
                     Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted',status_description:'cancelled by venue manager'}}).then(game=>{
-                        Message.create({conversation:game.conversation,message:`Venue has cancelled this slot. There will be no refund as it is less than 6 hours to the scheduled time.`,name:'bot',read_status:true,read_by:game.host[0],author:game.host[0],type:'bot',created_at:new Date()}).then(message1=>{
+                        Message.create({conversation:game.conversation,message:`Venue has cancelled this slot. There will be no refund as it is less than 6 hours to the scheduled time.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
                           
                           //getGame(res,game.conversation,true,next,req)

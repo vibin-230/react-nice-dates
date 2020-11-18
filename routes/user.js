@@ -3305,7 +3305,17 @@ router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
         const values = booking
         Game.findOne({"bookings.booking_id":booking[0].booking_id}).then((g)=>{
         if(g){
-          Game.findOneAndUpdate({"bookings.booking_id":booking[0].booking_id},{$set:{bookings:booking,completed:true,booking_status:"completed"}}).then((a)=>console.log(a))
+          Game.findOneAndUpdate({"bookings.booking_id":booking[0].booking_id},{$set:{bookings:booking,completed:true,booking_status:"completed"}}).populate("users","name handle device_token").then((a)=>{
+            Message.create({conversation:game.conversation,message:`Game has been completed please pick an MVP for this game.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
+               Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{ 
+                Conversation.findById({_id:game.conversation}).then((m)=>{                      
+                const device_token_list=a.users.map((e)=>e.device_token)
+                NotifyArray(device_token_list,`Please pick an MVP`,'Turf Town',m)
+                  return user.map((e)=>e._id)
+                }).catch(next);
+               }).catch(next);
+              }).catch(next);
+            }).catch(next);
         }
         result = Object.values(combineSlots(booking))
         res.send({status:"success", message:"booking completed", data:result})
@@ -3318,17 +3328,17 @@ router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
         let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
         let datetime = date + " " + moment(start_time).format("hh:mma") + "-" + moment(end_time).format("hh:mma")
         //Activity Log
-        let activity_log = {
-          datetime: new Date(),
-          id:req.userId,
-          user_type: req.role?req.role:"user",
-          activity: 'slot booking completed',
-          name:req.name,
-          venue_id:booking[0].venue_id,
-          booking_id:booking_id,
-          message: "Slot "+booking_id+" booking completed at "+venue_name+" "+datetime+" "+venue_type,
-        }
-        ActivityLog(activity_log)
+        // let activity_log = {
+        //   datetime: new Date(),
+        //   id:req.userId,
+        //   user_type: req.role?req.role:"user",
+        //   activity: 'slot booking completed',
+        //   name:req.name,
+        //   venue_id:booking[0].venue_id,
+        //   booking_id:booking_id,
+        //   message: "Slot "+booking_id+" booking completed at "+venue_name+" "+datetime+" "+venue_type,
+        // }
+        // ActivityLog(activity_log)
       })
     })
   })

@@ -532,7 +532,7 @@ module.exports = function () {
 
                                               return Conversation.updateMany({_id:{ $in: cids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
                                                 const device_token_list=user.map((e)=>e.device_token)
-                                                NotifyArray(device_token_list,`${sender.name} invited you to join (${game1.name})`,'Turf Town Game Invite')
+                                                NotifyArray(device_token_list,`${sender.handle} invited you to join "${game1.name}"`,'Turf Town Game Invite')
                                                     return user.map((e)=>e._id)
               //res.send({status:"success", message:"invitation sent"})
     }).catch((e)=>console.log(e));
@@ -635,7 +635,7 @@ module.exports = function () {
                   })
                   return Conversation.updateMany({_id:{ $in: group_ids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
                     const device_token_list=user.map((e)=>e.device_token)
-                                                  NotifyArray(device_token_list,`${sender.name} invited you to join (${name})`,'Turf Town Game Invite')
+                                                  NotifyArray(device_token_list,`${sender.handle} invited you to join "${name}"`,'Turf Town Game Invite')
                                                     return user.map((e)=>e._id)
                  // const x = await  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: ids } } }).then(game=> {
       //  }).catch((e)=>console.log(e));

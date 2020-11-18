@@ -2488,7 +2488,7 @@ async function handleSlotAvailabilityForGames(booking1,client){
              return Game.find({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:true }).lean().populate('conversation').then(game=>{
                return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:true },{$set:{status:false,status_description:'Sorry ! Slot has been booked by some other user'}}).lean().then(game1=>{
                 if(game.length > 0){
-                let messages =  game.map((nc)=>{ return {conversation:nc.conversation._id,created_at:new Date(),message:`Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.`,name:'bot',read_status:true,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot'}}) 
+                let messages =  game.map((nc)=>{ return {conversation:nc.conversation._id,created_at:new Date(),message:`Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.`,name:'bot',read_status:true,read_by:'bot',author:'bot',type:'bot'}}) 
                 const members = _.flatten(game.map((g)=>g.conversation.members))
                 return   User.find({_id: { $in :members } },{activity_log:0}).lean().then(user=> {
                 return Message.insertMany(messages).then(message1=>{
@@ -2532,7 +2532,7 @@ async function handleSlotAvailabilityForGames1(booking1,client){
              return Game.find({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:true }).lean().populate('conversation').then(game=>{
                return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:true },{$set:{status:false,status_description:'Sorry ! Slot has been booked by some other user'}}).lean().then(game1=>{
                 if(game.length > 0){
-                let messages =  game.map((nc)=>{ return {conversation:nc.conversation._id,created_at:new Date(),message:`Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.`,name:'bot',read_status:true,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot'}}) 
+                let messages =  game.map((nc)=>{ return {conversation:nc.conversation._id,created_at:new Date(),message:`Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.`,name:'bot',read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot'}}) 
                 const members = _.flatten(game.map((g)=>g.conversation.members))
                 return   User.find({_id: { $in :members } },{activity_log:0}).lean().then(user=> {
                 return Message.insertMany(messages).then(message1=>{
@@ -3529,7 +3529,7 @@ function updateGameStatusAndGetMessages(nc,status){
      let end_time = Object.values(nc.bookings).reduce((total,value)=>{return total>value.end_time?total:value.end_time},nc.bookings[0].end_time)
      let time = moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
      status && NotifyArray(device_token,`Hey! The ${time} slot is available again. Please book this slot to confirm your game.`,'Turftown Slot Availability')
-   return {conversation:nc.conversation._id,message:`Hey! The ${time} slot is available again. Please book this slot to confirm your game.`,name:'bot',read_status:false,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot',created_at:new Date()}
+   return {conversation:nc.conversation._id,message:`Hey! The ${time} slot is available again. Please book this slot to confirm your game.`,name:'bot',read_status:false,read_by:'bot',author:'bot',type:'bot',created_at:new Date()}
 }
 
 function updateConversationsAndGames(game,messages,booking){

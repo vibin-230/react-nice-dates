@@ -319,9 +319,11 @@ router.post('/mark_read/:id', [
 ], (req, res, next) => {
   Conversation.findById({_id:req.body.conversation_id}).then((convo)=>{
       
+    if(convo && convo._id){
+
     Message.updateMany({conversation:req.body.conversation_id,read_status:false},{ '$set': { "read_status" : true } },{multi:true}).then((user)=>{
       const a =  convo && convo.last_active && convo.last_active.length > 0 ? convo.last_active.map((con)=>{
-            if(con.user_id.toString() === req.params.id.toString()){
+        if(con.user_id.toString() === req.params.id.toString()){
               con['last_active'] = new Date()
               return con
             }else 
@@ -338,6 +340,10 @@ router.post('/mark_read/:id', [
            }
   }).catch(next);
   }).catch(next);
+}else{
+  res.status(201).send({status: "success", message: "no conversation"})
+
+}
 }).catch(next); 
 });
 

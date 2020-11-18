@@ -774,7 +774,7 @@ module.exports = function () {
               saveMessage(message_save)
                 client.in(conversation2._id).emit('new',message_save)
                 client.in(conversation2._id).emit('unread',message_save)
-
+                
                 const token_list  = conversation2.members.filter((a)=>a._id.toString() !== userId.toString())
                 const device_token_list = token_list.map((e) => e.device_token)
                 NotifyArray(device_token_list, `${user.handle} has joined ${game1.name}.`, `Turf Town`,conversation1)
@@ -823,8 +823,12 @@ module.exports = function () {
                 client.in(conversation2._id).emit('new',message_save)
                 client.in(conversation2._id).emit('unread',message_save)
                 const token_list  = conversation2.members.filter((a)=>a._id.toString() == userId.toString())
+                const token_list1  = conversation2.members.filter((a)=>a._id.toString() !== userId.toString()).map((e) => e.device_token)
                 const device_token_list = token_list.map((e) => e.device_token)
-                NotifyArray(device_token_list, `${user.handle} has joined ${game1.name}.`, `Turf Town`)
+                NotifyArray(device_token_list, `${conversation2.members[0].handle} has accepted your game request (${game1.name}).`, `Turf Town`)
+                NotifyArray(token_list1, `${user.handle} has joined ${game1.name}.`, `Turf Town`)
+
+                
                 return conversation2.members.map((e) => e._id)
 
                 //res.send({status:"success", message:"invitation sent"})

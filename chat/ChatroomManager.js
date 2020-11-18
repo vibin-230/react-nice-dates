@@ -532,7 +532,7 @@ module.exports = function () {
 
                                               return Conversation.updateMany({_id:{ $in: cids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
                                                 const device_token_list=user.map((e)=>e.device_token)
-                                                NotifyArray(device_token_list,`Game (${game1.name}) from ${sender.name}`,'Turftown Game Request')
+                                                NotifyArray(device_token_list,`${sender.name} invited you to join (${game1.name})`,'Turf Town Game Invite')
                                                     return user.map((e)=>e._id)
               //res.send({status:"success", message:"invitation sent"})
     }).catch((e)=>console.log(e));
@@ -587,7 +587,7 @@ module.exports = function () {
 
                           return Conversation.updateMany({_id:{ $in: cids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
                             const device_token_list=user.map((e)=>e.device_token)
-                            NotifyArray(device_token_list,`Profile from ${sender.name}`,'Turftown Game Request')
+                            NotifyArray(device_token_list,`Profile from ${sender.name}`,'Turf Town Game Request')
                                 return user.map((e)=>e._id)
 //res.send({status:"success", message:"invitation sent"})
 }).catch((e)=>console.log(e));
@@ -635,7 +635,7 @@ module.exports = function () {
                   })
                   return Conversation.updateMany({_id:{ $in: group_ids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
                     const device_token_list=user.map((e)=>e.device_token)
-                                                  NotifyArray(device_token_list,`Game (${name}) from ${sender.name}`,'Turftown Game Request')
+                                                  NotifyArray(device_token_list,`${sender.name} invited you to join (${name})`,'Turf Town Game Invite')
                                                     return user.map((e)=>e._id)
                  // const x = await  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: ids } } }).then(game=> {
       //  }).catch((e)=>console.log(e));
@@ -1031,7 +1031,7 @@ module.exports = function () {
                       return id
                     })
                       const device_token_list=user.map((e)=>e.device_token)
-                                                    NotifyArray1(device_token_list,'Hey ! Game is available again . Please book your slot to confirm the game','Turftown Game Availability')
+                                                    NotifyArray1(device_token_list,'Hey ! Game is available again . Please book your slot to confirm the game','Turf Town Game Availability')
                                                       return user.map((e)=>e._id)
                    }).catch((e)=>console.log(e));
                 }).catch(error => console.log(error))

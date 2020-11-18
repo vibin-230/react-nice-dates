@@ -3312,19 +3312,19 @@ router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
         Game.findOne({"bookings.booking_id":booking[0].booking_id}).then((g)=>{
         if(g){
           Game.findOneAndUpdate({"bookings.booking_id":booking[0].booking_id},{$set:{bookings:booking,completed:true,booking_status:"completed"}}).populate("users","name handle device_token").then((a)=>{
-           let final_Game = (game.sport_name == "cricket" || game.sport_name == "badminton") ? (game.users.length >= 3 ? true : false) : (game.sport_name == "football" || game.sport_name == "basketball") ? (game.users.length >=4 ? true :false) : false
+           let final_Game = (a.sport_name == "cricket" || a.sport_name == "badminton") ? (a.users.length >= 3 ? true : false) : (a.sport_name == "football" || a.sport_name == "basketball") ? (a.users.length >= 1 ? true :false) : false
            if(final_Game){ 
            Message.create({conversation:a.conversation,message:`Game completed! please pick an MVP for this game.`,name:'bot',read_status:true,read_by:a.host[0],author:a.host[0],type:'bot',created_at:new Date()}).then(message1=>{
                Conversation.findByIdAndUpdate({_id:a.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{ 
                 Conversation.findById({_id:a.conversation}).then((m)=>{                      
                 const device_token_list=a.users.map((e)=>e.device_token)
                 NotifyArray(device_token_list,`Game completed! Please pick an MVP for ${a.name}`,'Turf Town',m)
-                  return user.map((e)=>e._id)
-                }).catch(next);
-               }).catch(next);
-              }).catch(next);
+                  return a.users.map((e)=>e._id)
+                })
+               })
+              })
         }
-        }).catch(next);
+        })
         }
         result = Object.values(combineSlots(booking))
         res.send({status:"success", message:"booking completed", data:result})

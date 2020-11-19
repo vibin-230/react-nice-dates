@@ -818,7 +818,7 @@ module.exports = function () {
           return User.findById({ _id: userId }, { activity_log: 0, }).lean().then(user => {
           return Conversation.findByIdAndUpdate({ _id: game1.conversation }, { $set: conversation }).then(conversation3 => {
             return Conversation.findById({ _id: game.conversation }).lean().populate('members', '_id device_token handle name name_status').then(conversation2 => {
-              const message_save ={ conversation: conversation2._id, message: `${user.handle} has joined the game`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() }
+              const message_save ={ conversation: conversation2._id, message: `${user.handle} has joined the game`, read_status: false, name: conversation2.members[0].handle, author: conversation2.members[0]._id, type: 'bot', created_at: new Date() }
                  saveMessage(message_save)
                 client.in(conversation2._id).emit('new',message_save)
                 client.in(conversation2._id).emit('unread',message_save)

@@ -169,7 +169,7 @@ module.exports = function () {
     async function saveAsyncMessage(message) {
       const x = await Message.create(message).then(message1=>{
        return Conversation.findByIdAndUpdate({_id:message1.conversation},{last_message:message1._id,last_updated:new Date()}).then(conversation=>{
-        return message1  
+        return message.type === 'game_request'? message:message1  
       }).catch((e)=>{console.log(e)});
         }).catch((e)=>{console.log(e)});
   

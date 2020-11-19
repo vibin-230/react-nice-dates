@@ -764,7 +764,7 @@ module.exports = function () {
         conversation.colors = conversation.members.some((key) => key.toString() == userId.toString()) ? conversation.colors : conversation.colors.concat(colors)
         conversation.members = conversation.members.some((key) => key.toString() == userId.toString()) ? conversation.members : conversation.members.concat(userId)
         conversation.last_active = conversation.last_active.some((key) => key.user_id.toString() == userId.toString()) ? conversation.last_active : conversation.last_active.concat({ "user_id": userId, last_active: new Date() })
-        conversation.join_date = conversation.join_date.some((key) => key.user_id.toString() == userId.toString()) ? conversation.join_date : conversation.join_date.concat({ "user_id": userId, join_date: new Date() })
+        conversation.join_date = conversation.join_date.some((key) => key.user_id.toString() == userId.toString()) ? conversation.join_date.concat({ "user_id": userId, join_date: new Date() }) : conversation.join_date.concat({ "user_id": userId, join_date: new Date() })
         conversation.exit_list = conversation.exit_list && conversation.exit_list.length > 0 ?conversation.exit_list.filter((key) => key.user_id.toString() !== userId.toString()) : []
         return Game.findByIdAndUpdate({ _id: game_id }, { $set: game }).then(game2 => {
           return User.findById({ _id: userId }, { activity_log: 0, }).lean().then(user => {

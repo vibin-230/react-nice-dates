@@ -3585,9 +3585,10 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
       if(game.length > 0){
 
       let slots_available = SlotsAvailable(venue,booking_history)
+      console.log(slots_available.slots_available);
         const s = game.map((game2,index)=>{
           const slot_times = game2.bookings.map((b)=>b.slot_time)
-          const status_slot_time = slot_times.map((a)=>slots_available.slots_available[a][venue_type] > 0)
+          const status_slot_time = slot_times.map((a)=>slots_available.slots_available[a][venue_type] > 0 && Object.values(slots_available.slots_available[a]).filter(a=> a<=0).length<=0)
           const final_status = status_slot_time.filter((a)=>!a).length > 0 ? false : true
           messages.push(updateGameStatusAndGetMessages(game2,final_status))
           console.log(game2.name,slot_times,status_slot_time,game2.status);

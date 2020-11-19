@@ -2947,7 +2947,7 @@ router.post('/book_slot_for_admin1/:id', verifyToken, AccessControl('booking', '
         res.send({status:"success", message:"slot booked", data:values})
         Venue.findById({_id:values[0].venue_id}).then(venue=>{
           // Send SMS
-          handleSlotAvailabilityForGames(values,req.socket)
+          handleSlotAvailabilityForGames(req.body,req.socket)
           createReport({type:'booking',comments:values[0].comments ? values[0].comments:'',venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,created_by:values[0].user_id,card:values[0].card?values[0].card:0,coins:0,cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
           let booking_id = values[0].booking_id
           let phone = "91"+values[0].phone
@@ -3048,7 +3048,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
         Venue.findById({_id:values[0].venue_id}).then(venue=>{
           // Send SMS
           //comment out after test**********
-          handleSlotAvailabilityForGames(values,req.socket)
+          handleSlotAvailabilityForGames(req.body,req.socket)
           createReport({type:'booking',comments:values[0].comments ? values[0].comments:'',venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,created_by:values[0].user_id,card:values[0].card?values[0].card:0,coins:0,cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
           let booking_id = values[0].booking_id
           let phone = "91"+values[0].phone
@@ -3588,10 +3588,14 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
       console.log(slots_available.slots_available);
         const s = game.map((game2,index)=>{
           const slot_times = game2.bookings.map((b)=>b.slot_time)
+          Object.values(slots_available.slots_available[a])
+          console.log('-------------------------------------');
+
           const status_slot_time = slot_times.map((a)=>slots_available.slots_available[a][venue_type] > 0 && Object.values(slots_available.slots_available[a]).filter(a=> a<=0).length<=0)
           const final_status = status_slot_time.filter((a)=>!a).length > 0 ? false : true
           console.log(game2.name,slot_times,status_slot_time,game2.status);
           console.log(final_status);
+          messages.push(updateGameStatusAndGetMessages(game2,final_status))
           console.log('------------------------------------');
         if(final_status){
           game2['status'] = final_status
@@ -3600,10 +3604,7 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
         return game2
     }).filter((a)=>a.status)
           if(s && s.length > 0){
-          const ids = s.map((a)=>{
-            messages.push(updateGameStatusAndGetMessages(a,true))
-            return a._id
-            })
+          const ids = s.map((a)=>a._id)
           console.log(ids);
           console.log('------------------------------------');
           return Game.updateMany({_id:{$in:ids}},{$set:{status:true,status_description:'',booking_status:'hosted'}}).lean().then(game1=>{

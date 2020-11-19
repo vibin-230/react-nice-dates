@@ -2947,7 +2947,7 @@ router.post('/book_slot_for_admin1/:id', verifyToken, AccessControl('booking', '
         res.send({status:"success", message:"slot booked", data:values})
         Venue.findById({_id:values[0].venue_id}).then(venue=>{
           // Send SMS
-          handleSlotAvailabilityForGames1(values,req.socket)
+          handleSlotAvailabilityForGames(values,req.socket)
           createReport({type:'booking',comments:values[0].comments ? values[0].comments:'',venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,created_by:values[0].user_id,card:values[0].card?values[0].card:0,coins:0,cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
           let booking_id = values[0].booking_id
           let phone = "91"+values[0].phone
@@ -3048,7 +3048,7 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
         Venue.findById({_id:values[0].venue_id}).then(venue=>{
           // Send SMS
           //comment out after test**********
-          handleSlotAvailabilityForGames1(values,req.socket)
+          handleSlotAvailabilityForGames(values,req.socket)
           createReport({type:'booking',comments:values[0].comments ? values[0].comments:'',venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,created_by:values[0].user_id,card:values[0].card?values[0].card:0,coins:0,cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
           let booking_id = values[0].booking_id
           let phone = "91"+values[0].phone

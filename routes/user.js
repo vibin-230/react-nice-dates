@@ -3601,7 +3601,7 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
     }).filter((a)=>a.status)
           if(s && s.length > 0){
           const ids = s.map((a)=>{
-            messages.push(updateGameStatusAndGetMessages(game2,final_status))
+            messages.push(updateGameStatusAndGetMessages(a,final_status))
             return a._id
             })
           console.log(ids);

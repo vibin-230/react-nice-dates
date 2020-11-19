@@ -3590,7 +3590,6 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
           const slot_times = game2.bookings.map((b)=>b.slot_time)
           const status_slot_time = slot_times.map((a)=>slots_available.slots_available[a][venue_type] > 0 && Object.values(slots_available.slots_available[a]).filter(a=> a<=0).length<=0)
           const final_status = status_slot_time.filter((a)=>!a).length > 0 ? false : true
-          messages.push(updateGameStatusAndGetMessages(game2,final_status))
           console.log(game2.name,slot_times,status_slot_time,game2.status);
           console.log(final_status);
           console.log('------------------------------------');
@@ -3601,7 +3600,10 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
         return game2
     }).filter((a)=>a.status)
           if(s && s.length > 0){
-          const ids = s.map((a)=> a._id)
+          const ids = s.map((a)=>{
+            messages.push(updateGameStatusAndGetMessages(game2,final_status))
+            return a._id
+            })
           console.log(ids);
           console.log('------------------------------------');
           return Game.updateMany({_id:{$in:ids}},{$set:{status:true,status_description:'',booking_status:'hosted'}}).lean().then(game1=>{

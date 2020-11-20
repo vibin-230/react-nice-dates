@@ -671,7 +671,7 @@ module.exports = function () {
                 let finalMessages = conversation1.map((nc) => { return { conversation: nc._id, event: event_id, message: `Event invite`, name: sender.name, read_status: false, read_by: group_ids[0], author: user_id, type: 'event', created_at: new Date() } })
                 return Message.insertMany(finalMessages).then(message1 => {
                   const message_ids = message1.map((m) => m._id)
-                  return Message.find({ _id: { $in: message_ids } }).populate('author', 'name _id handle name_status').populate('user', 'name _id profile_picture phone handle name_status').populate({path:"event"}).populate( { path: 'conversation', populate: { path: 'last_message' } }).then(m => {
+                  return Message.find({ _id: { $in: message_ids } }).populate('author', 'name _id handle name_status').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'event', populate:[ { path: 'conversation' , populate :{path:'last_message'} },{path:'venue', model:'venue',select:'venue'}]}).then(m => {
                     const cids = m.map((entry) => {
                       const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id : entry.conversation
                       client.to(id).emit('new', entry)

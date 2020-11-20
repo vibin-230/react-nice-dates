@@ -382,8 +382,8 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
       console.log(id);
       const y = await chatroomManager.saveAsyncMessage(message.message) 
           client.join(id)
-          client.to(id).emit('new',message.message.message)
-          client.to(id).emit('unread',message.message.message)
+          client.to(id).emit('new',message.message)
+          client.to(id).emit('unread',message.message)
           client.leave(id)
   
           //chatroomManager.saveMessage(message) 

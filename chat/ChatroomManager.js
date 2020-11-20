@@ -244,7 +244,7 @@ module.exports = function () {
     function notifyOtherUsers(chatroom,message){
       const filter = chatroom.members.filter((member)=> member.toString() !== message.author.toString())
      User.findOne({_id: filter[0]},{activity_log:0}).then(user=> {
-       notify(user,`${message.name} : ${message.message}`)
+       notify(user,`${message.name}: ${message.message}`)
       }).catch((e)=>console.log(e))
     }
 
@@ -569,7 +569,7 @@ module.exports = function () {
            return   User.findOne({_id: user_id },{activity_log:0}).lean().then(sender=> {
              return   User.find({_id: { $in :ids } },{activity_log:0}).lean().then(user=> {
 
-                  let messages =  new_convos.map((nc)=>{ return {conversation:nc._id,user:user_id,message:'Profile',name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'profile',created_at:new Date()}}) 
+                  let messages =  new_convos.map((nc)=>{ return {conversation:nc._id,user:user_id,message:'Profile',name:sender.handle,read_status:false,read_by:nc.members[0],author:user_id,type:'profile',created_at:new Date()}}) 
                     // let messages1 = conversation2.map((nc)=>{ 
                        // client.to(nc._id.toString()).emit('new',{conversation:nc._id,game:game_id,message:`Game (${game1.name}) invite`,name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()})
                       // return {conversation:nc._id,game:game_id,message:'Game invite',name:sender.name,read_status:false,read_by:nc.members[0],author:user_id,type:'game',created_at:new Date()}}) 
@@ -587,7 +587,7 @@ module.exports = function () {
 
                           return Conversation.updateMany({_id:{ $in: cids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
                             const device_token_list=user.map((e)=>e.device_token)
-                            NotifyArray(device_token_list,`Profile from ${sender.name}`,'Turf Town Game Request')
+                            NotifyArray(device_token_list,`Profile from ${sender.handle}`,'Turf Town Game Request')
                                 return user.map((e)=>e._id)
 //res.send({status:"success", message:"invitation sent"})
 }).catch((e)=>console.log(e));
@@ -621,7 +621,7 @@ module.exports = function () {
             return   User.findOne({_id: user_id },{activity_log:0}).lean().then(sender=> {
               return   User.find({_id: { $in :result } },{activity_log:0}).lean().then(user=> {
                  let finalMessages = conversation1.map((nc)=>{ 
-                  return {conversation:nc._id,game:game_id,message:` Game invite`,name:sender.name,read_status:false,read_by:group_ids[0],author:user_id,type:'game',created_at:new Date()}
+                  return {conversation:nc._id,game:game_id,message:` Game invite`,name:sender.handle,read_status:false,read_by:group_ids[0],author:user_id,type:'game',created_at:new Date()}
                   }) 
                  return Message.insertMany(finalMessages).then(message1=>{
                   const message_ids = message1.map((m)=>m._id)
@@ -668,7 +668,7 @@ module.exports = function () {
           // return Conversation.findByIdAndUpdate({ _id: convo }, { $addToSet: { invites: { $each: result } } }).then(conversation12 => {
             return User.findOne({ _id: user_id }, { activity_log: 0 }).lean().then(sender => {
               return User.find({ _id: { $in: result } }, { activity_log: 0 }).lean().then(user => {
-                let finalMessages = conversation1.map((nc) => { return { conversation: nc._id, event: event_id, message: `Event invite`, name: sender.name, read_status: false, read_by: group_ids[0], author: user_id, type: 'event', created_at: new Date() } })
+                let finalMessages = conversation1.map((nc) => { return { conversation: nc._id, event: event_id, message: `Event invite`, name: sender.handle, read_status: false, read_by: group_ids[0], author: user_id, type: 'event', created_at: new Date() } })
                 return Message.insertMany(finalMessages).then(message1 => {
                   const message_ids = message1.map((m) => m._id)
                   return Message.find({ _id: { $in: message_ids } }).populate('author', 'name _id handle name_status').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'event', populate:[ { path: 'conversation' , populate :{path:'last_message'} },{path:'venue', model:'venue',select:'venue'}]}).then(m => {
@@ -681,7 +681,7 @@ module.exports = function () {
                     })
                     return Conversation.updateMany({ _id: { $in: group_ids } }, { $set: { last_message: message1[0]._id, last_updated: new Date() } }).then(message1 => {
                       const device_token_list = user.map((e) => e.device_token)
-                      NotifyArray(device_token_list, `Event (${name}) from ${sender.name}`, 'Turftown Event')
+                      NotifyArray(device_token_list, `Event (${name}) from ${sender.handle}`, 'Turf Town Event')
                       return user.map((e) => e._id)
                     }).catch((e) => console.log(e));
                   }).catch((e) => console.log(e));
@@ -721,7 +721,7 @@ module.exports = function () {
             return User.findOne({ _id: user_id }, { activity_log: 0 }).lean().then(sender => {
               return User.find({ _id: { $in: ids } }, { activity_log: 0 }).lean().then(user => {
 
-                let messages = new_convos.map((nc) => { return { conversation: nc._id,event: event_id, message: 'Event invite', name: sender.name, read_status: false, read_by: nc.members[0], author: user_id, type: 'event', created_at: new Date() } })
+                let messages = new_convos.map((nc) => { return { conversation: nc._id,event: event_id, message: 'Event invite', name: sender.handle, read_status: false, read_by: nc.members[0], author: user_id, type: 'event', created_at: new Date() } })
                 let finalMessages = messages
                 return Message.insertMany(finalMessages).then(message1 => {
                   const message_ids = message1.map((m) => m._id)
@@ -736,7 +736,7 @@ module.exports = function () {
 
                     return Conversation.updateMany({ _id: { $in: cids } }, { $set: { last_message: message1[0]._id, last_updated: new Date() } }).then(message1 => {
                       const device_token_list = user.map((e) => e.device_token)
-                      NotifyArray(device_token_list, `Event (${event.name}) from ${sender.name}`, 'Turftown Event Request')
+                      NotifyArray(device_token_list, `Event (${event.name}) from ${sender.handle}`, 'Turf Town Event Invite')
                       return user.map((e) => e._id)
                     }).catch((e) => console.log(e));
                   }).catch((e) => console.log(e));

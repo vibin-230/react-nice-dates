@@ -258,7 +258,7 @@ module.exports = function () {
        User.find({_id: {$in : filter}},{activity_log:0}).then(user=> {
         const s = message && message.image && message.image.length > 1 ?'s':''
         const messages = message.type === 'image' ? `${message.image.length} image${s} has been shared`: `${message.message}`
-          const messages1 = chatroom.type === 'single' ?  `${message.name} : ${messages}`:  `${message.name} @ ${chatroom.name} : ${messages}`
+          const messages1 = chatroom.type === 'single' ?  `${message.name}: ${messages}`:  `${message.name} @${chatroom.name}: ${messages}`
        NotifyArray(user.map((u)=>u.device_token),messages1,"Turf Town",chatroom)
       }).catch((e)=>console.log(e))
     }
@@ -277,7 +277,7 @@ module.exports = function () {
                         if(u.name === message.user_name){
                           const s = message && message.image && message.image.length > 1 ?'s':''
                           const messages = message.type === 'image' ? `${message.image.length} image${s} has been shared`: `${message.message}`
-                          const messages1 = chatroom.type === 'single' ?  `${message.name} : ${messages}`:  `${message.name} @ ${chatroom.name} : ${messages}`
+                          const messages1 = chatroom.type === 'single' ?  `${message.name}: ${messages}`:  `${message.name} @${chatroom.name}: ${messages}`
                           client.broadcast.emit('unread', {});
                           NotifyArray([u.device_token],messages1,"Turf Town",chatroom)
                         }
@@ -305,7 +305,7 @@ module.exports = function () {
         if(Array.isArray(message)){
           const s = message.length > 1 ?'s':''
           const messages = message[0].type === 'image' ? `${message.length} image${s}` : message[0].type === 'game' ? `${message.length} game${s} has been shared`:`${message.length} townie${s} has been shared`
-          const messages1 = chatroom.type === 'single' ?  `${message[0].name} : ${messages}`:  `${message[0].name} @ ${chatroom.name} : ${messages}`
+          const messages1 = chatroom.type === 'single' ?  `${message[0].name}: ${messages}`:  `${message[0].name} @${chatroom.name}: ${messages}`
           let chatroom1 = Object.assign({},chatroom)
           chatroom1['exit_list'] = []
           chatroom1['join_date'] = []
@@ -315,7 +315,7 @@ module.exports = function () {
         }else{
           const s = message && message.image && message.image.length > 1 ?'s':''
           const messages = message.type === 'image' ? `${message.image.length} image${s} has been shared`: `${message.message}`
-          const messages1 = chatroom.type === 'single' ?  `${message.name} : ${messages}`:  `${message.name} @ ${chatroom.name} : ${messages}`
+          const messages1 = chatroom.type === 'single' ?  `${message.name}: ${messages}`:  `${message.name} @${chatroom.name}: ${messages}`
          let chatroom1 = Object.assign({},chatroom)
          chatroom1['exit_list'] = []
          chatroom1['join_date'] = []
@@ -349,7 +349,7 @@ module.exports = function () {
         if(Array.isArray(message)){
           const s = message.length > 1 ?'s':''
           const messages = message[0].type === 'image' ? `${message.length} image${s}` : message[0].type === 'game' ? `${message.length} game${s} has been shared`:`${message.length} townie${s} has been shared`
-          const messages1 = chatroom.type === 'single' ?  `${message[0].name} : ${messages}`:  `${message[0].name} @ ${chatroom.name} : ${messages}`
+          const messages1 = chatroom.type === 'single' ?  `${message[0].name}: ${messages}`:  `${message[0].name} @${chatroom.name}: ${messages}`
           let chatroom1 = Object.assign({},chatroom)
           chatroom1['exit_list'] = []
           chatroom1['join_date'] = []
@@ -359,7 +359,7 @@ module.exports = function () {
         }else{
           const s = message && message.image && message.image.length > 1 ?'s':''
           const messages = message.type === 'image' ? `${message.image.length} image${s} has been shared`: `${message.message}`
-          const messages1 = chatroom.type === 'single' ?  `${message.name} : ${messages}`:  `${message.name} @ ${chatroom.name} : ${messages}`
+          const messages1 = chatroom.type === 'single' ?  `${message.name}: ${messages}`:  `${message.name} @${chatroom.name}: ${messages}`
           let chatroom1 = Object.assign({},chatroom)
           chatroom1['exit_list'] = []
           chatroom1['join_date'] = []
@@ -725,7 +725,7 @@ module.exports = function () {
                 let finalMessages = messages
                 return Message.insertMany(finalMessages).then(message1 => {
                   const message_ids = message1.map((m) => m._id)
-                  return Message.find({ _id: { $in: message_ids } }).populate('author', 'name _id handle name_status').populate('user', 'name _id profile_picture handle phone name_status').populate({ path: 'event', populate: { path: 'conversation', populate: { path: 'last_message' } } }).then(m => {
+                  return Message.find({ _id: { $in: message_ids } }).populate('author', 'name _id handle name_status').populate('user', 'name _id profile_picture handle phone name_status').populate({ path: 'event', populate:[ { path: 'conversation' , populate :{path:'last_message'} },{path:'venue', model:'venue',select:'venue'}]}).then(m => {
                     const cids = m.map((entry) => {
                       const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id : entry.conversation
                       client.to(id).emit('new', entry)

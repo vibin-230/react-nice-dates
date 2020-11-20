@@ -320,7 +320,6 @@ router.post('/mark_read/:id', [
   Conversation.findById({_id:req.body.conversation_id}).then((convo)=>{
       
     if(convo && convo._id){
-
     Message.updateMany({conversation:req.body.conversation_id,read_status:false},{ '$set': { "read_status" : true } },{multi:true}).then((user)=>{
       const a =  convo && convo.last_active && convo.last_active.length > 0 ? convo.last_active.map((con)=>{
         if(con.user_id.toString() === req.params.id.toString()){
@@ -2480,7 +2479,6 @@ function SlotsCheck1(body,id){
       let slots_available = SlotsAvailable(venue,booking_history)
 
       const x = Object.keys(slots_available.slots_available[body.slot_time]).filter(a=> slots_available.slots_available[body.slot_time][a]<=0)
-          console.log('rrrrrr',x);
         if(slots_available.slots_available[body.slot_time][body.venue_type]>0 && !Object.values(slots_available.slots_available[body.slot_time]).filter(a=> a<=0).length>0){
           reject()
         }else{
@@ -3589,7 +3587,6 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
    return Booking.find({ venue_id:booking.venue_id, booking_date:booking.booking_date,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
     return Game.find(search).lean().populate('conversation').populate('users','name _id device_token').then(game=>{
      console.log('games',game.length);
-     console.log('booking_history',booking_history);
       if(game.length > 0){
 
       let slots_available = SlotsAvailable(venue,booking_history)
@@ -5533,14 +5530,20 @@ router.post('/check_booking', verifyToken, (req, res, next) => {
       res.send({status:"success", message:"Already Registered!", data:{event}})
     }else{
       EventBooking.find({event_id:req.body.event_id,booking_status:'booked'}).lean().populate('event_id').then(bookingOrders=>{
-        if(bookingOrders.length<bookingOrders[0].event_id.format.noofteams){
+        if(bookingOrders && bookingOrders.length > 0 && bookingOrders.length<bookingOrders[0].event_id.format.noofteams){
           if(bookingOrders[0].event_id.status){
             res.send({status:"success", message:"no event found"})
           }else{
             res.send({status:"success", message:"no event found"})
           }
         }else{
-          res.send({status:"success", message:"Registerations full!", data:{event}})
+          if(bookingOrders && bookingOrders.length === 0){
+            res.send({status:"success", message:"no event found"})
+
+          }else{
+            res.send({status:"success", message:"Registerations full!", data:{event}})
+
+          }
         }
       
       
@@ -6189,7 +6192,6 @@ router.post('/ads_list',verifyToken,AccessControl('ads', 'read'),(req, res, next
     Ads.find({$and: [{ start_date: { $lte: new Date(),},}, { end_date: {$gte: new Date(),},},{sport_type: req.body.sport_type,page:"Event Page"}],status:true}).lean().populate({path:"event",populate:{path:"venue"}}).then(ads2=>{
       let ads = [...ads2,...ads1]
       Offers.find({}).then(offers=>{
-
    let event_ads = []
    let final_event_ds = ads.filter((ad,i)=>{
      if(ad.event.length>0)

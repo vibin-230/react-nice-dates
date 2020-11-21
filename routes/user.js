@@ -745,8 +745,6 @@ router.post('/user_suggest/:id', [
        const filter  = {$or:[{members:[req.params.id],type:'group'}]}
       Conversation.find({$or:[{host:{$in:[req.params.id]}},{users:{$in:[req.params.id]}}]}).then((game)=>{
        let all = [...user.followers,...user.following,...[req.params.id]]
-        console.log('as',user.followers);
-          console.log('bs',user.following);
             var final_users = user.followers.filter(function(obj) { 
               const x = user.following.filter((a)=>a.toString() === obj.toString()).length > 0 
                  return !x
@@ -755,8 +753,6 @@ router.post('/user_suggest/:id', [
                     const x = user.following.filter((a)=>a.toString() === obj.toString()).length > 0 
                        return x
                          });
-          console.log(final_users,'final_users');
-          console.log(final_users1,'final_users1');
           User.find({_id: {$in :final_users1},'handle':{$exists:true,$ne:null }},{name:1,_id:1,profile_picture:1,followers:1,following:1}).lean().then(userA=>{
             User.find({_id: {$nin :all},'handle':{$exists:true,$ne:null }},{name:1,_id:1,profile_picture:1,handle:1,name_status:1,visibility:1}).lean().then(userN=>{
             User.find({_id: {$in :final_users},'handle':{$exists:true,$ne:null }},{name:1,_id:1,profile_picture:1,handle:1,name_status:1,visibility:1}).lean().then(user1=>{
@@ -1220,7 +1216,6 @@ router.post('/share_post/:id', [
 router.post('/edit_post/:id', [
   verifyToken,
 ], (req, res, next) => {
-  console.log("REse",req.body.message)
       Post.findByIdAndUpdate({_id:req.params.id},{message:req.body.message}).lean().then(post=>{
         Post.findById({_id:req.params.id}).lean().then(post=>{
             res.status(201).send({status: "success", message: "Post edited",data:post})
@@ -1357,9 +1352,7 @@ router.post('/change_passowrd', [
 });
 
 router.post('/change_password_username/:id', (req, res, next) => {
-       console.log('hit pass',req.body)
       User.findOne({_id: req.params.id}).then(user=> {
-        console.log('hit pass',user)
         if (user) {
               //req.body.modified_at = moment();
               bcrypt.hash(req.body.password, saltRounds).then(function(hash) {
@@ -1808,7 +1801,6 @@ router.post('/edit_user/:id',verifyToken, AccessControl('users', 'update'), (req
 router.post('/token',verifyToken, AccessControl('users', 'update'), (req, res, next) => {
   User.findByIdAndUpdate({_id: req.userId},{device_token:req.body.token}).then(user=> {
     User.findById({_id: req.params.id},{token:0,},null).then(user=> {
-      console.log(user);
       res.send({status:"success", message:"user edited"})
     }).catch(next);
   }).catch(next);
@@ -2179,7 +2171,7 @@ router.post('/host_block_slot/:id', verifyToken, (req, res, next) => {
                     })
                   }
                 }).catch(next)
-              }, 30000);
+              }, 60000);
             
           }
         }).catch(next)
@@ -3717,9 +3709,9 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                     venue_location:venue_area,
                     booking_status:`Advance of Rs ${booking_amount} will be refunded within 3 - 4 working days.`
                   }
-
                   ejs.renderFile('views/event_manager/venue_cancel.ejs',obj).then(html=>{
                     let to_emails = `${user.email}, rajasekar@turftown.in`
+                    console.log('to_emails',to_emails);
                     mail("support@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
                       if(response){
                         res.send({status:"success"})
@@ -3731,7 +3723,8 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   let manager_mail = ''
                    admins.map((admin,index)=>{manager_mail+=(admin.length-1) === index ?admin.email :admin.email + ','})
                   //console.log(manager_mail);
-                   ejs.renderFile('views/event_manager/venue_cancel_manager.ejs',obj).then(html=>{
+                  console.log(manager_mail);
+                  ejs.renderFile('views/event_manager/venue_cancel_manager.ejs',obj).then(html=>{
                     //let to_emails = `${req.body.email}, rajasekar@turftown.in`
                     mail("support@turftown.in", manager_mail,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
                       if(response){

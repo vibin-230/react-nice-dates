@@ -4555,7 +4555,6 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
         }else{
 
           Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id}).lean().populate("venue_data").then(booking=>{
-            handleSlotAvailabilityWithCancellation(booking,req.socket)
             Booking.updateMany({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id},{$set:{booking_status:"cancelled", refund_status:false,cancelled_by:req.body.cancelled_by}},{multi:true}).then(booking=>{
               Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id}).lean().populate("venue_data").then(booking=>{
               
@@ -4585,6 +4584,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                     Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted',status_description:'cancelled by venue manager'}}).then(game=>{
                         Message.create({conversation:game.conversation,message:`Venue has cancelled this slot. There will be no refund as it is less than 6 hours to the scheduled time.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
+            handleSlotAvailabilityWithCancellation(booking,req.socket)
                           
                           //getGame(res,game.conversation,true,next,req)
                       }).catch(next);
@@ -4592,7 +4592,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                     }).catch(next);
                       }).catch(next);
                         }else{
-                         // handleSlotAvailabilityWithCancellation(booking,req.socket)
+                          handleSlotAvailabilityWithCancellation(booking,req.socket)
 
                         }
 

@@ -2472,7 +2472,7 @@ function SlotsCheck1(body,id){
       let slots_available = SlotsAvailable(venue,booking_history)
 
       const x = Object.keys(slots_available.slots_available[body.slot_time]).filter(a=> slots_available.slots_available[body.slot_time][a]<=0)
-          console.log('rrrrrr',x);
+          console.log('reser',x,booking_history,slots_available.slots_available[body.slot_time]);
         if(slots_available.slots_available[body.slot_time][body.venue_type]>0 && !Object.values(slots_available.slots_available[body.slot_time]).filter(a=> a<=0).length>0){
           reject()
         }else{

@@ -2457,6 +2457,7 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
   })
 })
 
+let messages = []
 function SlotsCheck1(body,id){
   return new Promise((resolve,reject)=>{
     Venue.findById({_id:id},{bank:0,access:0}).lean().then(venue=>{
@@ -2471,10 +2472,15 @@ function SlotsCheck1(body,id){
        
       let slots_available = SlotsAvailable(venue,booking_history)
 
-      const x = Object.keys(slots_available.slots_available[body.slot_time]).filter(a=> slots_available.slots_available[body.slot_time][a]<=0)
-          console.log('reser',x,booking_history,slots_available.slots_available[body.slot_time]);
+      const x = Object.keys(slots_available.slots_available[body.slot_time]).filter(a=> 
+       { 
+        console.log(slots_available.slots_available[body.slot_time][a],a);
+        return slots_available.slots_available[body.slot_time][a]<=0
+      }
+        )
+          console.log('reser',x,booking_history.map((a)=>a.booking_id),slots_available.slots_available[body.slot_time]);
         if(slots_available.slots_available[body.slot_time][body.venue_type]>0 && !Object.values(slots_available.slots_available[body.slot_time]).filter(a=> a<=0).length>0){
-          reject()
+          resolve(x)
         }else{
           resolve(x)
         }
@@ -2492,10 +2498,10 @@ async function handleSlotAvailabilityForGames(booking1,client){
               promisesToRun.push(SlotsCheck1(booking_history[i],booking.venue_id))
             }
            return Promise.all(promisesToRun).then((values) => {
-            console.log(values,_.flatten(values),_.uniq(_.flatten(values)));
+            console.log('pass',values,_.flatten(values),_.uniq(_.flatten(values)));
             if(_.uniq(_.flatten(values)).length> 0){
-             console.log({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_type":{$in:values.length>0?_.uniq(_.flatten(values)):['pass']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:true });
-             return Game.find({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_type":{$in:values.length>0?_.uniq(_.flatten(values)):['pass']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:true }).lean().populate('conversation').then(game=>{
+             console.log({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_type":{$in:values.length>0?_.uniq(_.flatten(values)):[]},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:true });
+             return Game.find({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_type":{$in:values.length>0?_.uniq(_.flatten(values)):[]},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:true }).lean().populate('conversation').then(game=>{
                return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.venue_type":{$in:values.length>0?values[values.length-1]:[booking.venue_type]},"bookings.slot_time":slot_time,status:true },{$set:{status:false,status_description:'Sorry ! Slot has been booked by some other user'}}).lean().then(game1=>{
                 if(game.length > 0){
                 let messages =  game.map((nc)=>{ return {conversation:nc.conversation._id,created_at:new Date(),message:`Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.`,name:'bot',read_status:true,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot'}}) 
@@ -2517,7 +2523,7 @@ async function handleSlotAvailabilityForGames(booking1,client){
               }).catch(error => console.log(error))
             }).catch(error => console.log(error))
           }else{
-
+            console.log('hit pass');
           }
           }).catch(error => console.log(error))
             }).catch(error => console.log(error))
@@ -3573,10 +3579,12 @@ async function handleSlotAvailabilityWithCancellation(booking1,client){
   const slot_time = { $in: booking1.map((b)=>b.slot_time) }
   const venue_type = booking.venue_type
   const messages= []
-  const search = {"bookings.slot_time":slot_time,"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.venue_id":booking.venue_id,booking_status:{$in:['hosted','blocked']},status:false }
+  const search = {"bookings.slot_time":slot_time,"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.venue_id":booking.venue_id,booking_status:{$in:['hosted','blocked','cancelled']},status:false }
   console.log('slot',slot_time);
   
   console.log('search',{ venue_id:booking.venue_id, booking_date:booking.booking_date,booking_status:{$in:["blocked","booked","completed"]}});
+  console.log('search',search);
+
   return Venue.findById({_id:booking.venue_id},{bank:0,access:0}).lean().then(venue=>{
    return Booking.find({ venue_id:booking.venue_id, booking_date:booking.booking_date,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
     return Game.find(search).lean().populate('conversation').populate('users','name _id device_token').then(game=>{

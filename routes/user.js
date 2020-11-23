@@ -1185,7 +1185,7 @@ router.post('/get_mvp_history', [
                 return {title:key,data:value }
           })
         if (game1.length > 0) {
-          res.status(201).send({status: "success", message: "game collected",data:{data:q,games:game1}})
+          res.status(201).send({status: "success", message: "game collected",data:{data:q.reverse(),games:game1}})
         } else {
             res.status(201).send({status: "failure",  message: "game collected",data:[]});
         }

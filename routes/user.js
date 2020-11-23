@@ -1690,6 +1690,7 @@ router.post('/verify_otp1', (req, res, next) => {
               token = jwt.sign({ id: user._id, phone:user.phone, role:"user", name:user.name}, config.secret);
             if(user.password || user.email){
               req.userId = user._id
+              console.log('id',user._id,req.userId);
               var count  = 0
               let game_completed_count = 0
               let mvp_count = 0
@@ -1697,17 +1698,17 @@ router.post('/verify_otp1', (req, res, next) => {
                 Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
                   game_completed_count = game && game.length > 0 ? game.length : 0
                   const aw = game && game.length > 0 && game.filter((a)=>{
-                   let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0
+                   let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc &&sc.target_id &&  sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0
                    mvp_count = mvp_count + f
-                   return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length>0
+                   return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id && sc.target_id.toString() === req.userId.toString()).length>0
                   })
                   //mvp_count = aw && aw.length > 0 ? aw.length : 0
                   Conversation.find({ $or: [ { members: { $in: [req.userId] } },{ exit_list: { $elemMatch: {user_id:req.userId} } }] }).lean().populate('to',' name _id profile_picture last_active online_status status handle name_status').populate('members','name _id profile_picture last_active online_status status handle name_status').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(existingConversation=>{
                 const exit_convo_list = existingConversation.filter((e)=> {
-                 return (e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.userId.toString()).length > 0)
+                 return (e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id && a.user_id._id.toString() === req.userId.toString()).length > 0)
                  } )
                  const exit_convo_list1 = existingConversation.filter((e)=> {
-                   return !(e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.userId.toString()).length > 0)
+                   return !(e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id && a.user_id._id.toString() === req.userId.toString()).length > 0)
                    } )
                 //const exit_convo_list1 = existingConversation.filter((e)=> e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((u)=>u.user_id.toString() === req.userId.toString()).length > 0)
                 User.findOne({_id: req.userId},{activity_log:0,followers:0,following:0}).then(user=> {
@@ -1716,7 +1717,7 @@ router.post('/verify_otp1', (req, res, next) => {
                     let counter
                     const x =  existingConversation.map((c)=> {
                      let user = {}
-                     if(exit_convo_list && exit_convo_list.length > 0 && c.exit_list && c.exit_list.length > 0){
+                     if(exit_convo_list && exit_convo_list.length > 0 && c.exit_list && c.exit_list.length > 0  && c){
                        const x =  exit_convo_list.filter((e)=> e.exit_list && c.exit_list.length>0 && e._id.toString() === c._id.toString())
                        user  =  x.length > 0 ? x[0].exit_list.filter((e)=>{
                          return e && e.user_id && e.user_id._id.toString() === req.userId.toString()})[0] : []
@@ -1724,9 +1725,9 @@ router.post('/verify_otp1', (req, res, next) => {
                      }
                      const filter = c && c.last_active ? c.last_active.filter((c)=> c && c.user_id && c.user_id.toString() === req.userId.toString()) : []
                      message.length > 0 && message.map((m)=>{
-                        if(m._id.toString() === c._id.toString()) { 
+                        if( c && m && m._id.toString() === c._id.toString()) { 
                          const time = m.time.filter((timestamp,index)=>{ 
-                           if( filter.length > 0 &&  moment(filter[0].last_active).isSameOrBefore(timestamp) && m.user[index].toString() !== req.userId.toString()) {
+                           if( filter.length > 0 &&  moment(filter[0].last_active).isSameOrBefore(timestamp) && m.user && m.user[index] &&  m.user[index].toString() !== req.userId.toString()) {
                              return timestamp
                            }
                          })  
@@ -2210,7 +2211,6 @@ router.post('/book_slot1', verifyToken, (req, res, next) => {
       Booking.findByIdAndUpdate({_id:body._id},{booking_status:"booked",old_booking:false, transaction_id:body.transaction_id, booking_amount:body.booking_amount,coupon_amount:body.coupon_amount,coupons_used:body.coupons_used, multiple_id:id,coins:body.coins}).lean().then(booking=>{
         Booking.findById({_id:body._id}).lean().populate('venue_data').then(booking=>{
         resolve(booking)
-
       }).catch(next)
     }).catch(next)
     }).catch(error=>{

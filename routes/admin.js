@@ -454,7 +454,6 @@ router.post('/set_password',
 router.post('/login', (req, res, next) => {
 	console.log('hit',req.body)
 User.findOne({ $or: [ { handle: req.body.username }, { phone: req.body.username } ] },{reset_password_hash:0,reset_password_expiry:0,activity_log:0}).then(user=>{
-	console.log(user);
 	if(user){
 		if(user.password){
 			if(user.status){
@@ -471,18 +470,17 @@ User.findOne({ $or: [ { handle: req.body.username }, { phone: req.body.username 
         Game.find({users: {$in:[req.userId]},completed:true}).lean().then(game=> {
 					game_completed_count = game && game.length > 0 ? game.length : 0
           const aw = game && game.length > 0 && game.filter((a)=>{
-            console.log(a.mvp)
-           let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0
+           let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0
            mvp_count = mvp_count + f
-           return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length>0
+           return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id &&  sc.target_id.toString() === req.userId.toString()).length>0
           })
           //mvp_count = aw && aw.length > 0 ? aw.length : 0
           Conversation.find({ $or: [ { members: { $in: [req.userId] } },{ exit_list: { $elemMatch: {user_id:req.userId} } }] }).lean().populate('to',' name _id profile_picture last_active online_status status handle name_status').populate('members','name _id profile_picture last_active online_status status handle name_status').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(existingConversation=>{
         const exit_convo_list = existingConversation.filter((e)=> {
-         return (e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.userId.toString()).length > 0)
+         return (e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id && a.user_id._id.toString() === req.userId.toString()).length > 0)
          } )
          const exit_convo_list1 = existingConversation.filter((e)=> {
-           return !(e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === req.userId.toString()).length > 0)
+           return !(e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((a)=> a && a.user_id && a.user_id._id && a.user_id._id.toString() === req.userId.toString()).length > 0)
            } )
         //const exit_convo_list1 = existingConversation.filter((e)=> e.exit_list && e.exit_list.length > 0 && e.exit_list.filter((u)=>u.user_id.toString() === req.userId.toString()).length > 0)
         //console.log(exit_convo_list)
@@ -495,14 +493,14 @@ User.findOne({ $or: [ { handle: req.body.username }, { phone: req.body.username 
              if(exit_convo_list && exit_convo_list.length > 0 && c.exit_list && c.exit_list.length > 0){
                const x =  exit_convo_list.filter((e)=> e.exit_list && c.exit_list.length>0 && e._id.toString() === c._id.toString())
                user  =  x.length > 0 ? x[0].exit_list.filter((e)=>{
-                 return e && e.user_id && e.user_id._id.toString() === req.userId.toString()})[0] : []
-              c.members =  user && user.length > 0 && c.type==='single' ? c.members.concat(user.user_id) : c.members
-             }
+                 return e && e.user_id &&  e.user_id._id && e.user_id._id.toString() === req.userId.toString()})[0] : []
+              			c.members =  user && user.length > 0 && c.type==='single' ? c.members.concat(user.user_id) : c.members
+						 }
              const filter = c && c.last_active ? c.last_active.filter((c)=> c && c.user_id && c.user_id.toString() === req.userId.toString()) : []
              message.length > 0 && message.map((m)=>{
-                if(m._id.toString() === c._id.toString()) { 
+                if(m && c && m._id.toString() === c._id.toString()) { 
                  const time = m.time.filter((timestamp,index)=>{ 
-                   if( filter.length > 0 &&  moment(filter[0].last_active).isSameOrBefore(timestamp) && m.user[index].toString() !== req.userId.toString()) {
+                   if( filter.length > 0 &&  moment(filter[0].last_active).isSameOrBefore(timestamp)&& m.user[index] && m.user[index].toString() !== req.userId.toString()) {
                      return timestamp
                    }
                  })  

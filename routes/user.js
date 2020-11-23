@@ -2014,9 +2014,10 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
                 }
               })
             }
+            console.log('convertable status1',inventory[body.venue_type],booking_history.length);
             convertable = inventory[body.venue_type]<=0
           }else{
-            convertable = inventory[body.venue_type]<=booking_history.length
+            convertable = inventory[body.venue_type]<=booking_history.filter(a=>a.venue_type === body.venue_type).length
           }
           if(convertable){
             res.status(409).send({status:"failed", message:"slot already booked"})

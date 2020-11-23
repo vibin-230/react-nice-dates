@@ -1009,7 +1009,7 @@ router.post('/save_token_device', [
           }
         }):user.device_id.concat([{device_id:req.body.device_id,device_token:req.body.device_token,created_date:new Date()}]):[{device_id:req.body.device_id,device_token:req.body.device_token,created_date:new Date()}]
         
-       
+       console.log('device_token',req.body);
         User.findByIdAndUpdate({_id: req.userId},{device_token:req.body.device_token, os:req.body.os,device_id:device_token1}).then(user1=>{
           // notify(user,`<i style=' background: url("/cat.png");
           // height: 20px;
@@ -2502,7 +2502,7 @@ async function handleSlotAvailabilityForGames(booking1,client){
             if(_.uniq(_.flatten(values)).length> 0){
              console.log({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_type":{$in:values.length>0?_.uniq(_.flatten(values)):[]},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:true });
              return Game.find({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_type":{$in:values.length>0?_.uniq(_.flatten(values)):[]},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:true }).lean().populate('conversation').then(game=>{
-               return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.venue_type":{$in:values.length>0?values[values.length-1]:[booking.venue_type]},"bookings.slot_time":slot_time,status:true },{$set:{status:false,status_description:'Sorry ! Slot has been booked by some other user'}}).lean().then(game1=>{
+               return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.venue_type":{$in:values.length>0?_.uniq(_.flatten(values)):[]},"bookings.slot_time":slot_time,status:true },{$set:{status:false,status_description:'Sorry ! Slot has been booked by some other user'}}).lean().then(game1=>{
                 if(game.length > 0){
                 let messages =  game.map((nc)=>{ return {conversation:nc.conversation._id,created_at:new Date(),message:`Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.`,name:'bot',read_status:true,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot'}}) 
                 const members = _.flatten(game.map((g)=>g.conversation.members))

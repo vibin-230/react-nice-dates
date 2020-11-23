@@ -2164,17 +2164,18 @@ router.post('/host_block_slot/:id', verifyToken, (req, res, next) => {
           if(convertable){
             res.status(201).send({status:"success", message:"slot already booked"})
           }else{
+            Booking.findByIdAndUpdate({_id:body._id},{booking_status:"blocked"}).then(values=>{
               resolve(body)
               setTimeout(() => {
-                Booking.findById({_id:body.booking_id}).then(booking=>{
+                Booking.findById({_id:body._id}).then(booking=>{
                   if(booking.booking_status==="blocked"){
                     Booking.findByIdAndUpdate({_id:booking._id},{booking_status:"timeout"}).then(booking=>{
                       console.log('cancelled')
-                    })
+                    }).catch(next)
                   }
                 }).catch(next)
-              }, 60000);
-            
+              }, 30000);
+            }).catch(next)
           }
         }).catch(next)
       }).catch(next)
@@ -3366,7 +3367,7 @@ router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
 //Booking completed
 router.post('/booking_timeout/:id', verifyToken, (req, res, next) => {
   Booking.find({booking_id:req.params.id}).then(booking=>{
-    if(booking[0].booking_status === 'blocked'){
+    if( booking && booking.length > 0 && booking[0].booking_status === 'blocked'){
       Booking.updateMany({booking_id:req.params.id},{$set:{booking_status:"timeout"}}).then(booking=>{
         res.send({status:"success", message:"booking timedout"})
       })

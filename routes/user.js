@@ -1131,6 +1131,26 @@ router.post('/alter_game/:id', [
   }).catch(next);
 });
 
+router.post('/skip_game_mvp/:id', [
+  verifyToken,
+], (req, res, next) => {
+      //Check if user exist
+      Game.findOne({_id: req.params.id},{activity_log:0}).then(game=> {
+        let new_body = game.skipped
+        new_body.push(req.userId)
+        Game.findByIdAndUpdate({_id: req.params.id},{skipped:new_body}).then(game=>{
+          Game.findOne({_id: req.params.id},{activity_log:0}).lean().populate("venue").populate('host','_id name profile_picture phone handle name_status').populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(g1=> {
+            if (g1) {
+          res.status(201).send({status: "success", message: "game edited",data:g1})
+        } else {
+            res.status(422).send({status: "failure", errors: {game:"edit failed"}});
+        }
+    }).catch(next);
+  }).catch(next);
+
+  }).catch(next);
+});
+
 router.post('/update_game_mvp/:id', [
   verifyToken,
 ], (req, res, next) => {

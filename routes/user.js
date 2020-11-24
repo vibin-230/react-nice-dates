@@ -2194,7 +2194,7 @@ router.post('/host_block_slot/:id', verifyToken, (req, res, next) => {
                     }).catch(next)
                   }
                 }).catch(next)
-              }, 30000);
+              }, 60000);
             }).catch(next)
           }
         }).catch(next)

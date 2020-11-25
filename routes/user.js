@@ -2184,8 +2184,9 @@ router.post('/host_block_slot/:id', verifyToken, (req, res, next) => {
           if(convertable){
             res.status(201).send({status:"success", message:"slot already booked"})
           }else{
-            Booking.findByIdAndUpdate({_id:body._id},{booking_status:"blocked"}).then(values=>{
-              resolve(body)
+            Booking.findByIdAndUpdate({_id:body._id},{$set:{booking_status:"blocked"}}).then(values=>{
+              Booking.findById({_id:body._id}).then(booking=>{
+              resolve(booking)
               setTimeout(() => {
                 Booking.findById({_id:body._id}).then(booking=>{
                   if(booking.booking_status==="blocked"){
@@ -2196,8 +2197,10 @@ router.post('/host_block_slot/:id', verifyToken, (req, res, next) => {
                 }).catch(next)
               }, 60000);
             }).catch(next)
+          }).catch(next)
           }
-        }).catch(next)
+      }).catch(next)
+
       }).catch(next)
     }).catch(next)
   }
@@ -2208,6 +2211,7 @@ router.post('/host_block_slot/:id', verifyToken, (req, res, next) => {
       promisesToRun.push(BlockSlot(req.body[i],req.body[i]._id, req.body[i].booking_id))
     }
     Promise.all(promisesToRun).then(values => {
+      console.log('values',values);
       res.send({status:"success", message:"slot blocked", data:values})
     //   Booking.updateMany({booking_id:values[0].booking_id},{$set:{booking_status:"blocked"}}).then(booking=>{
     //   res.send({status:"success", message:"slot blocked", data:values})

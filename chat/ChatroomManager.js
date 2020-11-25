@@ -277,7 +277,7 @@ module.exports = function () {
                         if(u.name === message.user_name){
                           const s = message && message.image && message.image.length > 1 ?'s':''
                           const messages = message.type === 'image' ? `${message.image.length} image${s} has been shared`: `${message.message}`
-                          const messages1 = chatroom.type === 'single' ?  `${message.name}: ${messages}`:  `${message.name} @${chatroom.name}: ${messages}`
+                          const messages1 = chatroom.type === 'single' ?  `${messages}`:  `${messages}`
                           client.broadcast.emit('unread', {});
                           NotifyArray([u.device_token],messages1,"Turf Town",chatroom)
                         }

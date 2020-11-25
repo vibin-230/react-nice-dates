@@ -1933,7 +1933,7 @@ router.post('/send_invite',verifyToken, (req, res, next) => {
         const device_token_list=user.map((e)=>e.device_token)
         //io.emit('unread', 'invitation sent');
         res.send({status:"success", message:"invitation sent"})
-          NotifyArray(device_token_list,'You have a received a new game request from '+req.name,'Turftown Game Request')
+          NotifyArray(device_token_list,'You have a received a new game request from '+req.name,'Turf Town Game Request')
 }).catch(next);
 }).catch(next);
 }).catch(next);
@@ -2543,7 +2543,7 @@ async function handleSlotAvailabilityForGames(booking1,client){
                     return id
                   })
                     const device_token_list=user.map((e)=>e.device_token)
-                                                  NotifyArray(device_token_list,'Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.','Turftown Game Cancellation')
+                                                  NotifyArray(device_token_list,'Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.','Turf Town Game Cancellation')
                                                     return 'pass'
                  }).catch((e)=>console.log(e));
               }).catch(error => console.log(error))
@@ -2588,7 +2588,7 @@ async function handleSlotAvailabilityForGames1(booking1,client){
                     return id
                   })
                     const device_token_list=user.map((e)=>e.device_token)
-                                                  NotifyArray(device_token_list,'Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.','Turftown Game Cancellation')
+                                                  NotifyArray(device_token_list,'Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.','Turf Town Game Cancellation')
                                                     return 'pass'
                  }).catch((e)=>console.log(e));
               }).catch(error => console.log(error))
@@ -3574,7 +3574,7 @@ function updateGameStatusAndGetMessages(nc,status){
      let start_time = Object.values(nc.bookings).reduce((total,value)=>{return total<value.start_time?total:value.start_time},nc.bookings[0].start_time)
      let end_time = Object.values(nc.bookings).reduce((total,value)=>{return total>value.end_time?total:value.end_time},nc.bookings[0].end_time)
      let time = moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
-     status && NotifyArray(device_token,`Hey! The ${time} slot is available again. Please book this slot to confirm your game.`,'Turftown Slot Availability')
+     status && NotifyArray(device_token,`Hey! The ${time} slot is available again. Please book this slot to confirm your game.`,'Turf Town Slot Availability')
    return {conversation:nc.conversation._id,message:`Hey! The ${time} slot is available again. Please book this slot to confirm your game.`,name:'bot',read_status:false,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot',created_at:new Date()}
 }
 

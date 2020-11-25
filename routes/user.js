@@ -2543,7 +2543,7 @@ async function handleSlotAvailabilityForGames(booking1,client){
                     return id
                   })
                     const device_token_list=user.map((e)=>e.device_token)
-                                                  NotifyArray(device_token_list,'Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.',`${game1.name}`)
+                                                  NotifyArray(device_token_list,'Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.',`Turf Town Game Cancellation`)
                                                     return 'pass'
                  }).catch((e)=>console.log(e));
               }).catch(error => console.log(error))

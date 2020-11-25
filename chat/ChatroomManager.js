@@ -455,12 +455,14 @@ module.exports = function () {
           conversation.colors = conversation.colors.length > 0 ?  conversation.colors.concat(colors) : colors
          conversation.exit_list = conversation.exit_list.filter((a)=>a.user_id.toString() !== user_id.toString())
          return Conversation.findByIdAndUpdate({_id:message.conversation},conversation ).then(conversation=>{
-        return Conversation.findById({_id:chatroomName._id}).lean().populate('members','name _id handle profile_picture name_status').then((conversation)=>{
+        return Conversation.findById({_id:chatroomName._id}).lean().populate('members','name _id handle profile_picture name_status device_token').then((conversation)=>{
          return User.findById({_id:user_id}).then(user=>{
           client.in(conversation._id).emit('new',message)
            client.in(conversation._id).emit('unread',{})
            saveMessage(message)
-           NotifyArray([user.device_token],message.message,'New Club Added',conversation)
+           const token_list  = conversation.members
+           const device_token_list = token_list.map((e) => e.device_token)
+           NotifyArray(device_token_list,message.message,'New Club Member Added',conversation)
 
            return conversation
         }).catch((e)=>{console.log(e)});
@@ -873,7 +875,7 @@ module.exports = function () {
                   saveMessage(save_message)
                 const token_list  = conversation2.members.filter((key) => key._id.toString() !== game1.user_id.toString())
                 const device_token_list = token_list.map((e) => e.device_token)
-                NotifyArray(device_token_list, message_formation, `${game1.name}`,conversation2)
+                NotifyArray(device_token_list, message_formation, `${game.name}`,conversation2)
                 client.in(conversation2._id).emit('unread',{})
                 client.in(conversation2._id).emit('new',save_message)
                 client1.to(game.conversation._id).emit('unread',{message:game1.type == "game" ? `${game1.host} has removed ${user.handle}` : `${game1.host} has removed ${user.handle}`,type:"delete" })
@@ -1179,7 +1181,7 @@ return x
                    client.in(conversation2._id).emit('unread',{})
                    conversation2.type !== 'single'  ? client.in(conversation2._id).emit('new',{type:'',exit:true,conversation:conversation2._id}) : client.in(conversation2._id).emit('new',x)
                    conversation2.type == 'single'  ?  client1.leave(conversation2._id) : null
-                   conversation2.type !== 'single' && NotifyArray([user.device_token], `${user.name} has left the club`, `Club Left`)
+                   conversation2.type !== 'single' && NotifyArray(device_token_list, `${user.name} has left the club`, `Club Left`)
                    return { message : message ,type:conversation.type,conversation:conversation2}
           }).catch(error => console.log(error))
    }).catch(error => console.log(error))

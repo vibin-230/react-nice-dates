@@ -1933,7 +1933,7 @@ router.post('/send_invite',verifyToken, (req, res, next) => {
         const device_token_list=user.map((e)=>e.device_token)
         //io.emit('unread', 'invitation sent');
         res.send({status:"success", message:"invitation sent"})
-          NotifyArray(device_token_list,'You have a received a new game request from '+req.name,'Turf Town Game Request')
+          NotifyArray(device_token_list,'You have a received a new game request from '+req.name,`${game.name}`)
 }).catch(next);
 }).catch(next);
 }).catch(next);
@@ -2528,7 +2528,7 @@ async function handleSlotAvailabilityForGames(booking1,client){
             if(_.uniq(_.flatten(values)).length> 0){
              console.log({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_type":{$in:values.length>0?_.uniq(_.flatten(values)):[]},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:true });
              return Game.find({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_type":{$in:values.length>0?_.uniq(_.flatten(values)):[]},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:true }).lean().populate('conversation').then(game=>{
-               return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.venue_type":{$in:values.length>0?_.uniq(_.flatten(values)):[]},"bookings.slot_time":slot_time,status:true },{$set:{status:false,status_description:'Sorry ! Slot has been booked by some other user'}}).lean().then(game1=>{
+               return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.venue_type":{$in:values.length>0?_.uniq(_.flatten(values)):[]},"bookings.slot_time":slot_time,status:true },{$set:{status:false,status_description:'Sorry! Slot has been booked by some other user'}}).lean().then(game1=>{
                 if(game.length > 0){
                 let messages =  game.map((nc)=>{ return {conversation:nc.conversation._id,created_at:new Date(),message:`Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.`,name:'bot',read_status:true,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot'}}) 
                 const members = _.flatten(game.map((g)=>g.conversation.members))
@@ -2543,7 +2543,7 @@ async function handleSlotAvailabilityForGames(booking1,client){
                     return id
                   })
                     const device_token_list=user.map((e)=>e.device_token)
-                                                  NotifyArray(device_token_list,'Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.','Turf Town Game Cancellation')
+                                                  NotifyArray(device_token_list,'Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.',`Turf Town Game Cancellation`)
                                                     return 'pass'
                  }).catch((e)=>console.log(e));
               }).catch(error => console.log(error))
@@ -2573,7 +2573,7 @@ async function handleSlotAvailabilityForGames1(booking1,client){
             }
            return Promise.all(promisesToRun).then((values) => {
              return Game.find({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:true }).lean().populate('conversation').then(game=>{
-               return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:true },{$set:{status:false,status_description:'Sorry ! Slot has been booked by some other user'}}).lean().then(game1=>{
+               return Game.updateMany({"bookings.booking_id":{$nin:[booking.booking_id]},"booking_date":booking.booking_date,"bookings.booking_status":{$in:['blocked','hosted','cancelled']},"bookings.venue_id":booking.venue_id,"bookings.slot_time":slot_time,status:true },{$set:{status:false,status_description:'Sorry! Slot has been booked by some other user'}}).lean().then(game1=>{
                 if(game.length > 0){
                 let messages =  game.map((nc)=>{ return {conversation:nc.conversation._id,created_at:new Date(),message:`Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.`,name:'bot',read_status:true,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot'}}) 
                 const members = _.flatten(game.map((g)=>g.conversation.members))
@@ -2588,7 +2588,7 @@ async function handleSlotAvailabilityForGames1(booking1,client){
                     return id
                   })
                     const device_token_list=user.map((e)=>e.device_token)
-                                                  NotifyArray(device_token_list,'Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.','Turf Town Game Cancellation')
+                                                  NotifyArray(device_token_list,'Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.',`${game1.name}`)
                                                     return 'pass'
                  }).catch((e)=>console.log(e));
               }).catch(error => console.log(error))
@@ -3349,7 +3349,7 @@ router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
                Conversation.findByIdAndUpdate({_id:a.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{ 
                 Conversation.findById({_id:a.conversation}).then((m)=>{                      
                 const device_token_list=a.users.map((e)=>e.device_token)
-                NotifyArray(device_token_list,`Game completed! Please pick an MVP for '${a.name}'`,'Turf Town',m)
+                NotifyArray(device_token_list,`Game completed! Please pick an MVP for this game.`,`${a.name}`,m)
                   return a.users.map((e)=>e._id)
                 })
                })

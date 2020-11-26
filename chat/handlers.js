@@ -153,7 +153,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     client.to(chatroomName._id).emit('unread',message)
     chatroomManager.updateImage(message)
     // chatroomManager.saveMessages(message) 
-    chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
+    chatroomManager.notifyParticularUsersController(chatroomName, message,activeUsers)
     callback()
 
 }

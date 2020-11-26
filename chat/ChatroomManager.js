@@ -257,11 +257,11 @@ module.exports = function () {
       })
        User.find({_id: {$in : filter}},{activity_log:0}).then(user=> {
         const s = message && message.image && message.image.length > 1 ?'s':''
-        const messages = message.type === 'image' ? `${message.image.length} image${s} has been shared`: `${message.message}`
+        const messages = message.type === 'image' ? `${message.image.length} image${s} shared`: `${message.message}`
           // const messages1 = chatroom.type === 'single' ?  `${message.name}: ${messages}`:  `${message.name} @${chatroom.name}: ${messages}`
           // NotifyArray(user.map((u)=>u.device_token),messages1,"Turf Town",chatroom)
 
-          const messages1 = chatroom.type === 'single' ?  `${messages}`:  `${message.name}: ${messages}`
+          const messages1 = chatroom.type === 'single' ?  `${messages}`:  `${messages}`
           const title = chatroom.type === 'single' ? `${message.name}` : `${chatroom.name}`
           NotifyArray(user.map((u)=>u.device_token),messages1,title,chatroom)
       }).catch((e)=>console.log(e))
@@ -314,7 +314,7 @@ module.exports = function () {
           const final_user  = user.filter((u)=> u.mute.filter((u)=>u.toString() === chatroom._id.toString()).length <= 0)
         if(Array.isArray(message)){
           const s = message.length > 1 ?'s':''
-          const messages = message[0].type === 'image' ? `${message.length} image${s}` : message[0].type === 'game' ? `${message.length} game${s} has been shared`:`${message.length} townie${s} has been shared`
+          const messages = message[0].type === 'image' ? `${message.length} image${s}` : message[0].type === 'game' ? `${message.length} game${s} shared`:`${message.length} townie${s} shared`
           // const messages1 = chatroom.type === 'single' ?  `${message[0].name}: ${messages}`:  `${message[0].name} @${chatroom.name}: ${messages}`
           const messages1 = chatroom.type === 'single' ?  `${messages}`:  `${message[0].name}: ${messages}`
           const title = chatroom.type === 'single' ? `${message[0].name}` : `${chatroom.name}`
@@ -326,7 +326,7 @@ module.exports = function () {
           NotifyArray(final_user.map((u)=>u.device_token),messages1,title,chatroom1)
         }else{
           const s = message && message.image && message.image.length > 1 ?'s':''
-          const messages = message.type === 'image' ? `${message.image.length} image${s} has been shared`: `${message.message}`
+          const messages = message.type === 'image' ? `${message.image.length} image${s} shared`: `${message.message}`
           // const messages1 = chatroom.type === 'single' ?  `${message.name}: ${messages}`:  `${message.name} @${chatroom.name}: ${messages}`
 
           const messages1 = chatroom.type === 'single' ?  `${messages}`:  `${message.name}: ${messages}`
@@ -364,7 +364,7 @@ module.exports = function () {
           const final_user  = user.filter((u)=> u.mute.filter((u)=>u.toString() === chatroom._id.toString()).length <= 0)
         if(Array.isArray(message)){
           const s = message.length > 1 ?'s':''
-          const messages = message[0].type === 'image' ? `${message.length} image${s}` : message[0].type === 'game' ? `${message.length} game${s} has been shared`:`${message.length} townie${s} has been shared`
+          const messages = message[0].type === 'image' ? `${message.length} image${s}` : message[0].type === 'game' ? `${message.length} game${s} shared`:`${message.length} townie${s} shared`
           // const messages1 = chatroom.type === 'single' ?  `${message[0].name}: ${messages}`:  `${message[0].name} @${chatroom.name}: ${messages}`
           
           const messages1 = chatroom.type === 'single' ?  `${messages}`:  `${message[0].name}: ${messages}`
@@ -377,7 +377,7 @@ module.exports = function () {
           NotifyArray(final_user.map((u)=>u.device_token),messages1,title,chatroom1)
         }else{
           const s = message && message.image && message.image.length > 1 ?'s':''
-          const messages = message.type === 'image' ? `${message.image.length} image${s} has been shared`: `${message.message}`
+          const messages = message.type === 'image' ? `${message.image.length} image${s} shared`: `${message.message}`
           // const messages1 = chatroom.type === 'single' ?  `${message.name}: ${messages}`:  `${message.name} @${chatroom.name}: ${messages}`
           const messages1 = chatroom.type === 'single' ?  `${messages}`:  `${message.name}: ${messages}`
           const title = chatroom.type === 'single' ? `${message.name}` : `${chatroom.name}`
@@ -555,7 +555,7 @@ module.exports = function () {
 
                                               return Conversation.updateMany({_id:{ $in: cids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
                                                 const device_token_list=user.map((e)=>e.device_token)
-                                                NotifyArray(device_token_list,`${sender.handle} invited you to join "${game1.name}"`,'Turf Town Game Invite')
+                                                NotifyArray(device_token_list,`${sender.handle} invited you to join "${game1.name}"`,'Game Invite')
                                                     return user.map((e)=>e._id)
               //res.send({status:"success", message:"invitation sent"})
     }).catch((e)=>console.log(e));
@@ -658,7 +658,7 @@ module.exports = function () {
                   })
                   return Conversation.updateMany({_id:{ $in: group_ids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
                     const device_token_list=user.map((e)=>e.device_token)
-                                                  NotifyArray(device_token_list,`${sender.handle} invited you to join '${name}'`,'Turf Town Game Invite')
+                                                  NotifyArray(device_token_list,`${sender.handle} invited you to join '${name}'`,'Game Invite')
                                                     return user.map((e)=>e._id)
                  // const x = await  Game.findByIdAndUpdate({_id: game_id},{ $addToSet: { invites: { $each: ids } } }).then(game=> {
       //  }).catch((e)=>console.log(e));
@@ -704,7 +704,7 @@ module.exports = function () {
                     })
                     return Conversation.updateMany({ _id: { $in: group_ids } }, { $set: { last_message: message1[0]._id, last_updated: new Date() } }).then(message1 => {
                       const device_token_list = user.map((e) => e.device_token)
-                      NotifyArray(device_token_list, `Event (${name}) from ${sender.handle}`, 'Turf Town Event')
+                      NotifyArray(device_token_list, `Event (${name}) from ${sender.handle}`, 'Event Invite')
                       return user.map((e) => e._id)
                     }).catch((e) => console.log(e));
                   }).catch((e) => console.log(e));
@@ -759,7 +759,7 @@ module.exports = function () {
 
                     return Conversation.updateMany({ _id: { $in: cids } }, { $set: { last_message: message1[0]._id, last_updated: new Date() } }).then(message1 => {
                       const device_token_list = user.map((e) => e.device_token)
-                      NotifyArray(device_token_list, `Event (${event.name}) from ${sender.handle}`, 'Turf Town Event Invite')
+                      NotifyArray(device_token_list, `Event (${event.name}) from ${sender.handle}`, 'Event Invite')
                       return user.map((e) => e._id)
                     }).catch((e) => console.log(e));
                   }).catch((e) => console.log(e));
@@ -848,7 +848,7 @@ module.exports = function () {
                 const token_list  = conversation2.members.filter((a)=>a._id.toString() == userId.toString())
                 const token_list1  = conversation2.members.filter((a)=>a._id.toString() !== userId.toString()).map((e) => e.device_token)
                 const device_token_list = token_list.map((e) => e.device_token)
-                NotifyArray(device_token_list, `${conversation2.members[0].handle} has accepted your game request (${game1.name}).`, `Turf Town`)
+                NotifyArray(device_token_list, `${conversation2.members[0].handle} has accepted your game request.`, `${game1.name}`)
                 NotifyArray(token_list1, `${user.handle} has joined the game.`, `${game1.name}`)
 
                 
@@ -1057,7 +1057,7 @@ module.exports = function () {
                       return id
                     })
                       const device_token_list=user.map((e)=>e.device_token)
-                                                    NotifyArray1(device_token_list,'Hey! Game is available again. Please book your slot to confirm the game','Turf Town Game Availability')
+                                                    NotifyArray1(device_token_list,'Hey! Game is available again. Please book your slot to confirm the game','Game Availability')
                                                       return user.map((e)=>e._id)
                    }).catch((e)=>console.log(e));
                 }).catch(error => console.log(error))
@@ -1092,7 +1092,7 @@ module.exports = function () {
     const x = await Conversation.findById({ _id: string }).populate('last_message').lean().then(conversation => {
       // client.in(string).emit('new',conversation.last_message)
       //    client.in(string).emit('unread',conversation.last_message)
-         notifyAllUsersNotInTheChatroom(conversation, message,[])
+         notifyAllUsers(conversation, message,[])
          return 'pass'
           }).catch(error => console.log(error))
           return x

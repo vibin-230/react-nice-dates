@@ -217,7 +217,7 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
   //io.emit('unread', 'hello friends!');
   //client.to(chatroomName._id).emit('unread',message)
   // chatroomManager.saveMessages(message) 
-  chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
+ // chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
 
   callback()
 

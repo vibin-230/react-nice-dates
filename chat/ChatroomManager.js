@@ -288,6 +288,11 @@ module.exports = function () {
     }
 
 
+   async function notifyParticularUsersController(chatroom,message1,client){
+        notifyAllUsers(chatroom,message1)
+    }
+
+
     function notifyAllUsersNotInTheChatroom(chatroom,message,users){
       const x = Array.isArray(message)
       const filter = chatroom.members.filter((member)=>{ 
@@ -1249,6 +1254,7 @@ return x
     deleteChatroom,
     handleProfileAlerts,
     sendEventInvites,
+    notifyParticularUsersController,
     sendConvoEventInvites,
     handleProfileAccepted
   }

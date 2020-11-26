@@ -202,7 +202,7 @@ async function handleUpdateParams({ chatroomName, message,params } = {}, callbac
   client.to(chatroomName._id).emit('unread',message)
   const x  = await chatroomManager.updateParams(message,params)
   // chatroomManager.saveMessages(message) 
-  chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
+  chatroomManager.notifyParticularUsersController(chatroomName, message,activeUsers)
   callback(x)
 
 }

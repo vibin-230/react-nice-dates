@@ -849,7 +849,7 @@ module.exports = function () {
                 const token_list1  = conversation2.members.filter((a)=>a._id.toString() !== userId.toString()).map((e) => e.device_token)
                 const device_token_list = token_list.map((e) => e.device_token)
                 NotifyArray(device_token_list, `${conversation2.members[0].handle} has accepted your game request.`, `${game1.name}`)
-                NotifyArray(token_list1, `${user.handle} has joined the game.`, `${game1.name}`)
+                NotifyArray(token_list1, `${user.handle} has joined the game`, `${game1.name}`)
 
                 
                 return conversation2.members.map((e) => e._id)
@@ -1081,7 +1081,7 @@ module.exports = function () {
          //const io = client
          //const clientNumber = io.sockets.adapter.rooms[message.conversation];
     //const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
-         notifyAllUsersNotInTheChatroom(conversation, conversation.last_message,[])
+         notifyAllUsers(conversation, conversation.last_message,[])
           }).catch(error => console.log(error))
   }
 

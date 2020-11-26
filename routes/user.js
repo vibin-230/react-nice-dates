@@ -2543,7 +2543,7 @@ async function handleSlotAvailabilityForGames(booking1,client){
                     return id
                   })
                     const device_token_list=user.map((e)=>e.device_token)
-                                                  NotifyArray(device_token_list,'Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.',`Turf Town Game Cancellation`)
+                                                  NotifyArray(device_token_list,'Apologies! This game has been cancelled as the slot has been booked by another user. Please choose another slot to host your game.',`Game Cancelled`)
                                                     return 'pass'
                  }).catch((e)=>console.log(e));
               }).catch(error => console.log(error))
@@ -2860,7 +2860,7 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
         let sender = "TRFTWN"
         let SLOT_BOOKED_GAME_USER =`Hey ${user && user.handle ? user.handle : user.name}! Thank you for using Turf Town! Your Game has been created .\nBooking Id: ${booking_id}\nVenue: ${venue_name}, ${venue_area}\nSport: ${sport_name}(${venue_type})\nDate and Time: ${datetime}\n${venue_discount_coupon}\nAmount Paid: ${Math.round(result[0].booking_amount)}\nTT Coins: ${Math.round(result[0].coins)}\nBalance to be paid: ${Math.round(balance)}`
         // SendMessage(phone,sender,SLOT_BOOKED_USER) // sms to user
-       notifyRedirect(user,SLOT_BOOKED_GAME_USER)
+      // notifyRedirect(user,SLOT_BOOKED_GAME_USER)
 
         // SendMessage(manger_numbers.join(","),sender,SLOT_BOOKED_MANAGER) // sms to user 
         // axios.get(process.env.PHP_SERVER+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&manager_phone='+manager_phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount)
@@ -3574,7 +3574,7 @@ function updateGameStatusAndGetMessages(nc,status){
      let start_time = Object.values(nc.bookings).reduce((total,value)=>{return total<value.start_time?total:value.start_time},nc.bookings[0].start_time)
      let end_time = Object.values(nc.bookings).reduce((total,value)=>{return total>value.end_time?total:value.end_time},nc.bookings[0].end_time)
      let time = moment(start_time).utc().format("hh:mma") + "-" + moment(end_time).utc().format("hh:mma")
-     status && NotifyArray(device_token,`Hey! The ${time} slot is available again. Please book this slot to confirm your game.`,'Turf Town Slot Availability')
+     status && NotifyArray(device_token,`Hey! The ${time} slot is available again. Please book this slot to confirm your game.`,'Slot available again')
    return {conversation:nc.conversation._id,message:`Hey! The ${time} slot is available again. Please book this slot to confirm your game.`,name:'bot',read_status:false,read_by:nc.conversation.members[0],author:nc.conversation.members[0],type:'bot',created_at:new Date()}
 }
 
@@ -3968,7 +3968,7 @@ router.post('/cancel_game_booking/:id', verifyToken, (req, res, next) => {
                   // })
                   ////user cancel with refund
                    SendMessage(phone,sender,USER_CANCEL_WITH_REFUND)
-                   notifyRedirect(user,USER_CANCEL_WITH_REFUND)
+                   //notifyRedirect(user,USER_CANCEL_WITH_REFUND)
                   // ///venuemanager cancel with refund
                   // SendMessage(manger_numbers.join(","),sender,VENUE_CANCEL_WITH_REFUND)
                   // let obj = {
@@ -4077,7 +4077,7 @@ router.post('/cancel_game_booking/:id', verifyToken, (req, res, next) => {
                   let VENUE_CANCEL_WITHOUT_REFUND = `Turf Town booking ${booking_id} scheduled for ${datetime} at ${venue_name}, ${venue_area} (${venue_type}) has been cancelled by the user.\n ${booking[0].name}(${phone}) \nAs the slot has been cancelled with less than 6 hours to the scheduled time, advance paid of Rs.${booking_amount} will be charged to the user as a cancellation fee.`//490533
                   ////user cancel with refund
                    SendMessage(phone,sender,USER_CANCEL_WITHOUT_REFUND)
-                   notifyRedirect(user,USER_CANCEL_WITHOUT_REFUND)
+                   //notifyRedirect(user,USER_CANCEL_WITHOUT_REFUND)
                   // ///venuemanager cancel with refund
                   // SendMessage(manger_numbers.join(","),sender,VENUE_CANCEL_WITHOUT_REFUND)
                   // let obj = {
@@ -4486,7 +4486,6 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
       let role = req.role === "venue_staff" || req.role === "venue_manager"
       let date = new Date().addHours(8,30)
       let refund = req.body.refund_status
-      console.log(booking.transaction_id)
         if(booking.booking_type === "app" && (refund) && booking.transaction_id !== 'free_slot'){
           axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
@@ -4517,22 +4516,24 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   let sender = "TRFTWN"
                   if(booking[0].game){
                     Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted',status_description:'cancelled by venue manager'}}).then(game=>{
+                    Game.findOne({'bookings.booking_id':req.params.id}).populate('users','name _id device_token').then(game=>{
                       Message.create({conversation:game.conversation,message:`Venue has cancelled this slot and a refund has been initiated.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
-                       // const device_token_list=user.map((e)=>e.device_token)
-                       // NotifyArray(device_token_list,'Hey ! Slot has been cancelled and refund has been initiated.Amount will be credited in 2 - 4 working days.Please book a new slot to confirm the game','Turftown Game Cancellation')
+                        const device_token_list=game && game.users && game.users.length> 0 ?game.users.map((e)=>e.device_token) : []
+                       NotifyArray(device_token_list,'Venue has cancelled this slot and a refund has been initiated.', `${game.name}`)
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
                             //getGame(res,game.conversation,true,next,req)
                              handleSlotAvailabilityWithCancellation(booking,req.socket)
                              
                       }).catch(next);
                     }).catch(next);
+                  }).catch(next);
                       }).catch(next);
                         }else{
                           handleSlotAvailabilityWithCancellation(booking,req.socket)
 
                         }
                   SendMessage(phone,sender,SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER)
-                  notifyRedirect(user,SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER)
+                 // notifyRedirect(user,SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER)
 
                   //Send Mail
                   let obj = {
@@ -4609,16 +4610,20 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   // })
                   if(booking[0].game){
                     Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted',status_description:'cancelled by venue manager'}}).then(game=>{
-                        Message.create({conversation:game.conversation,message:`Venue has cancelled this slot. There will be no refund as it is less than 6 hours to the scheduled time.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
+                    Game.findOne({'bookings.booking_id':req.params.id}).populate('users','name _id device_token').then(game=>{
+                      Message.create({conversation:game.conversation,message:`Venue has cancelled this slot. There will be no refund as it is less than 6 hours to the scheduled time.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
+                        const device_token_list=game && game.users && game.users.length> 0 ?game.users.map((e)=>e.device_token) : []
+                       NotifyArray(device_token_list,'Venue has cancelled this slot. There will be no refund as it is less than 6 hours to the scheduled time.', `${game.name}`)
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
-            handleSlotAvailabilityWithCancellation(booking,req.socket)
-                          
-                          //getGame(res,game.conversation,true,next,req)
+                            //getGame(res,game.conversation,true,next,req)
+                             handleSlotAvailabilityWithCancellation(booking,req.socket)
+                             
                       }).catch(next);
-
                     }).catch(next);
+                  }).catch(next);
                       }).catch(next);
-                        }else{
+                        }
+                  else{
                           handleSlotAvailabilityWithCancellation(booking,req.socket)
 
                         }
@@ -4627,7 +4632,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   let SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER = `Your Turf town booking ${booking_id} scheduled for ${datetime} at ${venue_name},${" "+venue_area} has been cancelled by the venue .\nStatus : Advance paid of Rs.${booking_amount} will be charged as a cancellation fee.\nPlease contact the venue ${venue.venue.contact} for more information.` //490759
                   let sender = "TRFTWN"
                   SendMessage(phone,sender,SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER)
-                  notifyRedirect(user,SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER)
+                 // notifyRedirect(user,SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER)
 
                   }
                   else if(booking[0].booking_type === "web") {

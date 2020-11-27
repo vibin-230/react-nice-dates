@@ -3347,7 +3347,7 @@ router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
            if(final_Game){ 
            Message.create({conversation:a.conversation,message:`Game completed! Please pick an MVP for this game '${a.name}'.`,name:'bot',read_status:true,read_by:a.host[0],author:a.host[0],type:'bot',created_at:new Date()}).then(message1=>{
                Conversation.findByIdAndUpdate({_id:a.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{ 
-                Conversation.findById({_id:a.conversation}).then((m)=>{                      
+                Conversation.findById({_id:a.conversation}).populate('members','name _id handle profile_picture name_status device_token').lean().then((m)=>{                      
                 const device_token_list=a.users.map((e)=>e.device_token)
                 NotifyArray(device_token_list,`Game completed! Please pick an MVP for this game.`,`${a.name}`,m)
                   return a.users.map((e)=>e._id)

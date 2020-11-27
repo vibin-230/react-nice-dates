@@ -300,6 +300,11 @@ module.exports = function () {
    async function notifyParticularUsersController(chatroom,message1,client){
         notifyAllUsers(chatroom,message1,false)
     }
+    async function notifyParticularUsersController2(chatroom,message1,client){
+      notifyAllUsers(chatroom,message1,true)
+  }
+
+   
 
 
     function notifyAllUsersNotInTheChatroom(chatroom,message,users){
@@ -484,8 +489,10 @@ module.exports = function () {
           client.in(conversation._id).emit('new',message)
            client.in(conversation._id).emit('unread',{})
            saveMessage(message)
-           const token_list  = conversation.members.filter((a => a._id !==user_id ))
+           const token_list  = conversation.members.filter((a => a._id.toString() !==conversation.host[0].toString() ))
            const device_token_list = token_list.map((e) => e.device_token)
+           console.log('conversation',conversation.host[0],token_list);
+           
            NotifyArray(device_token_list,message.message,`${conversation.name}`,conversation)
 
            return conversation
@@ -978,7 +985,7 @@ module.exports = function () {
                 client1.to(game.conversation._id).emit('unread',{message:game1.type == "game" ? `${game1.host} @${game.name}:${game1.host} has removed ${user.handle}` : `${game1.host} @${game.name}:${game1.host} has removed ${user.handle}`,type:"delete",user_id:user._id,created_at:new Date() })
                 // client1.to(conversation2._id).emit('unread',{})
                 //notifyAllUsersNotInTheChatroom(conversation2, message_formation, `Game Left`,[game1.id.toString()])
-                NotifyArray(device_token_list, message_formation, `${game2.name}`,conversation2)
+                //NotifyArray(device_token_list, message_formation, `${game2.name}`,conversation2)
                  return{ message : save_message ,type:conversation2.type , conversation:game.conversation}
        }).catch(error => console.log(error))
   }).catch(error => console.log(error))
@@ -1179,7 +1186,7 @@ return x
           return Conversation.findById({ _id: game1.convo_id }).lean().populate('members', '_id device_token').then(conversation2 => {
             return Conversation.findByIdAndDelete({ _id: game1.convo_id }).then(conversation2 => {
                 const message = { conversation: conversation2._id,message: `${user.handle} ${game1 && game1.status && game1.status === 'terminate' ? 'has been removed':'has left the club'}`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() }
-               
+                
                 conversation.type !== 'single' && saveMessage(message)
                 conversation.type !== 'single' && client.in(conversation2._id).emit('new',{ conversation: conversation2._id, message: `${user.handle} has left the club`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() })
                 client.in(game1.convo_id).emit('unread',{})
@@ -1273,6 +1280,7 @@ return x
     deleteChatroom,
     handleProfileAlerts,
     sendEventInvites,
+    notifyParticularUsersController2,
     notifyParticularUsersController,
     sendConvoEventInvites,
     handleProfileAccepted

@@ -484,7 +484,7 @@ module.exports = function () {
           client.in(conversation._id).emit('new',message)
            client.in(conversation._id).emit('unread',{})
            saveMessage(message)
-           const token_list  = conversation.members
+           const token_list  = conversation.members.filter((a => a._id !==user_id ))
            const device_token_list = token_list.map((e) => e.device_token)
            NotifyArray(device_token_list,message.message,`${conversation.name}`,conversation)
 

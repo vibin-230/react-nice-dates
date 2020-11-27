@@ -804,7 +804,7 @@ module.exports = function () {
                 
                 const token_list  = conversation2.members.filter((a)=>a._id.toString() !== userId.toString())
                 const device_token_list = token_list.map((e) => e.device_token)
-                NotifyArray(device_token_list, `${user.handle} has joined the game.`, `${game1.name}`,conversation1)
+                NotifyArray(device_token_list, `${user.handle} has joined the game`, `${game1.name}`,conversation1)
                 return conversation2.members.map((e) => e._id)
 
                 //res.send({status:"success", message:"invitation sent"})
@@ -852,7 +852,7 @@ module.exports = function () {
                 const token_list  = conversation2.members.filter((a)=>a._id.toString() == userId.toString())
                 const token_list1  = conversation2.members.filter((a)=>a._id.toString() !== userId.toString()).map((e) => e.device_token)
                 const device_token_list = token_list.map((e) => e.device_token)
-                NotifyArray(device_token_list, `${conversation2.members[0].handle} has accepted your game request.`, `${game1.name}`)
+                NotifyArray(device_token_list, `${conversation2.members[0].handle} has accepted your game request`, `${game1.name}`)
                 NotifyArray(token_list1, `${user.handle} has joined the game`, `${game1.name}`)
 
                 
@@ -1061,7 +1061,7 @@ module.exports = function () {
                       return id
                     })
                       const device_token_list=user.map((e)=>e.device_token)
-                                                    NotifyArray1(device_token_list,'Hey! Game is available again. Please book your slot to confirm the game','Game Availability')
+                                                    NotifyArray1(device_token_list,'Hey! This game is available again. Please book your slot to confirm the game.','Game Availability')
                                                       return user.map((e)=>e._id)
                    }).catch((e)=>console.log(e));
                 }).catch(error => console.log(error))

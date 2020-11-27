@@ -3728,7 +3728,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   // })
                   ////user cancel with refund
                   SendMessage(phone,sender,USER_CANCEL_WITH_REFUND)
-                  notifyRedirect(user,USER_CANCEL_WITH_REFUND)
+                  // notifyRedirect(user,USER_CANCEL_WITH_REFUND)
                   // ///venuemanager cancel with refund
                   SendMessage(manger_numbers.join(","),sender,VENUE_CANCEL_WITH_REFUND)
                   let obj = {
@@ -3841,8 +3841,14 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   let USER_CANCEL_WITHOUT_REFUND = `Your Turf Town booking ${booking_id} scheduled for ${datetime} at ${venue_name}, ${venue_area} (${venue_type}) has been cancelled.\nAs the slot has been cancelled with less than 6 hours to the scheduled time, advance paid of Rs.${booking_amount} will be charged as a cancellation fee.`//490447
                   let VENUE_CANCEL_WITHOUT_REFUND = `Turf Town booking ${booking_id} scheduled for ${datetime} at ${venue_name}, ${venue_area} (${venue_type}) has been cancelled by the user.\n ${booking[0].name}(${phone}) \nAs the slot has been cancelled with less than 6 hours to the scheduled time, advance paid of Rs.${booking_amount} will be charged to the user as a cancellation fee.`//490533
                   //user cancel with refund
+                  if(req.body.refund_status){
+                    let USER_CANCEL_WITH_REFUND = `Your Turf Town booking ${booking_id} scheduled for ${datetime} at ${venue_name}, ${venue_area} (${venue_type}) has been cancelled.\nAdvance of Rs.${booking_amount} will be refunded within 3-4 working days.`//490450
+                    SendMessage(phone,sender,USER_CANCEL_WITH_REFUND)
+                  }
+                  else {
                   SendMessage(phone,sender,USER_CANCEL_WITHOUT_REFUND)
-                  notifyRedirect(user,USER_CANCEL_WITHOUT_REFUND)
+                  }
+                  // notifyRedirect(user,USER_CANCEL_WITHOUT_REFUND)
 
                   ///venuemanager cancel with refund
                   SendMessage(manger_numbers.join(","),sender,VENUE_CANCEL_WITHOUT_REFUND)
@@ -4076,7 +4082,13 @@ router.post('/cancel_game_booking/:id', verifyToken, (req, res, next) => {
                   let USER_CANCEL_WITHOUT_REFUND = `Your Turf Town booking ${booking_id} scheduled for ${datetime} at ${venue_name}, ${venue_area} (${venue_type}) has been cancelled.\nAs the slot has been cancelled with less than 6 hours to the scheduled time, advance paid of Rs.${booking_amount} will be charged as a cancellation fee.`//490447
                   let VENUE_CANCEL_WITHOUT_REFUND = `Turf Town booking ${booking_id} scheduled for ${datetime} at ${venue_name}, ${venue_area} (${venue_type}) has been cancelled by the user.\n ${booking[0].name}(${phone}) \nAs the slot has been cancelled with less than 6 hours to the scheduled time, advance paid of Rs.${booking_amount} will be charged to the user as a cancellation fee.`//490533
                   ////user cancel with refund
+                  if(req.body.refund_status){
+                    let USER_CANCEL_WITH_REFUND = `Your Turf Town booking ${booking_id} scheduled for ${datetime} at ${venue_name}, ${venue_area} (${venue_type}) has been cancelled.\nAdvance of Rs.${booking_amount} will be refunded within 3-4 working days.`//490450
+                    SendMessage(phone,sender,USER_CANCEL_WITH_REFUND)
+                  }
+                  else {
                    SendMessage(phone,sender,USER_CANCEL_WITHOUT_REFUND)
+                  }
                    //notifyRedirect(user,USER_CANCEL_WITHOUT_REFUND)
                   // ///venuemanager cancel with refund
                   // SendMessage(manger_numbers.join(","),sender,VENUE_CANCEL_WITHOUT_REFUND)
@@ -4519,7 +4531,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                     Game.findOne({'bookings.booking_id':req.params.id}).populate('users','name _id device_token').then(game=>{
                       Message.create({conversation:game.conversation,message:`Venue has cancelled this slot and a refund has been initiated.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                         const device_token_list=game && game.users && game.users.length> 0 ?game.users.map((e)=>e.device_token) : []
-                       NotifyArray(device_token_list,'Venue has cancelled this slot and a refund has been initiated.', `${game.name}`)
+                       NotifyArray(device_token_list,'Venue has cancelled this slot and a refund has been initiated', `${game.name}`)
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
                             //getGame(res,game.conversation,true,next,req)
                              handleSlotAvailabilityWithCancellation(booking,req.socket)
@@ -4628,13 +4640,18 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
 
                         }
 
-                  if(booking[0].booking_type === "app"){
+                  if(booking[0].booking_type === "app" && !req.body.refund_status){
                   let SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER = `Your Turf town booking ${booking_id} scheduled for ${datetime} at ${venue_name},${" "+venue_area} has been cancelled by the venue .\nStatus : Advance paid of Rs.${booking_amount} will be charged as a cancellation fee.\nPlease contact the venue ${venue.venue.contact} for more information.` //490759
                   let sender = "TRFTWN"
                   SendMessage(phone,sender,SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER)
                  // notifyRedirect(user,SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER)
-
                   }
+                  if(booking[0].booking_type === "app" && req.body.refund_status){
+                    let SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER = `Your Turf town booking ${booking_id} scheduled for ${datetime} at ${venue_name},${" "+venue_area}(${venue_type}) has been cancelled by the venue .\nStatus : Advance of Rs.${booking_amount} will be refunded within 3-4 working days.\nPlease contact the venue ${venue.venue.contact} for more information.` //491317
+                    let sender = "TRFTWN"
+                    SendMessage(phone,sender,SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER)
+                   // notifyRedirect(user,SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER)
+                    }
                   else if(booking[0].booking_type === "web") {
                     let SLOT_CANCELLED_BY_VENUE_MANAGER =  `Your booking ${booking_id} scheduled ${datetime} at ${venue_name},${" "+venue_area}(Sport:${sport_name_new}) has been cancelled. Please contact the venue for more info` ///491375
                     let sender = "TRFTWN"

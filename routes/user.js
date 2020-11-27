@@ -2178,7 +2178,7 @@ router.post('/host_block_slot/:id', verifyToken, (req, res, next) => {
             console.log('as',convertable)
             console.log(inventory[body.venue_type],booking_history.length)
           }else{
-            convertable = inventory[body.venue_type]<=booking_history.length
+            convertable = inventory[body.venue_type]<=booking_history.filter(a=>a.venue_type === body.venue_type).length
             console.log('con',convertable,booking_history,)
           }
           if(convertable){

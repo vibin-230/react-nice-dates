@@ -4414,30 +4414,27 @@ router.post('/accept_or_delete_requests_alert', verifyToken, (req, res, next) =>
   }).catch(next)
 })
 
+
 router.post('/get_followers_and_following', verifyToken, (req, res, next) => {
-  User.findById({_id:req.userId},{activity_log:0}).lean().populate('following','name phone profile_picture handle name_status visibility').populate('followers','name phone profile_picture handle name_status visibility').then(user=>{
-    const following = user.following.map((a)=>{
-      a['select'] = false
-      return a
-  })
-  const followers = user.followers.map((a)=>{
-    a['select'] = false
-    return a
-})
+  User.findOne({_id:req.userId},{activity_log:0}).lean().populate('following','visibility name phone profile_picture handle name_status').populate('followers','visibility name phone profile_picture handle name_status').then(user=>{
+    const following = user.following
+    const followers = user.followers
     res.send({status:"success", message:"followers fetched", data:{followers,following}})
   }).catch(next)
 })
 
 router.post('/get_followers_and_following_for_user', verifyToken, (req, res, next) => {
-  User.findById({_id:req.body.id},{activity_log:0}).lean().populate('following','name phone profile_picture handle name_status visibility').populate('followers','name phone profile_picture handle name_status visibility').then(user=>{
-    const following = user.following.map((a)=>{
-      a['select'] = false
-      return a
-  })
-  const followers = user.followers.map((a)=>{
-    a['select'] = false
-    return a
-})
+  User.findOne({_id:req.body.id},{activity_log:0}).lean().populate('following','visibility name phone profile_picture handle name_status').populate('followers','visibility name phone profile_picture handle name_status').then(user=>{
+    const following = user.following
+  //   .map((a)=>{
+  //     a['select'] = false
+  //     return a
+  // })
+  const followers = user.followers
+//   .map((a)=>{
+//     a['select'] = false
+//     return a
+// })
     res.send({status:"success", message:"followers fetched", data:{followers,following}})
   }).catch(next)
 })

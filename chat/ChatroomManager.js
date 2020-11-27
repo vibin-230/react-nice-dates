@@ -388,7 +388,7 @@ module.exports = function () {
           const s = message && message.image && message.image.length > 1 ?'s':''
           const messages = message.type === 'image' ? `${message.image.length} image${s} shared`: `${message.message}`
           // const messages1 = chatroom.type === 'single' ?  `${message.name}: ${messages}`:  `${message.name} @${chatroom.name}: ${messages}`
-          const messages1 = chatroom.type === 'single' ?  `${messages}`:  `${message.name}: ${messages}`
+          const messages1 = chatroom.type === 'single' ?  `${messages}`:  `${messages}`
           const title = chatroom.type === 'single' ? `${message.name}` : `${chatroom.name}`
           let chatroom1 = Object.assign({},chatroom)
           chatroom1['exit_list'] = []
@@ -566,7 +566,7 @@ module.exports = function () {
 
                                               return Conversation.updateMany({_id:{ $in: cids}},{$set:{last_message:message1[0]._id,last_updated:new Date()}}).then(message1=>{
                                                 const device_token_list=user.map((e)=>e.device_token)
-                                                NotifyArray(device_token_list,`${sender.handle} invited you to join "${game1.name}"`,'Game Invite')
+                                                NotifyArray1(device_token_list,`${sender.handle} invited you to join "${game1.name}"`,'Game Invite')
                                                     return user.map((e)=>e._id)
               //res.send({status:"success", message:"invitation sent"})
     }).catch((e)=>console.log(e));

@@ -417,7 +417,7 @@ module.exports = function () {
       let value = Object.values(params)[0]
      const x = Message.insertMany(message).then(message1=>{
         return Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},{last_message:message1[message1.length-1]._id,last_updated:new Date(),[object_key]:value}).then(conversation=>{
-          return Conversation.findById({_id:message1[message1.length-1].conversation}).populate('members','name _id profile_picture last_active online_status status handle name_status').populate('last_message').then(conversation=>{
+          return Conversation.findById({_id:message1[message1.length-1].conversation}).populate('host','name _id profile_picture last_active online_status status handle name_status visibility').populate('members','name _id profile_picture last_active online_status status handle name_status visibility').populate('last_message').then(conversation=>{
             return {conversation:conversation,message:message1}
           }).catch((e)=>{console.log(e)});
         }).catch((e)=>{console.log(e)});

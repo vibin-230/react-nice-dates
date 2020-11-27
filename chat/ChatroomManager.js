@@ -248,10 +248,14 @@ module.exports = function () {
       }).catch((e)=>console.log(e))
     }
 
-    function notifyAllUsers(chatroom,message){
+    function notifyAllUsers(chatroom,message,all_status){
       const filter = chatroom.members.filter((member)=>{ 
         const string  = member && member._id ? member._id.toString() : member.toString()
-        if(string !== message.author.toString()){
+        if(!all_status){
+          if(string !== message.author.toString()){
+            return member
+          }
+        }else if(all_status){
           return member
         }
       })
@@ -294,7 +298,7 @@ module.exports = function () {
 
 
    async function notifyParticularUsersController(chatroom,message1,client){
-        notifyAllUsers(chatroom,message1)
+        notifyAllUsers(chatroom,message1,false)
     }
 
 
@@ -1081,7 +1085,7 @@ module.exports = function () {
          //const io = client
          //const clientNumber = io.sockets.adapter.rooms[message.conversation];
     //const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
-         notifyAllUsers(conversation, conversation.last_message,[])
+         notifyAllUsers(conversation, conversation.last_message,true)
           }).catch(error => console.log(error))
   }
 
@@ -1092,7 +1096,7 @@ module.exports = function () {
     const x = await Conversation.findById({ _id: string }).populate('last_message').lean().then(conversation => {
       // client.in(string).emit('new',conversation.last_message)
       //    client.in(string).emit('unread',conversation.last_message)
-         notifyAllUsers(conversation, message,[])
+         notifyAllUsers(conversation, message,false)
          return 'pass'
           }).catch(error => console.log(error))
           return x

@@ -5,7 +5,7 @@ module.exports = function BookSlot(body,id,booking_id,params,req,res,next){
   return new Promise(function(resolve, reject){
     Venue.findById({_id:params}).then(venue=>{
       Booking.findOne({}, null, {sort: {$natural: -1}}).then(bookingOrder=>{
-        Booking.find({$and:[{venue:body.venue,venue_id:req.params.id, booking_date:body.booking_date, slot_time:body.slot_time}],$or:[{booking_status:"booked",booking_status:"blocked"}]}).then(booking_history=>{
+         Booking.find({$and:[{venue:body.venue,venue_id:req.params.id, booking_date:body.booking_date, slot_time:body.slot_time}],$or:[{booking_status:"booked",booking_status:"blocked"}]}).then(booking_history=>{
           // console.log(booking_history)
           let conf = venue.configuration;
           let types = conf.types;
@@ -86,7 +86,12 @@ module.exports = function BookSlot(body,id,booking_id,params,req,res,next){
               coupon_amount:body.coupon_amount
             }
             Booking.create(booking_data).then(booking=>{
+               Booking.findByIdAndUpdate({_id:body._id}, {$set:{booking_status:'timeout'}}).then(bookingOrder=>{
               resolve(booking)
+            }).catch(error=>{
+              console.log(error)
+              reject()
+            })
             }).catch(error=>{
               console.log(error)
               reject()

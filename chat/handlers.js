@@ -88,9 +88,9 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     if(chatroomName.type === 'group'){
        x  = await chatroomManager.leaveChatroomGroup(chatroomName,io,client)
        if(x && x.type !== 'single'){
-         const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
-         const activeUsers = clientNumber  ? clientManager.filterClients(Object.keys(clientNumber.sockets)) : []
-         chatroomManager.notifyAllUsersNotInTheChatroom(x.conversation, x.message,activeUsers)
+        //  const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
+        //  const activeUsers = clientNumber  ? clientManager.filterClients(Object.keys(clientNumber.sockets)) : []
+        //  chatroomManager.notifyAllUsersNotInTheChatroom(x.conversation, x.message,activeUsers)
        }
     }
 
@@ -110,7 +110,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     if(x && x.type !== 'single'){
       const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
       const activeUsers = clientNumber  ? clientManager.filterClients(Object.keys(clientNumber.sockets)) : []
-      chatroomManager.notifyAllUsersNotInTheChatroom(x.conversation, x.message,activeUsers)
+      chatroomManager.notifyParticularUsersController(x.conversation, x.message,activeUsers)
     }
  }
  else if(chatroomName.type === 'single'){
@@ -119,10 +119,10 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     else{
       x  = await chatroomManager.leaveChatroom(chatroomName,io,client)
       if(x && x.type !== 'single'){
-        const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
-      const activeUsers = clientNumber  ? clientManager.filterClients(Object.keys(clientNumber.sockets)) : []
+      //  const clientNumber = io.sockets.adapter.rooms[chatroomName._id];
+      //const activeUsers = clientNumber  ? clientManager.filterClients(Object.keys(clientNumber.sockets)) : []
 //      const activeUsers = clientManager.filterClients(Object.keys(clientNumber.sockets))
-        chatroomManager.notifyAllUsersNotInTheChatroom(x.conversation, x.message,activeUsers)
+       // chatroomManager.notifyAllUsersNotInTheChatroom(x.conversation, x.message,activeUsers)
 
       }
     }
@@ -153,7 +153,7 @@ module.exports = function (client, clientManager, chatroomManager,io) {
     client.to(chatroomName._id).emit('unread',message)
     chatroomManager.updateImage(message)
     // chatroomManager.saveMessages(message) 
-    chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
+    chatroomManager.notifyParticularUsersController(chatroomName, message,activeUsers)
     callback()
 
 }
@@ -202,7 +202,7 @@ async function handleUpdateParams({ chatroomName, message,params } = {}, callbac
   client.to(chatroomName._id).emit('unread',message)
   const x  = await chatroomManager.updateParams(message,params)
   // chatroomManager.saveMessages(message) 
-  chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
+  chatroomManager.notifyParticularUsersController(chatroomName, message,activeUsers)
   callback(x)
 
 }
@@ -217,7 +217,7 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
   //io.emit('unread', 'hello friends!');
   //client.to(chatroomName._id).emit('unread',message)
   // chatroomManager.saveMessages(message) 
-  chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
+ // chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,activeUsers)
 
   callback()
 
@@ -327,7 +327,7 @@ async function handleUpdateGroup({ chatroomName, message,members,colors } = {}, 
          io.in(message.conversation).emit('new',message)
         client.to(message.conversation).emit('unread',message)
         chatroomManager.getChatroomAndNotify(message.conversation, message,[])
-        //chatroomManager.notifyAllUsersNotInTheChatroom(chatroomName, message,[])
+       // chatroomManager.notifyParticularUsersController(message.conversation, message,[])
         callback()
   }
 

@@ -4531,7 +4531,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                     Game.findOne({'bookings.booking_id':req.params.id}).populate('users','name _id device_token').then(game=>{
                       Message.create({conversation:game.conversation,message:`Venue has cancelled this slot and a refund has been initiated.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                         const device_token_list=game && game.users && game.users.length> 0 ?game.users.map((e)=>e.device_token) : []
-                       NotifyArray(device_token_list,'Venue has cancelled this slot and a refund has been initiated.', `${game.name}`)
+                       NotifyArray(device_token_list,'Venue has cancelled this slot and a refund has been initiated', `${game.name}`)
                         Conversation.findByIdAndUpdate({_id:game.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{
                             //getGame(res,game.conversation,true,next,req)
                              handleSlotAvailabilityWithCancellation(booking,req.socket)

@@ -5878,8 +5878,8 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 final_price:amountTobePaid,
               }
 
-              let to_emails = `${bookingOrder.event_id.event.email}, rajasekar@turftown.in`
-              let to_emails_user = `${req.body.email}, rajasekar@turftown.in`
+              let to_emails = `${bookingOrder.event_id.event.email}, bookings@turftown.in`
+              let to_emails_user = `${req.body.email}, bookings@turftown.in`
               ejs.renderFile('views/event_manager/event_manager.ejs',mailBody).then(html=>{
                 mail("bookings@turftown.in", to_emails_user,"Event Booked","test",html,response=>{
                   if(response){

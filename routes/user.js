@@ -5585,7 +5585,11 @@ router.post('/check_booking', verifyToken, (req, res, next) => {
           }else{
             res.send({status:"success", message:"no event found"})
           }
-        }else{
+        }
+        else if(bookingOrders.length == 0){
+          res.send({status:"success", message:"no event found"})
+        }
+        else{
           res.send({status:"success", message:"Registerations full!", data:{event}})
         }
       

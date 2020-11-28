@@ -2328,17 +2328,17 @@ router.post('/book_slot1', verifyToken, (req, res, next) => {
         venue_name:venue.venue.name
       }
 
-      // let to_mail = `${values[0].email}, rajasekar@turftown.in,support@turftown.in`
-      // // console.log(mailBody)
-      // ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
-      //   mail("support@turftown.in", to_mail,"Venue Booked","test",html,response=>{
-      //     if(response){
-      //       console.log('success')
-      //     }else{
-      //       console.log('failed')
-      //     }
-      //   })
-      // })
+      let to_mail = `${values[0].email}, bookings@turftown.in`
+      // console.log(mailBody)
+      ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
+        mail("bookings@turftown.in", to_mail,"Venue Booked","test",html,response=>{
+          if(response){
+            console.log('success')
+          }else{
+            console.log('failed')
+          }
+        })
+      })
       
       //Activity Log
       // let activity_log = {
@@ -2454,10 +2454,10 @@ router.post('/book_slot', verifyToken, (req, res, next) => {
         coupon_amount:Math.round(result[0].coupon_amount),
         venue_name:venue.venue.name
       }
-      let to_mail = `${values[0].email}, rajasekar@turftown.in,support@turftown.in`
+      let to_mail = `${values[0].email}, bookings@turftown.in`
       // console.log(mailBody)
       ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
-        mail("support@turftown.in", to_mail,"Venue Booked","test",html,response=>{
+        mail("bookings@turftown.in", to_mail,"Venue Booked","test",html,response=>{
           if(response){
             console.log('success')
           }else{
@@ -3744,9 +3744,9 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                     booking_status:`Advance of Rs ${booking_amount} will be refunded within 3 - 4 working days.`
                   }
                   ejs.renderFile('views/event_manager/venue_cancel.ejs',obj).then(html=>{
-                    let to_emails = `${user.email}, rajasekar@turftown.in`
+                    let to_emails = `${user.email}, bookings@turftown.in`
                     console.log('to_emails',to_emails);
-                    mail("support@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
+                    mail("bookings@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
                       if(response){
                         res.send({status:"success"})
                       }else{
@@ -3760,7 +3760,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   console.log(manager_mail);
                   ejs.renderFile('views/event_manager/venue_cancel_manager.ejs',obj).then(html=>{
                     //let to_emails = `${req.body.email}, rajasekar@turftown.in`
-                    mail("support@turftown.in", manager_mail,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
+                    mail("bookings@turftown.in", manager_mail,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
                       if(response){
                         res.send({status:"success"})
                       }else{
@@ -3866,8 +3866,8 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                       booking_status:`Advance of Rs ${booking_amount} has been charged as a cancellation fee to the user`
                     }
                     ejs.renderFile('views/event_manager/venue_cancel.ejs',obj).then(html=>{
-                     let to_emails = `${user.email}, rajasekar@turftown.in`
-                        mail("support@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
+                     let to_emails = `${user.email}, bookings@turftown.in`
+                        mail("bookings@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
                         if(response){
                           res.send({status:"success"})
                         }else{
@@ -3878,7 +3878,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                     let manager_mail = ''
                     admins.map((admin,index)=>{manager_mail+=(admin.length-1) === index ?admin.email :admin.email + ','})
                     ejs.renderFile('views/event_manager/venue_cancel_manager.ejs',obj).then(html=>{
-                     mail("support@turftown.in", manager_mail,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
+                     mail("bookings@turftown.in", manager_mail,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
                       if(response){
                          res.send({status:"success"})
                        }else{
@@ -4557,9 +4557,9 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                     venue_location:venue_area,
                     booking_status:`Advance of Rs ${booking[0].booking_amount} will be refunded within 3 - 4 working days.`
                   }
-                  let to_emails = `${user.email}, rajasekar@turftown.in`
+                  let to_emails = `${user.email}, bookings@turftown.in`
                   ejs.renderFile('views/event_manager/venue_cancel_by_manager.ejs',obj).then(html=>{
-                    mail("support@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
+                    mail("bookings@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
                       if(response){
                         //res.send({status:"success"})
                       }else{
@@ -4667,9 +4667,9 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                     venue_location:venue_area,
                     booking_status:`Advance of Rs ${booking[0].booking_amount} will be charged as a cancellation fee`
                   }
-                  let to_emails = `${user.email}, rajasekar@turftown.in`
+                  let to_emails = `${user.email}, bookings@turftown.in`
                   ejs.renderFile('views/event_manager/venue_cancel_by_manager.ejs',obj).then(html=>{
-                    mail("support@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
+                    mail("bookings@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
                       if(response){
                         //res.send({status:"success"})
                       }else{
@@ -5724,13 +5724,13 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
       status: req.body.refund_status ? `Advance of Rs ${amount_paid} will be refunded to the user within 3 - 4 working days`:`Advance of Rs ${amount_paid} will be charged as a cancellation fee to the user`
     }
 
-    let to_emails_manager = `${event_email}, rajasekar@turftown.in`
+    let to_emails_manager = `${event_email}, bookings@turftown.in`
 
-    let to_emails = `${eventBooking.email}, rajasekar@turftown.in`
+    let to_emails = `${eventBooking.email}, bookings@turftown.in`
 
 
     ejs.renderFile('views/event_manager/event_cancel.ejs',mailBody).then(html=>{
-      mail("support@turftown.in", to_emails,"Event "+booking_id+" has been cancelled","test",html,response=>{
+      mail("bookings@turftown.in", to_emails,"Event "+booking_id+" has been cancelled","test",html,response=>{
         if(response){
           console.log('success')
         }else{
@@ -5740,7 +5740,7 @@ router.post('/cancel_event_booking/:id', verifyToken, (req, res, next) => {
     }).catch(next)
 
     ejs.renderFile('views/event_manager/event_cancel_manager.ejs',mailBody).then(html=>{
-      mail("support@turftown.in", to_emails_manager,"Event "+booking_id+" has been cancelled for "+mailBody.event_name,"test",html,response=>{
+      mail("bookings@turftown.in", to_emails_manager,"Event "+booking_id+" has been cancelled for "+mailBody.event_name,"test",html,response=>{
         if(response){
           console.log('success')
         }else{
@@ -5881,7 +5881,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               let to_emails = `${bookingOrder.event_id.event.email}, rajasekar@turftown.in`
               let to_emails_user = `${req.body.email}, rajasekar@turftown.in`
               ejs.renderFile('views/event_manager/event_manager.ejs',mailBody).then(html=>{
-                mail("support@turftown.in", to_emails_user,"Event Booked","test",html,response=>{
+                mail("bookings@turftown.in", to_emails_user,"Event Booked","test",html,response=>{
                   if(response){
                     console.log('success')
                   }else{
@@ -5891,7 +5891,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
               }).catch(next)
 
               ejs.renderFile('views/event_manager/event.ejs',mailBody).then(html=>{
-                mail("support@turftown.in", to_emails,"New registeration for "+event_name,"test",html,response=>{
+                mail("bookings@turftown.in", to_emails,"New registeration for "+event_name,"test",html,response=>{
                   if(response){
                     console.log('success')
                   }else{

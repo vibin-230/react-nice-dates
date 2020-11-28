@@ -12,8 +12,8 @@ const sendMail = (from,to,subject,text,html,callback,name) => {
         // }
         //staging
         auth: {
-            user: "support@turftown.in", // generated ethereal user
-            pass: "kopsupport8" // generated ethereal password
+            user: "bookings@turftown.in", // generated ethereal user
+            pass: "bridgesupport8" // generated ethereal password
         },
         tls: {
             rejectUnauthorized: false

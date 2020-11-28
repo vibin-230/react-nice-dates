@@ -237,7 +237,7 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
           console.log(err);
         }
         const data = JSON.parse(reply)
-        let index = req.body && req.body.post_id && req.body.post_id._id ?  data.findIndex(x => x._id.toString() ===req.body.post_id._id.toString()) : -1 ;
+        let index = req.body && req.body.post_id && req.body.post_id._id ? data &&  data.findIndex(x => x._id.toString() ===req.body.post_id._id.toString()) : -1 ;
        let final_data = []
         let diff;
         if(index > 0){

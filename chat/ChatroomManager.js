@@ -1207,8 +1207,9 @@ return x
                       const message = { conversation: conversation2._id, message: `${user.handle} ${game1 && game1.status && game1.status === 'terminate' ? 'has been removed':'has left the club'+''}`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() }
                       conversation2.type !== 'single' && saveMessage(message)
                    conversation2.type !== 'single' && client.to(conversation2._id).emit('new',{ conversation: conversation2._id, message: `${user.handle} ${game1 && game1.status && game1.status === 'terminate' ? 'has been removed':conversation2.type === 'single'? '':'has left the club'}`, read_status: false, name: user.handle, author: user._id, type: 'bot', created_at: new Date() })
-                   const token_list  = conversation2.members.filter((key) => key._id.toString() !== game1.user_id.toString())
-                   const device_token_list = token_list.map((e) => e.device_token)
+                   const token_list  = conversation2.members.filter((key) => key._id.toString() !== conversation2.host[0]._id.toString())
+                   let device_token_list = token_list.map((e) => e.device_token)
+                  user && user.device_token && device_token_list.push(user.device_token)
                    client.in(conversation2._id).emit('unread',{})
                    conversation2.type !== 'single'  ? client.in(conversation2._id).emit('new',{type:'',exit:true,conversation:conversation2._id}) : client.in(conversation2._id).emit('new',x)
                    conversation2.type == 'single'  ?  client1.leave(conversation2._id) : null

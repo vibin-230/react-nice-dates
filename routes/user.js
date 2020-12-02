@@ -2694,7 +2694,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
         let SLOT_BOOKED_GAME_USER =`Hey ${game.host[0].handle}! Thank you for using Turf Town! Your Game has been created .\nBooking Id : ${booking_id}\nVenue : ${venue_name}, ${venue_area}\nSport : ${sport_name}(${venue_type})\nDate and Time : ${datetime}\n${venue_discount_coupon}\nTT Coins : ${Math.round(result[0].coins)}\nAmount Paid : ${Math.round(result[0].booking_amount)}\nBalance to be paid : ${Math.round(balance)}`
 
         SendMessage(phone,sender,SLOT_BOOKED_USER) // sms to user
-        notifyRedirect(user,SLOT_BOOKED_GAME_USER)
+       // notifyRedirect(user,SLOT_BOOKED_GAME_USER)
         // SendMessage(manger_numbers.join(","),sender,SLOT_BOOKED_MANAGER) // sms to user 
         // axios.get(process.env.PHP_SERVER+'/textlocal/slot_booked.php?booking_id='+booking_id+'&phone='+phone+'&manager_phone='+manager_phone+'&venue_name='+venue_name+'&date='+datetime+'&venue_type='+values[0].venue_type+'&sport_name='+values[0].sport_name+'&venue_area='+venue_area+'&amount='+total_amount)
         // .then(response => {

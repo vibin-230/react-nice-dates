@@ -2151,6 +2151,8 @@ router.post('/host_block_slot/:id', verifyToken, (req, res, next) => {
     return new Promise(function(resolve, reject){
       Venue.findById({_id:req.params.id}).then(venue=>{
         let venue_id;
+        const status = body.booking_status
+        console.log('status------------------',status);
         if(venue.secondary_venue){
           venue_id = [venue._id.toString(),venue.secondary_venue_id.toString()]
         }else{
@@ -2189,11 +2191,8 @@ router.post('/host_block_slot/:id', verifyToken, (req, res, next) => {
               resolve(booking)
               setTimeout(() => {
                 Booking.findById({_id:body._id}).then(booking=>{
-                  if(booking.booking_status==="blocked"){
-                    Booking.findByIdAndUpdate({_id:booking._id},{booking_status:"timeout"}).then(booking=>{
-                      console.log('cancelled')
+                    Booking.findByIdAndUpdate({_id:booking._id},{booking_status:status === 'cancelled' ? "cancelled":"timeout"}).then(booking=>{
                     }).catch(next)
-                  }
                 }).catch(next)
               }, 60000);
             }).catch(next)

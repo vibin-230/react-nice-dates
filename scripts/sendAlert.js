@@ -1,5 +1,5 @@
 const Alert = require('./../models/alerts')
-const NotifyArray = require('../scripts/NotifyArray')
+const NotifyArray = require('../scripts/NotifyArray2')
 const User = require('../models/user');
 var mongoose = require('mongoose');
 

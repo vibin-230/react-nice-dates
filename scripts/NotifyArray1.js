@@ -17,7 +17,7 @@ function NotifyArray(device_token, message,title,chatroom) {
         },
         data:{
           chatroom:chatroom,
-          key:'None'
+          key:'Details'
         }
       });
       sender.send(message, { registrationTokens: device_token }, function (err, response) {

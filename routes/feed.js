@@ -237,7 +237,7 @@ router.post('/get_town_games/', [verifyToken,], (req, res, next) => {
           console.log(err);
         }
         const data = JSON.parse(reply)
-        let index = req.body && req.body.post_id && req.body.post_id._id ?  data.findIndex(x => x._id.toString() ===req.body.post_id._id.toString()) : -1 ;
+        let index = req.body && req.body.post_id && req.body.post_id._id ? data &&  data.findIndex(x => x._id.toString() ===req.body.post_id._id.toString()) : -1 ;
        let final_data = []
         let diff;
         if(index > 0){
@@ -454,7 +454,7 @@ router.post('/get_more_alerts/', [
 
   
     User.findById({_id:req.params.id},{}).lean().then(user=> {
-    Post.find({created_by:req.params.id}).lean().populate('shout_out','_id name profile_picture phone handle name_status').populate({path:"event",populate:{path:"venue"}}).populate('created_by','_id name profile_picture phone handle name_status').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status'},{path:'users',select:'_id name profile_picture phone handle name_status'},{path:'invites',select:'_id name profile_picture phone handle name_status'},{path:'venue'}] }).then((posts)=>{
+    Post.find({created_by:req.params.id}).lean().populate('shout_out','_id name profile_picture phone handle name_status visibility').populate({path:"event",populate:{path:"venue"}}).populate('created_by','_id name profile_picture phone handle name_status visibility').populate({ path: 'game', populate: [{ path: 'conversation' , populate :{path:'last_message'} },{path:'host',select:'_id name profile_picture phone handle name_status visibility'},{path:'users',select:'_id name profile_picture phone handle name_status visibility'},{path:'invites',select:'_id name profile_picture phone handle name_status visibility'},{path:'venue'}] }).then((posts)=>{
       let following = [user.following,req.params.id]
       let x = posts.map((s)=>{
         if( s && s.shout_out && s.shout_out.length>0 && s.shout_out.filter((a)=>a._id.toString() === req.userId.toString()).length > 0){

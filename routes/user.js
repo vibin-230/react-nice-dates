@@ -2858,7 +2858,7 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
         let SLOT_BOOKED_MANAGER = `You have recieved a TURF TOWN booking from ${values[0].name} ( ${values[0].phone} ) \nBooking Id: ${booking_id}\nVenue: ${venue_name}, ${venue_area}\nSport: ${sport_name}(${venue_type})\nDate and Time: ${datetime}\nPrice: ${Math.round(result[0].amount)}\nAmount Paid: ${Math.round(result[0].booking_amount)}\nVenue Discount: ${Math.round(result[0].commission)}\nTT Coupon: ${Math.round(result[0].coupon_amount)}\nAmount to be collected: ${Math.round(balance)}` //490618
         let sender = "TRFTWN"
         let SLOT_BOOKED_GAME_USER =`Hey ${user && user.handle ? user.handle : user.name}! Thank you for using Turf Town! Your Game has been created .\nBooking Id: ${booking_id}\nVenue: ${venue_name}, ${venue_area}\nSport: ${sport_name}(${venue_type})\nDate and Time: ${datetime}\n${venue_discount_coupon}\nAmount Paid: ${Math.round(result[0].booking_amount)}\nTT Coins: ${Math.round(result[0].coins)}\nBalance to be paid: ${Math.round(balance)}`
-      SendMessage(phone,sender,SLOT_BOOKED_USER) // sms to user
+     // SendMessage(phone,sender,SLOT_BOOKED_USER) // sms to user
       // notifyRedirect(user,SLOT_BOOKED_GAME_USER)
 
         // SendMessage(manger_numbers.join(","),sender,SLOT_BOOKED_MANAGER) // sms to user 
@@ -2868,36 +2868,36 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
         // }).catch(error=>{
         //   console.log(error.response.data)
         // })
-      let mailBody = {
-        name:values[0].name,
-        date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
-        day:moment(values[0].booking_date).format("Do"),
-        venue:values[0].venue,
-        area:venue_area,
-        venue_type:values[0].venue_type,
-        booking_id:values[0].booking_id,
-        slot_time:datetime,
-        quantity:1,
-        total_amount:Math.round(result[0].amount),
-        booking_amount:Math.round(result[0].booking_amount),
-        directions:directions,
-        sport_name:sport_name,
-        venue_discount:Math.round(result[0].commission),
-        coupon_amount:Math.round(result[0].coupon_amount),
-        venue_name:venue.venue.name
-      }
+      // let mailBody = {
+      //   name:values[0].name,
+      //   date:moment(values[0].booking_date).format("dddd, MMM Do YYYY"),
+      //   day:moment(values[0].booking_date).format("Do"),
+      //   venue:values[0].venue,
+      //   area:venue_area,
+      //   venue_type:values[0].venue_type,
+      //   booking_id:values[0].booking_id,
+      //   slot_time:datetime,
+      //   quantity:1,
+      //   total_amount:Math.round(result[0].amount),
+      //   booking_amount:Math.round(result[0].booking_amount),
+      //   directions:directions,
+      //   sport_name:sport_name,
+      //   venue_discount:Math.round(result[0].commission),
+      //   coupon_amount:Math.round(result[0].coupon_amount),
+      //   venue_name:venue.venue.name
+      // }
 
-      let to_mail = `${values[0].email}, bookings@turftown.in,bookings@turftown.in`
-      console.log(mailBody)
-      ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
-        mail("bookings@turftown.in", to_mail,"Venue Booked","test",html,response=>{
-          if(response){
-            console.log('success')
-          }else{
-            console.log('failed')
-          }
-        })
-      })
+      // let to_mail = `${values[0].email}, bookings@turftown.in,bookings@turftown.in`
+      // console.log(mailBody)
+      // ejs.renderFile('views/mail.ejs',mailBody).then(html=>{
+      //   mail("bookings@turftown.in", to_mail,"Venue Booked","test",html,response=>{
+      //     if(response){
+      //       console.log('success')
+      //     }else{
+      //       console.log('failed')
+      //     }
+      //   })
+      // })
       
       //Activity Log
       // let activity_log = {

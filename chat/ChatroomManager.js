@@ -230,7 +230,7 @@ module.exports = function () {
      const x = await Message.insertMany(message).then(message1=>{
                    return Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},{last_message:message1[message1.length-1]._id,last_updated:new Date()}).then(conversation=>{
                       const message_ids = message1.map(m=>m._id)
-                      return Message.find({_id: {$in : message_ids}}).lean().populate('author', 'name handle _id name_status').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({ $natural: 1 }).then(m => {
+                      return Message.find({_id: {$in : message_ids}}).lean().populate('author', 'name handle _id name_status').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game', populate:[ { path: 'conversation' , populate :{path:'last_message'} },{path:'venue', model:'venue',select:'venue'}] }).sort({ $natural: 1 }).then(m => {
                         return m
         }).catch((e)=>{console.log(e)});
       }).catch((e)=>{console.log(e)});
@@ -770,7 +770,7 @@ module.exports = function () {
 
                     return Conversation.updateMany({ _id: { $in: cids } }, { $set: { last_message: message1[0]._id, last_updated: new Date() } }).then(message1 => {
                       const device_token_list = user.map((e) => e.device_token)
-                      NotifyArray1(device_token_list, `Event (${event.name}) from ${sender.handle}`, 'Event Invite')
+                      NotifyArray1(device_token_list, `Event ${event.name} from ${sender.handle}`, 'Event Invite')
                       return user.map((e) => e._id)
                     }).catch((e) => console.log(e));
                   }).catch((e) => console.log(e));

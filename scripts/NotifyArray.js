@@ -23,8 +23,7 @@ function NotifyIOSDevices(token,message,title,payload){
       note.expiry = Math.floor(Date.now() / 1000) + 2000; // Expires 1 hour from now.
       note.badge = 3;
       //note.alert = "\uD83D\uDCE7 \u2709 Welcome to turftown";
-      note.alert = message
-      
+      note.alert = message.params.notification.body
       note.payload = payload;
       apnProvider.send(note, token).then( (result) => {
         // see documentation for an explanation of result
@@ -70,7 +69,7 @@ function NotifyArray(device_token, message,title,chatroom1) {
       sender.send(message, { registrationTokens: device_token }, function (err, response) {
         if (err) console.error(err);
         else console.log(response);
-        NotifyIOSDevices(device_token.filter(a=>a.length === 64),message,'Turftown',{chatroom:chatroom,key:'Details'})
+        device_token.length > 0 && NotifyIOSDevices(device_token.filter(a=>a.length === 64),message,'Turftown',{chatroom:chatroom,key:'Details'})
       }); 
 
 }

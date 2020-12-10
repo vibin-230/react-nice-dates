@@ -3518,9 +3518,9 @@ router.post('/test_textlocal', verifyToken, (req, res, next) => {
   // let sender = "TRFTWN"
   // SendMessage(numbers,sender,EVENT_BOOKED_MANAGER)
   User.find({phone:req.body.phone},{activity_log:0}).lean().then((u)=>{
-    console.log(u[0]._id);
+    console.log(u[0].handle,u[0].device_token);
     notify(u[0],'total')
-    res.send({status:"success", message:"Version Log",data:u[0]})
+    res.send({status:"success", message:"Version Log",data:u[0].device_token})
   }).catch(next)
   // axios.get(`https://api.textlocal.in/send/?apikey=${process.env.TEXT_LOCAL_API_KEY}&numbers=${numbers}&sender=${sender}&message=${SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER}`).then(response => {
   //   res.send(response.data)

@@ -5075,6 +5075,222 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
 })
 
 
+router.post('/bookings_and_games1', verifyToken, (req, res, next) => {
+  let past_date  = moment().add(1,'month')
+  let filter = {
+    booking_status:{$in:["booked"]},
+    created_by:req.userId,
+    game:false,
+    end_time:{$gte:new Date(), $lte:past_date}
+  }
+
+  // let old_filter = {
+  //   booking_status:{$in:["booked"]},
+  //   created_by:req.userId,
+  //   game:false
+    
+  // }
+  let cancel_filter = {
+    booking_status:{$in:["cancelled","completed"]},
+    created_by:req.userId,
+    game:false
+  }
+  let cancel_filter1 = {
+    booking_status:{$in:["cancelled","completed"]},
+    created_by:req.userId,
+  }
+  let eventFilter = {
+    booking_status:{$in:["booked"]},
+    created_by:req.userId,
+    
+    event_booking_date:{$gte:new Date(), $lte:past_date}
+  }
+  let booking_ids = []
+
+  //req.role==="super_admin"?delete filter.created_by:null
+  Booking.find(filter).lean().populate('venue_data','venue').then(booking=>{
+    // Booking.find(old_filter).lean().populate('venue_data','venue').then(old_booking=>{
+    // Booking.find(cancel_filter).lean().populate('venue_data','venue').then(cancelledBookings=>{
+      //console.log(cancelledBookings)
+    EventBooking.find(eventFilter).lean().populate({path:"event_id",populate:{path:"venue"}}).then(eventBooking=>{
+      // EventBooking.find(cancel_filter1).lean().populate({path:"event_id",populate:{path:"venue"}}).then(cancelledeventBooking=>{
+      Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate('venue','venue'). populate("host","name _id handle name_status profile_picture").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
+        result = Object.values(combineSlots(booking))
+        // let result1 = Object.values(combineSlots1(old_booking))
+        // cancelled_bookings =  Object.values(combineSlots(cancelledBookings))
+        game.map((key)=>{
+         key["end_time"] = key.conversation && key.conversation.end_time ? key.conversation.end_time : key.bookings[key.bookings.length-1].end_time 
+        })
+        const open_games = game.filter((g)=>{
+         return g.share_type === 'open' || (g.share_type === 'closed' && g.host.some(key=>key._id.toString() === req.userId.toString()))
+        })
+        
+        let event_booking_data = eventBooking.filter(a => a.event_id).map((a)=>{
+          a['start_time'] = a.event_id.start_date
+          a['event'] = a.event_id
+          a["end_time"] = moment(a.event_id.start_date).utc().format()
+          return a
+        })
+        // let cancelledeventBooking1 = cancelledeventBooking.filter(a => a.event_id).map((a)=>{
+        //   a['start_time'] = a.event_id.start_date
+        //   a['event'] = a.event_id
+        //   a["end_time"] = moment(a.event_id.start_date).utc().format()
+        //   return a
+        // })
+
+         event_booking_data.reverse()
+         booking_data = req.body.type && req.body.type === 'host' ?[...open_games,...event_booking_data,...result]:[...game,...event_booking_data,...result]
+         var groupBy = (xs, key) => {
+          return xs.reduce((rv, x) =>{
+            let key1 = moment(x.start_time).utc().format("YYYYMMDD") !== moment(x.end_time).utc().format() ? "start_time" : "end_time"; 
+            (rv[moment(x[key1]).utc().format('MM-DD-YYYY')] = rv[moment(x[key1]).utc().format('MM-DD-YYYY')] || []).push(x);
+            return rv;
+          }, {});
+        };
+        
+        let finalResult = booking_data.sort((a, b) => moment(a.end_time).format("YYYYMMDDHmm") > moment(b.end_time).format("YYYYMMDDHmm") ? 1 : -1 )
+        const present = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') <= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
+        // const past = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') >= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
+        const apresent = groupBy(present,'end_time')
+        // const apast = groupBy([...past,...cancelled_bookings,...cancelledeventBooking1],'end_time')
+        //console.log('apast',apast);
+
+        // const pastCancelled = []
+        // const cancelledPast = groupBy(pastCancelled,'start_time')
+        // console.log("apaas",apast)
+        let qpresent =   Object.entries(apresent).map(([key,value])=>{return {title:key,data:value }})
+        // let qpast =   Object.entries(apast).map(([key,value])=>{return {title:key,data:value }})
+        // let qcancelled = Object.entries(cancelledPast).map(([key,value])=>{return {title:key,data:value }})
+        const today_empty = qpresent && qpresent.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpresent.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
+        // const today_empty1 = qpast && qpast.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpast.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
+        qpresent.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
+        // qpast.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
+        let qpas = []
+        let qprs = [...qpresent]
+        //console.log(qpas);
+        res.send({status:"success", message:"booking history fetched", data:{past:qpas,present:qprs}})
+        //req.redis().set('bookings_present_'+req.userId,JSON.stringify(qpresent))
+       // req.redis().set('bookings_past_'+req.userId,JSON.stringify(qpast))
+    }).catch(next)
+  }).catch(next)
+  }).catch(next)
+// }).catch(next)
+
+// }).catch(next)
+// }).catch(next)
+})
+
+
+
+router.post('/bookings_and_games_past', verifyToken, (req, res, next) => {
+  let past_date  = req.body.to_date
+  let filter = {
+    booking_status:{$in:["booked"]},
+    created_by:req.userId,
+    game:false,
+    end_time:{$gte:req.body.from_date, $lte:past_date}
+  }
+
+  // let old_filter = {
+  //   booking_status:{$in:["booked"]},
+  //   created_by:req.userId,
+  //   game:false
+    
+  // }
+  let cancel_filter = {
+    booking_status:{$in:["cancelled","completed"]},
+    created_by:req.userId,
+    game:false,
+    end_time:{$gte:req.body.from_date, $lte:past_date}
+  }
+  let cancel_filter1 = {
+    booking_status:{$in:["cancelled","completed","booked"]},
+    created_by:req.userId,
+    event_booking_date:{$gte:req.body.from_date, $lte:past_date}
+
+  }
+  // let eventFilter = {
+  //   booking_status:{$in:["booked"]},
+  //   created_by:req.userId,
+  //   start_date:{$gte:new Date(), $lte:past_date}
+  // }
+  let booking_ids = []
+
+  //req.role==="super_admin"?delete filter.created_by:null
+  Booking.find(cancel_filter).lean().populate('venue_data','venue').then(booking=>{
+    // Booking.find(old_filter).lean().populate('venue_data','venue').then(old_booking=>{
+    // Booking.find(cancel_filter).lean().populate('venue_data','venue').then(cancelledBookings=>{
+      //console.log(cancelledBookings)
+    EventBooking.find(cancel_filter1).lean().populate({path:"event_id",populate:{path:"venue"}}).then(eventBooking=>{
+      // EventBooking.find(cancel_filter1).lean().populate({path:"event_id",populate:{path:"venue"}}).then(cancelledeventBooking=>{
+     
+        // $or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}] }
+
+      Game.find({$and:[{ $or: [{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}] },{start_time:{$gte:past_date, $lte:req.body.from_date} } ]}).lean().populate('venue','venue'). populate("host","name _id handle name_status profile_picture").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
+        result = Object.values(combineSlots(booking))
+        // let result1 = Object.values(combineSlots1(old_booking))
+        // cancelled_bookings =  Object.values(combineSlots(cancelledBookings))
+        game.map((key)=>{
+         key["end_time"] = key.conversation && key.conversation.end_time ? key.conversation.end_time : key.bookings[key.bookings.length-1].end_time 
+        })
+        const open_games = game.filter((g)=>{
+         return g.share_type === 'open' || (g.share_type === 'closed' && g.host.some(key=>key._id.toString() === req.userId.toString()))
+        })
+        
+        let event_booking_data = eventBooking.filter(a => a.event_id).map((a)=>{
+          a['start_time'] = a.event_id.start_date
+          a['event'] = a.event_id
+          a["end_time"] = moment(a.event_id.start_date).utc().format()
+          return a
+        })
+        // let cancelledeventBooking1 = cancelledeventBooking.filter(a => a.event_id).map((a)=>{
+        //   a['start_time'] = a.event_id.start_date
+        //   a['event'] = a.event_id
+        //   a["end_time"] = moment(a.event_id.start_date).utc().format()
+        //   return a
+        // })
+
+         event_booking_data.reverse()
+         booking_data = req.body.type && req.body.type === 'host' ?[...open_games,...event_booking_data,...result]:[...game,...event_booking_data,...result]
+         var groupBy = (xs, key) => {
+          return xs.reduce((rv, x) =>{
+            let key1 = moment(x.start_time).utc().format("YYYYMMDD") !== moment(x.end_time).utc().format() ? "start_time" : "end_time"; 
+            (rv[moment(x[key1]).utc().format('MM-DD-YYYY')] = rv[moment(x[key1]).utc().format('MM-DD-YYYY')] || []).push(x);
+            return rv;
+          }, {});
+        };
+        
+        let finalResult = booking_data.sort((a, b) => moment(a.end_time).format("YYYYMMDDHmm") > moment(b.end_time).format("YYYYMMDDHmm") ? 1 : -1 )
+        // const present = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') <= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
+        const past = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') >= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
+        // const apresent = groupBy(present,'end_time')
+        const apast = groupBy([...past],'end_time')
+        //console.log('apast',apast);
+
+        // const pastCancelled = []
+        // const cancelledPast = groupBy(pastCancelled,'start_time')
+        // console.log("apaas",apast)
+        // let qpresent =   Object.entries(apresent).map(([key,value])=>{return {title:key,data:value }})
+        let qpast =   Object.entries(apast).map(([key,value])=>{return {title:key,data:value }})
+        // let qcancelled = Object.entries(cancelledPast).map(([key,value])=>{return {title:key,data:value }})
+        // const today_empty = qpresent && qpresent.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpresent.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
+        // const today_empty1 = qpast && qpast.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpast.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
+        // qpresent.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
+        qpast.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
+        let qpas = [...qpast].reverse()
+        let qprs = []
+        //console.log(qpas);
+        res.send({status:"success", message:"booking history fetched", data:{past:qpas,present:qprs}})
+        //req.redis().set('bookings_present_'+req.userId,JSON.stringify(qpresent))
+       // req.redis().set('bookings_past_'+req.userId,JSON.stringify(qpast))
+    }).catch(next)
+  }).catch(next)
+  }).catch(next)
+// }).catch(next)
+
+// }).catch(next)
+// }).catch(next)
+})
 router.post('/host_and_games', verifyToken, (req, res, next) => {
   let past_date  = moment(req.body.todate).add(1,'month')
   let filter = {

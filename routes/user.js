@@ -561,11 +561,11 @@ router.post('/combine_profile_api', [
           })
           Game.find({users: {$in:[req.userId]},completed:true}).then(game=> {
           game_completed_count = game && game.length > 0 ? game.length : 0
-          const aw = game && game.length > 0 && game.filter((a)=>{
-           let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0
-           mvp_count = mvp_count + f
-           return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length>0
-          })
+          // const aw = game && game.length > 0 && game.filter((a)=>{
+          //  let f = a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : 0
+          //  mvp_count = mvp_count + f
+          //  return a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length>0
+          // })
 
           const aq = game.map((a)=>{
             game_history[a.sport_name] = {game: game_history && game_history[a.sport_name] && game_history[a.sport_name].game && game_history[a.sport_name].game > 0 ? game_history[a.sport_name].game+1:1,mvp: a && a.mvp && a.mvp.length > 0 && a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length > 0 ? game_history[a.sport_name].mvp+ a.mvp.filter((sc)=>sc && sc.target_id.toString() === req.userId.toString()).length : game_history[a.sport_name].mvp
@@ -574,6 +574,7 @@ router.post('/combine_profile_api', [
 
           
           //mvp_count = aw && aw.length > 0 ? aw.length : 0
+          User.findOneAndUpdate({_id: req.userId},{last_active:new Date()}).lean().then(user=> {
           User.findOne({_id: req.userId},{activity_log:0}).populate("requests","name _id profile_picture").lean().then(user=> {
             Coins.aggregate([ { $match: { user:user._id } },{ $group: { _id: "$user", amount: { $sum: "$amount" } } }]).then((coins)=>{
             if (user) {
@@ -602,6 +603,7 @@ router.post('/combine_profile_api', [
          }).catch(next)
       }).catch(next)
     }).catch(next)
+  }).catch(next)
 
 });
 
@@ -5057,7 +5059,7 @@ router.post('/bookings_and_games', verifyToken, (req, res, next) => {
         // const today_empty1 = qpast && qpast.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpast.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
         qpresent.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
         qpast.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
-        let qpas = [...qpast]
+        let qpas = [...qpast].reverse()
         let qprs = [...qpresent]
         //console.log(qpas);
         res.send({status:"success", message:"booking history fetched", data:{past:qpas,present:qprs}})

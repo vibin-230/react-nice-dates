@@ -5114,7 +5114,7 @@ router.post('/bookings_and_games1', verifyToken, (req, res, next) => {
       //console.log(cancelledBookings)
     EventBooking.find(eventFilter).lean().populate({path:"event_id",populate:{path:"venue"}}).then(eventBooking=>{
       // EventBooking.find(cancel_filter1).lean().populate({path:"event_id",populate:{path:"venue"}}).then(cancelledeventBooking=>{
-      Game.find({$or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}]}).lean().populate('venue','venue'). populate("host","name _id handle name_status profile_picture").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
+      Game.find({$and:[{ $or: [{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}] },{start_time:{$gte:new Date(), $lte:past_date} } ]}).lean().populate('venue','venue'). populate("host","name _id handle name_status profile_picture").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
         result = Object.values(combineSlots(booking))
         // let result1 = Object.values(combineSlots1(old_booking))
         // cancelled_bookings =  Object.values(combineSlots(cancelledBookings))

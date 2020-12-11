@@ -25,6 +25,7 @@ function NotifyIOSDevices(token,message,title,payload){
       note.badge = 3;
       //note.alert = "\uD83D\uDCE7 \u2709 Welcome to turftown";
       note.alert = message.params.notification.body
+      note.title = title
       note.payload = payload;
       apnProvider.send(note, token).then( (result) => {
         // see documentation for an explanation of result

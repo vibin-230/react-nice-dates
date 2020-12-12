@@ -5204,9 +5204,9 @@ router.post('/bookings_and_games_past', verifyToken, (req, res, next) => {
     end_time:{$gte:past_date, $lte:req.body.from_date}
   }
   let cancel_filter1 = {
-    booking_status:{$in:["cancelled","completed","booked"]},
+    booking_status:{$in:["cancelled","booked"]},
     created_by:req.userId,
-    event_booking_date:{$gte:req.body.from_date, $lte:past_date}
+    // event_booking_date:{$gte:past_date, $lte:req.body.from_date}
 
   }
   // let eventFilter = {
@@ -5250,8 +5250,8 @@ router.post('/bookings_and_games_past', verifyToken, (req, res, next) => {
         //   return a
         // })
 
-         event_booking_data.reverse()
-         booking_data = req.body.type && req.body.type === 'host' ?[...open_games,...event_booking_data]:[...game,...event_booking_data]
+        //  event_booking_data
+         booking_data = req.body.type && req.body.type === 'host' ?[...open_games]:[...game]
          var groupBy = (xs, key) => {
           return xs.reduce((rv, x) =>{
             let key1 = moment(x.start_time).utc().format("YYYYMMDD") !== moment(x.end_time).utc().format() ? "start_time" : "end_time"; 
@@ -5264,7 +5264,7 @@ router.post('/bookings_and_games_past', verifyToken, (req, res, next) => {
         // const present = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') <= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
         const past = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') >= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
         // const apresent = groupBy(present,'end_time')
-        const apast = groupBy([...past,...result],'end_time')
+        const apast = groupBy([...past,...result,...event_booking_data],'end_time')
 
         // const pastCancelled = []
         // const cancelledPast = groupBy(pastCancelled,'start_time')

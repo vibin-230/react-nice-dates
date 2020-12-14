@@ -34,6 +34,7 @@ const SetKeyForSport = require("../scripts/setKeyForSport")
 const SetKeyForEvent = require("../scripts/setKeyForEvent")
 const SlotsAvailable = require("../helper/slots_available")
 const SlotsValueAvailable = require("../helper/slots_value_available")
+const SlotsAvailableNoOfCourts = require("../helper/slots_available_with_numb")
 const BookSlot = require("../helper/book_slot")
 const SendMessage = require("../helper/send_message")
 const BookRepSlot = require("../helper/book_repeated_slot")
@@ -70,7 +71,7 @@ var multer_upload = multer({ dest: 'uploads/' })
 var io = require('socket.io-emitter')("//127.0.0.1:6379")
 const rzp_key = require('../scripts/rzp');
 
-
+ 
  const indianRupeeComma = (value) => {
   return value.toLocaleString('EN-IN');
 }
@@ -2940,7 +2941,7 @@ router.post('/book_slot_for_admin1/:id', verifyToken, AccessControl('booking', '
         }
         Booking.find({ venue:body.venue, venue_id:{$in:venue_id}, booking_date:body.booking_date, slot_time:body.slot_time,booking_status:{$in:["blocked","booked","completed"]}}).then(booking_history=>{
         // Booking.find({$and:[{venue:body.venue, venue_id:id, booking_date:{$gte:body.booking_date,$lt:moment(body.booking_date).add(1,"days")}}],booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
-          let slots_available = SlotsAvailable(venue,booking_history)
+          let slots_available = SlotsAvailableNoOfCourts(venue,booking_history)
           if(slots_available.slots_available[body.slot_time][body.venue_type]>0){
             resolve()
           }else{
@@ -3416,7 +3417,6 @@ router.post('/update_invoice/:id', verifyToken, (req, res, next) => {
 })
 
 router.post('/checkUserName', (req, res, next) => {
-  console.log('hit');
 	User.find({"handle":req.body.user_name}).then(user=>{
     console.log(req.body.user_name.match(/^[ A-Za-z0-9_@./#&+-]*$/),req.body.user_name);
         if(user && user.length > 0){
@@ -3439,7 +3439,6 @@ router.post('/checkUserName', (req, res, next) => {
 
 router.post('/checkMobile', (req, res, next) => {
 	User.find({"phone":{ "$regex": req.body.mobile, "$options": "i" }}).then(user=>{
-    console.log(user)    
     if(user && user.length > 0){
           res.send({status:"success", message:"phone exists",data:{error:true,error_description:`The phone number +91 ${req.body.mobile} is not available.`}})
         }else

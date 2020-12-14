@@ -2097,7 +2097,7 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
                     })
                   }
                 }).catch(next)
-              }, 60000);
+              }, 120000);
             }).catch(error=>{
               reject()
             })
@@ -2197,7 +2197,7 @@ router.post('/host_block_slot/:id', verifyToken, (req, res, next) => {
                     Booking.findByIdAndUpdate({_id:booking._id},{booking_status:status === 'cancelled' ? "cancelled":"timeout"}).then(booking=>{
                     }).catch(next)
                 }).catch(next)
-              }, 60000);
+              }, 120000);
             }).catch(next)
           }).catch(next)
           }
@@ -5190,12 +5190,13 @@ router.post('/bookings_and_games_past', verifyToken, (req, res, next) => {
     end_time:{$gte:req.body.from_date, $lte:past_date}
   }
 
-  // let old_filter = {
-  //   booking_status:{$in:["booked"]},
-  //   created_by:req.userId,
-  //   game:false
+  let old_filter = {
+    booking_status:{$in:["booked"]},
+    created_by:req.userId,
+    game:false,
+    end_time:{$gte:new Date(), $lte:past_date}
     
-  // }
+  }
   let cancel_filter = {
     booking_status:{$in:["cancelled","completed"]},
     created_by:req.userId,
@@ -5203,31 +5204,31 @@ router.post('/bookings_and_games_past', verifyToken, (req, res, next) => {
     end_time:{$gte:past_date, $lte:req.body.from_date}
   }
   let cancel_filter1 = {
-    booking_status:{$in:["cancelled","booked"]},
+    booking_status:{$in:["cancelled"]},
     created_by:req.userId,
-    // event_booking_date:{$gte:past_date, $lte:req.body.from_date}
+    event_booking_date:{$gte:past_date, $lte:req.body.from_date}
 
   }
-  // let eventFilter = {
-  //   booking_status:{$in:["booked"]},
-  //   created_by:req.userId,
-  //   start_date:{$gte:new Date(), $lte:past_date}
-  // }
+  let eventFilter = {
+    booking_status:{$in:["booked"]},
+    created_by:req.userId,
+    event_booking_date:{$gte:new Date(), $lte:past_date}
+  }
   let booking_ids = []
 
   //req.role==="super_admin"?delete filter.created_by:null
   Booking.find(cancel_filter).lean().populate('venue_data','venue').then(booking=>{
-    // Booking.find(old_filter).lean().populate('venue_data','venue').then(old_booking=>{
+    Booking.find(old_filter).lean().populate('venue_data','venue').then(old_booking=>{
     // Booking.find(cancel_filter).lean().populate('venue_data','venue').then(cancelledBookings=>{
       //console.log(cancelledBookings)
     EventBooking.find(cancel_filter1).lean().populate({path:"event_id",populate:{path:"venue"}}).then(eventBooking=>{
-      // EventBooking.find(cancel_filter1).lean().populate({path:"event_id",populate:{path:"venue"}}).then(cancelledeventBooking=>{
+      EventBooking.find(eventFilter).lean().populate({path:"event_id",populate:{path:"venue"}}).then(cancelledeventBooking=>{
      
         // $or:[{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}] }
 
       Game.find({$and:[{ $or: [{host:{$in:[req.userId]}},{users:{$in:[req.userId]}}] },{start_time:{$gte:past_date, $lte:req.body.from_date} } ]}).lean().populate('venue','venue'). populate("host","name _id handle name_status profile_picture").populate('conversation').populate({ path: 'conversation',populate: { path: 'last_message' }}).then(game=>{
         result = Object.values(combineSlots(booking))
-        // let result1 = Object.values(combineSlots1(old_booking))
+        let result1 = Object.values(combineSlots1(old_booking))
         // cancelled_bookings =  Object.values(combineSlots(cancelledBookings))
         game.map((key)=>{
          key["end_time"] = key.conversation && key.conversation.end_time ? key.conversation.end_time : key.bookings[key.bookings.length-1].end_time 
@@ -5242,12 +5243,12 @@ router.post('/bookings_and_games_past', verifyToken, (req, res, next) => {
           a["end_time"] = moment(a.event_id.start_date).utc().format()
           return a
         })
-        // let cancelledeventBooking1 = cancelledeventBooking.filter(a => a.event_id).map((a)=>{
-        //   a['start_time'] = a.event_id.start_date
-        //   a['event'] = a.event_id
-        //   a["end_time"] = moment(a.event_id.start_date).utc().format()
-        //   return a
-        // })
+        let cancelledeventBooking1 = cancelledeventBooking.filter(a => a.event_id).map((a)=>{
+          a['start_time'] = a.event_id.start_date
+          a['event'] = a.event_id
+          a["end_time"] = moment(a.event_id.start_date).utc().format()
+          return a
+        })
 
         //  event_booking_data
          booking_data = req.body.type && req.body.type === 'host' ?[...open_games]:[...game]
@@ -5263,7 +5264,7 @@ router.post('/bookings_and_games_past', verifyToken, (req, res, next) => {
         // const present = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') <= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
         const past = finalResult.filter((a)=> a && !a.empty && moment().subtract(0,'days').format('YYYYMMDDHHmm') >= moment(a.end_time).subtract(330,'minutes').format('YYYYMMDDHHmm'))
         // const apresent = groupBy(present,'end_time')
-        const apast = groupBy([...past,...result,...event_booking_data],'end_time')
+        const apast = groupBy([...past,...result,...event_booking_data,...cancelledeventBooking1,...result1],'end_time')
 
         // const pastCancelled = []
         // const cancelledPast = groupBy(pastCancelled,'start_time')
@@ -5283,9 +5284,9 @@ router.post('/bookings_and_games_past', verifyToken, (req, res, next) => {
     }).catch(next)
   }).catch(next)
   }).catch(next)
-// }).catch(next)
+}).catch(next)
 
-// }).catch(next)
+}).catch(next)
 // }).catch(next)
 })
 router.post('/host_and_games', verifyToken, (req, res, next) => {

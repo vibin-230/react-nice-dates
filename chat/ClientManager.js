@@ -6,9 +6,11 @@ module.exports = function () {
 
   async function addClient(client,token) {
     const user = await verifyToken(token)
-    //if(user !== 'error')
-    clients.set(client.id, { client,user })
-    User.findByIdAndUpdate({_id: user.id.toString()},{online_status:'online'}).then(user1=>{}).catch()
+    if(user !== 'error'){
+      clients.set(client.id, { client,user })
+      User.findByIdAndUpdate({_id: user.id.toString()},{online_status:'online'}).then(user1=>{}).catch()
+
+    }
 
   }
 
@@ -55,11 +57,15 @@ module.exports = function () {
 
  async function removeClient(client,token) {
     const user = await verifyToken(token)
+//change for ios
+    if(user !== 'error'){
 
-    if(user !== 'error')
-    clients.delete(user.id)
-    //client.disconnect()
-    User.findByIdAndUpdate({_id: user.id},{online_status:'offline'}).then(user1=>{}).catch()
+      clients.delete(user.id)
+      //client.disconnect()
+      user && user.id && User.findByIdAndUpdate({_id: user.id},{online_status:'offline'}).then(user1=>{
+  
+      }).catch()
+    }
 
   }
 

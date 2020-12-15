@@ -169,6 +169,10 @@ module.exports = function () {
     async function saveAsyncMessage(message) {
       const x = await Message.create(message).then(message1=>{
        return Conversation.findByIdAndUpdate({_id:message1.conversation},{last_message:message1._id,last_updated:new Date()}).then(conversation=>{
+        if(message.type == "game_request"){
+          message.game.host = message.game.host.map((key)=>key._id)
+          message.game.users = message.game.users.map((key)=>key._id)
+        }
         return message.type === 'game_request'? message:message1  
       }).catch((e)=>{console.log(e)});
         }).catch((e)=>{console.log(e)});
@@ -230,7 +234,7 @@ module.exports = function () {
      const x = await Message.insertMany(message).then(message1=>{
                    return Conversation.findByIdAndUpdate({_id:message1[message1.length-1].conversation},{last_message:message1[message1.length-1]._id,last_updated:new Date()}).then(conversation=>{
                       const message_ids = message1.map(m=>m._id)
-                      return Message.find({_id: {$in : message_ids}}).lean().populate('author', 'name handle _id name_status').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).sort({ $natural: 1 }).then(m => {
+                      return Message.find({_id: {$in : message_ids}}).lean().populate('author', 'name handle _id name_status').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game', populate:[ { path: 'conversation' , populate :{path:'last_message'} },{path:'venue', model:'venue',select:'venue'}] }).sort({ $natural: 1 }).then(m => {
                         return m
         }).catch((e)=>{console.log(e)});
       }).catch((e)=>{console.log(e)});
@@ -556,7 +560,7 @@ module.exports = function () {
                                           // .concat(messages1)
                                             return Message.insertMany(finalMessages).then(message1=>{
                                               const message_ids = message1.map((m)=>m._id)
-                                              return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id handle name_status').populate('user', 'name _id profile_picture handle phone name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
+                                              return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id handle name_status').populate('user', 'name _id profile_picture handle phone name_status').populate({ path: 'game', populate:[ { path: 'conversation' , populate :{path:'last_message'} },{path:'venue', model:'venue',select:'venue'}] }).then(m => {
                                                 const cids = m.map((entry)=>{
                                                   const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id :entry.conversation
                                                   client.to(id).emit('new',entry)
@@ -659,7 +663,7 @@ module.exports = function () {
                   }) 
                  return Message.insertMany(finalMessages).then(message1=>{
                   const message_ids = message1.map((m)=>m._id)
-                  return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id handle name_status').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game', populate: { path: 'conversation' , populate :{path:'last_message'} } }).then(m => {
+                  return Message.find({_id:{$in:message_ids}}).populate('author', 'name _id handle name_status').populate('user', 'name _id profile_picture phone handle name_status').populate({ path: 'game',populate:[ { path: 'conversation' , populate :{path:'last_message'} },{path:'venue', model:'venue',select:'venue'}]}).then(m => {
                   const cids = m.map((entry)=>{
                     const id = entry && entry.conversation && entry.conversation._id ? entry.conversation._id :entry.conversation
                     client.to(id).emit('new',entry)
@@ -770,7 +774,7 @@ module.exports = function () {
 
                     return Conversation.updateMany({ _id: { $in: cids } }, { $set: { last_message: message1[0]._id, last_updated: new Date() } }).then(message1 => {
                       const device_token_list = user.map((e) => e.device_token)
-                      NotifyArray1(device_token_list, `Event (${event.name}) from ${sender.handle}`, 'Event Invite')
+                      NotifyArray1(device_token_list, `Event ${event.name} from ${sender.handle}`, 'Event Invite')
                       return user.map((e) => e._id)
                     }).catch((e) => console.log(e));
                   }).catch((e) => console.log(e));

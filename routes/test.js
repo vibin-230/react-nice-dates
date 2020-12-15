@@ -25,6 +25,7 @@ const Cashflow = require("../models/cashflow");
 const Venue = require("../models/venue");
 const Admin = require("../models/admin");
 const Message = require("../models/message");
+const BookRepSlot = require("../helper/book_repeated_slot1")
 
 const Conversation = require("../models/conversation");
 const sendAlert = require("./../scripts/sendAlert");
@@ -35,6 +36,44 @@ const createReport = require('../scripts/collectReport')
 
 const Experience = require("./../models/experience");
 
+
+router.post('/book_slot_for_value1/:id', verifyToken, AccessControl('booking', 'create'), (req, res, next) => {
+  let params = req.params.id
+  Venue.findById({_id:req.params.id}).then(venue=>{
+  Bookings.find({}).sort({"booking_id" : -1}).collation( { locale: "en_US", numericOrdering: true }).limit(1).then(bookingOrder=>{
+  let promisesToRun = [];
+  var id = mongoose.Types.ObjectId();
+      req.body.bookObject.map(((arr,index)=>{
+        let record = []
+          for(let i=0;i<arr.block.length;i++){
+            let repeat_data = {...arr.block[i],...req.body.repeat_data}
+            promisesToRun.push(BookRepSlot(repeat_data,id,params,req,res,(index+1),record,bookingOrder,venue,next))
+          }
+        }))
+      Promise.all(promisesToRun).then(values => {
+            Bookings.insertMany(values).then(booking=>{
+              let values = booking
+              Invoice.find({repeat_id: booking[0].repeat_id}).limit(1).then(invoice=> {
+                let bookings = booking.map((b)=>b.booking_id)
+                if (invoice && invoice.length > 0) {
+                    let advance = req.body.bookObject[0].total_advance && (req.body.bookObject[0].total_advance !== '0' || req.body.bookObject[0].total_advance !== '') ? req.body.bookObject[0].total_advance : 0 
+                    let total = invoice[0].advance+parseInt(advance,10)
+                        createReport({type:'booking',comments:values[0].comments ? booking[0].comments:'',repeat_id:booking[0].repeat_id,venue_id:booking[0].venue_id,booking_id:values[0].booking_id,name:booking[0].name,status:true,admin:values[0].created_by,card:values[0].card?values[0].card:0,coins:0,cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
+                        res.status(201).send({status: "success",data:invoice});
+                } else {
+                    createReport({repeat_id: booking[0].repeat_id,name: booking[0].name,venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,admin:values[0].created_by,card:values[0].card?values[0].card:0,coins:0,cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
+                    res.send({status:"success", message:"slot booked", data:invoice})
+                }
+            }).catch(next);  
+            }).catch(error=>{
+              console.log(error)
+              reject()
+            })
+       
+      }).catch(next)
+}).catch(next)
+}).catch(next)
+})
 
 router.post("/modify_booking/:id", verifyToken, (req, res, next) => {
   Bookings.find({

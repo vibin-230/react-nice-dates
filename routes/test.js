@@ -35,7 +35,36 @@ const createReport = require('../scripts/collectReport')
 
 const Experience = require("./../models/experience");
 
+const BookRepSlot = require("../helper/book_repeated_slot1")
 
+
+router.post('/book_slot_for_value1/:id', verifyToken, (req, res, next) => {
+  let params = req.params.id
+  Venue.findById({_id:req.params.id}).then(venue=>{
+  Bookings.find({}).sort({"booking_id" : -1}).collation( { locale: "en_US", numericOrdering: true }).limit(1).then(bookingOrder=>{
+  let promisesToRun = [];
+  var id = mongoose.Types.ObjectId();
+      req.body.bookObject.map(((arr,index)=>{
+        let record = []
+          for(let i=0;i<arr.block.length;i++){
+            let repeat_data = {...arr.block[i],...req.body.repeat_data}
+            promisesToRun.push(BookRepSlot(repeat_data,id,params,req,res,(index+1),record,bookingOrder,venue,next))
+          }
+        }))
+      Promise.all(promisesToRun).then(values => {
+            Bookings.insertMany(values).then(booking=>{
+                        let values = booking
+                        createReport({type:'booking',comments:values[0].comments ? booking[0].comments:'',repeat_id:booking[0].repeat_id,venue_id:booking[0].venue_id,booking_id:values[0].booking_id,name:booking[0].name,status:true,admin:values[0].created_by,card:values[0].card?values[0].card:0,coins:0,cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
+                        res.status(201).send({status: "success",data:booking});
+            }).catch(error=>{
+              console.log(error)
+              reject()
+            })
+       
+      }).catch(next)
+}).catch(next)
+}).catch(next)
+})
 router.post("/modify_booking/:id", verifyToken, (req, res, next) => {
   Bookings.find({
     booking_id: req.params.id,

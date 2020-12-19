@@ -36,7 +36,7 @@ const createReport = require('../scripts/collectReport')
 
 const Experience = require("./../models/experience");
 
-const BookRepSlot = require("../helper/book_repeated_slot1")
+//const BookRepSlot = require("../helper/book_repeated_slot1")
 
 
 router.post('/book_slot_for_value1/:id', verifyToken, (req, res, next) => {

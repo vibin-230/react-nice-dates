@@ -774,7 +774,7 @@ module.exports = function () {
 
                     return Conversation.updateMany({ _id: { $in: cids } }, { $set: { last_message: message1[0]._id, last_updated: new Date() } }).then(message1 => {
                       const device_token_list = user.map((e) => e.device_token)
-                      NotifyArray1(device_token_list, `Event ${event.name} from ${sender.handle}`, 'Event Invite')
+                      NotifyArray1(device_token_list, `Event ${event.event.name} from ${sender.handle}`, 'Event Invite')
                       return user.map((e) => e._id)
                     }).catch((e) => console.log(e));
                   }).catch((e) => console.log(e));

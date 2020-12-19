@@ -23,6 +23,7 @@ const Game = require('../models/game');
 const Conversation = require('../models/conversation');
 const sendAlert = require('./../scripts/sendAlert')
 const Alert = require('./../models/alerts')
+const Location = require('./../models/location')
 const Experience = require('./../models/experience')
 var ObjectID = require('mongodb').ObjectID;
 
@@ -341,6 +342,13 @@ router.post('/get_more_alerts/', [
       }).catch(next)
   });
 
+  router.post('/save_location/', [
+    verifyToken,
+  ], (req, res, next) => {
+    Location.create(req.body).then(data=>{
+      res.status(201).send({status: "success", message: "user collected",data:data})
+    }).catch(next)
+  });
  
 
 

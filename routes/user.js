@@ -575,7 +575,7 @@ router.post('/combine_profile_api', [
 
           
           //mvp_count = aw && aw.length > 0 ? aw.length : 0
-          User.findOneAndUpdate({_id: req.userId},{last_active:new Date()}).lean().then(user=> {
+          // User.findOneAndUpdate({_id: req.userId},{last_active:new Date()}).lean().then(user=> {
           User.findOne({_id: req.userId},{activity_log:0}).populate("requests","name _id profile_picture").lean().then(user=> {
             Coins.aggregate([ { $match: { user:user._id } },{ $group: { _id: "$user", amount: { $sum: "$amount" } } }]).then((coins)=>{
             if (user) {
@@ -601,7 +601,7 @@ router.post('/combine_profile_api', [
               }
             }).catch(next);
           }).catch(next)
-         }).catch(next)
+        //  }).catch(next)
       }).catch(next)
     }).catch(next)
   }).catch(next)

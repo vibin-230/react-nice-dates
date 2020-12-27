@@ -21,9 +21,13 @@ function NotifyIOSDevices(token,message,payload){
         note.topic = "com.turftown";
          note.sound = "ping.aiff";
       note.expiry = Math.floor(Date.now() / 1000) + 2000; // Expires 1 hour from now.
-      note.badge = 3;
+      note.badge = 1;
+      note.pushType='alert'
+      collapseId='demo'
       //note.alert = "\uD83D\uDCE7 \u2709 Welcome to turftown";
       note.alert = message
+      note.aps.category = "nodejs";
+
       note.title = message
       note.payload = payload;
       apnProvider.send(note, token).then( (result) => {
@@ -33,7 +37,7 @@ function NotifyIOSDevices(token,message,payload){
 
 }    
 
-function Notify(receiver_user, message) {
+function Notify(receiver_user, message,passt) {
   
     var message = new gcm.Message({
         collapseKey: 'demo',
@@ -62,7 +66,7 @@ function Notify(receiver_user, message) {
         production: false
       };
       
-      NotifyIOSDevices([receiver_user.device_token],'Welcome to turftown',{key:'Details'})
+      NotifyIOSDevices([receiver_user.device_token],'Welcome to turftown',{key:'Details',chatroom:passt})
 
 
 

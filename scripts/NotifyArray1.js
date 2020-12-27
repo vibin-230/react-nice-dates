@@ -25,7 +25,7 @@ function NotifyIOSDevices(token,message,title,payload){
         note.topic = "com.turftown";
          note.sound = "ping.aiff";
       note.expiry = Math.floor(Date.now() / 1000) + 2000; // Expires 1 hour from now.
-      note.badge = 3;
+      note.badge = 1;
       //note.alert = "\uD83D\uDCE7 \u2709 Welcome to turftown";
       note.alert = message.params.notification.body
       note.title = message.params.notification.title

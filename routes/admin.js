@@ -20,6 +20,7 @@ const data = require('../sample/venue.js')
 const mail = require('../scripts/mail');
 var mkdirp = require('mkdirp');
 const ejs = require('ejs');
+const rzp_key = require("../scripts/rzp");
 
 const User = require('../models/user');
 const Venue = require('../models/venue');

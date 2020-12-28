@@ -83,7 +83,13 @@ const schema = new Schema({
   invoice: {
     type: Boolean,
     default: false
-  }
+  },
+  turftown_payment_status: {
+    type: Boolean,
+    default: false,
+  },
+  turftown_payment_time: Date,
+
 },{ timestamps: { createdAt: 'created_at', updatedAt: 'modified_at' } });
 
 //Model

@@ -87,14 +87,14 @@ module.exports = function BookSlot(body,id,params,req,res,i,record,bookingOrder,
               alternate:body.alternate
             }
 
-            resolve(booking_data)
-            // Booking.create(booking_data).then(booking=>{
-            //   resolve(booking)
-            // }).catch(error=>{
-            //   console.log('pass')
-            //   console.log(error)
-            //   reject()
-            // })
+            // resolve(booking_data)
+            Booking.create(booking_data).then(booking=>{
+              resolve(booking)
+            }).catch(error=>{
+              console.log('pass')
+              console.log(error)
+              reject()
+            })
           }
         }).catch(next)
    }).catch(next)

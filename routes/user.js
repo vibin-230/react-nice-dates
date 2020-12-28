@@ -575,7 +575,7 @@ router.post('/combine_profile_api', [
 
           
           //mvp_count = aw && aw.length > 0 ? aw.length : 0
-          User.findOneAndUpdate({_id: req.userId},{last_active:new Date()}).lean().then(user=> {
+          // User.findOneAndUpdate({_id: req.userId},{last_active:new Date()}).lean().then(user=> {
           User.findOne({_id: req.userId},{activity_log:0}).populate("requests","name _id profile_picture").lean().then(user=> {
             Coins.aggregate([ { $match: { user:user._id } },{ $group: { _id: "$user", amount: { $sum: "$amount" } } }]).then((coins)=>{
             if (user) {
@@ -601,7 +601,7 @@ router.post('/combine_profile_api', [
               }
             }).catch(next);
           }).catch(next)
-         }).catch(next)
+        //  }).catch(next)
       }).catch(next)
     }).catch(next)
   }).catch(next)
@@ -5160,7 +5160,7 @@ router.post('/bookings_and_games1', verifyToken, (req, res, next) => {
         let qpresent =   Object.entries(apresent).map(([key,value])=>{return {title:key,data:value }})
         // let qpast =   Object.entries(apast).map(([key,value])=>{return {title:key,data:value }})
         // let qcancelled = Object.entries(cancelledPast).map(([key,value])=>{return {title:key,data:value }})
-        const today_empty = qpresent && qpresent.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpresent.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
+        const today_empty = qpresent && qpresent.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpresent.push({title:moment().utc().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
         // const today_empty1 = qpast && qpast.findIndex((g)=> g.title === moment().subtract(0,'days').format('MM-DD-YYYY')) < 0 && qpast.push({title:moment().format('MM-DD-YYYY'),empty:true,data:[{none:'No Games Available'}]})
         qpresent.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)
         // qpast.sort((a,b)=>moment(a.title,"MM-DD-YYYY").format('YYYYMMDD') >= moment(b.title,"MM-DD-YYYY").format('YYYYMMDD') ? 1 : -1)

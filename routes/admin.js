@@ -2077,8 +2077,9 @@ router.post('/support_email/:id',
 		User.findById({_id:req.params.id},{activity_log:0}).then(user=>{
 			console.log("user",user)
 			if(user){
+				let handle = user.handle ? user.handle : user.name
 				let otp  = Math.floor(999 + Math.random() * 9000);
-				let html = "<h4><b>Hey "+user.name+"</b></h4><h4>Your otp is "+otp+"</h4>"
+				let html = "<h4><b>Hey "+handle+"</b></h4><h4>Your otp is "+otp+"</h4>"
 				mail("support@turftown.in",req.body.email,"Email Verification Support",'',html,response=>{
 				if(response){
 					res.send({status:"success", message:"support request raised",data:{otp:otp,email:req.body.email}})

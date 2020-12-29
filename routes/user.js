@@ -88,7 +88,7 @@ function getGame(res,convo_id,refund_status,next,req){
     convo['exit'] =  convo.members.filter((a)=>a._id.toString() === req.userId.toString()).length > 0 ? false : true
   
     Game.findOne({conversation:convo_id}).lean().populate("mvp.target_id","name handle profile_picture _id").populate("conversation").populate('host','_id name profile_picture phone handle name_status visibility sports_interest').populate('users','_id name profile_picture phone handle name_status visibility sports_interest').populate('invites','_id name profile_picture phone handle visibility sports_interest').then(game=>{
-            Venue.findById({_id:game.bookings[0].venue_id}).then(venue =>{
+           Venue.findById({_id:game.bookings[0].venue_id}).then(venue =>{
               Offers.find({}).then(offers=>{
               let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(venue._id) !== -1)
               venue["offers"] = filteredOffer
@@ -1965,7 +1965,7 @@ router.post('/get_group_info',verifyToken, (req, res, next) => {
    User.find({_id:convo.created_by}).select('name -_id').then(user=>{
       Message.find({$and:[{ "image": { $exists: true, $ne: null }},{conversation:req.body.conversation_id},{type:"image"},query ]}).distinct("image").then((image)=>{
     Message.find({$and:[{ "game": { $exists: true, $ne: null }},{conversation:req.body.conversation_id},query]}).distinct("game").then((games)=>{
-     Game.find({_id:{ $in: games}}).populate('conversation').lean().then(gameinfo=>{
+      Game.find({_id:{ $in: games}}).populate('conversation').populate({path:'venue', model:'venue',select:'venue'}).lean().then(gameinfo=>{
       let activities = gameinfo.map((key)=>key.sport_name)
       let uninque_activity = [...new Set(activities)]
       let data =[{name:user,game:gameinfo,activities:uninque_activity,image:image.reverse(),convo:convo}]
@@ -3449,8 +3449,10 @@ router.post('/checkMobile', (req, res, next) => {
 })
 
 router.post('/checkMobileForLogin', (req, res, next) => {
-	User.find({"phone":{ "$regex": req.body.mobile, "$options": "i" }}).then(user=>{
-        if(user && user.length > 0){
+	// User.find({"phone":{ "$regex": req.body.mobile, "$options": "i" } }).then(user=>{
+     
+    User.find({$and:[{"phone":{ "$regex": req.body.mobile, "$options": "i" }},{'email':{$exists:true,$ne:null }} ]},{__v:0,token:0,otp:0,activity_log:0}).then(user=>{
+    if(user && user.length > 0){
           res.send({status:"success", message:"phone  exist",data:{error:false,error_description:``}})
         }else
         res.send({status:"success", message:"phone doesnt exist",data:{error:true,error_description:`The phone number +91 ${req.body.mobile} is not registered.`}})
@@ -3519,10 +3521,24 @@ router.post('/test_textlocal', verifyToken, (req, res, next) => {
   // let sender = "TRFTWN"
   // SendMessage(numbers,sender,EVENT_BOOKED_MANAGER)
   User.find({phone:req.body.phone},{activity_log:0}).lean().then((u)=>{
-    console.log(u[0].handle,u[0].device_token);
-    notify(u[0],'total')
+    Conversation.find({ $or: [ { members: { $in: [u[0]._id] } },{ exit_list: { $elemMatch: {user_id:[u[0]._id]} } }] }).lean().populate("host","name profile_picture handle name_status").populate('to',' name _id profile_picture last_active online_status status handle name_status visibility').populate('members','name _id profile_picture last_active online_status status handle name_status visibility').populate('exit_list.user_id','name _id profile_picture last_active online_status status handle name_status visibility').populate('last_message').limit(10).then(existingConversation=>{
+      let chatroom = existingConversation[0]
+      if(chatroom && chatroom._id){
+        chatroom['exit_list'] = []
+        chatroom['join_date'] = []
+        chatroom['last_active'] = []
+        chatroom['last_message'] = {}
+      }
+      else {
+        chatroom = {}
+      }
+    console.log(u[0].handle,u[0].device_token,existingConversation.length);
+    
+    notify(u[0],'total',chatroom)
     res.send({status:"success", message:"Version Log",data:u[0].device_token})
   }).catch(next)
+}).catch(next)
+
   // axios.get(`https://api.textlocal.in/send/?apikey=${process.env.TEXT_LOCAL_API_KEY}&numbers=${numbers}&sender=${sender}&message=${SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER}`).then(response => {
   //   res.send(response.data)
   // }).catch(error=>{
@@ -3709,7 +3725,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   // let venue_name = booking[0].venue
                   // let venue_type = SetKeyForSport(booking[0].venue_type)
                   // let venue_area = booking[0].venue_data.venue.area
-                  // let booking_amount = Math.round(booking[0].booking_amount)
+                  // let booking_amount = Math.round(booking[0].booking_amount)*booking.length
                   // let phone = "91"+booking[0].phone
                   // let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
                   // let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
@@ -3821,7 +3837,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   let venue_type = SetKeyForSport(booking[0].venue_type)
                   let venue_area = booking[0].venue_data.venue.area
                   let phone = "91"+booking[0].phone
-                  let booking_amount = Math.round(booking[0].booking_amount) 
+                  let booking_amount = Math.round(booking[0].booking_amount)*booking.length
                   let date = moment(booking[0].booking_date).format("MMMM Do YYYY")
                   let start_time = Object.values(booking).reduce((total,value)=>{return total<value.start_time?total:value.start_time},booking[0].start_time)
                   let end_time = Object.values(booking).reduce((total,value)=>{return total>value.end_time?total:value.end_time},booking[0].end_time)
@@ -3843,7 +3859,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   //user cancel with refund
                   if(req.body.refund_status){
                     let USER_CANCEL_WITH_REFUND = `Your Turf Town booking ${booking_id} scheduled for ${datetime} at ${venue_name}, ${venue_area} (${venue_type}) has been cancelled.\nAdvance of Rs.${booking_amount} will be refunded within 3-4 working days.`//490450
-                    SendMessage(phone,sender,USER_CANCEL_WITH_REFUND)
+                    // SendMessage(phone,sender,USER_CANCEL_WITH_REFUND)
                   }
                   else {
                   SendMessage(phone,sender,USER_CANCEL_WITHOUT_REFUND)
@@ -3851,7 +3867,7 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                   // notifyRedirect(user,USER_CANCEL_WITHOUT_REFUND)
 
                   ///venuemanager cancel with refund
-                  SendMessage(manger_numbers.join(","),sender,VENUE_CANCEL_WITHOUT_REFUND)
+                  // SendMessage(manger_numbers.join(","),sender,VENUE_CANCEL_WITHOUT_REFUND)
                   let obj = {
                     name:user.name,
                     venue_manager_name:venue.venue.name,
@@ -3865,27 +3881,27 @@ router.post('/cancel_booking/:id', verifyToken, (req, res, next) => {
                     venue_location:venue_area,
                       booking_status:`Advance of Rs ${booking_amount} has been charged as a cancellation fee to the user`
                     }
-                    ejs.renderFile('views/event_manager/venue_cancel.ejs',obj).then(html=>{
-                     let to_emails = `${user.email}, bookings@turftown.in`
-                        mail("bookings@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
-                        if(response){
-                          res.send({status:"success"})
-                        }else{
-                          res.send({status:"failed"})
-                        }
-                      })
-                    }).catch(next)
-                    let manager_mail = ''
-                    admins.map((admin,index)=>{manager_mail+=(admin.length-1) === index ?admin.email :admin.email + ','})
-                    ejs.renderFile('views/event_manager/venue_cancel_manager.ejs',obj).then(html=>{
-                     mail("bookings@turftown.in", manager_mail,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
-                      if(response){
-                         res.send({status:"success"})
-                       }else{
-                         res.send({status:"failed"})
-                       }
-                     })
-                   }).catch(next)
+                  //   ejs.renderFile('views/event_manager/venue_cancel.ejs',obj).then(html=>{
+                  //    let to_emails = `${user.email}, bookings@turftown.in`
+                  //       mail("bookings@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
+                  //       if(response){
+                  //         res.send({status:"success"})
+                  //       }else{
+                  //         res.send({status:"failed"})
+                  //       }
+                  //     })
+                  //   }).catch(next)
+                  //   let manager_mail = ''
+                  //   admins.map((admin,index)=>{manager_mail+=(admin.length-1) === index ?admin.email :admin.email + ','})
+                  //   ejs.renderFile('views/event_manager/venue_cancel_manager.ejs',obj).then(html=>{
+                  //    mail("bookings@turftown.in", manager_mail,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
+                  //     if(response){
+                  //        res.send({status:"success"})
+                  //      }else{
+                  //        res.send({status:"failed"})
+                  //      }
+                  //    })
+                  //  }).catch(next)
     
                   // //Activity Log
                   // let activity_log = {
@@ -4084,10 +4100,10 @@ router.post('/cancel_game_booking/:id', verifyToken, (req, res, next) => {
                   ////user cancel with refund
                   if(req.body.refund_status){
                     let USER_CANCEL_WITH_REFUND = `Your Turf Town booking ${booking_id} scheduled for ${datetime} at ${venue_name}, ${venue_area} (${venue_type}) has been cancelled.\nAdvance of Rs.${booking_amount} will be refunded within 3-4 working days.`//490450
-                    SendMessage(phone,sender,USER_CANCEL_WITH_REFUND)
+                    // SendMessage(phone,sender,USER_CANCEL_WITH_REFUND)
                   }
                   else {
-                   SendMessage(phone,sender,USER_CANCEL_WITHOUT_REFUND)
+                  //  SendMessage(phone,sender,USER_CANCEL_WITHOUT_REFUND)
                   }
                    //notifyRedirect(user,USER_CANCEL_WITHOUT_REFUND)
                   // ///venuemanager cancel with refund
@@ -4105,16 +4121,16 @@ router.post('/cancel_game_booking/:id', verifyToken, (req, res, next) => {
                     venue_location:venue_area,
                       booking_status:`Advance of Rs ${booking_amount} has been charged as a cancellation fee to the user`
                     }
-                    ejs.renderFile('views/event_manager/venue_cancel.ejs',obj).then(html=>{
-                     let to_emails = `${user.email}, bookings@turftown.in`
-                        mail("bookings@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
-                        if(response){
-                          res.send({status:"success"})
-                        }else{
-                          res.send({status:"failed"})
-                        }
-                      })
-                    }).catch(next)
+                    // ejs.renderFile('views/event_manager/venue_cancel.ejs',obj).then(html=>{
+                    //  let to_emails = `${user.email}, bookings@turftown.in`
+                    //     mail("bookings@turftown.in", to_emails,booking_id+" has been cancelled","Slot Cancellation",html,response=>{
+                    //     if(response){
+                    //       res.send({status:"success"})
+                    //     }else{
+                    //       res.send({status:"failed"})
+                    //     }
+                    //   })
+                    // }).catch(next)
                   //   let manager_mail = ''
                   //   admins.map((admin,index)=>{manager_mail+=(admin.length-1) === index ?admin.email :admin.email + ','})
                   //   ejs.renderFile('views/event_manager/venue_cancel_manager.ejs',obj).then(html=>{

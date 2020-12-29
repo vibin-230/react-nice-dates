@@ -3336,9 +3336,9 @@ router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
     Booking.updateMany({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id},req.body,{multi:true}).then(booking=>{
       Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id}).then(booking=>{
         const values = booking
-        Game.findOne({"bookings.booking_id":booking[0].booking_id}).then((g)=>{
+        Game.findOne({"bookings.booking_id":booking[0].booking_id,"bookings.multiple_id":req.body.multiple_id,"bookings.venue_id":req.body.venue_id}).then((g)=>{
         if(g){
-          Game.findOneAndUpdate({"bookings.booking_id":booking[0].booking_id},{$set:{bookings:booking,completed:true,booking_status:"completed"}}).populate("users","name handle device_token").then((a)=>{
+          Game.findOneAndUpdate({"bookings.booking_id":booking[0].booking_id,"bookings.multiple_id":req.body.multiple_id,"bookings.venue_id":req.body.venue_id},{$set:{bookings:booking,completed:true,booking_status:"completed"}}).populate("users","name handle device_token").then((a)=>{
            let final_Game = (a.sport_name == "cricket" || a.sport_name == "badminton") ? (a.users.length >= 3 ? true : false) : (a.sport_name == "football" || a.sport_name == "basketball") ? (a.users.length >= 4 ? true :false) : false
            if(final_Game){ 
            Message.create({conversation:a.conversation,message:`Game completed! Please pick an MVP for this game '${a.name}'.`,name:'bot',read_status:true,read_by:a.host[0],author:a.host[0],type:'bot',created_at:new Date()}).then(message1=>{
@@ -4517,8 +4517,8 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   let SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER = `Your Turf town booking ${booking_id} scheduled for ${datetime} at ${venue_name},${" "+venue_area}(${venue_type}) has been cancelled by the venue .\nStatus : Advance of Rs.${booking[0].booking_amount} will be refunded within 3-4 working days.\nPlease contact the venue ${venue.venue.contact} for more information.` //491317
                   let sender = "TRFTWN"
                   if(booking[0].game){
-                    Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted',status_description:'cancelled by venue manager'}}).then(game=>{
-                    Game.findOne({'bookings.booking_id':req.params.id}).populate('users','name _id device_token').then(game=>{
+                    Game.findOneAndUpdate({'bookings.booking_id':req.params.id,"bookings.venue_id":req.body.venue_id,"bookings.multiple_id":req.body.multiple_id},{$set:{bookings:booking,booking_status:'hosted',status_description:'cancelled by venue manager'}}).then(game=>{
+                    Game.findOne({'bookings.booking_id':req.params.id,"bookings.venue_id":req.body.venue_id,"bookings.multiple_id":req.body.multiple_id}).populate('users','name _id device_token').then(game=>{
                       Message.create({conversation:game.conversation,message:`Venue has cancelled this slot and a refund has been initiated.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                         const device_token_list=game && game.users && game.users.length> 0 ?game.users.map((e)=>e.device_token) : []
                        NotifyArray(device_token_list,'Venue has cancelled this slot and a refund has been initiated', `${game.name}`)
@@ -4611,8 +4611,8 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   //   console.log(error.response)
                   // })
                   if(booking[0].game){
-                    Game.findOneAndUpdate({'bookings.booking_id':req.params.id},{$set:{bookings:booking,booking_status:'hosted',status_description:'cancelled by venue manager'}}).then(game=>{
-                    Game.findOne({'bookings.booking_id':req.params.id}).populate('users','name _id device_token').then(game=>{
+                    Game.findOneAndUpdate({'bookings.booking_id':req.params.id,"bookings.venue_id":req.body.venue_id,"bookings.multiple_id":req.body.multiple_id},{$set:{bookings:booking,booking_status:'hosted',status_description:'cancelled by venue manager'}}).then(game=>{
+                    Game.findOne({'bookings.booking_id':req.params.id,"bookings.venue_id":req.body.venue_id,"bookings.multiple_id":req.body.multiple_id}).populate('users','name _id device_token').then(game=>{
                       Message.create({conversation:game.conversation,message:`Venue has cancelled this slot. There will be no refund as it is less than 6 hours to the scheduled time.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
                         const device_token_list=game && game.users && game.users.length> 0 ?game.users.map((e)=>e.device_token) : []
                        NotifyArray(device_token_list,'Venue has cancelled this slot. There will be no refund as it is less than 6 hours to the scheduled time.', `${game.name}`)

@@ -3420,7 +3420,14 @@ router.post('/checkUserName', (req, res, next) => {
 	User.find({"handle":req.body.user_name}).then(user=>{
     console.log(req.body.user_name.match(/^[ A-Za-z0-9_@./#&+-]*$/),req.body.user_name);
         if(user && user.length > 0){
+          if(user[0].password == undefined && user[0].email == undefined){
+            User.findOneAndDelete({"handle":req.body.user_name}).then((s)=>{
+                res.send({status:"success", message:"username doesnt exist",data:{error:false,error_description:''}})
+          }).catch(next)
+          }
+          else{
           res.send({status:"success", message:"username exists",data:{error:true,error_description:`The username ${req.body.user_name} is not available.`}})
+          }
         }
         else if(!req.body.user_name.match(/^[ A-Za-z0-9_@.]*$/)){
           res.send({status:"success", message:"username exists",data:{error:true,error_description:`Invalid Username`}})
@@ -3440,11 +3447,12 @@ router.post('/checkUserName', (req, res, next) => {
 router.post('/checkMobile', (req, res, next) => {
 	User.find({"phone":{ "$regex": req.body.mobile, "$options": "i" }}).then(user=>{
     if(user && user.length > 0){
-      if(!user[0].password && !user.email[0]){
+      if(user[0].password == undefined && user[0].email == undefined ){
         User.findOneAndDelete({"phone":{ "$regex": req.body.mobile, "$options": "i" }}).then((s)=>{
           res.send({status:"success", message:"phone doesnt exist",data:{error:false,error_description:''}})
         }).catch(next)
-        }else{
+        }
+        else{
           res.send({status:"success", message:"phone exists",data:{error:true,error_description:`The phone number +91 ${req.body.mobile} is not available.`}})
         }
 

@@ -106,7 +106,7 @@ async function getChatHistory(id, user,final_date,message_id) {
       let date = conversation.join_date.length > 0 ? conversation.join_date.filter((jd) => jd.user_id.toString() === user.id.toString()) : []
       const x = conversation.members.filter((a)=>a._id.toString() === user.id.toString())
       const user1 =   conversation.exit_list && conversation.exit_list.length > 0 && conversation.exit_list.filter((a)=> a && a.user_id && a.user_id._id.toString() === user.id.toString())
-      const filter  = x.length > 0 ?  date && date.length > 0 ? { _id:{$nin:[message_id]},conversation: id, created_at: { $lt: final_date } } : { conversation: id} :{ conversation: id, created_at: { $lte: moment(user1[user1.length-1].timeStamp).add(1,'seconds') } }
+      const filter  = x.length > 0 ?  date && date.length > 0 ? { _id:{$nin:[message_id]},conversation: id, created_at: { $lt: final_date , $gte: date[date.length-1].join_date } } : { conversation: id} :{ conversation: id, created_at: { $lte: moment(user1[user1.length-1].timeStamp).add(1,'seconds') } }     
       conversation['exit'] = x.length > 0 ? false:true
       return Message.find(filter).lean().populate('author', 'name _id handle').populate('user', 'name _id profile_picture phone handle').populate({path:"event",populate:{path:"venue",select:"venue"}}).populate({ path: 'event', populate: { path: 'conversation' , populate :{path:'last_message'} } }).populate({ path: 'game', populate:[ { path: 'conversation' , populate :{path:'last_message'} },{path:'venue', model:'venue',select:'venue'}] }).sort({_id:-1}).limit(100).then(m => {
         for(let i = 1 ;i <m.length; i++){

@@ -1,4 +1,5 @@
 const mongoose  = require('mongoose');
+const moment = require('moment');
 const Schema    = mongoose.Schema;
 
 
@@ -8,7 +9,7 @@ const schema = new Schema({
   booked_by:String,
   type:String,
   referal:String,
-  created_at: { type : Date , default:new Date()},
+  created_at: { type : Date , default:moment()},
   modified_by:String,
   booking_date: { type : Date , default:new Date()},
   venue: { type: Schema.Types.ObjectId, ref: 'venue' },

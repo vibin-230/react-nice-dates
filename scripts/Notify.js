@@ -48,7 +48,7 @@ function Notify(receiver_user, message,passt) {
         //dryRun: true,
         notification: {
           title: ``,
-          icon: "my_icon",
+          icon: "ic_launcher",
           body: message
         },
         data:{

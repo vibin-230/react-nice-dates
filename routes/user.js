@@ -4627,6 +4627,12 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
               Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id}).lean().populate("venue_data").then(booking=>{
               
               User.findById({_id:booking[0].user_id},{"activity_log":0}).then(user=>{
+                Coins.find({ booking_id: req.params.id,venue:req.body.venue_id }).lean().then(coins => {
+                  if (coins && refund) {
+                      Coins.deleteMany({ booking_id: req.params.id,venue:req.body.venue_id }).lean().then(coins => {
+                      }).catch(next);
+                    }
+                  
                   res.send({status:"success", message:"booking cancelled"})
                   let booking_id = booking[0].booking_id
                   let venue_name = booking[0].venue
@@ -4726,6 +4732,8 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
           }).catch(next);
         }).catch(next);
       }).catch(next);
+    }).catch(next);
+
 
         }
       })

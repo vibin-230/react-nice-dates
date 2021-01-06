@@ -4526,6 +4526,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
       let role = req.role === "venue_staff" || req.role === "venue_manager"
       let date = new Date().addHours(8,30)
       let refund = req.body.refund_status
+      let game_status = booking[0].game
         if(booking.booking_type === "app" && (refund) && booking.transaction_id !== 'free_slot'){
           axios.post('https://'+rzp_key+'@api.razorpay.com/v1/payments/'+booking.transaction_id+'/refund')
           .then(response => {
@@ -4554,7 +4555,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   let manager_phone = "91"+venue.venue.contact
                   let SLOT_CANCELLED_BY_VENUE_MANAGER_TO_USER = `Your Turf town booking ${booking_id} scheduled for ${datetime} at ${venue_name},${" "+venue_area}(${venue_type}) has been cancelled by the venue .\nStatus : Advance of Rs.${booking[0].booking_amount} will be refunded within 3-4 working days.\nPlease contact the venue ${venue.venue.contact} for more information.` //491317
                   let sender = "TRFTWN"
-                  if(booking[0].game){
+                  if(game_status){
                     Game.findOneAndUpdate({'bookings.booking_id':req.params.id,"bookings.venue_id":req.body.venue_id,"bookings.multiple_id":req.body.multiple_id},{$set:{bookings:booking,booking_status:'hosted',status_description:'cancelled by venue manager'}}).then(game=>{
                     Game.findOne({'bookings.booking_id':req.params.id,"bookings.venue_id":req.body.venue_id,"bookings.multiple_id":req.body.multiple_id}).populate('users','name _id device_token').then(game=>{
                       Message.create({conversation:game.conversation,message:`Venue has cancelled this slot and a refund has been initiated.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
@@ -4654,7 +4655,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
                   // }).catch(error=>{
                   //   console.log(error.response)
                   // })
-                  if(booking[0].game){
+                  if(game_status){
                     Game.findOneAndUpdate({'bookings.booking_id':req.params.id,"bookings.venue_id":req.body.venue_id,"bookings.multiple_id":req.body.multiple_id},{$set:{bookings:booking,booking_status:'hosted',status_description:'cancelled by venue manager'}}).then(game=>{
                     Game.findOne({'bookings.booking_id':req.params.id,"bookings.venue_id":req.body.venue_id,"bookings.multiple_id":req.body.multiple_id}).populate('users','name _id device_token').then(game=>{
                       Message.create({conversation:game.conversation,message:`Venue has cancelled this slot. There will be no refund as it is less than 6 hours to the scheduled time.`,name:'bot',read_status:true,read_by:req.userId,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{

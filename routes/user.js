@@ -4531,7 +4531,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
           .then(response => {
             if(response.data.entity === "refund")
             {
-              Booking.updateMany({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id},{$set:{booking_status:"cancelled", refunded: true, refund_status:true,cancelled_by:req.body.cancelled_by}},{multi:true}).then(booking=>{
+              Booking.updateMany({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id},{$set:{booking_status:"cancelled", refunded: true, refund_status:true,game:false,cancelled_by:req.body.cancelled_by}},{multi:true}).then(booking=>{
                 Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id}).lean().populate("venue_data").then(booking=>{
                   User.findById({_id:booking[0].user_id},{activity_log:0}).then(user=>{
                     Coins.find({ booking_id: req.params.id,venue:req.body.venue_id  }).lean().then(coins => {
@@ -4623,7 +4623,7 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
         }else{
 
           Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id}).lean().populate("venue_data").then(booking=>{
-            Booking.updateMany({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id},{$set:{booking_status:"cancelled", refund_status:false,cancelled_by:req.body.cancelled_by}},{multi:true}).then(booking=>{
+            Booking.updateMany({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id},{$set:{booking_status:"cancelled", refund_status:false,game:false,cancelled_by:req.body.cancelled_by}},{multi:true}).then(booking=>{
               Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id}).lean().populate("venue_data").then(booking=>{
               
               User.findById({_id:booking[0].user_id},{"activity_log":0}).then(user=>{

@@ -45,7 +45,8 @@ function Notify(receiver_user, message) {
         notification: {
           title: ``,
           icon: "ic_launcher",
-          body: message
+          body: message,
+          color:"#0956E6"
         },
         data:{
           key:'No'

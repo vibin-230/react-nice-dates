@@ -2276,7 +2276,7 @@ router.post('/book_slot1', verifyToken, (req, res, next) => {
 
     Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
-          req.body[0].coins > 0 && createCoin({type:'booking',booking_id:values[0].booking_id,amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id},next)
+          req.body[0].coins > 0 && createCoin({type:'booking',booking_id:values[0].booking_id,amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id,created_at:moment()},next)
         let booking_id = values[0].booking_id
         let phone = "91"+values[0].phone
         let venue_name = values[0].venue
@@ -2653,8 +2653,8 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
     Admin.find({venue:{$in:[values[0].venue_id]},notify:true},{activity_log:0}).then(admins=>{
       Venue.findById({_id:values[0].venue_id}).then(venue=>{
         User.findById({_id:req.userId}).then(user=>{
-          Conversation.create({type:'game',start_time:values[0].start_time,end_time:values[values.length-1].end_time,display_picture:req.body[0].image,subtitle:req.body[0].subtitle,members:[req.userId],colors:getColors([req.userId]),host:[req.userId],created_by:req.userId,name:req.body[0].game_name,sport_name:values[0].sport_name,last_active:[{user_id:req.userId,last_active:new Date()}],join_date:[{user_id:req.userId,join_date:new Date()}]}).then(convo=>{
-            Game.create({booking_status:'booked',image:req.body[0].image,share_type:req.body[0].share_type,limit:req.body[0].limit,users:[req.userId],created_by:req.userId,created_type:'user',host:[req.userId],name:req.body[0].game_name,conversation:convo._id,subtitle:req.body[0].subtitle,sport_name:values[0].sport_name,type:req.body[0].format,bookings:values,description:req.body[0].description,booking_date:values[0].booking_date,start_time:values[0].start_time,venue:values[0].venue_id }).then(game=>{
+          Conversation.create({type:'game',start_time:values[0].start_time,end_time:values[values.length-1].end_time,display_picture:req.body[0].image,subtitle:req.body[0].subtitle,members:[req.userId],colors:getColors([req.userId]),host:[req.userId],created_by:req.userId,name:req.body[0].game_name,sport_name:req.body[0].sport_name,last_active:[{user_id:req.userId,last_active:new Date()}],join_date:[{user_id:req.userId,join_date:new Date()}]}).then(convo=>{
+            Game.create({booking_status:'booked',image:req.body[0].image,share_type:req.body[0].share_type,limit:req.body[0].limit,users:[req.userId],created_by:req.userId,created_type:'user',host:[req.userId],name:req.body[0].game_name,conversation:convo._id,subtitle:req.body[0].subtitle,sport_name:req.body[0].sport_name,type:req.body[0].format,bookings:values,description:req.body[0].description,booking_date:values[0].booking_date,start_time:values[0].start_time,venue:values[0].venue_id }).then(game=>{
             Game.findOne({_id:game._id}).lean().populate("conversation").populate('host','_id name profile_picture phone handle name_status').populate("venue").populate('users','_id name profile_picture phone handle name_status').populate('invites','_id name profile_picture phone handle').then(game=>{
             Message.create({conversation:convo._id,message:`${game.host[0].handle} created the game`,read_status:false,name:game.host[0].handle,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : convo.members}},{activity_log:0,followers:0,following:0,}).then(users=> {
@@ -2663,7 +2663,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
             res.send({status:"success", message:"slot booked",data: {game:game,convo:convo}})
             console.log('hit1',req.body[0]);
             
-          req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,booking_id:values[0].booking_id,venue:values[0].venue_id},next)
+          req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,booking_id:values[0].booking_id,venue:values[0].venue_id,created_at:moment() },next)
           //createReport({venue_id:values[0].venue_id,booking_id:values[0].booking_id,status:true,user:values[0].user_id,card:values[0].card?values[0].card:0,coins:(req.body[0].coins*req.body.length),cash:values[0].cash?values[0].cash:0,upi:values[0].upi?values[0].upi:0},'create',next)
           var result = Object.values(combineSlots([...values]))
         let booking_id = values[0].booking_id
@@ -2671,7 +2671,7 @@ router.post('/book_slot_and_host', verifyToken, (req, res, next) => {
         let venue_name = values[0].venue
         let venue_type = SetKeyForSport(values[0].venue_type)
         let venue_area = venue.venue.area
-        let sport_name = SetKeyForSport(values[0].sport_name)
+        let sport_name = SetKeyForSport(req.body[0].sport_name)
         let manager_phone ="91"+venue.venue.contact
         let date = moment(values[0].booking_date).format("MMMM Do YYYY")
         let start_time = Object.values(values).reduce((total,value)=>{return total<value.start_time?total:value.start_time},req.body[0].start_time)
@@ -2823,7 +2823,7 @@ router.post('/modify_book_slot_and_host', verifyToken, (req, res, next) => {
             Message.create({conversation:game.conversation,message:`Game on! ${user && user.handle ? user.handle : user.name} has booked the slot. Please be on time to the venue.`,read_status:false,name:user && user.handle ? user.handle : user.name,author:req.userId,type:'bot',created_at:new Date()}).then(message1=>{
               User.find({_id: {$in : req.userId}},{activity_log:0,followers:0,following:0,}).then(users=> {
                 Conversation.findByIdAndUpdate({_id:message1.conversation},{last_message:message1._id,last_updated:new Date()}).then(conversation=>{
-                 req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id,booking_id:values[0].booking_id},next)
+                 req.body[0].coins > 0 && createCoin({type:'booking',amount:-(req.body[0].coins*req.body.length),transaction_id:req.body[0].transaction_id,user:req.userId,venue:values[0].venue_id,booking_id:values[0].booking_id,created_at:moment()},next)
                 
                   Conversation.findById({_id:message1.conversation}).then(convo=>{
                     convo['invite'] = false
@@ -4514,9 +4514,9 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
               Booking.updateMany({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id},{$set:{booking_status:"cancelled", refunded: true, refund_status:true,cancelled_by:req.body.cancelled_by}},{multi:true}).then(booking=>{
                 Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id}).lean().populate("venue_data").then(booking=>{
                   User.findById({_id:booking[0].user_id},{activity_log:0}).then(user=>{
-                    Coins.find({ booking_id: req.params.id }).lean().then(coins => {
+                    Coins.find({ booking_id: req.params.id,venue:req.body.venue_id  }).lean().then(coins => {
                       if (coins) {
-                          Coins.deleteMany({ booking_id: req.params.id }).lean().then(coins => {
+                          Coins.deleteMany({ booking_id: req.params.id,venue:req.body.venue_id  }).lean().then(coins => {
                           }).catch(next);
                         }
                   res.send({status:"success", message:"booking cancelled"})
@@ -4607,6 +4607,12 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
               Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id}).lean().populate("venue_data").then(booking=>{
               
               User.findById({_id:booking[0].user_id},{"activity_log":0}).then(user=>{
+                Coins.find({ booking_id: req.params.id,venue:req.body.venue_id }).lean().then(coins => {
+                  if (coins && refund) {
+                      Coins.deleteMany({ booking_id: req.params.id,venue:req.body.venue_id }).lean().then(coins => {
+                      }).catch(next);
+                    }
+                  
                   res.send({status:"success", message:"booking cancelled"})
                   let booking_id = booking[0].booking_id
                   let venue_name = booking[0].venue
@@ -4706,6 +4712,8 @@ router.post('/cancel_manager_booking/:id', verifyToken, (req, res, next) => {
           }).catch(next);
         }).catch(next);
       }).catch(next);
+    }).catch(next);
+
 
         }
       })
@@ -6076,7 +6084,7 @@ router.post('/event_booking', verifyToken, (req, res, next) => {
                 }
                 }
               // Send SMS
-              req.body.coins > 0 && createCoin({type:'booking',amount:-(req.body.coins),transaction_id:req.body.transaction_id,user:req.userId,booking_id:eventBooking.booking_id,comments:`You have used ${req.body.coins} for this ${req.body.event_name}`},next)
+              req.body.coins > 0 && createCoin({type:'booking',amount:-(req.body.coins),transaction_id:req.body.transaction_id,user:req.userId,booking_id:eventBooking.booking_id,created_at:moment(),comments:`You have used ${req.body.coins} for this ${req.body.event_name}`},next)
               let booking_id = eventBooking.booking_id
               let phone = eventBooking.phone
               let event_name = req.body.event_name

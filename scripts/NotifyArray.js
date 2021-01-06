@@ -56,7 +56,8 @@ function NotifyArray(device_token, message,title,chatroom1) {
         notification: {
           title: title,
           icon: "ic_launcher",
-          body: message
+          body: message,
+          color:"#0956E6"
         },
         data:{
           chatroom:chatroom,

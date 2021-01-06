@@ -44,7 +44,7 @@ function Notify(receiver_user, message) {
         //dryRun: true,
         notification: {
           title: ``,
-          icon: "ic_launcher",
+          icon: "my_icon",
           body: message,
           color:"#0956E6"
         },

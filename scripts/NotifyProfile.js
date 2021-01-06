@@ -47,7 +47,7 @@ function NotifyArray(device_token, message,title,user,type) {
         //dryRun: true,
         notification: {
           title: title,
-          icon: "ic_launcher",
+          icon: "my_icon",
           body: message,
           color:"#0956E6"
         },

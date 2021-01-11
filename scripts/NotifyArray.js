@@ -28,7 +28,7 @@ function NotifyIOSDevices(token,message,title,payload){
       note.payload = payload;
       apnProvider.send(note, token).then( (result) => {
         // see documentation for an explanation of result
-        console.log('result4',result,result.response);
+        console.log('result4',result,result[0].response);
       }).catch(err=>console.log(err));
 
 }    

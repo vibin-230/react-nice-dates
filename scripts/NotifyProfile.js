@@ -29,7 +29,7 @@ function NotifyIOSDevices(token,message,title,payload){
       note.payload = payload;
       apnProvider.send(note, token).then( (result) => {
         // see documentation for an explanation of result
-        console.log('result',result);
+        console.log('result1',result,result.response);
       }).catch(err=>console.log(err));
 
 }    
@@ -58,7 +58,7 @@ function NotifyArray(device_token, message,title,user,type) {
       });
       sender.send(message, { registrationTokens: device_token }, function (err, response) {
         if (err) console.error(err);
-        else console.log(response);
+        else console.log("",response);
         device_token.length > 0 && NotifyIOSDevices(device_token.filter(a=>a.length === 64),message,'Turftown',{chatroom:user,key:type})
 
       }); 

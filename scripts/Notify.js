@@ -14,7 +14,7 @@ function NotifyIOSDevices(token,message,payload){
       keyId: "S4V3AKYZM4",
       teamId: "Y5N5LD2WUK"
     },
-    production: true
+    production: false
   };
   var apnProvider = new apn.Provider(options);
   var note = new apn.Notification();

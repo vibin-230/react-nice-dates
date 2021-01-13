@@ -14,7 +14,7 @@ function NotifyIOSDevices(token,message,title,payload){
       keyId: "S4V3AKYZM4",
       teamId: "Y5N5LD2WUK"
     },
-    production: false
+    production: true
   };
   var apnProvider = new apn.Provider(options);
   var note = new apn.Notification();
@@ -28,7 +28,7 @@ function NotifyIOSDevices(token,message,title,payload){
       note.title = title
       apnProvider.send(note, token).then( (result) => {
         // see documentation for an explanation of result
-        console.log('result',result,result.response);
+        console.log('result',result);
       }).catch(err=>console.log(err));
 
 }    

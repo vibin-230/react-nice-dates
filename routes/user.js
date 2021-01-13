@@ -490,9 +490,9 @@ router.post('/get_user', [
 
 
 
-router.post('/get_user1', [
+router.post('/get_user1', 
   verifyToken,
-], (req, res, next) => {
+ (req, res, next) => {
       //Check if user exist
       var count  = 0
       let game_completed_count = 0
@@ -539,9 +539,9 @@ router.post('/get_user1', [
 });
 
 
-router.post('/combine_profile_api', [
+router.post('/combine_profile_api', 
   verifyToken,
-], (req, res, next) => {
+ (req, res, next) => {
       //Check if user exist
       var count  = 0
       let game_completed_count = 0
@@ -960,6 +960,99 @@ router.post('/sync_contacts', [
       Contacts.create({user_id:req.userId,contacts:req.body}).then(c=>{
         Contacts.findById({_id:c._id}).then((c)=>{
         const contacts1 =  c.contacts.filter((c)=>c.phoneNumbers.length > 0&&c.displayName)
+        let data = []
+        const contacts2 = contacts1.map((a)=>{
+          data.push(...a.phoneNumbers)
+         })
+        const contacts = data.map(c=>c.number.replace(/\s/g, ""))
+        let finalcontacts = contacts.map((c)=>{
+          if(c.length>=10){
+              if(c.substring(0,3) === '+91')
+              {
+                return c.substring(3,c.length)
+              }
+              else if(c.length === 10)
+              {
+                return c
+              }else if(c.length === 11  && c.substring(0,1) === "0")
+              {
+                return c.substring(1,c.length)
+              }
+          }
+        })
+          User.find({phone: { $in :finalcontacts },'handle':{$exists:true,$ne:null } },{activity_log:0}).lean().then(user=> {
+            User.findByIdAndUpdate({_id: req.userId},{sync_contacts:true}).then(user1=>{
+              res.status(201).send({status: "success", message: "common users collected",data:user})
+        })
+      })
+        
+    }).catch(next)
+      }).catch(next)
+    }
+    else {
+      res.status(201).send({status: "success", message: "common users collected",data:[]}) 
+    }
+  }).catch(next)
+});
+
+
+router.post('/sync_contacts_ios', [
+  verifyToken,
+], (req, res, next) => {
+  User.findById({_id: req.userId,'handle':{$exists:true,$ne:null }},{activity_log:0}).lean().then(user=> {
+    console.log("user",user)
+    if(user.handle && user.sync_contacts){
+      Contacts.findOne({user_id:req.userId}).then((c)=>{
+        if(c){
+          //get contacts and remove spaces between numbers
+        //  const contacts =  c.contacts.filter((c)=>c.phoneNumbers.length > 0&&c.displayName).map((a)=>a.phoneNumbers).flat().map(c=>c.number.replace(/\s/g, ""))
+         //for +91 numbers
+
+
+         const contacts1 =  c.contacts.filter((c)=>c.phoneNumbers.length > 0&&c.givenName)
+         let data = []
+         const contacts2 = contacts1.map((a)=>{
+           data.push(...a.phoneNumbers)
+          })
+         const contacts = data.map(c=>c.number.replace(/\s/g, ""))
+
+         let finalcontacts = contacts.map((c)=>{
+              if(c.length>=10){
+                  if(c.substring(0,3) === '+91')
+                  {
+                    return c.substring(3,c.length)
+                  }
+                  else if(c.length === 10)
+                  {
+                    return c
+                  }else if(c.length === 11  && c.substring(0,1) === "0")
+                  {
+                    return c.substring(1,c.length)
+                  }
+              }
+            })
+
+        //  let contactsTest = contacts.filter((f)=>f.length >= 10 && f.substring(0,3) === "+91").map(c=>c.substring(3,c.length))
+        //  let contacts1 = contacts.filter((f)=>f.length >= 10 && f.substring(0,3) === "+91").map(c=>c.substring(3,c.length))
+        // //for exact 10 digits match
+        //  let contacts2 = contacts.filter((f)=>f.length === 10)
+        //  //for 11 digits where first digit is 0
+        //  let contacts3 = contacts.filter((f)=>f.length === 11 && f.substring(0,1) === "0").map(c=>c.substring(1,c.length))
+         //concat all contacts 
+        //  contacts1.concat(contacts2)
+        //   contacts1.concat(contacts3)
+        //  console.log(contacts1.filter((c)=>c === '9941883205'))
+         // console.log(contacts1);
+
+          User.find({phone: { $in :finalcontacts },status:true,'handle':{$exists:true,$ne:null } }).lean().then(user=> {
+            res.status(201).send({status: "success", message: "common users collected",data:user})
+          }).catch(next)
+        }
+      }).catch(next)
+    }else if(user.handle && !user.sync_contacts){
+      Contacts.create({user_id:req.userId,contacts:req.body}).then(c=>{
+        Contacts.findById({_id:c._id}).then((c)=>{
+        const contacts1 =  c.contacts.filter((c)=>c.phoneNumbers.length > 0&&c.givenName)
         let data = []
         const contacts2 = contacts1.map((a)=>{
           data.push(...a.phoneNumbers)

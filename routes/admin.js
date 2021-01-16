@@ -83,6 +83,24 @@ function ActivityLog(id, user_type, activity, message) {
 	})
 }
 
+function getDistanceFromLatLonInKm(lat1,lon1,lat2,lon2) {
+    var R = 6371; // Radius of the earth in km
+    var dLat = deg2rad(lat2-lat1);  // deg2rad below
+    var dLon = deg2rad(lon2-lon1);
+    var a =
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon/2) * Math.sin(dLon/2)
+      ;
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    var d = R * c; // Distance in km
+    return d;
+  }
+
+  function deg2rad(deg) {
+    return deg * (Math.PI/180)
+  }
+
 function findDay() {
 	var d = new Date();
 	var weekday = new Array(7);
@@ -2015,17 +2033,19 @@ router.post('/search_venue',
 	(req, res, next) => {
 		
 
-		Venue.find({"venue.name":{ "$regex": req.body.search, "$options": "i" }}).then(venue=>{
+		Venue.find({"venue.name":{ "$regex": req.body.search, "$options": "i" }}).lean().then(venue=>{
 			Offers.find({}).then(offers=>{
 			let combinedResult
 			if(venue){
 				
 					let list = Object.values(venue).map((value,index)=>{
+					let distance = getDistanceFromLatLonInKm(13.0828 ,80.2417 ,value.venue.latLong[0],value.venue.latLong[1])
 					let filteredOffer = Object.values(offers).filter(offer=>offer.venue.indexOf(value._id)!== -1)
 					value.rating = value.rating
 					value.offers = filteredOffer
-					console.log("Aaa",value)
 					let pricing = Object.values(value.configuration.pricing).filter(price=>price.day===findDay())
+					value.distance = distance.toFixed(2)
+					value.displacement = distance
 					let highestPricing = getPrice(pricing[0].rate)
 					let types = pricing[0].rate[0].types
 					value.pricing = Math.round(getValue(value.configuration.base_type,highestPricing,types))

@@ -3435,7 +3435,7 @@ router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
     Booking.updateMany({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id},req.body,{multi:true}).then(booking=>{
       Booking.find({booking_id:req.params.id,venue_id:req.body.venue_id,multiple_id:req.body.multiple_id}).then(booking=>{
         const values = booking
-        Game.findOne({"bookings.booking_id":booking[0].booking_id,"bookings.multiple_id":req.body.multiple_id,"bookings.venue_id":req.body.venue_id}).populate("users","name handle device_token").then((g)=>{
+        Game.findOne({"bookings.booking_id":booking[0].booking_id,"bookings.multiple_id":req.body.multiple_id,"bookings.venue_id":req.body.venue_id}).populate("users","name handle device_token").lean().then((g)=>{
         if(g){
           Game.findOneAndUpdate({"bookings.booking_id":booking[0].booking_id,"bookings.multiple_id":req.body.multiple_id,"bookings.venue_id":req.body.venue_id},{$set:{bookings:booking,completed:true,booking_status:"completed"}}).populate("users","name handle device_token").then((a)=>{
            let final_Game = (g.sport_name == "cricket" || g.sport_name == "badminton") ? (g.users.length >= 3 ? true : false) : (g.sport_name == "football" || g.sport_name == "basketball") ? (g.users.length >= 4 ? true :false) : false
@@ -3444,7 +3444,7 @@ router.post('/booking_completed/:id', verifyToken, (req, res, next) => {
                Conversation.findByIdAndUpdate({_id:a.conversation},{$set:{last_message:message1._id, last_updated:new Date()}}).then((m)=>{ 
                 Conversation.findById({_id:a.conversation}).populate('members','name _id handle profile_picture name_status device_token').lean().then((m)=>{                      
                 const device_token_list=g.users.map((e)=>e.device_token)
-                console.log("device token lisats",device_token_list)
+                console.log("device token game completd",device_token_list)
                 NotifyArray(device_token_list,`Game completed! Please pick an MVP for this game.`,`${g.name}`,m)
                   return g.users.map((e)=>e._id)
                 })

@@ -300,6 +300,19 @@ router.post("/view_game", [verifyToken], (req, res, next) => {
     .catch(next);
 });
 
+router.post("/view_game_booking_history", [verifyToken], (req, res, next) => {
+  console.log("req",req.body)
+  Game.find({booking_date:{$gte:req.body.fromdate, $lte:req.body.todate}}).lean().populate("created_by").populate("venue").populate("users").populate("host").then((a) => {
+      res.status(201).send({
+        status: "success",
+        message: "games data recieved",
+        data: a,
+      });
+      //NotifyUsers([body.user],body.status_description)
+    })
+    .catch(next);
+});
+
 
 // user list -vibin
 

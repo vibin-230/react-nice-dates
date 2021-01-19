@@ -632,11 +632,19 @@ router.post('/users',
 	verifyToken,
 	AccessControl('users', 'read'),
 	(req, res, next) => {
-		User.find({},{__v:0,token:0,otp:0,activity_log:0}).then(user=>{
+		User.find({},{__v:0,token:0,otp:0,activity_log:0}).sort({created_at:-1}).then(user=>{
 			res.send({status:"success", message:"users fetched", data:user})
 	}).catch(next)
 })
 
+router.post('/updated_users',
+	verifyToken,
+	AccessControl('users', 'read'),
+	(req, res, next) => {
+		User.find({'handle':{$exists:true,$ne:null }},{__v:0,token:0,otp:0,activity_log:0}).sort({ _id: -1 }).then(user=>{
+			res.send({status:"success", message:"users fetched", data:user})
+	}).catch(next)
+})
 // let accessControl = AccessControl('super_admin', 'venue', 'read')
 
 ////Venue

@@ -62,9 +62,9 @@ module.exports =  function slotsAvailable(venue,booking_history){
         inventory =  Object.assign({}, stock);
         if(!slots_available[booking.slot_time]){
           slots_available[booking.slot_time] = inventory
-          slots_available[booking.slot_time][booking.venue_type] = parseInt(inventory[booking.venue_type] - 1)
+          slots_available[booking.slot_time][booking.venue_type] = parseInt(inventory[booking.venue_type] - booking.courts)
         }else if(slots_available[booking.slot_time]){
-          slots_available[booking.slot_time][booking.venue_type] = parseInt(slots_available[booking.slot_time][booking.venue_type] - 1)
+          slots_available[booking.slot_time][booking.venue_type] = parseInt(slots_available[booking.slot_time][booking.venue_type] - booking.courts)
         }
         return slots_available
       })

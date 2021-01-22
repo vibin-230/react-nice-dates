@@ -19,7 +19,7 @@ module.exports =  function slotsAvailable(venue,booking_history){
         }else{
         inventory = slots_available[booking.slot_time]
         }
-        inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.venue_type])
+        inventory[base_type] = parseInt(inventory[base_type] - conf.ratio[booking.venue_type]*booking.courts)
         for(let i=0;i<types.length-1; i++){
         inventory[types[i]] = parseInt(inventory[base_type] / conf.ratio[types[i]])
         }

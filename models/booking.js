@@ -1,6 +1,8 @@
 const mongoose  = require('mongoose');
 const Schema    = mongoose.Schema;
+autoIncrement = require('mongoose-auto-increment');
 
+autoIncrement.initialize(mongoose.connection);
 
 const schema = new Schema({
   booking_id:String,
@@ -91,6 +93,14 @@ const schema = new Schema({
   turftown_payment_time: Date,
 
 },{ timestamps: { createdAt: 'created_at', updatedAt: 'modified_at' } });
+
+
+schema.plugin(autoIncrement.plugin, {
+  model: 'user',
+  field: 'booking_id',
+  startAt: 1000000,
+  incrementBy: 1
+});
 
 //Model
 const model = mongoose.model('booking',schema);

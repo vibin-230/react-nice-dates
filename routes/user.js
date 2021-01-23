@@ -2103,7 +2103,8 @@ if (!req.files)
 
 
 router.post('/block_slot/:id', verifyToken, (req, res, next) => {
-  function BlockSlot(body,id,booking_id){
+  let first_booking_id;
+  function BlockSlot(body,id,booking_id, i){
     return new Promise(function(resolve, reject){
       Venue.findById({_id:req.params.id}).then(venue=>{
         let venue_id;
@@ -2149,7 +2150,7 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
               }
 
             let booking = {
-              booking_id:booking_id,
+              booking_id:first_booking_id,
               booking_date:body.booking_date,
               booking_type:body.booking_type,
               booking_status:"blocked",
@@ -2180,6 +2181,9 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
               courts:body.courts
             }
             Booking.create(booking).then(booking=>{
+              if(i === 0){
+                first_booking_id = booking.booking_id
+              }
               resolve(booking)
               setTimeout(() => {
                 Booking.findById({_id:booking._id}).then(booking=>{
@@ -2209,7 +2213,7 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
     let promisesToRun = [];
     for(let i=0;i<req.body.length;i++)
     {
-      promisesToRun.push(BlockSlot(req.body[i],id, booking_id))
+      promisesToRun.push(BlockSlot(req.body[i],id, booking_id, i))
     }
     Promise.all(promisesToRun).then(values => {
       values = {...values}

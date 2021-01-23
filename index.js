@@ -38,7 +38,9 @@ mongoose.Promise  = global.Promise;
 
 //Mongodb connection
 mongoose.connect(process.env.DB_CONN,{ useNewUrlParser: true });
+mongoose.set('useNewUrlParser', true);
 mongoose.set('useFindAndModify', false);
+mongoose.set('useCreateIndex', true);
 mongoose.connection.once('open', function() {
 	console.log("Database connected successfully");
 });

@@ -2238,7 +2238,7 @@ router.post('/block_slot/:id', verifyToken, (req, res, next) => {
         venue_id:values[0].venue_id,
         message: "Slot "+booking_id+" blocked at "+venue_name+" "+datetime+" "+venue_type,
       }
-      ActivityLog(activity_log)
+      // ActivityLog(activity_log)
     })
   })
   })
@@ -2593,10 +2593,12 @@ function SlotsCheck1(body,id){
       // Booking.find({$and:[{venue:body.venue, venue_id:id, booking_date:{$gte:body.booking_date,$lt:moment(body.booking_date).add(1,"days")}}],booking_status:{$in:["booked","blocked","completed"]}}).then(booking_history=>{
        
       let slots_available = SlotsAvailable(venue,booking_history)
-
+      let courts_value = booking_history.map(key=>key.courts);
+      let courts = booking_history.length > 0 ? courts_value.reduce((a,b)=>a+b) : 0
       const x = Object.keys(slots_available.slots_available[body.slot_time]).filter(a=> 
        { 
-        return slots_available.slots_available[body.slot_time][a]<=0
+        console.log(slots_available.slots_available[body.slot_time][a],a);
+        return slots_available.slots_available[body.slot_time][a]<=courts
       }
         )
           console.log('reser',x,booking_history.map((a)=>a.booking_id),slots_available.slots_available[body.slot_time]);
@@ -3199,17 +3201,17 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
           // })
           
           //Activity Log
-          let activity_log = {
-            datetime: new Date(),
-            id:req.userId,
-            user_type: req.role?req.role:"user",
-            activity: 'slot booked',
-            name:req.name,
-            booking_id:booking_id,
-            venue_id:values[0].venue_id,
-            message: "Slot "+booking_id+" booked at "+venue_name+" "+datetime+" "+venue_type,
-          }
-          ActivityLog(activity_log)
+          // let activity_log = {
+          //   datetime: new Date(),
+          //   id:req.userId,
+          //   user_type: req.role?req.role:"user",
+          //   activity: 'slot booked',
+          //   name:req.name,
+          //   booking_id:booking_id,
+          //   venue_id:values[0].venue_id,
+          //   message: "Slot "+booking_id+" booked at "+venue_name+" "+datetime+" "+venue_type,
+          // }
+          // ActivityLog(activity_log)
   
         }).catch(next)
       }).catch(next)

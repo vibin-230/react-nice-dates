@@ -410,7 +410,7 @@ router.post('/get_more_alerts/', [
   router.post('/get_coin_history_admin/', [
     verifyToken,
   ], (req, res, next) => {
-        Coins.find({}).populate("from","name profile_picture handle name _id").populate("user","name profile_picture handle _id").then(exp=> {
+        Coins.find({}).populate("from","name profile_picture handle name _id phone").populate("user","name profile_picture handle _id phone").then(exp=> {
           if (exp) {
             res.status(201).send({status: "success", message: "coin history collected",data:exp})
           } else {

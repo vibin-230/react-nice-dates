@@ -2593,7 +2593,7 @@ function SlotsCheck1(body,id){
        
       let slots_available = SlotsAvailable(venue,booking_history)
       let courts_value = booking_history.map(key=>key.courts);
-      let courts = courts_value.reduce((a,b)=>a+b)
+      let courts = booking_history.length > 0 ? courts_value.reduce((a,b)=>a+b) : 0
       const x = Object.keys(slots_available.slots_available[body.slot_time]).filter(a=> 
        { 
         console.log(slots_available.slots_available[body.slot_time][a],a);
@@ -3201,17 +3201,17 @@ router.post('/book_slot_for_admin/:id', verifyToken, AccessControl('booking', 'c
           // })
           
           //Activity Log
-          let activity_log = {
-            datetime: new Date(),
-            id:req.userId,
-            user_type: req.role?req.role:"user",
-            activity: 'slot booked',
-            name:req.name,
-            booking_id:booking_id,
-            venue_id:values[0].venue_id,
-            message: "Slot "+booking_id+" booked at "+venue_name+" "+datetime+" "+venue_type,
-          }
-          ActivityLog(activity_log)
+          // let activity_log = {
+          //   datetime: new Date(),
+          //   id:req.userId,
+          //   user_type: req.role?req.role:"user",
+          //   activity: 'slot booked',
+          //   name:req.name,
+          //   booking_id:booking_id,
+          //   venue_id:values[0].venue_id,
+          //   message: "Slot "+booking_id+" booked at "+venue_name+" "+datetime+" "+venue_type,
+          // }
+          // ActivityLog(activity_log)
   
         }).catch(next)
       }).catch(next)

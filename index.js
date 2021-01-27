@@ -164,7 +164,7 @@ io.on('connection', function (client) {
 //Error Handling
 app.use(function(err,req,res,next){
   //console.log(err);
-  res.status(422).send({error:err.message});
+  res.status(422).send({error:err.message, stack: err.stack});
 });
 
 app.use(express.static(path.join(__dirname, 'build')));

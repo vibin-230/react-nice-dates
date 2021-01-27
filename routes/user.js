@@ -6451,12 +6451,17 @@ router.post('/revenue_report_months', verifyToken, (req, res, next) => {
             result[date].booking_status == "cancelled"
               ? 0
               : result[date].commission;
+          let refund_amount = 
+             !value.refund_status && !value.refunded 
+              ? value.booking_amount
+              : 0;
           let value_commission =
             value.booking_status == "cancelled" ? 0 : value.commission;
           result[date].amount = new_amout + value_amount;
           result[date].commission = new_commission + value_commission;
           result[date].slots_booked = result[date].slots_booked + 1;
           result[date].hours_played = (result[date].slots_booked * 30) / 60;
+          result[date].booking_amount = result[date].booking_amount + refund_amount;
         }
       });
 
@@ -6470,6 +6475,11 @@ router.post('/revenue_report_months', verifyToken, (req, res, next) => {
         ];
         return r;
       }, {});
+
+      let refund = result.map(data => data.booking_amount);
+      let booking_amount = refund.reduce((prev, next) => {
+        return prev + next;
+      });
 
       Object.keys(group).map((key) => {
         if (key === moment().format("YYYYMM")) {
@@ -6507,6 +6517,7 @@ router.post('/revenue_report_months', verifyToken, (req, res, next) => {
           amount: revenueForCurrentMonth,
           lastMonth_revenue: revenueForPreviousMonthTillToday,
           projected_Revenue: projected_Revenue,
+          booking_amount: booking_amount
         },
       });
     })

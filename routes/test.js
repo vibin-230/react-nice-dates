@@ -897,17 +897,102 @@ router.post("/booking_history_from_app_by_venue1", (req, res, next) => {
     .populate("venue_data", "venue")
     .populate("collected_by", "name")
     .then((booking1) => {
-      console.log(booking1);
       let result1 = Object.values(combineSlots(booking1));
       let finalResult = [...result1];
+      let amount_receivable = 0;
+      finalResult.map(amount => {
+        if(!amount.turftown_payment_status) {
+          amount_receivable += amount.amount;
+        }
+      })
       res.send({
         status: "success",
         message: "booking history fetched",
-        data: finalResult,
+        data: amount_receivable,
       });
     })
     .catch(next);
 });
+
+router.post('/turftown_payments_details', (req, res, next) => {
+  Bookings.aggregate([
+    {
+      $match: {
+        booking_date: { $gte: new Date(req.body.todate), $lte: new Date(req.body.fromdate) },
+        booking_type: "app",
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        amount_receivable: {$sum: {$cond: [{$eq: ["$turftown_payment_status", false]},"$amount",0]}},
+        slots_completed: {$sum: {$cond: [{$eq: ["$booking_status", "completed"]},1,0]}},
+        incomplete_slots: {$sum: {$cond: [{$and: [{$eq:["$booking_status", "booked"]}, {$lte: ["$end_time", new Date()]}]},1,0]}},
+        current_batch: {
+          $push: {
+            $cond: [
+              {$and: [{$eq:["$booking_status", "completed"]}, {$eq:["$turftown_payment_status", false]}]},
+              {booking_id: "$booking_id", name: "$name", booking_date: "$booking_date", amount: "$amount"},
+              "$$REMOVE"
+            ]
+          }
+        },
+      },
+    }
+  ]).exec((err, result) => {
+    Bookings.aggregate([
+      {
+        $match: {
+          booking_date: { $gte: new Date(req.body.todate), $lte: new Date(req.body.fromdate) },
+          booking_type: "app",
+          turftown_payment_status: true
+        }
+      },
+      {
+        $group: {
+          _id: {$dateToString: {format: "%d%m%Y",date: "$turftown_payment_time"}},
+          date: {$last: "$turftown_payment_time"},
+          amount: {$sum: "$amount"}
+        }
+      }
+    ]).then(data => {
+      let filtered_data =  data.filter(date => {
+        if(date.date) {
+          return date;
+        }
+      })
+      if(err) return res.send({status: "failed", message: "Failed to get payment details"});
+      result[0]["previous_payments"] = filtered_data;
+      res.send({status: 'success', message: "Turftown payment details featched", data: result});
+    })
+  },err => next(err))
+})
+
+router.post('/turftown_payment_previous_batch_details', (req, res, next) => {
+  Bookings.aggregate([
+    {
+      $match: {
+        turftown_payment_status: true,
+        turftown_payment_time: new Date(req.body.date),
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        batch_total_amount: {$sum: "$amount"},
+        slots: {$sum: 1},
+        batch_data: {
+          $push: {
+            booking_date: "$booking_date", amount: "$amount", name: "$name"
+          }
+        },
+      }
+    }
+  ]).exec((err, result) => {
+    if(err) res.send({status: "failed", message: "Failed to get payment previous batch details"});
+    res.send({status: 'success', message: "Turftown payment previous batch details featched", data: result});
+  },err => next(err));
+})
 
 router.post("/update_booking_history_from_app_by_venue1", (req, res, next) => {
   Bookings.find({ booking_id: { $in: req.body.id } })

@@ -913,6 +913,7 @@ router.post('/turftown_payments_details', (req, res, next) => {
     {
       $match: {
         booking_date: { $gte: new Date(req.body.todate), $lte: new Date(req.body.fromdate) },
+        venue_id: req.body.venue_id,
         booking_type: "app",
       },
     },
@@ -939,6 +940,7 @@ router.post('/turftown_payments_details', (req, res, next) => {
         $match: {
           booking_date: { $gte: new Date(req.body.todate), $lte: new Date(req.body.fromdate) },
           booking_type: "app",
+          venue_id: req.body.venue_id,
           turftown_payment_status: true
         }
       },
@@ -968,6 +970,7 @@ router.post('/turftown_payment_previous_batch_details', (req, res, next) => {
       $match: {
         turftown_payment_status: true,
         turftown_payment_time: new Date(req.body.date),
+        venue_id: req.body.venue_id
       },
     },
     {

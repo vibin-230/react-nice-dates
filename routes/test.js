@@ -899,16 +899,10 @@ router.post("/booking_history_from_app_by_venue1", (req, res, next) => {
     .then((booking1) => {
       let result1 = Object.values(combineSlots(booking1));
       let finalResult = [...result1];
-      let amount_receivable = 0;
-      finalResult.map(amount => {
-        if(!amount.turftown_payment_status) {
-          amount_receivable += amount.amount;
-        }
-      })
       res.send({
         status: "success",
         message: "booking history fetched",
-        data: amount_receivable,
+        data: finalResult,
       });
     })
     .catch(next);

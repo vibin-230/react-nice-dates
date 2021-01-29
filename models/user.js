@@ -3,7 +3,6 @@ const Schema    = mongoose.Schema;
 const moment = require('moment');
 
 
-
 const schema = new Schema({
   created_at: { type : Date , default:moment()},
   modified_at: { type : Date , default:moment()},
@@ -60,6 +59,9 @@ const schema = new Schema({
   handle:String,
   status:{type:Boolean, default:true}
 });
+
+
+
 
 //Model
 const model = mongoose.model('user',schema);

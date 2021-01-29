@@ -33,6 +33,7 @@ const Event = require('../models/event');
 const Alert = require('../models/alerts');
 const Coins = require('../models/coins');
 const Conversation = require('../models/conversation');
+const Locations = require('../models/location')
 
 const Game = require('../models/game');
 const Message = require('../models/message');
@@ -642,6 +643,18 @@ router.post('/updated_users',
 	AccessControl('users', 'read'),
 	(req, res, next) => {
 		User.find({'handle':{$exists:true,$ne:null }},{__v:0,token:0,otp:0,activity_log:0}).sort({ _id: -1 }).then(user=>{
+			res.send({status:"success", message:"users fetched", data:user})
+	}).catch(next)
+})
+router.post('/get_locations_user',
+	verifyToken,
+	AccessControl('users', 'read'),
+	(req, res, next) => {
+		var METERS_PER_MILE = 1609.344
+		// Locations.find({ latLong:[13.02, 80.15 ]}).then(user=>{
+			// Locations.aggregate([{$unwind:"$user"},  {$group:{_id: "$user",assets:{$push: {assets_id:"$latLong"}}}}]).limit(10000).then(user=>{
+
+		Locations.find({}).populate("user","handle name id").sort({_id:-1}).limit(10000).then(user=>{
 			res.send({status:"success", message:"users fetched", data:user})
 	}).catch(next)
 })

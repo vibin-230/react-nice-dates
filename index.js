@@ -38,7 +38,9 @@ mongoose.Promise  = global.Promise;
 
 //Mongodb connection
 mongoose.connect(process.env.DB_CONN,{ useNewUrlParser: true });
+mongoose.set('useNewUrlParser', true);
 mongoose.set('useFindAndModify', false);
+mongoose.set('useCreateIndex', true);
 mongoose.connection.once('open', function() {
 	console.log("Database connected successfully");
 });
@@ -162,7 +164,7 @@ io.on('connection', function (client) {
 //Error Handling
 app.use(function(err,req,res,next){
   //console.log(err);
-  res.status(422).send({error:err.message});
+  res.status(422).send({error:err.message, stack: err.stack});
 });
 
 app.use(express.static(path.join(__dirname, 'build')));
